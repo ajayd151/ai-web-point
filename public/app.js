@@ -58,12 +58,13 @@ function runSearch() {
   const industry = $('industry').value.trim();
   const location = $('location').value.trim();
   if (!industry || !location) { alert('Please enter both an industry and a location.'); return; }
+  const starBuckets = Array.from(document.querySelectorAll('.f-star:checked')).map((c) => Number(c.value));
   const filters = {
     website: $('f-website').value,
     phone: $('f-phone').value,
     email: $('f-email').value,
-    minRatingsCount: Number($('f-minRatings').value || 0),
-    minRatingScore: Number($('f-minScore').value || 0),
+    maxRatingsCount: Number($('f-maxRatings').value || 0),
+    starBuckets,
   };
   const all = window.BizData.generateBusinesses(industry, location);
   const results = window.BizData.filterBusinesses(all, filters);

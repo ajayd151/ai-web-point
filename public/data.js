@@ -125,20 +125,29 @@
     return true;
   }
 
+  // map a 0–5 rating to a star bucket (5 = excellent, not offered as a filter)
+  function ratingBucket(r) {
+    if (r < 1.5) return 1;
+    if (r < 2.5) return 2;
+    if (r < 3.5) return 3;
+    if (r < 4.5) return 4;
+    return 5;
+  }
+
   function filterBusinesses(list, filters) {
     filters = filters || {};
     const website = filters.website || 'any';
     const phone = filters.phone || 'any';
     const email = filters.email || 'any';
-    const minRatingsCount = Number(filters.minRatingsCount || 0);
-    const minRatingScore = Number(filters.minRatingScore || 0);
+    const maxRatingsCount = Number(filters.maxRatingsCount || 0); // 0 = no limit
+    const starBuckets = filters.starBuckets || []; // empty = any rating
 
     return list.filter((b) => {
       if (!matchPresence(b.website, website)) return false;
       if (!matchPresence(b.phones && b.phones.length, phone)) return false;
       if (!matchPresence(b.email, email)) return false;
-      if ((b.userRatingsTotal || 0) < minRatingsCount) return false;
-      if ((b.rating || 0) < minRatingScore) return false;
+      if (maxRatingsCount > 0 && (b.userRatingsTotal || 0) > maxRatingsCount) return false;
+      if (starBuckets.length && starBuckets.indexOf(ratingBucket(b.rating || 0)) === -1) return false;
       return true;
     });
   }
