@@ -1,6 +1,52 @@
 // Finder runs client-side (mock data). Generation calls the Vercel function.
 let pendingBusiness = null;
+let authed = false;
 const $ = (id) => document.getElementById(id);
+
+// ---- auth (protects the paid /api/generate endpoint) ---------------------
+function setAuthUI(on) {
+  authed = on;
+  $('loginBar').classList.toggle('hidden', on);
+  $('loginOk').classList.toggle('hidden', !on);
+}
+
+function showLoginMsg(text, kind) {
+  const el = $('login-msg');
+  el.textContent = text;
+  el.className = 'login-msg ' + (kind || '');
+  el.classList.toggle('hidden', !text);
+}
+
+async function doLogin() {
+  const username = $('login-user').value.trim();
+  const password = $('login-pass').value;
+  if (!password) { showLoginMsg('Enter your password.', 'err'); return; }
+  $('login-btn').disabled = true;
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Login failed');
+    $('login-pass').value = '';
+    setAuthUI(true);
+    showLoginMsg('Unlocked — you can now generate mockups.', 'ok');
+    setTimeout(() => showLoginMsg('', ''), 2500);
+  } catch (e) {
+    showLoginMsg(e.message, 'err');
+  } finally {
+    $('login-btn').disabled = false;
+  }
+}
+
+$('login-btn').addEventListener('click', doLogin);
+$('login-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+$('logout-btn').addEventListener('click', () => { setAuthUI(false); showLoginMsg('', ''); });
+
+// check existing session on load
+fetch('/api/login').then((r) => r.json()).then((d) => setAuthUI(!!d.authed)).catch(() => {});
 
 // ---- search --------------------------------------------------------------
 $('searchBtn').addEventListener('click', runSearch);
@@ -71,6 +117,12 @@ function card(b) {
 
 // ---- generate modal ------------------------------------------------------
 function openGenerateModal(business) {
+  if (!authed) {
+    showLoginMsg('Please log in (top of the page) before generating mockups.', 'err');
+    $('login-user').focus();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    return;
+  }
   pendingBusiness = business;
   $('modal-biz').textContent = `${business.name} — ${business.category}, ${business.location}`;
   $('modal-req').value = '';
@@ -98,12 +150,16 @@ async function proceedGenerate() {
       body: JSON.stringify({ business, requirements }),
     });
     const data = await resp.json();
+    if (resp.status === 401) {
+      setAuthUI(false);
+      throw new Error('Your session expired — please log in again (top of the page).');
+    }
     if (!resp.ok) throw new Error(data.error || 'Generation failed');
 
     $('preview-body').innerHTML = `<img src="${esc(data.imageUrl)}" alt="Website mockup" />`;
     $('img-url').value = data.imageUrl;
     $('open-view').href = data.viewUrl || data.imageUrl;
-    $('download-img').href = data.imageUrl;
+    $('download-img').href = '/api/download?img=' + encodeURIComponent(data.imageUrl);
     $('preview-links').classList.remove('hidden');
   } catch (err) {
     $('preview-body').innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`;

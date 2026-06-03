@@ -9,6 +9,7 @@ const fs = require('fs');
 const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
 const sharp = require('sharp');
 const { put } = require('@vercel/blob');
+const { verify, parseCookie } = require('../lib/auth');
 
 // ---- brand ---------------------------------------------------------------
 const BRAND_BLUE = '#4375ED';
@@ -152,9 +153,38 @@ function drawLogo(ctx, x, y, size) {
   ctx.textBaseline = 'alphabetic';
 }
 
+// the BUSINESS's own logo (initials badge + name) so the mockup reads as their site
+function drawBusinessLogo(ctx, x, y, business) {
+  const size = 50;
+  const hue = Number.isFinite(business.brandHue) ? business.brandHue : 208;
+  const g = ctx.createLinearGradient(x, y, x + size, y + size);
+  g.addColorStop(0, `hsl(${hue} 62% 52%)`);
+  g.addColorStop(1, `hsl(${(hue + 24) % 360} 58% 44%)`);
+  ctx.fillStyle = g;
+  roundRect(ctx, x, y, size, size, 13);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `${Math.round(size * 0.4)}px 'Montserrat ExtraBold'`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(initials(business.name), x + size / 2, y + size / 2 + 1);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  // wordmark (business name), truncated to fit
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `22px 'Montserrat Bold'`;
+  let nm = String(business.name || '');
+  const maxW = 470;
+  if (ctx.measureText(nm).width > maxW) {
+    while (nm.length > 4 && ctx.measureText(nm + '…').width > maxW) nm = nm.slice(0, -1);
+    nm = nm.trim() + '…';
+  }
+  ctx.fillText(nm, x + size + 16, y + size / 2 + 8);
+}
+
 // ---- compose the final PNG ----------------------------------------------
 async function composeMockup(heroBuffer, business) {
-  const W = 1200, H = 840;
+  const W = 1200, H = 880;
   // canvas holds ONLY the overlay (transparent where the photo should show);
   // the photo is composited underneath by sharp (a robust image decoder).
   const canvas = createCanvas(W, H);
@@ -175,16 +205,8 @@ async function composeMockup(heroBuffer, business) {
 
   const X = 56;
 
-  // top bar: logo + agency wordmark + "website preview"
-  drawLogo(ctx, X, 30, 46);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `23px 'Montserrat Bold'`;
-  ctx.fillText(AGENCY, X + 60, 62);
-  ctx.fillStyle = 'rgba(255,255,255,0.75)';
-  ctx.font = `14px 'Montserrat SemiBold'`;
-  ctx.textAlign = 'right';
-  ctx.fillText('WEBSITE PREVIEW', W - X, 58);
-  ctx.textAlign = 'left';
+  // top-left: the BUSINESS's own logo (so the mockup reads as their website)
+  drawBusinessLogo(ctx, X, 28, business);
 
   // headline (business name)
   const fit = fitHeadline(ctx, business.name, 780, 72, 34, 2, 'Montserrat ExtraBold');
@@ -263,7 +285,7 @@ async function composeMockup(heroBuffer, business) {
 
   // bottom band: services chips (left) + closing line (right)
   const bandY = 700;
-  ctx.fillStyle = 'rgba(6,11,22,0.66)';
+  ctx.fillStyle = 'rgba(6,11,22,0.72)';
   ctx.fillRect(0, bandY, W, H - bandY);
   ctx.fillStyle = BRAND_BLUE;
   ctx.fillRect(0, bandY, W, 4);
@@ -277,7 +299,7 @@ async function composeMockup(heroBuffer, business) {
   let total = 0;
   widths.forEach((w, i) => { total += 8 + gapDot + w + (i < services.length - 1 ? gapItem : 0); });
   let sx = (W - total) / 2;
-  const sy = bandY + 46;
+  const sy = bandY + 40;
   services.forEach((s, i) => {
     ctx.fillStyle = BRAND_MAUVE;
     ctx.beginPath(); ctx.arc(sx + 4, sy, 4, 0, Math.PI * 2); ctx.fill();
@@ -286,12 +308,41 @@ async function composeMockup(heroBuffer, business) {
     sx += 8 + gapDot + widths[i] + gapItem;
   });
 
-  // row 2: closing line, centered
+  // row 2: the closing line as a CTA button (brand-gradient pill)
+  ctx.font = `21px 'Montserrat ExtraBold'`;
+  const ctaText = 'Let me show you the full website over a call';
+  const ctaW = ctx.measureText(ctaText).width + 112;
+  const ctaH = 58;
+  const ctaX = (W - ctaW) / 2;
+  const ctaY = bandY + 66;
+  const cg = ctx.createLinearGradient(ctaX, ctaY, ctaX + ctaW, ctaY);
+  cg.addColorStop(0, BRAND_BLUE);
+  cg.addColorStop(1, BRAND_MAUVE);
+  ctx.fillStyle = cg;
+  roundRect(ctx, ctaX, ctaY, ctaW, ctaH, ctaH / 2);
+  ctx.fill();
   ctx.fillStyle = '#ffffff';
-  ctx.font = `21px 'Montserrat Bold'`;
   ctx.textAlign = 'center';
-  ctx.fillText('Let me show you the full website over a call', W / 2, bandY + 98);
+  ctx.textBaseline = 'middle';
+  ctx.fillText(ctaText, W / 2 - 12, ctaY + ctaH / 2 + 1);
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3;
+  const acx = ctaX + ctaW - 36, acy = ctaY + ctaH / 2;
+  ctx.beginPath(); ctx.moveTo(acx - 5, acy - 7); ctx.lineTo(acx + 4, acy); ctx.lineTo(acx - 5, acy + 7); ctx.stroke();
   ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  // row 3: "Designed by Ai Web Point" sign-off (small AW badge + text), centered
+  const credit = 'Designed by ' + AGENCY;
+  ctx.font = `15px 'Montserrat SemiBold'`;
+  const creditW = ctx.measureText(credit).width;
+  const badge = 24;
+  const groupX = (W - (badge + 10 + creditW)) / 2;
+  const creditY = bandY + 152;
+  drawLogo(ctx, groupX, creditY - badge / 2, badge);
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(credit, groupX + badge + 10, creditY + 1);
   ctx.textBaseline = 'alphabetic';
 
   // overlay (RGBA, transparent where the photo should show through)
@@ -313,6 +364,11 @@ async function composeMockup(heroBuffer, business) {
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Use POST.' });
+    return;
+  }
+  // require a valid login session (protects your OpenAI credits)
+  if (!verify(parseCookie(req, 'aiwp'), Date.now())) {
+    res.status(401).json({ error: 'Please log in first.' });
     return;
   }
   try {

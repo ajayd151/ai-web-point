@@ -69,7 +69,17 @@
         </div>
       </details>
 
-      <button id="searchBtn" class="primary">Search businesses</button>
+      <div class="actions-row">
+        <button id="searchBtn" class="primary">Search businesses</button>
+        <div id="loginBar" class="loginbar">
+          <span class="lock" id="lock-icon">🔒</span>
+          <input id="login-user" type="text" placeholder="Username" autocomplete="username" />
+          <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password" />
+          <button id="login-btn" class="ghost">Unlock</button>
+        </div>
+        <div id="loginOk" class="loginok hidden"><span>🔓 Unlocked</span> <button id="logout-btn" class="linkbtn">log out</button></div>
+      </div>
+      <p id="login-msg" class="login-msg hidden"></p>
     </section>
 
     <section id="summary" class="summary hidden"></section>
