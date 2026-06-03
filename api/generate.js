@@ -6,7 +6,8 @@
 const path = require('path');
 const crypto = require('crypto');
 const fs = require('fs');
-const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
+const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
+const sharp = require('sharp');
 const { put } = require('@vercel/blob');
 
 // ---- brand ---------------------------------------------------------------
@@ -154,29 +155,12 @@ function drawLogo(ctx, x, y, size) {
 // ---- compose the final PNG ----------------------------------------------
 async function composeMockup(heroBuffer, business) {
   const W = 1200, H = 840;
+  // canvas holds ONLY the overlay (transparent where the photo should show);
+  // the photo is composited underneath by sharp (a robust image decoder).
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
-  // background photo (cover) — fall back to a brand gradient if decode fails
-  let hero = null;
-  try {
-    hero = await loadImage(heroBuffer);
-  } catch (e) {
-    console.error('loadImage failed:', e.message, 'bufLen=', heroBuffer && heroBuffer.length, 'head=', heroBuffer && heroBuffer.slice(0, 16).toString('hex'), 'tail=', heroBuffer && heroBuffer.slice(-8).toString('hex'));
-  }
-  if (hero) {
-    const scale = Math.max(W / hero.width, H / hero.height);
-    const dw = hero.width * scale, dh = hero.height * scale;
-    ctx.drawImage(hero, (W - dw) / 2, (H - dh) / 2, dw, dh);
-  } else {
-    const bgg = ctx.createLinearGradient(0, 0, W, H);
-    bgg.addColorStop(0, '#1b2440');
-    bgg.addColorStop(1, BRAND_BLUE);
-    ctx.fillStyle = bgg;
-    ctx.fillRect(0, 0, W, H);
-  }
-
-  // dark overlay: stronger on the left + bottom
+  // dark overlay: stronger on the left + bottom (darkens the photo for legibility)
   let gx = ctx.createLinearGradient(0, 0, W, 0);
   gx.addColorStop(0, 'rgba(8,14,28,0.92)');
   gx.addColorStop(0.55, 'rgba(8,14,28,0.6)');
@@ -310,7 +294,19 @@ async function composeMockup(heroBuffer, business) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 
-  return canvas.encode('png');
+  // overlay (RGBA, transparent where the photo should show through)
+  const overlay = await canvas.encode('png');
+
+  // base = the AI photo, decoded + cover-fit by sharp; fall back to a dark panel
+  let base;
+  try {
+    base = await sharp(heroBuffer).resize(W, H, { fit: 'cover' }).toBuffer();
+  } catch (e) {
+    console.error('sharp decode failed:', e.message);
+    base = await sharp({ create: { width: W, height: H, channels: 4, background: { r: 17, g: 22, b: 44, alpha: 1 } } }).png().toBuffer();
+  }
+
+  return sharp(base).composite([{ input: overlay, top: 0, left: 0 }]).png().toBuffer();
 }
 
 // ---- the online "view mockup" page --------------------------------------
