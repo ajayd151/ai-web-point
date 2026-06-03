@@ -156,11 +156,24 @@ async function composeMockup(heroBuffer, business) {
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
-  // background photo (cover)
-  const hero = await loadImage(heroBuffer);
-  const scale = Math.max(W / hero.width, H / hero.height);
-  const dw = hero.width * scale, dh = hero.height * scale;
-  ctx.drawImage(hero, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  // background photo (cover) — fall back to a brand gradient if decode fails
+  let hero = null;
+  try {
+    hero = await loadImage(heroBuffer);
+  } catch (e) {
+    console.error('loadImage failed:', e.message, 'bufLen=', heroBuffer && heroBuffer.length, 'head=', heroBuffer && heroBuffer.slice(0, 16).toString('hex'), 'tail=', heroBuffer && heroBuffer.slice(-8).toString('hex'));
+  }
+  if (hero) {
+    const scale = Math.max(W / hero.width, H / hero.height);
+    const dw = hero.width * scale, dh = hero.height * scale;
+    ctx.drawImage(hero, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  } else {
+    const bgg = ctx.createLinearGradient(0, 0, W, H);
+    bgg.addColorStop(0, '#1b2440');
+    bgg.addColorStop(1, BRAND_BLUE);
+    ctx.fillStyle = bgg;
+    ctx.fillRect(0, 0, W, H);
+  }
 
   // dark overlay: stronger on the left + bottom
   let gx = ctx.createLinearGradient(0, 0, W, 0);
