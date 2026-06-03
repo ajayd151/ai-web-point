@@ -71,6 +71,7 @@ async function generateHero(prompt) {
       prompt,
       size: '1536x1024',
       quality: process.env.OPENAI_IMAGE_QUALITY || 'medium',
+      output_format: 'jpeg',
       n: 1,
     }),
   });
@@ -152,7 +153,7 @@ function drawLogo(ctx, x, y, size) {
 
 // ---- compose the final PNG ----------------------------------------------
 async function composeMockup(heroBuffer, business) {
-  const W = 1200, H = 800;
+  const W = 1200, H = 840;
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
@@ -277,29 +278,35 @@ async function composeMockup(heroBuffer, business) {
   ctx.textBaseline = 'alphabetic';
 
   // bottom band: services chips (left) + closing line (right)
-  const bandY = 706;
-  ctx.fillStyle = 'rgba(6,11,22,0.62)';
+  const bandY = 700;
+  ctx.fillStyle = 'rgba(6,11,22,0.66)';
   ctx.fillRect(0, bandY, W, H - bandY);
   ctx.fillStyle = BRAND_BLUE;
   ctx.fillRect(0, bandY, W, 4);
 
+  // row 1: services chips, centered
   const services = (business.services || []).slice(0, 4);
-  ctx.font = `18px 'Montserrat SemiBold'`;
+  ctx.font = `17px 'Montserrat SemiBold'`;
   ctx.textBaseline = 'middle';
-  let sx = X;
-  const sy = bandY + 50;
-  services.forEach((s) => {
+  const gapDot = 10, gapItem = 30;
+  const widths = services.map((s) => ctx.measureText(s).width);
+  let total = 0;
+  widths.forEach((w, i) => { total += 8 + gapDot + w + (i < services.length - 1 ? gapItem : 0); });
+  let sx = (W - total) / 2;
+  const sy = bandY + 46;
+  services.forEach((s, i) => {
     ctx.fillStyle = BRAND_MAUVE;
     ctx.beginPath(); ctx.arc(sx + 4, sy, 4, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#e8edf6';
-    ctx.fillText(s, sx + 16, sy + 1);
-    sx += 28 + ctx.measureText(s).width;
+    ctx.fillText(s, sx + 8 + gapDot, sy);
+    sx += 8 + gapDot + widths[i] + gapItem;
   });
 
+  // row 2: closing line, centered
   ctx.fillStyle = '#ffffff';
-  ctx.font = `19px 'Montserrat Bold'`;
-  ctx.textAlign = 'right';
-  ctx.fillText('Let me show you the full website over a call', W - X, sy + 1);
+  ctx.font = `21px 'Montserrat Bold'`;
+  ctx.textAlign = 'center';
+  ctx.fillText('Let me show you the full website over a call', W / 2, bandY + 98);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 
