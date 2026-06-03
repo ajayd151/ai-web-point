@@ -139,14 +139,17 @@
     const website = filters.website || 'any';
     const phone = filters.phone || 'any';
     const email = filters.email || 'any';
-    const maxRatingsCount = Number(filters.maxRatingsCount || 0); // 0 = no limit
+    const ratingsFrom = filters.ratingsFrom == null ? null : Number(filters.ratingsFrom); // null = no min
+    const ratingsTo = filters.ratingsTo == null ? null : Number(filters.ratingsTo); // null = no max
     const starBuckets = filters.starBuckets || []; // empty = any rating
 
     return list.filter((b) => {
       if (!matchPresence(b.website, website)) return false;
       if (!matchPresence(b.phones && b.phones.length, phone)) return false;
       if (!matchPresence(b.email, email)) return false;
-      if (maxRatingsCount > 0 && (b.userRatingsTotal || 0) > maxRatingsCount) return false;
+      const n = b.userRatingsTotal || 0;
+      if (ratingsFrom != null && n < ratingsFrom) return false;
+      if (ratingsTo != null && n > ratingsTo) return false;
       if (starBuckets.length && starBuckets.indexOf(ratingBucket(b.rating || 0)) === -1) return false;
       return true;
     });

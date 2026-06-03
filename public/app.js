@@ -59,11 +59,13 @@ function runSearch() {
   const location = $('location').value.trim();
   if (!industry || !location) { alert('Please enter both an industry and a location.'); return; }
   const starBuckets = Array.from(document.querySelectorAll('.f-star:checked')).map((c) => Number(c.value));
+  const num = (id) => ($(id).value === '' ? null : Number($(id).value));
   const filters = {
     website: $('f-website').value,
     phone: $('f-phone').value,
     email: $('f-email').value,
-    maxRatingsCount: Number($('f-maxRatings').value || 0),
+    ratingsFrom: num('f-ratingsFrom'),
+    ratingsTo: num('f-ratingsTo'),
     starBuckets,
   };
   const all = window.BizData.generateBusinesses(industry, location);

@@ -59,16 +59,21 @@
             </select>
           </label>
           <label>
-            <span>Max no. of ratings</span>
-            <input id="f-maxRatings" type="number" min="0" placeholder="e.g. 20" />
+            <span>No. of ratings (range)</span>
+            <div class="range">
+              <input id="f-ratingsFrom" type="number" min="0" placeholder="From" />
+              <span class="dash">–</span>
+              <input id="f-ratingsTo" type="number" min="0" placeholder="To" />
+            </div>
           </label>
-          <label>
+          <label class="wide">
             <span>Rating (tick any)</span>
             <div class="stars">
               <label class="cb"><input type="checkbox" class="f-star" value="1" /> ≤1★</label>
               <label class="cb"><input type="checkbox" class="f-star" value="2" /> 2★</label>
               <label class="cb"><input type="checkbox" class="f-star" value="3" /> 3★</label>
               <label class="cb"><input type="checkbox" class="f-star" value="4" /> 4★</label>
+              <label class="cb"><input type="checkbox" class="f-star" value="5" /> 5★</label>
             </div>
           </label>
         </div>
