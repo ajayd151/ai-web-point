@@ -76,9 +76,20 @@ async function generateHero(prompt) {
   });
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) throw new Error('OpenAI image error: ' + ((data.error && data.error.message) || resp.status));
-  const b64 = data.data && data.data[0] && data.data[0].b64_json;
-  if (!b64) throw new Error('OpenAI returned no image data.');
-  return Buffer.from(b64, 'base64');
+  const item = (data.data && data.data[0]) || {};
+  if (item.b64_json) {
+    const buf = Buffer.from(item.b64_json, 'base64');
+    const head = buf.slice(0, 8).toString('hex');
+    // valid PNG/JPEG/WEBP magic?
+    if (head.startsWith('89504e47') || head.startsWith('ffd8ff') || head.startsWith('52494646')) return buf;
+    throw new Error('OpenAI b64 not an image: len=' + buf.length + ' head=' + head + ' sample=' + buf.slice(0, 90).toString('latin1').replace(/[^\x20-\x7e]/g, '.'));
+  }
+  if (item.url) {
+    const imgResp = await fetch(item.url);
+    if (!imgResp.ok) throw new Error('OpenAI image url fetch failed: ' + imgResp.status);
+    return Buffer.from(await imgResp.arrayBuffer());
+  }
+  throw new Error('OpenAI returned no image data. respKeys=' + JSON.stringify(Object.keys(data)) + ' item=' + JSON.stringify(item).slice(0, 160));
 }
 
 // ---- drawing helpers -----------------------------------------------------
