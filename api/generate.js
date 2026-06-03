@@ -309,39 +309,6 @@ async function composeMockup(heroBuffer, business) {
   return sharp(base).composite([{ input: overlay, top: 0, left: 0 }]).png().toBuffer();
 }
 
-// ---- the online "view mockup" page --------------------------------------
-function buildViewHtml(business, imageUrl) {
-  const demo = process.env.DEMO_URL || 'mailto:hello@aiwebpoint.com?subject=Website%20demo';
-  const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  const title = `${esc(business.name)} — website preview by ${AGENCY}`;
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>${title}</title>
-<meta property="og:title" content="${title}"/>
-<meta property="og:image" content="${esc(imageUrl)}"/>
-<meta name="twitter:card" content="summary_large_image"/>
-<style>
-  body{margin:0;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0b1322;color:#fff;text-align:center}
-  .wrap{max-width:1000px;margin:0 auto;padding:32px 18px 64px}
-  h1{font-size:22px;font-weight:700;margin:8px 0 4px}
-  p.sub{color:#9fb0c7;margin:0 0 22px}
-  img{width:100%;height:auto;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
-  .cta{display:inline-block;margin-top:26px;padding:16px 30px;border-radius:999px;color:#fff;font-weight:700;
-       text-decoration:none;background:linear-gradient(90deg,${BRAND_BLUE},${BRAND_MAUVE});font-size:18px}
-  .foot{margin-top:30px;color:#7e8ca3;font-size:13px}
-  .logo{display:inline-flex;align-items:center;gap:10px;font-weight:700;margin-bottom:10px}
-  .badge{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,${BRAND_BLUE},${BRAND_MAUVE});
-         display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}
-</style></head><body><div class="wrap">
-  <div class="logo"><span class="badge">AW</span> ${AGENCY}</div>
-  <h1>A website preview for ${esc(business.name)}</h1>
-  <p class="sub">Here's a free home-page concept we made for you.</p>
-  <img src="${esc(imageUrl)}" alt="Website mockup for ${esc(business.name)}"/>
-  <div><a class="cta" href="${esc(demo)}">Request a demo of the full website →</a></div>
-  <p class="foot">Made by ${AGENCY}. Prefer to talk? We'll walk you through the full site over a quick call.</p>
-</div></body></html>`;
-}
-
 // ---- handler -------------------------------------------------------------
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -366,9 +333,13 @@ module.exports = async (req, res) => {
     const base = `mockups/${safe}-${id}`;
 
     const png = await put(`${base}.png`, pngBuffer, { access: 'public', contentType: 'image/png', addRandomSuffix: false });
-    const view = await put(`${base}.html`, buildViewHtml(business, png.url), { access: 'public', contentType: 'text/html; charset=utf-8', addRandomSuffix: false });
 
-    res.status(200).json({ imageUrl: png.url, viewUrl: view.url, id });
+    // view page is served by /api/view on our own domain (Blob won't render user HTML)
+    const host = req.headers['x-forwarded-host'] || req.headers.host;
+    const q = new URLSearchParams({ img: png.url, name: business.name || '', loc: business.location || '' });
+    const viewUrl = `https://${host}/api/view?${q.toString()}`;
+
+    res.status(200).json({ imageUrl: png.url, viewUrl, id });
   } catch (err) {
     console.error('generate error:', err);
     res.status(500).json({ error: err.message || 'Generation failed.' });
