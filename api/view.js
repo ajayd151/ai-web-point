@@ -47,8 +47,8 @@ module.exports = (req, res) => {
   <div class="logo"><span class="badge">AW</span> ${AGENCY}</div>
   <h1>A website preview for ${esc(name)}${loc ? ' · ' + esc(loc) : ''}</h1>
   <p class="sub">Here's a free home-page concept we designed for you.</p>
-  <img src="${esc(img)}" alt="Website mockup for ${esc(name)}"/>
-  <div><a class="cta" href="${esc(demo)}">Request a demo of the full website &rarr;</a></div>
+  <a href="${esc(demo)}" target="_blank" rel="noopener"><img src="${esc(img)}" alt="Website mockup for ${esc(name)}"/></a>
+  <div><a class="cta" href="${esc(demo)}" target="_blank" rel="noopener">Request a demo of the full website &rarr;</a></div>
   <p class="foot">Designed by ${AGENCY}. Prefer to talk? We'll walk you through the full website over a quick call.</p>
 </div></body></html>`;
 
