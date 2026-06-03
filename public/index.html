@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ai Web Point — Find businesses &amp; generate website mockups</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">AW</span>
+      <div>
+        <h1>Ai Web Point</h1>
+        <p class="sub">Find local businesses with no website — then generate an AI website mockup to send them.</p>
+      </div>
+    </div>
+    <span id="modeBadge" class="badge">demo data</span>
+  </header>
+
+  <main>
+    <section class="panel search">
+      <div class="row">
+        <label>
+          <span>Industry</span>
+          <input id="industry" type="text" placeholder="e.g. plumbers" value="plumbers" />
+        </label>
+        <label>
+          <span>Location</span>
+          <input id="location" type="text" placeholder="e.g. Birmingham" value="Birmingham" />
+        </label>
+      </div>
+
+      <details open class="filters">
+        <summary>Filters</summary>
+        <div class="filter-grid">
+          <label>
+            <span>Website</span>
+            <select id="f-website">
+              <option value="any">Any</option>
+              <option value="none" selected>No website</option>
+              <option value="has">Has website</option>
+            </select>
+          </label>
+          <label>
+            <span>Phone</span>
+            <select id="f-phone">
+              <option value="any">Any</option>
+              <option value="has" selected>Has phone</option>
+              <option value="none">No phone</option>
+            </select>
+          </label>
+          <label>
+            <span>Email</span>
+            <select id="f-email">
+              <option value="any" selected>Any</option>
+              <option value="has">Has email</option>
+              <option value="none">No email</option>
+            </select>
+          </label>
+          <label>
+            <span>Min. no. of ratings</span>
+            <input id="f-minRatings" type="number" min="0" value="0" />
+          </label>
+          <label>
+            <span>Min. rating score</span>
+            <input id="f-minScore" type="number" min="0" max="5" step="0.1" value="0" />
+          </label>
+        </div>
+      </details>
+
+      <button id="searchBtn" class="primary">Search businesses</button>
+    </section>
+
+    <section id="summary" class="summary hidden"></section>
+    <section id="results" class="results"></section>
+  </main>
+
+  <!-- GENERATE MODAL -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-card">
+      <h2>Generate website mockup</h2>
+      <p id="modal-biz" class="muted"></p>
+      <label class="block">
+        <span>Anything else you want catered for? (optional)</span>
+        <textarea id="modal-req" rows="3" placeholder="e.g. emphasise emergency call-outs, mention 20 years experience, family-run…"></textarea>
+      </label>
+      <p class="hint">This creates a real AI image (~15–25 seconds) and a shareable link.</p>
+      <div class="modal-actions">
+        <button id="modal-cancel" class="ghost">Cancel</button>
+        <button id="modal-proceed" class="primary">Proceed →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PREVIEW MODAL -->
+  <div id="preview" class="modal hidden">
+    <div class="modal-card wide">
+      <div class="preview-head">
+        <h2 id="preview-title">Generated mockup</h2>
+        <button id="preview-close" class="ghost">Close</button>
+      </div>
+      <div id="preview-warn" class="warn hidden"></div>
+      <div id="preview-body" class="preview-body"></div>
+      <div id="preview-links" class="links hidden">
+        <label class="block">
+          <span>Image URL (paste into your email as an image)</span>
+          <div class="copyrow"><input id="img-url" type="text" readonly /><button id="copy-img" class="ghost">Copy</button></div>
+        </label>
+        <div class="modal-actions">
+          <a id="open-view" class="ghost btn" target="_blank" rel="noopener">Open view page ↗</a>
+          <a id="download-img" class="primary btn" download="website-mockup.png">Download PNG</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
