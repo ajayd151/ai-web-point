@@ -54,7 +54,7 @@ $('searchBtn').addEventListener('click', runSearch);
   $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); })
 );
 
-function runSearch() {
+async function runSearch() {
   const industry = $('industry').value.trim();
   const location = $('location').value.trim();
   if (!industry || !location) { alert('Please enter both an industry and a location.'); return; }
@@ -68,11 +68,34 @@ function runSearch() {
     ratingsTo: num('f-ratingsTo'),
     starBuckets,
   };
-  const all = window.BizData.generateBusinesses(industry, location);
-  const results = window.BizData.filterBusinesses(all, filters);
+
+  const btn = $('searchBtn');
+  btn.disabled = true;
+  btn.textContent = 'Searching…';
   $('summary').classList.remove('hidden');
-  $('summary').textContent = `Showing ${results.length} of ${all.length} ${industry} in ${location} matching your filters.`;
-  renderResults(results);
+  $('summary').textContent = `Searching Google for ${industry} in ${location}…`;
+  $('results').innerHTML = '';
+
+  try {
+    const resp = await fetch('/api/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ industry, location }),
+    });
+    const data = await resp.json();
+    if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
+    if (!resp.ok) throw new Error(data.error || 'Search failed');
+    const all = data.results || [];
+    const results = window.BizData.filterBusinesses(all, filters);
+    $('summary').textContent = `Showing ${results.length} of ${all.length} ${industry} in ${location} matching your filters.`;
+    renderResults(results);
+  } catch (err) {
+    $('summary').textContent = '';
+    $('results').innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Search businesses';
+  }
 }
 
 function renderResults(list) {
