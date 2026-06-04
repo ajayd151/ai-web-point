@@ -109,14 +109,14 @@ async function runSearch() {
     const resp = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ industry, location, limit: Number($('f-limit').value || 10) }),
+      body: JSON.stringify({ industry, location, limit: Number($('f-limit').value || 20), filters }),
     });
     const data = await resp.json();
     if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
     if (!resp.ok) throw new Error(data.error || 'Search failed');
-    const all = data.results || [];
-    const results = window.BizData.filterBusinesses(all, filters);
-    $('summary').textContent = `Showing ${results.length} of ${all.length} ${industry} in ${location} matching your filters.`;
+    const results = data.results || [];
+    const scanned = data.scanned || results.length;
+    $('summary').textContent = `Found ${results.length} ${industry} in ${location} matching your filters (scanned ${scanned} Google listings).`;
     renderResults(results);
   } catch (err) {
     $('summary').textContent = '';

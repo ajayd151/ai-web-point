@@ -4,6 +4,7 @@
 // NOTE: Google does not return email addresses — `email` is always null.
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
+const { matchesFilters } = require('../lib/filters');
 
 const SERVICE_MAP = {
   plumber: ['Emergency Plumbing', 'Boiler Repairs', 'Bathroom Installs', 'Leak Detection'],
@@ -67,48 +68,61 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const pageSize = Math.min(20, Math.max(1, Number(body.limit) || 10)); // 10 default, max 20 — one Google call
+  // how many MATCHING businesses to return; we page through Google (up to its
+  // ~60 max) to find them, applying the filters server-side as we go.
+  const want = Math.min(50, Math.max(1, Number(body.limit) || 20));
+  const filters = body.filters || {};
   const services = servicesFor(industry);
   const category = titleCase(industry);
   const out = [];
+  let scanned = 0;
+  let pageToken = null;
 
   try {
-    const reqBody = { textQuery: `${industry} in ${location}`, pageSize, regionCode: 'GB', languageCode: 'en' };
-    const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': FIELD_MASK },
-      body: JSON.stringify(reqBody),
-    });
-    const data = await r.json().catch(() => ({}));
-    if (!r.ok) {
-      const msg = (data.error && data.error.message) || ('Google Places error ' + r.status);
-      res.status(502).json({ error: 'Google Places: ' + msg });
-      return;
-    }
-    (data.places || []).forEach((p) => {
-      const name = (p.displayName && p.displayName.text) || 'Unknown business';
-      const phone = p.nationalPhoneNumber || p.internationalPhoneNumber || null;
-      out.push({
-        id: p.id,
-        name,
-        category,
-        industry,
-        location,
-        address: p.formattedAddress || location,
-        phones: phone ? [phone] : [],
-        email: null, // Google does not expose email
-        website: p.websiteUri || null,
-        rating: p.rating || 0,
-        userRatingsTotal: p.userRatingCount || 0,
-        services,
-        mapsUrl: p.googleMapsUri || ('https://www.google.com/maps/search/' + encodeURIComponent(name + ' ' + location)),
-        brandHue: hueFor(name),
+    for (let pageNum = 0; pageNum < 3; pageNum++) { // Google text search caps at ~60 (3 pages of 20)
+      const reqBody = { textQuery: `${industry} in ${location}`, pageSize: 20, regionCode: 'GB', languageCode: 'en' };
+      if (pageToken) reqBody.pageToken = pageToken;
+      const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': FIELD_MASK },
+        body: JSON.stringify(reqBody),
       });
-    });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const msg = (data.error && data.error.message) || ('Google Places error ' + r.status);
+        if (pageNum === 0) { res.status(502).json({ error: 'Google Places: ' + msg }); return; }
+        break;
+      }
+      (data.places || []).forEach((p) => {
+        scanned++;
+        const name = (p.displayName && p.displayName.text) || 'Unknown business';
+        const phone = p.nationalPhoneNumber || p.internationalPhoneNumber || null;
+        const biz = {
+          id: p.id,
+          name,
+          category,
+          industry,
+          location,
+          address: p.formattedAddress || location,
+          phones: phone ? [phone] : [],
+          email: null, // Google does not expose email
+          website: p.websiteUri || null,
+          rating: p.rating || 0,
+          userRatingsTotal: p.userRatingCount || 0,
+          services,
+          mapsUrl: p.googleMapsUri || ('https://www.google.com/maps/search/' + encodeURIComponent(name + ' ' + location)),
+          brandHue: hueFor(name),
+        };
+        if (matchesFilters(biz, filters)) out.push(biz);
+      });
+      if (out.length >= want) break;       // got enough matches
+      pageToken = data.nextPageToken || null;
+      if (!pageToken) break;               // no more Google results
+    }
   } catch (e) {
     res.status(500).json({ error: 'Search failed: ' + e.message });
     return;
   }
 
-  res.status(200).json({ results: out, total: out.length });
+  res.status(200).json({ results: out.slice(0, want), matched: out.length, scanned });
 };
