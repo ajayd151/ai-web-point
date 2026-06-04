@@ -6,7 +6,7 @@ const $ = (id) => document.getElementById(id);
 
 // ---- editable settings (message + CTA wording, saved per device) ---------
 const SETTINGS_DEFAULTS = {
-  waMsg: "Hi, it's Ajay from Ai Web Point. I was looking through {category} in {location} and came across {business}. I noticed you don't have a website yet, so I put together a free homepage design to show what one could look like for you:\n\n{link}\n\nNo obligation at all. If you like it I'd be happy to build the full site, and if not it's yours to keep for ideas.\n\nCheers,\nAjay",
+  waMsg: "Hi, it's James from Ai Web Point. I was looking through {category} in {location} and came across {business}. I noticed you don't have a website yet, so I put together a free homepage design to show what one could look like for you:\n\n{link}\n\nIf you like it I'd be happy to build the full site, and if not, no worries, we call it a day. Got time for a quick call so I can show you the website I built for you?\n\nCheers,\nJames",
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
 };
