@@ -15,7 +15,7 @@ const { checkAndRecord } = require('../lib/ratelimit');
 // ---- brand ---------------------------------------------------------------
 const BRAND_BLUE = '#4375ED';
 const BRAND_MAUVE = '#C485B1';
-const AGENCY = 'Ai Web Point';
+const AGENCY = process.env.AGENCY_NAME || 'Ai Web Point';
 
 // ---- fonts (register once, at cold start) --------------------------------
 let FONTS_OK = false;
@@ -406,10 +406,14 @@ module.exports = async (req, res) => {
 
     const png = await put(`${base}.png`, pngBuffer, { access: 'public', contentType: 'image/png', addRandomSuffix: false });
 
-    // view page is served by /api/view on our own domain (Blob won't render user HTML)
+    // store small metadata so the short /v/<slug> view page can look it up
+    const cta = cleanCta(body.ctaHero, 'Request a demo of the full website', 48);
+    await put(`${base}.json`, JSON.stringify({ name: business.name || '', loc: business.location || '', cta, img: png.url }), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+
+    // short, clean, WhatsApp-friendly link (no query string / special chars)
     const host = req.headers['x-forwarded-host'] || req.headers.host;
-    const q = new URLSearchParams({ img: png.url, name: business.name || '', loc: business.location || '', cta: cleanCta(body.ctaHero, 'Request a demo of the full website', 48) });
-    const viewUrl = `https://${host}/api/view?${q.toString()}`;
+    const linkBase = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
+    const viewUrl = `${linkBase}/v/${safe}-${id}`;
 
     res.status(200).json({ imageUrl: png.url, viewUrl, id });
   } catch (err) {

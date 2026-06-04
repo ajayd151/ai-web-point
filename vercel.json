@@ -6,5 +6,8 @@
       "maxDuration": 60,
       "includeFiles": "fonts/**"
     }
-  }
+  },
+  "rewrites": [
+    { "source": "/v/:slug", "destination": "/api/view?slug=:slug" }
+  ]
 }

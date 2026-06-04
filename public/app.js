@@ -6,7 +6,7 @@ const $ = (id) => document.getElementById(id);
 
 // ---- editable settings (message + CTA wording, saved per device) ---------
 const SETTINGS_DEFAULTS = {
-  waMsg: "Hi {business}, I came across your business and noticed you don't have a website yet — so I put together a free home-page design for you to see:\n\n{link}\n\nIf you like it I'd love to build you the full site. No obligation either way!",
+  waMsg: "Hi, it's Ajay from Ai Web Point. I was looking through {category} in {location} and came across {business}. I noticed you don't have a website yet, so I put together a free homepage design to show what one could look like for you:\n\n{link}\n\nNo obligation at all. If you like it I'd be happy to build the full site, and if not it's yours to keep for ideas.\n\nCheers,\nAjay",
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
 };
@@ -237,6 +237,8 @@ function toWaNumber(phone) {
 function fillWaMessage(tpl, business, link) {
   return String(tpl || '')
     .replace(/\{business\}/g, business.name || 'there')
+    .replace(/\{category\}/g, (business.category || 'businesses').toLowerCase())
+    .replace(/\{location\}/g, business.location || 'your area')
     .replace(/\{link\}/g, link || '');
 }
 function setupWhatsApp(business, link) {
