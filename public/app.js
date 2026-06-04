@@ -190,6 +190,7 @@ function openGenerateModal(business) {
   }
   pendingBusiness = business;
   $('modal-biz').textContent = `${business.name} — ${business.category}, ${business.location}`;
+  $('modal-name').value = '';
   $('modal-req').value = '';
   $('modal').classList.remove('hidden');
 }
@@ -198,6 +199,7 @@ $('modal-proceed').addEventListener('click', proceedGenerate);
 
 async function proceedGenerate() {
   const requirements = $('modal-req').value.trim();
+  const personName = $('modal-name').value.trim();
   const settings = loadSettings();
   const business = Object.assign({}, pendingBusiness, { requirements });
   currentBusiness = business;
@@ -216,7 +218,7 @@ async function proceedGenerate() {
     const resp = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ business, requirements, ctaHero: settings.ctaHero, ctaBottom: settings.ctaBottom }),
+      body: JSON.stringify({ business, requirements, personName, ctaHero: settings.ctaHero, ctaBottom: settings.ctaBottom }),
     });
     const data = await resp.json();
     if (resp.status === 401) {
@@ -260,8 +262,8 @@ function setupWhatsApp(business, link) {
   if (!mobile) {
     wa.classList.add('hidden');
     note.textContent = phone
-      ? '📱 WhatsApp hidden — this number is a landline, not a mobile.'
-      : '📱 No mobile number found for WhatsApp.';
+      ? `📱 WhatsApp button hidden because ${phone} is a landline, not a mobile — WhatsApp only works on mobiles. Use the image URL or view link in an email or text instead.`
+      : '📱 WhatsApp button hidden — no mobile number listed for this business. Use the image URL or view link instead.';
     return;
   }
   const msg = fillWaMessage(loadSettings().waMsg, business, link);

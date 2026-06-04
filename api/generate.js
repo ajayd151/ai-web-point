@@ -60,7 +60,11 @@ function sceneFor(industry) {
 }
 
 function buildPrompt(business) {
-  return `Professional, photorealistic commercial photograph for a website hero banner: ${sceneFor(business.industry || business.category)}. Bright, clean, modern, high-end advertising photography with soft natural lighting and shallow depth of field. Keep the LEFT side of the frame darker and relatively uncluttered so text can be overlaid later. Absolutely NO text, NO words, NO letters, NO numbers, NO logos and NO watermarks anywhere in the image.`;
+  const extra = String(business.requirements || '').trim();
+  const extraLine = extra
+    ? ` Client notes to reflect in the scene where it makes visual sense (do NOT render any of this as on-image text): ${extra}.`
+    : '';
+  return `Professional, photorealistic commercial photograph for a website hero banner: ${sceneFor(business.industry || business.category)}.${extraLine} Bright, clean, modern, high-end advertising photography with soft natural lighting and shallow depth of field. Keep the LEFT side of the frame darker and relatively uncluttered so text can be overlaid later. Absolutely NO text, NO words, NO letters, NO numbers, NO logos and NO watermarks anywhere in the image.`;
 }
 
 async function generateHero(prompt) {
@@ -408,7 +412,8 @@ module.exports = async (req, res) => {
 
     // store small metadata so the short /v/<slug> view page can look it up
     const cta = cleanCta(body.ctaHero, 'Request a demo of the full website', 48);
-    await put(`${base}.json`, JSON.stringify({ name: business.name || '', loc: business.location || '', cta, img: png.url }), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+    const who = String(body.personName || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 60);
+    await put(`${base}.json`, JSON.stringify({ name: business.name || '', loc: business.location || '', who, cta, img: png.url }), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
 
     // short, clean, WhatsApp-friendly link (no query string / special chars)
     const host = req.headers['x-forwarded-host'] || req.headers.host;

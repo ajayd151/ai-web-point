@@ -24,12 +24,14 @@ module.exports = async (req, res) => {
   let img = q.img || '';
   let name = q.name || 'your business';
   let loc = q.loc || '';
+  let who = q.who || '';
   let cta = q.cta || 'Request a demo of the full website';
+  const slug = String(q.slug || '').replace(/[^a-z0-9-]/gi, '');
 
   // short URL: /v/<slug> -> ?slug=<slug>
   if (q.slug) {
     try {
-      const path = 'mockups/' + String(q.slug).replace(/[^a-z0-9-]/gi, '') + '.json';
+      const path = 'mockups/' + slug + '.json';
       const { blobs } = await list({ prefix: path });
       const b = blobs.find((x) => x.pathname === path);
       if (!b) {
@@ -42,6 +44,7 @@ module.exports = async (req, res) => {
       img = meta.img || '';
       name = meta.name || name;
       loc = meta.loc || '';
+      who = meta.who || '';
       cta = meta.cta || cta;
     } catch (e) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -54,6 +57,9 @@ module.exports = async (req, res) => {
   if (!img) { res.status(400).send('Missing image.'); return; }
 
   const demo = process.env.DEMO_URL || 'mailto:hello@aiwebpoint.com?subject=Website%20demo%20-%20' + encodeURIComponent(name);
+  // tracked link back to the agency site — utm identifies which prospect viewed
+  const utm = 'preview' + (slug ? '-' + slug : '');
+  const agencyUrl = `https://aiwebpoint.com/?utm_source=${encodeURIComponent(utm)}`;
   const title = `${esc(name)} — website preview by ${AGENCY}`;
   const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -76,13 +82,15 @@ module.exports = async (req, res) => {
   .logo{display:inline-flex;align-items:center;gap:10px;font-weight:700;margin-bottom:12px;font-size:18px}
   .badge{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,${BRAND_BLUE},${BRAND_MAUVE});
          display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff}
+  .who{color:#ffd166;font-weight:800}
+  .foot a{color:#9fb0c7}
 </style></head><body><div class="wrap">
   <div class="logo"><span class="badge">AW</span> ${AGENCY}</div>
-  <h1>A website preview for ${esc(name)}${loc ? ' · ' + esc(loc) : ''}</h1>
+  <h1>A website preview for ${who ? '<span class="who">' + esc(who) + '</span> · ' : ''}${esc(name)}${loc ? ' · ' + esc(loc) : ''}</h1>
   <p class="sub">Here's a free home-page concept we designed for you.</p>
   <a href="${esc(demo)}" target="_blank" rel="noopener"><img src="${esc(img)}" alt="Website mockup for ${esc(name)}"/></a>
   <div><a class="cta" href="${esc(demo)}" target="_blank" rel="noopener">${esc(cta)} &rarr;</a></div>
-  <p class="foot">Designed by ${AGENCY}. Prefer to talk? We'll walk you through the full website over a quick call.</p>
+  <p class="foot">Designed by <a href="${agencyUrl}" target="_blank" rel="noopener">${AGENCY}</a>. Prefer to talk? We'll walk you through the full website over a quick call.</p>
 </div></body></html>`;
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');

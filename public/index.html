@@ -134,10 +134,14 @@
       <h2>Generate website mockup</h2>
       <p id="modal-biz" class="muted"></p>
       <label class="block">
-        <span>Anything else you want catered for? (optional)</span>
-        <textarea id="modal-req" rows="3" placeholder="e.g. emphasise emergency call-outs, mention 20 years experience, family-run…"></textarea>
+        <span>Person's name (optional) — shown highlighted at the top of the preview page</span>
+        <input id="modal-name" type="text" maxlength="60" placeholder="e.g. James Nicholson" />
       </label>
-      <p class="hint">This creates a real AI image (~15–25 seconds) and a shareable link.</p>
+      <label class="block">
+        <span>Anything else you want catered for? (optional)</span>
+        <textarea id="modal-req" rows="3" placeholder="e.g. emphasise emergency call-outs, family-run, warm friendly tone…"></textarea>
+      </label>
+      <p class="hint">The note above guides the <b>look of the AI photo</b> (it can't place text on the image). This creates a real AI image (~15–25 seconds) and a shareable link.</p>
       <div class="modal-actions">
         <button id="modal-cancel" class="ghost">Cancel</button>
         <button id="modal-proceed" class="primary">Proceed →</button>
