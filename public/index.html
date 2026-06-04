@@ -7,6 +7,24 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- LOGIN GATE (covers the whole app until signed in) -->
+  <div id="gate" class="gate">
+    <div class="gate-card">
+      <div class="gate-brand">
+        <span class="logo">AW</span>
+        <div>
+          <h1>Ai Web Point</h1>
+          <p>Lead finder &amp; mockup studio</p>
+        </div>
+      </div>
+      <p class="gate-lead">Please sign in to continue.</p>
+      <label class="block"><span>Username</span><input id="gate-user" type="text" autocomplete="username" /></label>
+      <label class="block"><span>Password</span><input id="gate-pass" type="password" autocomplete="current-password" /></label>
+      <button id="gate-btn" class="primary gate-btn">Unlock</button>
+      <p id="gate-msg" class="login-msg hidden"></p>
+    </div>
+  </div>
+
   <header class="topbar">
     <div class="brand">
       <span class="logo">AW</span>
@@ -15,7 +33,10 @@
         <p class="sub">Find local businesses with no website — then generate an AI website mockup to send them.</p>
       </div>
     </div>
-    <span id="modeBadge" class="badge">live · Google Places</span>
+    <div class="top-right">
+      <span id="modeBadge" class="badge">live · Google Places</span>
+      <button id="logout-btn" class="badge logoutbtn hidden">Log out</button>
+    </div>
   </header>
 
   <main>
@@ -90,15 +111,7 @@
             <option value="50">50</option>
           </select>
         </label>
-        <div id="loginBar" class="loginbar">
-          <span class="lock" id="lock-icon">🔒</span>
-          <input id="login-user" type="text" placeholder="Username" autocomplete="username" />
-          <input id="login-pass" type="password" placeholder="Password" autocomplete="current-password" />
-          <button id="login-btn" class="ghost">Unlock</button>
-        </div>
-        <div id="loginOk" class="loginok hidden"><span>🔓 Unlocked</span> <button id="logout-btn" class="linkbtn">log out</button></div>
       </div>
-      <p id="login-msg" class="login-msg hidden"></p>
     </section>
 
     <section class="panel">

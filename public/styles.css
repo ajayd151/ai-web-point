@@ -124,6 +124,29 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .chip.email { background: #f6eefb; color: #8b3fa8; }
 .chip.rating { background: #fffbeb; color: #b45309; }
 
+.top-right { display: flex; align-items: center; gap: 10px; }
+.logoutbtn { cursor: pointer; color: #fff; }
+.logoutbtn:hover { background: rgba(255, 255, 255, 0.25); }
+
+.gate {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  background: linear-gradient(120deg, #1b2440, #2a3a6e);
+}
+.gate-card { background: #fff; border-radius: 16px; padding: 30px; width: 380px; max-width: 100%; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35); }
+.gate-brand { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+.gate-brand .logo {
+  width: 46px; height: 46px; border-radius: 12px;
+  background: linear-gradient(135deg, var(--blue), var(--mauve));
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 18px; color: #fff;
+}
+.gate-brand h1 { margin: 0; font-size: 20px; }
+.gate-brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+.gate-lead { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+.gate-card label.block { margin-bottom: 12px; }
+.gate-btn { width: 100%; margin-top: 6px; }
+
 .recent { margin-top: 18px; }
 .recent-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .recent-title { margin: 0; font-size: 17px; }

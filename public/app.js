@@ -35,22 +35,23 @@ function saveSettings() {
 // ---- auth (protects the paid /api/generate endpoint) ---------------------
 function setAuthUI(on) {
   authed = on;
-  $('loginBar').classList.toggle('hidden', on);
-  $('loginOk').classList.toggle('hidden', !on);
+  $('gate').classList.toggle('hidden', on);          // full-screen gate hides the app until signed in
+  $('logout-btn').classList.toggle('hidden', !on);
+  if (!on) { setTimeout(() => { try { $('gate-user').focus(); } catch (e) {} }, 60); }
 }
 
 function showLoginMsg(text, kind) {
-  const el = $('login-msg');
+  const el = $('gate-msg');
   el.textContent = text;
   el.className = 'login-msg ' + (kind || '');
   el.classList.toggle('hidden', !text);
 }
 
 async function doLogin() {
-  const username = $('login-user').value.trim();
-  const password = $('login-pass').value;
+  const username = $('gate-user').value.trim();
+  const password = $('gate-pass').value;
   if (!password) { showLoginMsg('Enter your password.', 'err'); return; }
-  $('login-btn').disabled = true;
+  $('gate-btn').disabled = true;
   try {
     const r = await fetch('/api/login', {
       method: 'POST',
@@ -59,23 +60,23 @@ async function doLogin() {
     });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Login failed');
-    $('login-pass').value = '';
+    $('gate-pass').value = '';
+    showLoginMsg('', '');
     setAuthUI(true);
-    showLoginMsg('Unlocked — you can now generate mockups.', 'ok');
-    setTimeout(() => showLoginMsg('', ''), 2500);
   } catch (e) {
     showLoginMsg(e.message, 'err');
   } finally {
-    $('login-btn').disabled = false;
+    $('gate-btn').disabled = false;
   }
 }
 
-$('login-btn').addEventListener('click', doLogin);
-$('login-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+$('gate-btn').addEventListener('click', doLogin);
+$('gate-user').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('gate-pass').focus(); });
+$('gate-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
 $('logout-btn').addEventListener('click', () => { setAuthUI(false); showLoginMsg('', ''); });
 
-// check existing session on load
-fetch('/api/login').then((r) => r.json()).then((d) => setAuthUI(!!d.authed)).catch(() => {});
+// check existing session on load (gate stays up until this confirms a valid cookie)
+fetch('/api/login').then((r) => r.json()).then((d) => setAuthUI(!!d.authed)).catch(() => setAuthUI(false));
 
 // ---- search --------------------------------------------------------------
 $('searchBtn').addEventListener('click', runSearch);
@@ -183,9 +184,8 @@ function card(b) {
 // ---- generate modal ------------------------------------------------------
 function openGenerateModal(business) {
   if (!authed) {
-    showLoginMsg('Please log in (top of the page) before generating mockups.', 'err');
-    $('login-user').focus();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setAuthUI(false); // session expired — bring the login gate back up
+    showLoginMsg('Your session ended — please sign in again.', 'err');
     return;
   }
   pendingBusiness = business;
