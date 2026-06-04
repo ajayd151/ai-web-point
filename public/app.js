@@ -205,7 +205,9 @@ async function proceedGenerate() {
   currentBusiness = business;
   $('modal').classList.add('hidden');
 
-  $('preview-title').textContent = `Mockup · ${business.name}`;
+  $('preview-title').textContent = personName
+    ? `Hey ${personName} 👋 — mockup for ${business.name}`
+    : `Mockup · ${business.name}`;
   $('preview').classList.remove('hidden');
   $('preview-warn').classList.add('hidden');
   $('preview-links').classList.add('hidden');

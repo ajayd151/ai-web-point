@@ -62,7 +62,7 @@ function sceneFor(industry) {
 function buildPrompt(business) {
   const extra = String(business.requirements || '').trim();
   const extraLine = extra
-    ? ` Client notes to reflect in the scene where it makes visual sense (do NOT render any of this as on-image text): ${extra}.`
+    ? ` IMPORTANT art direction from the client — apply this strongly to the look and feel of the photo (but do NOT render any of it as on-image text): ${extra}.`
     : '';
   return `Professional, photorealistic commercial photograph for a website hero banner: ${sceneFor(business.industry || business.category)}.${extraLine} Bright, clean, modern, high-end advertising photography with soft natural lighting and shallow depth of field. Keep the LEFT side of the frame darker and relatively uncluttered so text can be overlaid later. Absolutely NO text, NO words, NO letters, NO numbers, NO logos and NO watermarks anywhere in the image.`;
 }
