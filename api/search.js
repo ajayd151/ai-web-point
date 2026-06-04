@@ -3,6 +3,7 @@
 // shape as the old mock data so filters + the mockup generator just work.
 // NOTE: Google does not return email addresses — `email` is always null.
 const { verify, parseCookie } = require('../lib/auth');
+const { checkAndRecord } = require('../lib/ratelimit');
 
 const SERVICE_MAP = {
   plumber: ['Emergency Plumbing', 'Boiler Repairs', 'Bathroom Installs', 'Leak Detection'],
@@ -59,49 +60,51 @@ module.exports = async (req, res) => {
   const key = process.env.GOOGLE_PLACES_API_KEY;
   if (!key) { res.status(503).json({ error: 'GOOGLE_PLACES_API_KEY is not set in Vercel yet.' }); return; }
 
+  // 12-hour usage cap
+  const rl = await checkAndRecord('search', Date.now());
+  if (!rl.ok) {
+    res.status(429).json({ error: `Search limit reached (${rl.limit} searches per 12 hours). Try again in ~${rl.retryHours}h.` });
+    return;
+  }
+
+  const pageSize = Math.min(20, Math.max(1, Number(body.limit) || 10)); // 10 default, max 20 — one Google call
   const services = servicesFor(industry);
   const category = titleCase(industry);
   const out = [];
-  let pageToken = null;
 
   try {
-    for (let page = 0; page < 3; page++) {
-      const reqBody = { textQuery: `${industry} in ${location}`, pageSize: 20, regionCode: 'GB', languageCode: 'en' };
-      if (pageToken) reqBody.pageToken = pageToken;
-      const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': FIELD_MASK },
-        body: JSON.stringify(reqBody),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        const msg = (data.error && data.error.message) || ('Google Places error ' + r.status);
-        if (page === 0) { res.status(502).json({ error: 'Google Places: ' + msg }); return; }
-        break;
-      }
-      (data.places || []).forEach((p) => {
-        const name = (p.displayName && p.displayName.text) || 'Unknown business';
-        const phone = p.nationalPhoneNumber || p.internationalPhoneNumber || null;
-        out.push({
-          id: p.id,
-          name,
-          category,
-          industry,
-          location,
-          address: p.formattedAddress || location,
-          phones: phone ? [phone] : [],
-          email: null, // Google does not expose email
-          website: p.websiteUri || null,
-          rating: p.rating || 0,
-          userRatingsTotal: p.userRatingCount || 0,
-          services,
-          mapsUrl: p.googleMapsUri || ('https://www.google.com/maps/search/' + encodeURIComponent(name + ' ' + location)),
-          brandHue: hueFor(name),
-        });
-      });
-      pageToken = data.nextPageToken || null;
-      if (!pageToken) break;
+    const reqBody = { textQuery: `${industry} in ${location}`, pageSize, regionCode: 'GB', languageCode: 'en' };
+    const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': FIELD_MASK },
+      body: JSON.stringify(reqBody),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const msg = (data.error && data.error.message) || ('Google Places error ' + r.status);
+      res.status(502).json({ error: 'Google Places: ' + msg });
+      return;
     }
+    (data.places || []).forEach((p) => {
+      const name = (p.displayName && p.displayName.text) || 'Unknown business';
+      const phone = p.nationalPhoneNumber || p.internationalPhoneNumber || null;
+      out.push({
+        id: p.id,
+        name,
+        category,
+        industry,
+        location,
+        address: p.formattedAddress || location,
+        phones: phone ? [phone] : [],
+        email: null, // Google does not expose email
+        website: p.websiteUri || null,
+        rating: p.rating || 0,
+        userRatingsTotal: p.userRatingCount || 0,
+        services,
+        mapsUrl: p.googleMapsUri || ('https://www.google.com/maps/search/' + encodeURIComponent(name + ' ' + location)),
+        brandHue: hueFor(name),
+      });
+    });
   } catch (e) {
     res.status(500).json({ error: 'Search failed: ' + e.message });
     return;

@@ -10,6 +10,7 @@ const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
 const sharp = require('sharp');
 const { put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
+const { checkAndRecord } = require('../lib/ratelimit');
 
 // ---- brand ---------------------------------------------------------------
 const BRAND_BLUE = '#4375ED';
@@ -378,6 +379,12 @@ module.exports = async (req, res) => {
   // require a valid login session (protects your OpenAI credits)
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) {
     res.status(401).json({ error: 'Please log in first.' });
+    return;
+  }
+  // 12-hour usage cap (before any OpenAI call)
+  const rl = await checkAndRecord('generate', Date.now());
+  if (!rl.ok) {
+    res.status(429).json({ error: `Mockup limit reached (${rl.limit} per 12 hours). Try again in ~${rl.retryHours}h.` });
     return;
   }
   try {

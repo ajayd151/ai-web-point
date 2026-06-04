@@ -109,7 +109,7 @@ async function runSearch() {
     const resp = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ industry, location }),
+      body: JSON.stringify({ industry, location, limit: Number($('f-limit').value || 10) }),
     });
     const data = await resp.json();
     if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
