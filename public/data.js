@@ -125,6 +125,23 @@
     return true;
   }
 
+  // UK mobile = national number starting 07 (or +44 7 in international form)
+  function isUkMobile(phone) {
+    let d = String(phone || '').replace(/[\s\-().]/g, '');
+    d = d.replace(/^\+44/, '0').replace(/^0044/, '0');
+    return /^07\d/.test(d);
+  }
+
+  // phone filter: any | has | none | mobile | landline
+  function matchPhone(phones, mode) {
+    phones = phones || [];
+    if (mode === 'has') return phones.length > 0;
+    if (mode === 'none') return phones.length === 0;
+    if (mode === 'mobile') return phones.some(isUkMobile);
+    if (mode === 'landline') return phones.some((p) => p && !isUkMobile(p));
+    return true; // any
+  }
+
   // map a 0–5 rating to a star bucket (5 = excellent, not offered as a filter)
   function ratingBucket(r) {
     if (r < 1.5) return 1;
@@ -145,7 +162,7 @@
 
     return list.filter((b) => {
       if (!matchPresence(b.website, website)) return false;
-      if (!matchPresence(b.phones && b.phones.length, phone)) return false;
+      if (!matchPhone(b.phones, phone)) return false;
       if (!matchPresence(b.email, email)) return false;
       const n = b.userRatingsTotal || 0;
       if (ratingsFrom != null && n < ratingsFrom) return false;
@@ -155,5 +172,5 @@
     });
   }
 
-  window.BizData = { generateBusinesses, filterBusinesses };
+  window.BizData = { generateBusinesses, filterBusinesses, isUkMobile };
 })();

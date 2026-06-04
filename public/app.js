@@ -121,7 +121,7 @@ function card(b) {
     <div class="cat">${esc(b.category)} · ${esc(b.location)}</div>
     <div class="chips">
       ${b.website ? '<span class="chip site">Has website</span>' : '<span class="chip no-site">No website</span>'}
-      ${b.phones && b.phones.length ? '<span class="chip phone">Phone</span>' : ''}
+      ${phoneChip(b)}
       ${b.email ? '<span class="chip email">Email</span>' : ''}
       <span class="chip rating">★ ${b.rating} (${b.userRatingsTotal})</span>
     </div>
@@ -204,4 +204,12 @@ $('copy-img').addEventListener('click', () => {
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function phoneChip(b) {
+  if (!b.phones || !b.phones.length) return '';
+  const mobile = b.phones.some(window.BizData.isUkMobile);
+  return mobile
+    ? '<span class="chip phone">📱 Mobile</span>'
+    : '<span class="chip phone">☎ Landline</span>';
 }
