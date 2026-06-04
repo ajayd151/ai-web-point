@@ -183,7 +183,16 @@ function drawBusinessLogo(ctx, x, y, business) {
 }
 
 // ---- compose the final PNG ----------------------------------------------
-async function composeMockup(heroBuffer, business) {
+function cleanCta(s, fallback, max) {
+  s = String(s == null ? '' : s).replace(/[\r\n]+/g, ' ').trim();
+  if (!s) return fallback;
+  return s.length > max ? s.slice(0, max).trim() : s;
+}
+
+async function composeMockup(heroBuffer, business, opts) {
+  opts = opts || {};
+  const ctaHero = cleanCta(opts.ctaHero, 'Request a demo of the full website', 48);
+  const ctaBottom = cleanCta(opts.ctaBottom, 'Let me show you the full website over a call', 52);
   const W = 1200, H = 880;
   // canvas holds ONLY the overlay (transparent where the photo should show);
   // the photo is composited underneath by sharp (a robust image decoder).
@@ -263,7 +272,7 @@ async function composeMockup(heroBuffer, business) {
   // "request a demo" button (brand gradient)
   const demoY = pillY + pillH + 22, demoH = 60;
   ctx.font = `22px 'Montserrat Bold'`;
-  const demoText = 'Request a demo of the full website';
+  const demoText = ctaHero;
   const dw2 = ctx.measureText(demoText).width + 76;
   const dg = ctx.createLinearGradient(X, demoY, X + dw2, demoY);
   dg.addColorStop(0, BRAND_BLUE);
@@ -310,7 +319,7 @@ async function composeMockup(heroBuffer, business) {
 
   // row 2: the closing line as a CTA button (brand-gradient pill)
   ctx.font = `21px 'Montserrat ExtraBold'`;
-  const ctaText = 'Let me show you the full website over a call';
+  const ctaText = ctaBottom;
   const ctaW = ctx.measureText(ctaText).width + 112;
   const ctaH = 58;
   const ctaX = (W - ctaW) / 2;
@@ -382,7 +391,7 @@ module.exports = async (req, res) => {
     }
 
     const heroBuffer = await generateHero(buildPrompt(business));
-    const pngBuffer = await composeMockup(heroBuffer, business);
+    const pngBuffer = await composeMockup(heroBuffer, business, { ctaHero: body.ctaHero, ctaBottom: body.ctaBottom });
 
     const id = crypto.randomUUID().slice(0, 8);
     const safe = String(business.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'mockup';
@@ -392,7 +401,7 @@ module.exports = async (req, res) => {
 
     // view page is served by /api/view on our own domain (Blob won't render user HTML)
     const host = req.headers['x-forwarded-host'] || req.headers.host;
-    const q = new URLSearchParams({ img: png.url, name: business.name || '', loc: business.location || '' });
+    const q = new URLSearchParams({ img: png.url, name: business.name || '', loc: business.location || '', cta: cleanCta(body.ctaHero, 'Request a demo of the full website', 48) });
     const viewUrl = `https://${host}/api/view?${q.toString()}`;
 
     res.status(200).json({ imageUrl: png.url, viewUrl, id });

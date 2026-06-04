@@ -1,7 +1,36 @@
 // Finder runs client-side (mock data). Generation calls the Vercel function.
 let pendingBusiness = null;
+let currentBusiness = null;
 let authed = false;
 const $ = (id) => document.getElementById(id);
+
+// ---- editable settings (message + CTA wording, saved per device) ---------
+const SETTINGS_DEFAULTS = {
+  waMsg: "Hi {business}, I came across your business and noticed you don't have a website yet — so I put together a free home-page design for you to see:\n\n{link}\n\nIf you like it I'd love to build you the full site. No obligation either way!",
+  ctaHero: 'Request a demo of the full website',
+  ctaBottom: 'Let me show you the full website over a call',
+};
+function loadSettings() {
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem('aiwp_settings') || '{}'); } catch (e) {}
+  return Object.assign({}, SETTINGS_DEFAULTS, s);
+}
+function saveSettings() {
+  try {
+    localStorage.setItem('aiwp_settings', JSON.stringify({
+      waMsg: $('set-wa-msg').value,
+      ctaHero: $('set-cta-hero').value,
+      ctaBottom: $('set-cta-bottom').value,
+    }));
+  } catch (e) {}
+}
+(function initSettings() {
+  const s = loadSettings();
+  $('set-wa-msg').value = s.waMsg;
+  $('set-cta-hero').value = s.ctaHero;
+  $('set-cta-bottom').value = s.ctaBottom;
+  ['set-wa-msg', 'set-cta-hero', 'set-cta-bottom'].forEach((id) => $(id).addEventListener('input', saveSettings));
+})();
 
 // ---- auth (protects the paid /api/generate endpoint) ---------------------
 function setAuthUI(on) {
@@ -159,13 +188,17 @@ $('modal-proceed').addEventListener('click', proceedGenerate);
 
 async function proceedGenerate() {
   const requirements = $('modal-req').value.trim();
+  const settings = loadSettings();
   const business = Object.assign({}, pendingBusiness, { requirements });
+  currentBusiness = business;
   $('modal').classList.add('hidden');
 
   $('preview-title').textContent = `Mockup · ${business.name}`;
   $('preview').classList.remove('hidden');
   $('preview-warn').classList.add('hidden');
   $('preview-links').classList.add('hidden');
+  $('wa-send').classList.add('hidden');
+  $('wa-note').classList.add('hidden');
   $('preview-body').innerHTML =
     '<div class="empty"><span class="spinner"></span><br/><br/>Generating your AI mockup…<br/><small>This takes ~15–25 seconds.</small></div>';
 
@@ -173,7 +206,7 @@ async function proceedGenerate() {
     const resp = await fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ business, requirements }),
+      body: JSON.stringify({ business, requirements, ctaHero: settings.ctaHero, ctaBottom: settings.ctaBottom }),
     });
     const data = await resp.json();
     if (resp.status === 401) {
@@ -187,9 +220,42 @@ async function proceedGenerate() {
     $('open-view').href = data.viewUrl || data.imageUrl;
     $('download-img').href = '/api/download?img=' + encodeURIComponent(data.imageUrl);
     $('preview-links').classList.remove('hidden');
+    setupWhatsApp(business, data.viewUrl || data.imageUrl);
   } catch (err) {
     $('preview-body').innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`;
   }
+}
+
+// ---- WhatsApp click-to-send (you press send; mobiles only) ----------------
+function toWaNumber(phone) {
+  let d = String(phone || '').replace(/[^\d]/g, ''); // digits only (drops +)
+  if (d.startsWith('00')) d = d.slice(2);            // 0044… → 44…
+  if (d.startsWith('0')) d = '44' + d.slice(1);      // 07… → 447…
+  else if (!d.startsWith('44')) d = '44' + d;        // bare national (rare)
+  return d;
+}
+function fillWaMessage(tpl, business, link) {
+  return String(tpl || '')
+    .replace(/\{business\}/g, business.name || 'there')
+    .replace(/\{link\}/g, link || '');
+}
+function setupWhatsApp(business, link) {
+  const wa = $('wa-send');
+  const note = $('wa-note');
+  const phone = (business.phones && business.phones[0]) || '';
+  const mobile = phone && window.BizData.isUkMobile(phone);
+  note.classList.remove('hidden');
+  if (!mobile) {
+    wa.classList.add('hidden');
+    note.textContent = phone
+      ? '📱 WhatsApp hidden — this number is a landline, not a mobile.'
+      : '📱 No mobile number found for WhatsApp.';
+    return;
+  }
+  const msg = fillWaMessage(loadSettings().waMsg, business, link);
+  wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(msg);
+  wa.classList.remove('hidden');
+  note.textContent = 'Opens WhatsApp to ' + phone + ' with your message + link pre-filled — you review and press send.';
 }
 
 $('preview-close').addEventListener('click', () => $('preview').classList.add('hidden'));

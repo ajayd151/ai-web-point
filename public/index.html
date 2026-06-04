@@ -94,6 +94,29 @@
       <p id="login-msg" class="login-msg hidden"></p>
     </section>
 
+    <section class="panel">
+      <details class="settings">
+        <summary>⚙ Message &amp; CTA wording <span class="muted">(edit what gets sent / shown)</span></summary>
+        <div class="settings-grid">
+          <label class="block">
+            <span>WhatsApp message — use <code>{business}</code> and <code>{link}</code></span>
+            <textarea id="set-wa-msg" rows="4"></textarea>
+          </label>
+          <div class="cta-row">
+            <label class="block">
+              <span>Mockup CTA button</span>
+              <input id="set-cta-hero" type="text" maxlength="48" />
+            </label>
+            <label class="block">
+              <span>Mockup closing line</span>
+              <input id="set-cta-bottom" type="text" maxlength="52" />
+            </label>
+          </div>
+          <p class="hint">Saved on this device. <code>{business}</code> &amp; <code>{link}</code> are filled in automatically when you hit Send.</p>
+        </div>
+      </details>
+    </section>
+
     <section id="summary" class="summary hidden"></section>
     <section id="results" class="results"></section>
   </main>
@@ -130,9 +153,11 @@
           <div class="copyrow"><input id="img-url" type="text" readonly /><button id="copy-img" class="ghost">Copy</button></div>
         </label>
         <div class="modal-actions">
+          <a id="wa-send" class="wa btn hidden" target="_blank" rel="noopener">📱 Send on WhatsApp</a>
           <a id="open-view" class="ghost btn" target="_blank" rel="noopener">Open view page ↗</a>
           <a id="download-img" class="primary btn" download="website-mockup.png">Download PNG</a>
         </div>
+        <p id="wa-note" class="hint hidden"></p>
       </div>
     </div>
   </div>

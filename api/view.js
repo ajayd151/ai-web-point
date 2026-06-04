@@ -14,6 +14,7 @@ module.exports = (req, res) => {
   const img = q.img || '';
   const name = q.name || 'your business';
   const loc = q.loc || '';
+  const cta = (q.cta || 'Request a demo of the full website').slice(0, 60);
   const demo = process.env.DEMO_URL || 'mailto:hello@aiwebpoint.com?subject=Website%20demo%20-%20' + encodeURIComponent(name);
 
   if (!img) {
@@ -48,7 +49,7 @@ module.exports = (req, res) => {
   <h1>A website preview for ${esc(name)}${loc ? ' · ' + esc(loc) : ''}</h1>
   <p class="sub">Here's a free home-page concept we designed for you.</p>
   <a href="${esc(demo)}" target="_blank" rel="noopener"><img src="${esc(img)}" alt="Website mockup for ${esc(name)}"/></a>
-  <div><a class="cta" href="${esc(demo)}" target="_blank" rel="noopener">Request a demo of the full website &rarr;</a></div>
+  <div><a class="cta" href="${esc(demo)}" target="_blank" rel="noopener">${esc(cta)} &rarr;</a></div>
   <p class="foot">Designed by ${AGENCY}. Prefer to talk? We'll walk you through the full website over a quick call.</p>
 </div></body></html>`;
 

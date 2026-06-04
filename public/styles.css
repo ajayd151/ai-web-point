@@ -82,6 +82,15 @@ button.primary, .primary.btn { background: linear-gradient(90deg, var(--blue), v
 button.primary:hover { filter: brightness(1.05); }
 button.ghost, .ghost.btn { background: #fff; border: 1px solid var(--line); color: var(--ink); }
 button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); color: #fff; width: 100%; margin-top: 12px; }
+.wa.btn { background: #25d366; color: #fff; }
+.wa.btn:hover { background: #1eb955; }
+
+.settings summary { cursor: pointer; font-weight: 700; color: var(--ink); }
+.settings .muted { font-weight: 400; }
+.settings-grid { margin-top: 14px; display: flex; flex-direction: column; gap: 14px; }
+.settings-grid code { background: #eef1f6; padding: 1px 5px; border-radius: 4px; font-size: 12px; color: var(--blue); }
+.cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.cta-row > label { flex: 1; min-width: 200px; }
 
 .actions-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .loginbar { display: flex; align-items: center; gap: 8px; margin-left: auto; }
