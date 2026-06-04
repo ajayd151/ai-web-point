@@ -5,6 +5,9 @@
       "memory": 1024,
       "maxDuration": 60,
       "includeFiles": "fonts/**"
+    },
+    "api/search.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [

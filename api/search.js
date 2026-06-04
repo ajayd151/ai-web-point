@@ -47,6 +47,53 @@ const FIELD_MASK = [
   'places.googleMapsUri', 'nextPageToken',
 ].join(',');
 
+// Fallback list of nearby areas for big UK cities, used only if the AI
+// suggestion call is unavailable. Keyed by lowercased location.
+const NEARBY_FALLBACK = {
+  birmingham: ['Harborne', 'Edgbaston', 'Sutton Coldfield', 'Solihull', 'Erdington'],
+  london: ['Croydon', 'Ealing', 'Enfield', 'Bromley', 'Barnet'],
+  manchester: ['Salford', 'Stockport', 'Oldham', 'Bolton', 'Trafford'],
+  leeds: ['Bradford', 'Wakefield', 'Pudsey', 'Morley', 'Horsforth'],
+  liverpool: ['Bootle', 'Birkenhead', 'St Helens', 'Wallasey', 'Crosby'],
+  glasgow: ['Paisley', 'Clydebank', 'Rutherglen', 'Bearsden', 'Pollok'],
+  bristol: ['Bath', 'Filton', 'Kingswood', 'Portishead', 'Clevedon'],
+  sheffield: ['Rotherham', 'Barnsley', 'Chesterfield', 'Dronfield', 'Hillsborough'],
+};
+
+// Ask the AI for the nearest distinct towns/suburbs to a location (any UK
+// place, not just the hardcoded ones). Falls back to the table above.
+async function nearbyAreas(location, count) {
+  const key = process.env.OPENAI_API_KEY;
+  if (key) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        signal: ctrl.signal,
+        body: JSON.stringify({
+          model: 'gpt-4o-mini',
+          temperature: 0.3,
+          response_format: { type: 'json_object' },
+          messages: [
+            { role: 'system', content: 'You return only JSON.' },
+            { role: 'user', content: `List the ${count} nearest distinct towns, suburbs or districts to "${location}" in the United Kingdom, ordered by proximity and size, suitable for finding local tradespeople. Exclude "${location}" itself. Respond as JSON exactly like {"areas":["Name 1","Name 2"]}.` },
+          ],
+        }),
+      });
+      clearTimeout(t);
+      const d = await r.json().catch(() => ({}));
+      const txt = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+      const parsed = JSON.parse(txt || '{}');
+      if (Array.isArray(parsed.areas) && parsed.areas.length) {
+        return parsed.areas.map((s) => String(s).trim()).filter(Boolean).slice(0, count);
+      }
+    } catch (e) { /* fall through to table */ }
+  }
+  return (NEARBY_FALLBACK[String(location).toLowerCase().trim()] || []).slice(0, count);
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
@@ -74,13 +121,18 @@ module.exports = async (req, res) => {
   const filters = body.filters || {};
   const services = servicesFor(industry);
   const category = titleCase(industry);
-  const out = [];
-  let scanned = 0;
-  let pageToken = null;
 
-  try {
-    for (let pageNum = 0; pageNum < 3; pageNum++) { // Google text search caps at ~60 (3 pages of 20)
-      const reqBody = { textQuery: `${industry} in ${location}`, pageSize: 20, regionCode: 'GB', languageCode: 'en' };
+  const out = [];
+  const seen = new Set();   // dedupe businesses across overlapping areas
+  let scanned = 0;
+
+  // Search a single area: pages through Google (up to ~60 results), filters
+  // server-side, pushes unique matches into `out`. Throws on first-page error.
+  async function searchArea(area) {
+    let pageToken = null;
+    let added = 0;
+    for (let pageNum = 0; pageNum < 3; pageNum++) {
+      const reqBody = { textQuery: `${industry} in ${area}`, pageSize: 20, regionCode: 'GB', languageCode: 'en' };
       if (pageToken) reqBody.pageToken = pageToken;
       const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
         method: 'POST',
@@ -90,10 +142,12 @@ module.exports = async (req, res) => {
       const data = await r.json().catch(() => ({}));
       if (!r.ok) {
         const msg = (data.error && data.error.message) || ('Google Places error ' + r.status);
-        if (pageNum === 0) { res.status(502).json({ error: 'Google Places: ' + msg }); return; }
+        if (pageNum === 0) throw new Error('Google Places: ' + msg);
         break;
       }
       (data.places || []).forEach((p) => {
+        if (p.id && seen.has(p.id)) return;
+        if (p.id) seen.add(p.id);
         scanned++;
         const name = (p.displayName && p.displayName.text) || 'Unknown business';
         const phone = p.nationalPhoneNumber || p.internationalPhoneNumber || null;
@@ -102,27 +156,60 @@ module.exports = async (req, res) => {
           name,
           category,
           industry,
-          location,
-          address: p.formattedAddress || location,
+          location: area,
+          address: p.formattedAddress || area,
           phones: phone ? [phone] : [],
           email: null, // Google does not expose email
           website: p.websiteUri || null,
           rating: p.rating || 0,
           userRatingsTotal: p.userRatingCount || 0,
           services,
-          mapsUrl: p.googleMapsUri || ('https://www.google.com/maps/search/' + encodeURIComponent(name + ' ' + location)),
+          mapsUrl: p.googleMapsUri || ('https://www.google.com/maps/search/' + encodeURIComponent(name + ' ' + area)),
           brandHue: hueFor(name),
         };
-        if (matchesFilters(biz, filters)) out.push(biz);
+        if (matchesFilters(biz, filters)) { out.push(biz); added++; }
       });
-      if (out.length >= want) break;       // got enough matches
+      if (out.length >= want) break;       // got enough matches overall
       pageToken = data.nextPageToken || null;
-      if (!pageToken) break;               // no more Google results
+      if (!pageToken) break;               // no more Google results for this area
+    }
+    return added;
+  }
+
+  const searchedLocations = [location];
+  const expandedLocations = [];
+  let primaryCount = 0;
+
+  try {
+    primaryCount = await searchArea(location);
+
+    // If the primary area didn't yield the number asked for, auto-expand to
+    // nearby areas (AI-picked) until we hit `want` or run out (max 5 areas).
+    if (out.length < want) {
+      const areas = await nearbyAreas(location, 5);
+      for (const a of areas) {
+        if (out.length >= want) break;
+        if (!a || searchedLocations.some((s) => s.toLowerCase() === a.toLowerCase())) continue;
+        searchedLocations.push(a);
+        try {
+          await searchArea(a);
+          expandedLocations.push(a); // record every area we actually checked
+        } catch (e) { /* skip a bad area, keep going */ }
+      }
     }
   } catch (e) {
-    res.status(500).json({ error: 'Search failed: ' + e.message });
+    // primary-area Google error → surface it (same behaviour as before)
+    res.status(502).json({ error: e.message });
     return;
   }
 
-  res.status(200).json({ results: out.slice(0, want), matched: out.length, scanned });
+  res.status(200).json({
+    results: out.slice(0, want),
+    matched: out.length,
+    scanned,
+    primaryLocation: location,
+    primaryCount,
+    expandedLocations,
+    searchedLocations,
+  });
 };

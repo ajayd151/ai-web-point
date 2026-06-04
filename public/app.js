@@ -116,7 +116,16 @@ async function runSearch() {
     if (!resp.ok) throw new Error(data.error || 'Search failed');
     const results = data.results || [];
     const scanned = data.scanned || results.length;
-    $('summary').textContent = `Found ${results.length} ${industry} in ${location} matching your filters (scanned ${scanned} Google listings).`;
+    const primaryLoc = data.primaryLocation || location;
+    const expanded = data.expandedLocations || [];
+    let summary;
+    if (expanded.length) {
+      const primaryCount = data.primaryCount != null ? data.primaryCount : 0;
+      summary = `I only found ${primaryCount} in ${primaryLoc}, so I also looked at nearby areas: ${expanded.join(', ')}. ${results.length} matches in total (scanned ${scanned} Google listings).`;
+    } else {
+      summary = `Found ${results.length} ${industry} in ${primaryLoc} matching your filters (scanned ${scanned} Google listings).`;
+    }
+    $('summary').textContent = summary;
     renderResults(results);
   } catch (err) {
     $('summary').textContent = '';
