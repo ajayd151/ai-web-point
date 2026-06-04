@@ -125,11 +125,12 @@
     return true;
   }
 
-  // UK mobile = national number starting 07 (or +44 7 in international form)
+  // UK mobile = 071-075 / 077-079 (excludes 070 personal numbers and 076 pagers).
+  // Handles +44 7… / 0044 7… international forms too.
   function isUkMobile(phone) {
     let d = String(phone || '').replace(/[\s\-().]/g, '');
     d = d.replace(/^\+44/, '0').replace(/^0044/, '0');
-    return /^07\d/.test(d);
+    return /^07[1-57-9]/.test(d);
   }
 
   // phone filter: any | has | none | mobile | landline
