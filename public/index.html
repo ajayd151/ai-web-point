@@ -3,26 +3,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ai Web Point — Find businesses &amp; generate website mockups</title>
+  <title>Site Pounce — Find local businesses &amp; generate website mockups</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <!-- LOGIN GATE (covers the whole app until signed in) -->
+  <!-- LANDING + LOGIN GATE (covers the whole app until signed in) -->
   <div id="gate" class="gate">
-    <div class="gate-card">
-      <div class="gate-brand">
-        <span class="logo">AW</span>
-        <div>
-          <h1>Ai Web Point</h1>
-          <p>Lead finder &amp; mockup studio</p>
+    <div class="gate-inner">
+      <div class="gate-hero">
+        <div class="gate-brand">
+          <span class="logo">SP</span>
+          <div>
+            <h1>Site Pounce</h1>
+            <p>Local lead finder &amp; instant website mockups</p>
+          </div>
         </div>
+        <h2 class="gate-headline">Win local clients by showing them their website before you even call.</h2>
+        <p class="gate-desc">Site Pounce finds nearby businesses that don't have a website yet, then builds a polished, on-brand homepage preview in seconds — ready to share and turn into booked work.</p>
+        <ul class="gate-points">
+          <li>Pinpoint businesses with no website in any town or city</li>
+          <li>Auto-generate a professional homepage mockup instantly</li>
+          <li>Share a branded preview link or send it straight to WhatsApp</li>
+        </ul>
       </div>
-      <p class="gate-lead">Please sign in to continue.</p>
-      <label class="block"><span>Username</span><input id="gate-user" type="text" autocomplete="username" /></label>
-      <label class="block"><span>Password</span><input id="gate-pass" type="password" autocomplete="current-password" /></label>
-      <button id="gate-btn" class="primary gate-btn">Unlock</button>
-      <p id="gate-msg" class="login-msg hidden"></p>
+
+      <div class="gate-card">
+        <h3>Member sign in</h3>
+        <p class="gate-lead">Access your Site Pounce dashboard.</p>
+        <label class="block"><span>Username</span><input id="gate-user" type="text" autocomplete="username" /></label>
+        <label class="block"><span>Password</span><input id="gate-pass" type="password" autocomplete="current-password" /></label>
+        <button id="gate-btn" class="primary gate-btn">Sign in</button>
+        <p id="gate-msg" class="login-msg hidden"></p>
+      </div>
     </div>
+
+    <footer class="gate-footer">
+      <span>© Site Pounce</span>
+      <a href="mailto:ajay@aimpro.co.uk?subject=Site%20Pounce%20enquiry">Make an enquiry</a>
+    </footer>
   </div>
 
   <header class="topbar">
