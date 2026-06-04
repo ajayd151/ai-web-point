@@ -121,9 +121,10 @@ async function runSearch() {
     let summary;
     if (expanded.length) {
       const primaryCount = data.primaryCount != null ? data.primaryCount : 0;
-      summary = `I only found ${primaryCount} in ${primaryLoc}, so I also looked at nearby areas: ${expanded.join(', ')}. ${results.length} matches in total (scanned ${scanned} Google listings).`;
+      const areaWord = expanded.length === 1 ? 'area' : 'areas';
+      summary = `🚀 Deep search complete! ${primaryLoc} only had ${primaryCount}, so I didn't stop there — I expanded the hunt across ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}) and combed through ${scanned} listings to bring you ${results.length} ready-to-contact leads. 🔥`;
     } else {
-      summary = `Found ${results.length} ${industry} in ${primaryLoc} matching your filters (scanned ${scanned} Google listings).`;
+      summary = `✅ Nailed it — ${results.length} ${industry} in ${primaryLoc} matched your filters. I combed through ${scanned} Google listings to find them.`;
     }
     $('summary').textContent = summary;
     renderResults(results);
