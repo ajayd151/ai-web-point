@@ -6,7 +6,7 @@ const $ = (id) => document.getElementById(id);
 
 // ---- editable settings (message + CTA wording, saved per device) ---------
 const SETTINGS_DEFAULTS = {
-  waMsg: "Hi, it's James from Ai Web Point. I was looking through {category} in {location} and came across {business}. I noticed you don't have a website yet, so I put together a free homepage design to show what one could look like for you:\n\n{link}\n\nIf you like it I'd be happy to build the full site, and if not, no worries, we call it a day. Got time for a quick call so I can show you the website I built for you?\n\nCheers,\nJames",
+  waMsg: "Hi {name}, it's James from Ai Web Point. I was looking through {category} in {location} and came across {business}. I noticed you don't have a website yet, so I put together a free homepage design to show what one could look like for you:\n\n{link}\n\nIf you like it I'd be happy to build the full site, and if not, no worries, we call it a day. Got time for a quick call so I can show you the website I built for you?\n\nCheers,\nJames",
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
 };
@@ -232,7 +232,7 @@ async function proceedGenerate() {
     $('open-view').href = data.viewUrl || data.imageUrl;
     $('download-img').href = '/api/download?img=' + encodeURIComponent(data.imageUrl);
     $('preview-links').classList.remove('hidden');
-    setupWhatsApp(business, data.viewUrl || data.imageUrl);
+    setupWhatsApp(business, data.viewUrl || data.imageUrl, personName);
   } catch (err) {
     $('preview-body').innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`;
   }
@@ -246,14 +246,16 @@ function toWaNumber(phone) {
   else if (!d.startsWith('44')) d = '44' + d;        // bare national (rare)
   return d;
 }
-function fillWaMessage(tpl, business, link) {
+function fillWaMessage(tpl, business, link, personName) {
+  const greet = String(personName || '').trim();
   return String(tpl || '')
+    .replace(/\{name\}/g, greet || 'there')
     .replace(/\{business\}/g, business.name || 'there')
     .replace(/\{category\}/g, (business.category || 'businesses').toLowerCase())
     .replace(/\{location\}/g, business.location || 'your area')
     .replace(/\{link\}/g, link || '');
 }
-function setupWhatsApp(business, link) {
+function setupWhatsApp(business, link, personName) {
   const wa = $('wa-send');
   const note = $('wa-note');
   const phone = (business.phones && business.phones[0]) || '';
@@ -266,7 +268,7 @@ function setupWhatsApp(business, link) {
       : '📱 WhatsApp button hidden — no mobile number listed for this business. Use the image URL or view link instead.';
     return;
   }
-  const msg = fillWaMessage(loadSettings().waMsg, business, link);
+  const msg = fillWaMessage(loadSettings().waMsg, business, link, personName);
   wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(msg);
   wa.classList.remove('hidden');
   note.textContent = 'Opens WhatsApp to ' + phone + ' with your message + link pre-filled — you review and press send.';
