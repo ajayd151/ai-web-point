@@ -220,12 +220,13 @@ async function proceedGenerate() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ business, requirements, personName, ctaHero: settings.ctaHero, ctaBottom: settings.ctaBottom }),
     });
-    const data = await resp.json();
+    let data = {};
+    try { data = await resp.json(); } catch (e) { data = {}; }
     if (resp.status === 401) {
       setAuthUI(false);
       throw new Error('Your session expired — please log in again (top of the page).');
     }
-    if (!resp.ok) throw new Error(data.error || 'Generation failed');
+    if (!resp.ok) throw new Error(errText(data, resp.status));
 
     $('preview-body').innerHTML = `<img src="${esc(data.imageUrl)}" alt="Website mockup" />`;
     $('img-url').value = data.imageUrl;
@@ -234,8 +235,52 @@ async function proceedGenerate() {
     $('preview-links').classList.remove('hidden');
     setupWhatsApp(business, data.viewUrl || data.imageUrl, personName);
   } catch (err) {
-    $('preview-body').innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`;
+    const msg = err && err.message ? err.message : 'Generation failed';
+    reportError('generate · ' + (business.name || ''), msg);
+    showGenError(msg);
   }
+}
+
+// turn a server error payload (string OR Vercel's {code,message} object) into text
+function errText(data, status) {
+  const e = data && data.error;
+  if (typeof e === 'string' && e.trim()) return e;
+  if (e && typeof e === 'object') return e.message || e.code || JSON.stringify(e);
+  return 'The server hit an error (HTTP ' + status + '). This is usually a timeout while the AI image generates — please retry.';
+}
+
+// error panel with a Retry button that unlocks after a 45s countdown
+let genRetryTimer = null;
+function clearGenRetry() { if (genRetryTimer) { clearInterval(genRetryTimer); genRetryTimer = null; } }
+function showGenError(msg) {
+  clearGenRetry();
+  $('preview-body').innerHTML =
+    `<div class="empty">⚠️ ${esc(msg)}<br/><br/>` +
+    `<button id="gen-retry" class="primary" disabled>Retry in 45s</button><br/>` +
+    `<small class="muted">If it keeps failing, copy the message above and paste it to me so I can fix it.</small></div>`;
+  const btn = $('gen-retry');
+  let n = 45;
+  genRetryTimer = setInterval(() => {
+    n -= 1;
+    if (n <= 0) { clearGenRetry(); btn.disabled = false; btn.textContent = 'Retry now'; }
+    else { btn.textContent = 'Retry in ' + n + 's'; }
+  }, 1000);
+  btn.addEventListener('click', () => {
+    if (btn.disabled) return;
+    clearGenRetry();
+    proceedGenerate();
+  });
+}
+
+// best-effort error notification (emails via SendGrid if configured server-side)
+function reportError(context, message) {
+  try {
+    fetch('/api/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ context: context, message: message, url: location.href, when: new Date().toISOString() }),
+    }).catch(() => {});
+  } catch (e) { /* never let reporting break the UI */ }
 }
 
 // ---- WhatsApp click-to-send (you press send; mobiles only) ----------------
@@ -274,7 +319,7 @@ function setupWhatsApp(business, link, personName) {
   note.textContent = 'Opens WhatsApp to ' + phone + ' with your message + link pre-filled — you review and press send.';
 }
 
-$('preview-close').addEventListener('click', () => $('preview').classList.add('hidden'));
+$('preview-close').addEventListener('click', () => { clearGenRetry(); $('preview').classList.add('hidden'); });
 $('copy-img').addEventListener('click', () => {
   const el = $('img-url');
   el.select();
