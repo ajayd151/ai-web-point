@@ -124,6 +124,18 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .chip.email { background: #f6eefb; color: #8b3fa8; }
 .chip.rating { background: #fffbeb; color: #b45309; }
 
+.recent { margin-top: 18px; }
+.recent-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.recent-title { margin: 0; font-size: 17px; }
+.recent-scroll { max-height: 360px; overflow: auto; margin-top: 8px; }
+.recent-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.recent-table thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); font-weight: 700; padding: 6px 10px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; }
+.recent-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.recent-table tr:last-child td { border-bottom: none; }
+.recent-thumb { width: 72px; height: 48px; object-fit: cover; border-radius: 7px; border: 1px solid var(--line); display: block; cursor: pointer; }
+.recent-table .who { color: var(--muted); font-size: 12px; }
+.recent-table .recent-open { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
+
 .hidden { display: none !important; }
 .muted { color: var(--muted); font-size: 14px; }
 .hint { color: var(--muted); font-size: 12.5px; margin: 12px 0 0; }

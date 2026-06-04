@@ -236,6 +236,18 @@ async function proceedGenerate() {
     $('download-img').href = '/api/download?img=' + encodeURIComponent(data.imageUrl);
     $('preview-links').classList.remove('hidden');
     setupWhatsApp(business, data.viewUrl || data.imageUrl, personName);
+    saveRecent({
+      id: data.id || data.imageUrl,
+      date: new Date().toISOString(),
+      name: business.name,
+      category: business.category,
+      location: business.location,
+      phones: business.phones || [],
+      personName: personName,
+      imageUrl: data.imageUrl,
+      viewUrl: data.viewUrl || data.imageUrl,
+    });
+    renderRecent();
   } catch (err) {
     const msg = err && err.message ? err.message : 'Generation failed';
     reportError('generate · ' + (business.name || ''), msg);
@@ -330,6 +342,67 @@ $('copy-img').addEventListener('click', () => {
     () => {}
   );
 });
+
+// ---- recent mockups (saved on this device) -------------------------------
+function loadRecent() {
+  try { return JSON.parse(localStorage.getItem('aiwp_recent') || '[]'); } catch (e) { return []; }
+}
+function saveRecent(item) {
+  let list = loadRecent().filter((r) => r.id !== item.id); // dedupe by id
+  list.unshift(item);
+  list = list.slice(0, 30);
+  try { localStorage.setItem('aiwp_recent', JSON.stringify(list)); } catch (e) {}
+}
+function fmtDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const day = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  return day + ' · ' + time;
+}
+function renderRecent() {
+  const list = loadRecent();
+  const sec = $('recent');
+  const tb = $('recent-rows');
+  if (!list.length) { sec.classList.add('hidden'); tb.innerHTML = ''; return; }
+  sec.classList.remove('hidden');
+  tb.innerHTML = '';
+  list.forEach((r) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      `<td><img class="recent-thumb" src="${esc(r.imageUrl)}" alt="mockup" /></td>` +
+      `<td>${esc(fmtDate(r.date))}</td>` +
+      `<td>${esc(r.name || '')}${r.personName ? '<div class="who">' + esc(r.personName) + '</div>' : ''}</td>` +
+      `<td>${esc(r.location || '')}</td>` +
+      `<td><button class="ghost recent-open">Open ↗</button></td>`;
+    tr.querySelector('.recent-open').addEventListener('click', () => openRecent(r));
+    tr.querySelector('.recent-thumb').addEventListener('click', () => openRecent(r));
+    tb.appendChild(tr);
+  });
+}
+function openRecent(r) {
+  const business = { name: r.name, category: r.category, location: r.location, phones: r.phones || [] };
+  currentBusiness = business;
+  $('preview-title').textContent = r.personName
+    ? `Hey ${r.personName} 👋 — mockup for ${r.name}`
+    : `Mockup · ${r.name}`;
+  $('preview').classList.remove('hidden');
+  $('preview-warn').classList.add('hidden');
+  $('preview-body').innerHTML = `<img src="${esc(r.imageUrl)}" alt="Website mockup" />`;
+  $('img-url').value = r.imageUrl;
+  $('open-view').href = r.viewUrl || r.imageUrl;
+  $('download-img').href = '/api/download?img=' + encodeURIComponent(r.imageUrl);
+  $('preview-links').classList.remove('hidden');
+  $('wa-send').classList.add('hidden');
+  $('wa-note').classList.add('hidden');
+  setupWhatsApp(business, r.viewUrl || r.imageUrl, r.personName);
+}
+$('recent-clear').addEventListener('click', () => {
+  if (!confirm('Clear your recent mockups list? (The mockups themselves stay live at their links.)')) return;
+  try { localStorage.removeItem('aiwp_recent'); } catch (e) {}
+  renderRecent();
+});
+renderRecent();
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
