@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
             who: m.who || '',
             category: m.category || '',
             phone: m.phone || '',
-            img: m.img || '',
+            img: `${linkBase}/i/${slug}.png`, // branded — hides the blob host
             viewUrl: `${linkBase}/v/${slug}`,
           };
         } catch (e) { return null; }

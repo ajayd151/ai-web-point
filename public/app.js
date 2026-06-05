@@ -248,7 +248,7 @@ async function proceedGenerate() {
     $('preview-body').innerHTML = `<img src="${esc(data.imageUrl)}" alt="Website mockup" />`;
     $('img-url').value = data.imageUrl;
     $('open-view').href = data.viewUrl || data.imageUrl;
-    $('download-img').href = '/api/download?img=' + encodeURIComponent(data.imageUrl);
+    $('download-img').href = data.imageUrl + '?download=1';
     $('preview-links').classList.remove('hidden');
     currentSlug = data.slug || data.id || data.imageUrl;
     setupWhatsApp(business, data.viewUrl || data.imageUrl, personName);
@@ -481,7 +481,7 @@ function openRecent(r) {
   $('preview-body').innerHTML = `<img src="${esc(r.imageUrl)}" alt="Website mockup" />`;
   $('img-url').value = r.imageUrl;
   $('open-view').href = r.viewUrl || r.imageUrl;
-  $('download-img').href = '/api/download?img=' + encodeURIComponent(r.imageUrl);
+  $('download-img').href = r.imageUrl + '?download=1';
   $('preview-links').classList.remove('hidden');
   $('wa-send').classList.add('hidden');
   $('sms-send').classList.add('hidden');

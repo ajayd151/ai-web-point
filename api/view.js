@@ -56,6 +56,11 @@ module.exports = async (req, res) => {
   cta = String(cta).slice(0, 60);
   if (!img) { res.status(400).send('Missing image.'); return; }
 
+  // serve the image via our own /i/<slug>.png so the blob host is never exposed
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const base = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
+  const imgSrc = slug ? `${base}/i/${slug}.png` : img;
+
   const demo = process.env.DEMO_URL || 'mailto:hello@aiwebpoint.com?subject=Website%20demo%20-%20' + encodeURIComponent(name);
   // tracked link back to the agency site — utm identifies which prospect viewed
   const utm = 'preview' + (slug ? '-' + slug : '');
@@ -65,7 +70,7 @@ module.exports = async (req, res) => {
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>${title}</title>
 <meta property="og:title" content="${title}"/>
-<meta property="og:image" content="${esc(img)}"/>
+<meta property="og:image" content="${esc(imgSrc)}"/>
 <meta property="og:description" content="A free website home-page concept for ${esc(name)}."/>
 <meta name="twitter:card" content="summary_large_image"/>
 <style>
@@ -88,7 +93,7 @@ module.exports = async (req, res) => {
   <div class="logo"><span class="badge">AW</span> ${AGENCY}</div>
   <h1>A website preview for ${who ? '<span class="who">' + esc(who) + '</span> · ' : ''}${esc(name)}${loc ? ' · ' + esc(loc) : ''}</h1>
   <p class="sub">Here's a free home-page concept we designed for you.</p>
-  <a href="${esc(demo)}" class="demo" target="_blank" rel="noopener"><img src="${esc(img)}" alt="Website mockup for ${esc(name)}"/></a>
+  <a href="${esc(demo)}" class="demo" target="_blank" rel="noopener"><img src="${esc(imgSrc)}" alt="Website mockup for ${esc(name)}"/></a>
   <div><a class="cta demo" href="${esc(demo)}" target="_blank" rel="noopener">${esc(cta)} &rarr;</a></div>
   <p class="foot">Designed by <a href="${agencyUrl}" target="_blank" rel="noopener">${AGENCY}</a>. Prefer to talk? We'll walk you through the full website over a quick call.</p>
 </div>${slug ? `<script>

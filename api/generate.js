@@ -419,9 +419,11 @@ module.exports = async (req, res) => {
     // short, clean, WhatsApp-friendly link (no query string / special chars)
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const linkBase = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
-    const viewUrl = `${linkBase}/v/${safe}-${id}`;
+    const slug = `${safe}-${id}`;
+    const viewUrl = `${linkBase}/v/${slug}`;
+    const imageUrl = `${linkBase}/i/${slug}.png`; // branded — hides the blob host
 
-    res.status(200).json({ imageUrl: png.url, viewUrl, id, slug: `${safe}-${id}` });
+    res.status(200).json({ imageUrl, viewUrl, id, slug });
   } catch (err) {
     console.error('generate error:', err);
     res.status(500).json({ error: err.message || 'Generation failed.' });
