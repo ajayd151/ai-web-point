@@ -283,13 +283,18 @@ function startGenProgress(business) {
   const niche = String(business.category || business.industry || 'this business').toLowerCase();
   const steps = [
     `Reading ${business.name || 'the business'}'s details`,
-    `Working out the right look for ${niche}`,
+    `Studying what works best for ${niche}`,
+    `Choosing an on-brand colour palette & layout`,
     `Generating a realistic, on-brand photo`,
-    `Adding their logo, headline & phone number`,
-    `Designing the shareable preview page`,
-    `Hosting your mockup & adding final touches`,
+    `Composing the hero section & headline`,
+    `Adding their logo, contact details & call-to-action`,
+    `Compiling the preview code`,
+    `Personalising the copy & tone`,
+    `Optimising for mobile & desktop`,
+    `Running a quick quality check`,
+    `Adding final touches & hosting it`,
   ];
-  const delays = [0, 1400, 3000, 11000, 14500, 17500]; // when each line appears (ms)
+  const delays = [0, 1200, 2600, 4000, 12000, 13500, 15000, 16500, 18000, 19500, 21000]; // when each line appears (ms)
   $('preview-body').innerHTML =
     '<div class="genprog"><div id="genprog-list"></div>' +
     '<p class="genprog-foot"><small>This usually takes ~15–25 seconds — hang tight.</small></p></div>';
