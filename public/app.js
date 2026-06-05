@@ -38,6 +38,7 @@ function setAuthUI(on) {
   $('gate').classList.toggle('hidden', on);          // full-screen gate hides the app until signed in
   $('logout-btn').classList.toggle('hidden', !on);
   if (!on) { setTimeout(() => { try { $('gate-user').focus(); } catch (e) {} }, 60); }
+  if (on) loadServerMockups();                        // pull every saved mockup so they show on any device
 }
 
 function showLoginMsg(text, kind) {
@@ -369,8 +370,36 @@ function fmtDate(iso) {
   const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   return day + ' · ' + time;
 }
+let serverRecent = []; // mockups loaded from the server (all devices)
+function mergedRecent() {
+  const map = new Map();
+  // local first so device-saved entries (with phone) take precedence over server
+  loadRecent().concat(serverRecent).forEach((r) => { if (r && r.id && !map.has(r.id)) map.set(r.id, r); });
+  return Array.from(map.values())
+    .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
+    .slice(0, 40);
+}
+async function loadServerMockups() {
+  try {
+    const r = await fetch('/api/mockups');
+    if (!r.ok) return;
+    const d = await r.json();
+    serverRecent = (d.mockups || []).map((m) => ({
+      id: m.slug || m.img,
+      date: m.date,
+      name: m.name,
+      category: m.category || '',
+      location: m.loc || '',
+      phones: m.phone ? [m.phone] : [],
+      personName: m.who || '',
+      imageUrl: m.img,
+      viewUrl: m.viewUrl || m.img,
+    }));
+    renderRecent();
+  } catch (e) { /* keep showing local-only list */ }
+}
 function renderRecent() {
-  const list = loadRecent();
+  const list = mergedRecent();
   const sec = $('recent');
   const tb = $('recent-rows');
   if (!list.length) { sec.classList.add('hidden'); tb.innerHTML = ''; return; }

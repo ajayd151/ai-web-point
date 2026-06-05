@@ -413,7 +413,8 @@ module.exports = async (req, res) => {
     // store small metadata so the short /v/<slug> view page can look it up
     const cta = cleanCta(body.ctaHero, 'Request a demo of the full website', 48);
     const who = String(body.personName || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 60);
-    await put(`${base}.json`, JSON.stringify({ name: business.name || '', loc: business.location || '', who, cta, img: png.url }), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+    const phone = (business.phones && business.phones[0]) || '';
+    await put(`${base}.json`, JSON.stringify({ name: business.name || '', loc: business.location || '', who, cta, img: png.url, phone, category: business.category || '' }), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
 
     // short, clean, WhatsApp-friendly link (no query string / special chars)
     const host = req.headers['x-forwarded-host'] || req.headers.host;
