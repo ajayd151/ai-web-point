@@ -124,10 +124,13 @@ async function runSearch() {
     const scanned = data.scanned || results.length;
     const primaryLoc = data.primaryLocation || location;
     const expanded = data.expandedLocations || [];
+    const areaWord = expanded.length === 1 ? 'area' : 'areas';
     let summary;
-    if (expanded.length) {
+    if (results.length === 0) {
+      const areasNote = expanded.length ? `, plus ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}),` : '';
+      summary = `No ${industry} in ${primaryLoc}${areasNote} matched your filters — I scanned ${scanned} Google listings. Try loosening them: set Phone to "Has phone" (not "Mobile only"), or Website to "Any". Well-established businesses (solicitors, accountants, etc.) nearly all have a website, so "No website" + "Mobile only" together often returns nothing.`;
+    } else if (expanded.length) {
       const primaryCount = data.primaryCount != null ? data.primaryCount : 0;
-      const areaWord = expanded.length === 1 ? 'area' : 'areas';
       summary = `🚀 Deep search complete! ${primaryLoc} only had ${primaryCount}, so I didn't stop there — I expanded the hunt across ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}) and combed through ${scanned} listings to bring you ${results.length} ready-to-contact leads. 🔥`;
     } else {
       summary = `✅ Nailed it — ${results.length} ${industry} in ${primaryLoc} matched your filters. I combed through ${scanned} Google listings to find them.`;
