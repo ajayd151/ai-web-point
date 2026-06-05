@@ -68,6 +68,7 @@ module.exports = async (req, res) => {
   const title = `${esc(name)} — website preview by ${AGENCY}`;
   const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="robots" content="noindex, nofollow"/>
 <title>${title}</title>
 <meta property="og:title" content="${title}"/>
 <meta property="og:image" content="${esc(imgSrc)}"/>
@@ -105,5 +106,6 @@ document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closes
 </script>` : ''}</body></html>`;
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow'); // keep prospect previews out of search
   res.status(200).send(html);
 };

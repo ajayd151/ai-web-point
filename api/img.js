@@ -21,6 +21,7 @@ module.exports = async (req, res) => {
 
     res.setHeader('Content-Type', 'image/png');
     res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('X-Robots-Tag', 'noindex'); // keep prospect mockup images out of search
     if (download) res.setHeader('Content-Disposition', `attachment; filename="${slug}.png"`);
     res.status(200).send(buf);
   } catch (e) {
