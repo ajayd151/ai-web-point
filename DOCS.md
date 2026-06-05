@@ -255,6 +255,10 @@ Two audiences, two brands — keep them split:
 - **Tracking honesty:** the open-beacon fires via JS so link-preview crawlers
   (WhatsApp/iMessage) don't create fake "opened" hits; bot user-agents are also filtered.
 - **Privacy:** prospect phone numbers are never placed on the public preview page.
+- **Search engines:** preview pages (`/api/view`) and mockup images (`/api/img`) send
+  `noindex` (meta tag + `X-Robots-Tag`) so prospect names/mockups never appear in Google.
+  This matters because `aiwebpoint.com` (incl. the `preview.` subdomain) is verified in
+  Google Search Console — the verification itself was for the agency's main site (on Lovable).
 - **Cold-outreach law (UK, not legal advice):** B2B to limited companies is broadly
   OK with clear sender ID + opt-out; sole traders/individuals are stricter. Build
   opt-out/STOP handling before scaling automated SMS/email (Phase 2/3).
