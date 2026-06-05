@@ -2,6 +2,8 @@
 let pendingBusiness = null;
 let currentBusiness = null;
 let currentSlug = null; // slug of the mockup shown in the preview modal
+let currentPersonName = '';
+let currentRequirements = '';
 let authed = false;
 const $ = (id) => document.getElementById(id);
 
@@ -255,14 +257,29 @@ function openGenerateModal(business) {
 }
 $('modal-cancel').addEventListener('click', () => $('modal').classList.add('hidden'));
 $('modal-proceed').addEventListener('click', proceedGenerate);
+$('regen-btn').addEventListener('click', regenerateMockup);
 
 async function proceedGenerate() {
   const requirements = $('modal-req').value.trim();
   const personName = $('modal-name').value.trim();
-  const settings = loadSettings();
   const business = Object.assign({}, pendingBusiness, { requirements });
-  currentBusiness = business;
   $('modal').classList.add('hidden');
+  runGeneration(business, requirements, personName);
+}
+
+// regenerate a fresh version of the mockup currently in the preview (costs 1 credit)
+function regenerateMockup() {
+  if (!authed) { setAuthUI(false); showLoginMsg('Your session ended — please sign in again.', 'err'); return; }
+  if (!currentBusiness) return;
+  if (!confirm('Generate a fresh version of this mockup?\n\nNote: this will use 1 credit from your daily total.')) return;
+  runGeneration(currentBusiness, currentRequirements || '', currentPersonName || '');
+}
+
+async function runGeneration(business, requirements, personName) {
+  const settings = loadSettings();
+  currentBusiness = business;
+  currentRequirements = requirements || '';
+  currentPersonName = personName || '';
 
   $('preview-title').textContent = personName
     ? `Hey ${personName} 👋 — mockup for ${business.name}`
@@ -382,7 +399,8 @@ function showGenError(msg) {
   btn.addEventListener('click', () => {
     if (btn.disabled) return;
     clearGenRetry();
-    proceedGenerate();
+    if (currentBusiness) runGeneration(currentBusiness, currentRequirements, currentPersonName);
+    else proceedGenerate();
   });
 }
 
