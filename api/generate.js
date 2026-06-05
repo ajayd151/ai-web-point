@@ -42,29 +42,54 @@ let FONTS_OK = false;
   console.log('fonts registered from', dir);
 })();
 
-// ---- AI scene per industry ----------------------------------------------
-function sceneFor(industry) {
-  const s = (industry || '').toLowerCase();
-  const h = (...k) => k.some((x) => s.includes(x));
-  if (h('plumb')) return 'a professional plumber in uniform fixing pipes or a boiler in a modern home, tools visible';
-  if (h('electric')) return 'a professional electrician working on an electrical fuse board in a modern home';
-  if (h('roof')) return 'professional roofers installing clay roof tiles on a house roof on a clear day';
-  if (h('garden', 'landscap', 'lawn', 'tree surgeon')) return 'a professional landscape gardener tending a beautiful manicured garden';
-  if (h('clean')) return 'a professional cleaner cleaning a bright modern living room';
-  if (h('paint', 'decorat')) return 'a professional painter and decorator painting an interior wall a fresh colour';
-  if (h('mechanic', 'garage', 'car ', 'auto', 'mot', 'tyre', 'vehicle')) return 'a professional car mechanic working on a car engine in a clean modern garage';
-  if (h('hair', 'barber', 'salon')) return 'a stylish modern hair salon interior with a stylist working on a client';
-  if (h('dent')) return 'a bright modern dental clinic with a dentist at work';
-  if (h('build', 'construct', 'extension', 'renovat', 'brick', 'plaster', 'carpent', 'joiner', 'kitchen', 'bathroom')) return 'a professional builder working on a quality home extension construction site';
-  return 'a friendly professional local tradesperson at work for a service business';
+// ---- AI scene + services for ANY industry (no trade assumptions) ---------
+// Asks gpt-4o-mini to describe the right photo scene AND a fitting service list
+// for whatever industry was entered — works for web designers, accountants,
+// cafes, gyms, plumbers, anything. Falls back to a generic, non-trade default.
+async function sceneAndServices(industry) {
+  const label = String(industry || 'local business').trim();
+  const fallback = {
+    scene: `a friendly, professional person at work in a clean, modern workplace that fits a ${label.toLowerCase()} business`,
+    services: ['Free Consultation', 'Friendly Local Service', 'Trusted & Reliable', 'Great Value'],
+  };
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return fallback;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 9000);
+    const r = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      signal: ctrl.signal,
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        temperature: 0.5,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: 'You write concise art direction and service lists for website hero designs. Output JSON only.' },
+          { role: 'user', content: `For the website hero of a "${label}" business, return JSON {"scene":"...","services":["..","..","..",".."]}. "scene" = ONE vivid sentence describing the most fitting photorealistic photo: the right person/people doing their ACTUAL work in an authentic, modern, professional setting — and it must contain NO text, signage, logos or watermarks. "services" = exactly 4 short labels (2-3 words each) of things this specific kind of business genuinely offers. Do not assume it is a trade.` },
+        ],
+      }),
+    });
+    clearTimeout(t);
+    const d = await r.json().catch(() => ({}));
+    const txt = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+    const parsed = JSON.parse(txt || '{}');
+    const scene = (parsed.scene && String(parsed.scene).trim()) || fallback.scene;
+    let services = Array.isArray(parsed.services) ? parsed.services.map((x) => String(x).trim()).filter(Boolean).slice(0, 4) : [];
+    if (services.length < 4) services = fallback.services;
+    return { scene, services };
+  } catch (e) {
+    return fallback;
+  }
 }
 
-function buildPrompt(business) {
+function buildPrompt(scene, business) {
   const extra = String(business.requirements || '').trim();
   const extraLine = extra
     ? ` IMPORTANT art direction from the client — apply this strongly to the look and feel of the photo (but do NOT render any of it as on-image text): ${extra}.`
     : '';
-  return `Professional, photorealistic commercial photograph for a website hero banner: ${sceneFor(business.industry || business.category)}.${extraLine} Bright, clean, modern, high-end advertising photography with soft natural lighting and shallow depth of field. Keep the LEFT side of the frame darker and relatively uncluttered so text can be overlaid later. Absolutely NO text, NO words, NO letters, NO numbers, NO logos and NO watermarks anywhere in the image.`;
+  return `Professional, photorealistic commercial photograph for a website hero banner: ${scene}.${extraLine} Bright, clean, modern, high-end advertising photography with soft natural lighting and shallow depth of field. Keep the LEFT side of the frame darker and relatively uncluttered so text can be overlaid later. Absolutely NO text, NO words, NO letters, NO numbers, NO logos and NO watermarks anywhere in the image.`;
 }
 
 async function generateHero(prompt) {
@@ -401,7 +426,10 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const heroBuffer = await generateHero(buildPrompt(business));
+    // industry-appropriate scene + services (no trade assumptions)
+    const ss = await sceneAndServices(business.industry || business.category);
+    if (ss.services && ss.services.length) business.services = ss.services;
+    const heroBuffer = await generateHero(buildPrompt(ss.scene, business));
     const pngBuffer = await composeMockup(heroBuffer, business, { ctaHero: body.ctaHero, ctaBottom: body.ctaBottom });
 
     const id = crypto.randomUUID().slice(0, 8);
