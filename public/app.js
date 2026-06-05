@@ -95,13 +95,15 @@ $('apply-submit').addEventListener('click', submitApply);
 async function submitApply() {
   const name = $('ap-name').value.trim();
   const email = $('ap-email').value.trim();
+  const phone = $('ap-phone').value.trim();
   const role = $('ap-role').value;
   const volume = $('ap-volume').value;
   const why = $('ap-why').value.trim();
-  if (!name || !email || !role || !volume || !why) { applyMsg('Please fill in the required fields marked *.', 'err'); return; }
+  if (!name || !email || !phone || !role || !volume || !why) { applyMsg('Please fill in the required fields marked *.', 'err'); return; }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { applyMsg('Please enter a valid email address.', 'err'); return; }
   const payload = {
-    name, email, role, volume, why,
+    name, email, phone, role, volume, why,
+    jobtitle: $('ap-title').value.trim(),
     business: $('ap-biz').value.trim(),
     website: $('ap-web').value.trim(),
     channels: $('ap-channels').value.trim(),

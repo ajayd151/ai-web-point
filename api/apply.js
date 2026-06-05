@@ -21,6 +21,8 @@ module.exports = async (req, res) => {
   const a = {
     name,
     email,
+    phone: String(body.phone || '').trim().slice(0, 40),
+    jobtitle: String(body.jobtitle || '').trim().slice(0, 100),
     business: String(body.business || '').trim().slice(0, 160),
     website: String(body.website || '').trim().slice(0, 200),
     role: String(body.role || '').trim().slice(0, 80),
@@ -49,7 +51,8 @@ module.exports = async (req, res) => {
           content: [{
             type: 'text/plain',
             value: `New founding-member application:\n\n` +
-              `Name: ${a.name}\nEmail: ${a.email}\nBusiness: ${a.business}\nWebsite: ${a.website}\n` +
+              `Name: ${a.name}\nJob title: ${a.jobtitle}\nEmail: ${a.email}\nPhone: ${a.phone}\n` +
+              `Business: ${a.business}\nWebsite: ${a.website}\n` +
               `Role: ${a.role}\nSites/month: ${a.volume}\nWins clients via: ${a.channels}\n\n` +
               `Why they'd make a great founder:\n${a.why}\n`,
           }],
