@@ -85,11 +85,15 @@ mockup to them (currently via WhatsApp) to win the work.
 ### Sending & sharing
 - **Shareable preview page** at a short, clean URL: `preview.aiwebpoint.com/v/<slug>`.
   Shows the mockup, a brand-coloured "Request a demo" button, and an agency sign-off.
-- **WhatsApp click-to-send** (mobiles only): opens WhatsApp with a pre-filled,
-  editable message + link — **you press send** (manual = compliant for cold outreach).
-- **Editable message & CTA wording** (saved per device) with placeholders:
-  `{name}` `{business}` `{category}` `{location}` `{link}`.
-- **Download PNG** + **copy image URL** (for email embedding).
+- **WhatsApp + SMS click-to-send** (mobiles only): opens WhatsApp (`wa.me`) or your
+  Messages app (`sms:`) with a pre-filled, editable message + link — **you press
+  send** (manual = compliant for cold outreach). Each send tags the link with the
+  channel (`?c=w/s/e`).
+- **Editable message templates** (saved per device): a **first message** and a
+  separate **follow-up message**, with placeholders `{name}` `{business}`
+  `{category}` `{location}` `{link}`.
+- **Branded image URL** for email embedding (`/i/<slug>.png` on the agency domain)
+  + **Download PNG**.
 
 ### Dashboard / history
 - **Recent mockups** table: thumbnail, date, company, location, **engagement**
@@ -99,8 +103,12 @@ mockup to them (currently via WhatsApp) to win the work.
 - **Recent searches** table: re-run past searches in one click.
 
 ### Engagement tracking (Phase 1)
-- Logs when a prospect **opens** the preview link and when they **click the demo CTA**.
-- Powers the planned "they didn't open it → send a screenshot" follow-up.
+- Logs when a prospect **opens** the preview link and when they **click the demo CTA**,
+  plus **which channel** they came from (`?c=w/s/e`).
+- Recent mockups show an **Engagement** column (🔥 Demo clicked / ✓ Opened ×N + UK
+  date-time / Not opened yet) and a **↩ Follow up** button that opens the right
+  channel — priority: how they *opened* → how you *sent* → default WhatsApp.
+- Powers the "they didn't open it → send a screenshot/nudge" follow-up workflow.
 
 ### Security & cost protection
 - **Login gate** (full-screen) hides the whole interface until signed in.
@@ -166,9 +174,10 @@ Every paid endpoint checks the auth cookie first, then the 12h rate limit, then 
 | `POST /api/search` | ✅ | Google Places search + server-side filter + nearby-area auto-expand. |
 | `POST /api/generate` | ✅ | gpt-image-1 → sharp/canvas composite → Blob. Returns `{imageUrl, viewUrl, id, slug}`. |
 | `GET /api/view?slug=` | — | Renders the prospect preview page (also wired via `/v/:slug` rewrite). Injects tracking beacon. |
-| `GET /api/track?slug=&e=` | — (public) | Records `view` / `cta` events to Postgres. Bot-filtered. Returns 204. |
-| `GET /api/mockups` | ✅ | Lists all stored mockups (newest 40) + merges open/click stats. |
-| `GET /api/download?img=` | ✅ | Proxies a Blob PNG with `Content-Disposition: attachment`. |
+| `GET /api/img?slug=` | — (public) | Streams a mockup PNG from our domain (`/i/:slug.png` rewrite). Hides the blob host. `?download=1` forces a file save. Immutable-cached. |
+| `GET /api/track?slug=&e=&c=` | — (public) | Records `view` / `cta` events to Postgres with the channel (`c=w/s/e`; legacy `p=` accepted). Bot-filtered. Returns 204. |
+| `GET /api/mockups` | ✅ | Lists all stored mockups (newest 40) + merges open/click stats + last-open channel. |
+| `GET /api/download?img=` | ✅ | (Legacy) proxies a Blob PNG as attachment. Superseded by `/i/:slug.png?download=1`. |
 | `POST /api/report` | ✅ | Emails an error report via SendGrid (no-op if not configured). |
 
 `vercel.json` sets per-function limits: `generate` (1024 MB, 60 s, bundles fonts),
@@ -187,15 +196,16 @@ Every paid endpoint checks the auth cookie first, then the 12h rate limit, then 
 ### Neon Postgres
 ```sql
 link_events (
-  id     BIGSERIAL PRIMARY KEY,
-  slug   TEXT NOT NULL,       -- which mockup
-  event  TEXT NOT NULL,       -- 'view' (opened) | 'cta' (clicked demo)
-  ts     TIMESTAMPTZ DEFAULT now(),
-  ua     TEXT                 -- user agent (bots filtered before insert)
+  id       BIGSERIAL PRIMARY KEY,
+  slug     TEXT NOT NULL,       -- which mockup
+  event    TEXT NOT NULL,       -- 'view' (opened) | 'cta' (clicked demo)
+  ts       TIMESTAMPTZ DEFAULT now(),
+  ua       TEXT,                -- user agent (bots filtered before insert)
+  platform TEXT                 -- channel it was sent on: 'w' | 's' | 'e'
 );
 ```
 Created lazily (`CREATE TABLE IF NOT EXISTS`). Read via `statsBySlug()` →
-`{ slug: { view:{n,last}, cta:{n,last} } }`.
+`{ slug: { view:{n,last}, cta:{n,last}, platform } }` (platform = the most recent open's channel).
 
 ---
 
@@ -214,8 +224,25 @@ Created lazily (`CREATE TABLE IF NOT EXISTS`). Read via `statsBySlug()` →
 
 **Domains:**
 - `sitepounce.com` — the app (product brand). Also `ai-web-point.vercel.app` (original).
-- `preview.aiwebpoint.com` — prospect preview links (a subdomain of the agency site).
+- `preview.aiwebpoint.com` — prospect preview links + branded image URLs (a subdomain of the agency site).
 - `aiwebpoint.com` — the agency's main site (on Lovable, separate from this app).
+
+### Domain & branding strategy (decision — 2026-06-05)
+Two audiences, two brands — keep them split:
+
+| Surface | Domain | Why |
+|---|---|---|
+| **The app** (you log in) | **sitepounce.com** | Your product/SaaS brand — the thing you may sell on subscription. |
+| **Prospect-facing links** (preview page + image URLs) | **aiwebpoint.com** (`preview.` / `/i/`) | The **agency** brand. |
+
+**Why prospect links live on `aiwebpoint.com`, NOT `sitepounce.com`:**
+1. It matches the mockup's "Designed by Ai Web Point" signature — a consistent story for the prospect.
+2. It reads as a genuine web-design agency, which builds trust on a cold approach.
+3. "Site Pounce" reveals the tool's nature (lead-finding/outreach). A prospect who googled it would see it's an outreach tool — exactly what you don't want a cold lead to realise. **Keep the tool brand invisible to prospects.**
+
+**Image hosting is also branded:** mockup PNGs are served via `preview.aiwebpoint.com/i/<slug>.png` (the `/api/img` proxy), so the underlying `*.public.blob.vercel-storage.com` host is never exposed in emails or to prospects.
+
+**Future (Phase 3 / white-label SaaS):** when sold to *other* agencies, the prospect-link domain should be a **per-account setting** (each customer's own domain), not aiwebpoint.com or sitepounce.com. The `LINK_DOMAIN` env var is the single switch for this today.
 
 ---
 
@@ -307,9 +334,10 @@ Created lazily (`CREATE TABLE IF NOT EXISTS`). Read via `statsBySlug()` →
   search.js    Google Places + filters + nearby auto-expand
   generate.js  gpt-image-1 + sharp/canvas composite + Blob + metadata
   view.js      /v/<slug> prospect preview page + tracking beacon
-  track.js     public open/click beacon → Postgres
-  mockups.js   list all mockups + merge engagement stats
-  download.js  force-download proxy
+  img.js       /i/<slug>.png — branded image proxy (hides blob host)
+  track.js     public open/click beacon (+ channel) → Postgres
+  mockups.js   list all mockups + merge engagement stats + last-open channel
+  download.js  force-download proxy (legacy; superseded by /i/<slug>.png?download=1)
   report.js    SendGrid error email
 /lib
   auth.js      HMAC sign/verify/cookie
