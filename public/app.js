@@ -267,12 +267,17 @@ async function proceedGenerate() {
   runGeneration(business, requirements, personName);
 }
 
-// regenerate a fresh version of the mockup currently in the preview (costs 1 credit)
+// regenerate a fresh version: reopens the generate popup pre-filled, so you can
+// optionally add a comment on what to change before it runs (costs 1 credit)
 function regenerateMockup() {
   if (!authed) { setAuthUI(false); showLoginMsg('Your session ended — please sign in again.', 'err'); return; }
   if (!currentBusiness) return;
-  if (!confirm('Generate a fresh version of this mockup?\n\nNote: this will use 1 credit from your daily total.')) return;
-  runGeneration(currentBusiness, currentRequirements || '', currentPersonName || '');
+  pendingBusiness = currentBusiness;
+  $('modal-biz').textContent = `${currentBusiness.name}${currentBusiness.category ? ' — ' + currentBusiness.category : ''}${currentBusiness.location ? ', ' + currentBusiness.location : ''}`;
+  $('modal-name').value = currentPersonName || '';
+  $('modal-req').value = currentRequirements || '';
+  $('preview').classList.add('hidden'); // close the preview so the popup sits on top
+  $('modal').classList.remove('hidden');
 }
 
 async function runGeneration(business, requirements, personName) {
