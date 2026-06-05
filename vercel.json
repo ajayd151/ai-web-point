@@ -16,5 +16,15 @@
   "rewrites": [
     { "source": "/v/:slug", "destination": "/api/view?slug=:slug" },
     { "source": "/i/:slug", "destination": "/api/img?slug=:slug" }
+  ],
+  "headers": [
+    {
+      "source": "/(index.html)?",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/:file(app.js|styles.css|data.js)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    }
   ]
 }
