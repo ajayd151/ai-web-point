@@ -333,10 +333,10 @@ function fillWaMessage(tpl, business, link, personName) {
 function smsNumber(phone) {
   return String(phone || '').replace(/[^\d+]/g, ''); // keep digits (+ kept if present)
 }
-// add ?p=<channel> to the preview link so opens are attributed to how it was sent
+// add ?c=<channel> to the preview link so opens are attributed to how it was sent
 function tagLink(link, channel) {
   if (!link) return link;
-  return link + (link.indexOf('?') === -1 ? '?' : '&') + 'p=' + channel;
+  return link + (link.indexOf('?') === -1 ? '?' : '&') + 'c=' + channel;
 }
 // remember which channel a mockup was last sent on (so follow-ups default right
 // even before it's opened). Keyed by slug in the local recent list.
