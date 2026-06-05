@@ -247,7 +247,7 @@ async function proceedGenerate() {
     $('preview-links').classList.remove('hidden');
     setupWhatsApp(business, data.viewUrl || data.imageUrl, personName);
     saveRecent({
-      id: data.id || data.imageUrl,
+      id: data.slug || data.id || data.imageUrl,
       date: new Date().toISOString(),
       name: business.name,
       category: business.category,
@@ -372,10 +372,15 @@ function fmtDate(iso) {
 }
 let serverRecent = []; // mockups loaded from the server (all devices)
 function mergedRecent() {
-  const map = new Map();
-  // local first so device-saved entries (with phone) take precedence over server
-  loadRecent().concat(serverRecent).forEach((r) => { if (r && r.id && !map.has(r.id)) map.set(r.id, r); });
-  return Array.from(map.values())
+  const serverMap = new Map(serverRecent.map((r) => [r.id, r]));
+  const out = new Map();
+  // local entries first (they carry phone/personName); fold in server open-stats
+  loadRecent().forEach((r) => {
+    const sv = serverMap.get(r.id);
+    out.set(r.id, sv ? Object.assign({}, r, { opens: sv.opens, lastOpen: sv.lastOpen, ctaClicks: sv.ctaClicks }) : r);
+  });
+  serverRecent.forEach((r) => { if (!out.has(r.id)) out.set(r.id, r); });
+  return Array.from(out.values())
     .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')))
     .slice(0, 40);
 }
@@ -394,9 +399,20 @@ async function loadServerMockups() {
       personName: m.who || '',
       imageUrl: m.img,
       viewUrl: m.viewUrl || m.img,
+      opens: m.opens || 0,
+      lastOpen: m.lastOpen || null,
+      ctaClicks: m.ctaClicks || 0,
     }));
     renderRecent();
   } catch (e) { /* keep showing local-only list */ }
+}
+function engagementBadge(r) {
+  if ((r.ctaClicks || 0) > 0) return '<span class="eng hot">🔥 Demo clicked</span>';
+  if ((r.opens || 0) > 0) {
+    return `<span class="eng seen">✓ Opened${r.opens > 1 ? ' ×' + r.opens : ''}</span>` +
+      (r.lastOpen ? `<div class="eng-when">${esc(fmtDate(r.lastOpen))}</div>` : '');
+  }
+  return '<span class="eng none">Not opened yet</span>';
 }
 function renderRecent() {
   const list = mergedRecent();
@@ -412,6 +428,7 @@ function renderRecent() {
       `<td>${esc(fmtDate(r.date))}</td>` +
       `<td>${esc(r.name || '')}${r.personName ? '<div class="who">' + esc(r.personName) + '</div>' : ''}</td>` +
       `<td>${esc(r.location || '')}</td>` +
+      `<td>${engagementBadge(r)}</td>` +
       `<td><button class="ghost recent-open">Open ↗</button></td>`;
     tr.querySelector('.recent-open').addEventListener('click', () => openRecent(r));
     tr.querySelector('.recent-thumb').addEventListener('click', () => openRecent(r));

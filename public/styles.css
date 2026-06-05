@@ -192,6 +192,11 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .recent-table .recent-open { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
 .recent-table .rs-run { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
 .recent-table .rs-filters { color: var(--muted); font-size: 13px; }
+.eng { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.eng.hot { background: #fff1ec; color: #c2410c; }
+.eng.seen { background: #ecfdf5; color: #047857; }
+.eng.none { background: #f1f4f9; color: var(--muted); }
+.eng-when { font-size: 11px; color: var(--muted); margin-top: 3px; }
 
 .hidden { display: none !important; }
 .muted { color: var(--muted); font-size: 14px; }

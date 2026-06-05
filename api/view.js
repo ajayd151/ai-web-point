@@ -88,10 +88,16 @@ module.exports = async (req, res) => {
   <div class="logo"><span class="badge">AW</span> ${AGENCY}</div>
   <h1>A website preview for ${who ? '<span class="who">' + esc(who) + '</span> · ' : ''}${esc(name)}${loc ? ' · ' + esc(loc) : ''}</h1>
   <p class="sub">Here's a free home-page concept we designed for you.</p>
-  <a href="${esc(demo)}" target="_blank" rel="noopener"><img src="${esc(img)}" alt="Website mockup for ${esc(name)}"/></a>
-  <div><a class="cta" href="${esc(demo)}" target="_blank" rel="noopener">${esc(cta)} &rarr;</a></div>
+  <a href="${esc(demo)}" class="demo" target="_blank" rel="noopener"><img src="${esc(img)}" alt="Website mockup for ${esc(name)}"/></a>
+  <div><a class="cta demo" href="${esc(demo)}" target="_blank" rel="noopener">${esc(cta)} &rarr;</a></div>
   <p class="foot">Designed by <a href="${agencyUrl}" target="_blank" rel="noopener">${AGENCY}</a>. Prefer to talk? We'll walk you through the full website over a quick call.</p>
-</div></body></html>`;
+</div>${slug ? `<script>
+(function(){var s=${JSON.stringify(slug)};
+function t(e){try{var u='/api/track?slug='+encodeURIComponent(s)+'&e='+e;if(navigator.sendBeacon){navigator.sendBeacon(u);}else{fetch(u,{keepalive:true});}}catch(x){}}
+t('view');
+document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest?ev.target.closest('a.demo'):null;if(a){t('cta');}},true);
+})();
+</script>` : ''}</body></html>`;
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.status(200).send(html);

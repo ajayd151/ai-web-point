@@ -421,7 +421,7 @@ module.exports = async (req, res) => {
     const linkBase = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
     const viewUrl = `${linkBase}/v/${safe}-${id}`;
 
-    res.status(200).json({ imageUrl: png.url, viewUrl, id });
+    res.status(200).json({ imageUrl: png.url, viewUrl, id, slug: `${safe}-${id}` });
   } catch (err) {
     console.error('generate error:', err);
     res.status(500).json({ error: err.message || 'Generation failed.' });
