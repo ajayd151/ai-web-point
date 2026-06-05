@@ -190,6 +190,8 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .recent-thumb { width: 72px; height: 48px; object-fit: cover; border-radius: 7px; border: 1px solid var(--line); display: block; cursor: pointer; }
 .recent-table .who { color: var(--muted); font-size: 12px; }
 .recent-table .recent-open { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
+.recent-table .rs-run { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
+.recent-table .rs-filters { color: var(--muted); font-size: 13px; }
 
 .hidden { display: none !important; }
 .muted { color: var(--muted); font-size: 14px; }

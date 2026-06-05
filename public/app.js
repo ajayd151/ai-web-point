@@ -129,6 +129,15 @@ async function runSearch() {
     }
     $('summary').textContent = summary;
     renderResults(results);
+    saveRecentSearch({
+      date: new Date().toISOString(),
+      industry: industry,
+      location: location,
+      filters: filters,
+      matched: data.matched != null ? data.matched : results.length,
+      limit: Number($('f-limit').value || 20),
+    });
+    renderRecentSearches();
   } catch (err) {
     $('summary').textContent = '';
     $('results').innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`;
@@ -403,6 +412,77 @@ $('recent-clear').addEventListener('click', () => {
   renderRecent();
 });
 renderRecent();
+
+// ---- recent searches (saved on this device, one-click re-run) -------------
+function loadRecentSearches() {
+  try { return JSON.parse(localStorage.getItem('aiwp_searches') || '[]'); } catch (e) { return []; }
+}
+function searchSig(industry, location, filters) {
+  return (String(industry) + '|' + String(location) + '|' + JSON.stringify(filters || {})).toLowerCase();
+}
+function saveRecentSearch(item) {
+  const sig = searchSig(item.industry, item.location, item.filters);
+  let list = loadRecentSearches().filter((r) => searchSig(r.industry, r.location, r.filters) !== sig);
+  list.unshift(item);
+  list = list.slice(0, 20);
+  try { localStorage.setItem('aiwp_searches', JSON.stringify(list)); } catch (e) {}
+}
+function filterSummary(f) {
+  f = f || {};
+  const parts = [];
+  const wl = { none: 'No website', has: 'Has website' };
+  const pl = { has: 'Has phone', mobile: 'Mobile', landline: 'Landline', none: 'No phone' };
+  const el = { has: 'Has email', none: 'No email' };
+  if (wl[f.website]) parts.push(wl[f.website]);
+  if (pl[f.phone]) parts.push(pl[f.phone]);
+  if (el[f.email]) parts.push(el[f.email]);
+  if (f.ratingsFrom != null && f.ratingsFrom !== '' || f.ratingsTo != null && f.ratingsTo !== '') {
+    parts.push('ratings ' + (f.ratingsFrom != null && f.ratingsFrom !== '' ? f.ratingsFrom : '0') + '–' + (f.ratingsTo != null && f.ratingsTo !== '' ? f.ratingsTo : '∞'));
+  }
+  if (f.starBuckets && f.starBuckets.length) parts.push(f.starBuckets.slice().sort().map((s) => s + '★').join('/'));
+  return parts.join(' · ') || 'No filters';
+}
+function renderRecentSearches() {
+  const list = loadRecentSearches();
+  const sec = $('recent-searches');
+  const tb = $('rs-rows');
+  if (!list.length) { sec.classList.add('hidden'); tb.innerHTML = ''; return; }
+  sec.classList.remove('hidden');
+  tb.innerHTML = '';
+  list.forEach((r) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      `<td>${esc(fmtDate(r.date))}</td>` +
+      `<td>${esc(r.industry || '')}</td>` +
+      `<td>${esc(r.location || '')}</td>` +
+      `<td class="rs-filters">${esc(filterSummary(r.filters))}</td>` +
+      `<td>${r.matched != null ? esc(String(r.matched)) : ''}</td>` +
+      `<td><button class="primary rs-run">Run again ↻</button></td>`;
+    tr.querySelector('.rs-run').addEventListener('click', () => runRecentSearch(r));
+    tb.appendChild(tr);
+  });
+}
+function runRecentSearch(r) {
+  const f = r.filters || {};
+  $('industry').value = r.industry || '';
+  $('location').value = r.location || '';
+  $('f-website').value = f.website || 'any';
+  $('f-phone').value = f.phone || 'any';
+  $('f-email').value = f.email || 'any';
+  $('f-ratingsFrom').value = (f.ratingsFrom != null ? f.ratingsFrom : '');
+  $('f-ratingsTo').value = (f.ratingsTo != null ? f.ratingsTo : '');
+  const sb = f.starBuckets || [];
+  document.querySelectorAll('.f-star').forEach((c) => { c.checked = sb.indexOf(Number(c.value)) !== -1; });
+  if (r.limit) $('f-limit').value = String(r.limit);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  runSearch();
+}
+$('rs-clear').addEventListener('click', () => {
+  if (!confirm('Clear your recent searches list?')) return;
+  try { localStorage.removeItem('aiwp_searches'); } catch (e) {}
+  renderRecentSearches();
+});
+renderRecentSearches();
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
