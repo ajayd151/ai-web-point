@@ -222,6 +222,7 @@ async function proceedGenerate() {
   $('preview-warn').classList.add('hidden');
   $('preview-links').classList.add('hidden');
   $('wa-send').classList.add('hidden');
+  $('sms-send').classList.add('hidden');
   $('wa-note').classList.add('hidden');
   $('preview-body').innerHTML =
     '<div class="empty"><span class="spinner"></span><br/><br/>Generating your AI mockup…<br/><small>This takes ~15–25 seconds.</small></div>';
@@ -324,23 +325,30 @@ function fillWaMessage(tpl, business, link, personName) {
     .replace(/\{location\}/g, business.location || 'your area')
     .replace(/\{link\}/g, link || '');
 }
+function smsNumber(phone) {
+  return String(phone || '').replace(/[^\d+]/g, ''); // keep digits (+ kept if present)
+}
 function setupWhatsApp(business, link, personName) {
   const wa = $('wa-send');
+  const sms = $('sms-send');
   const note = $('wa-note');
   const phone = (business.phones && business.phones[0]) || '';
   const mobile = phone && window.BizData.isUkMobile(phone);
   note.classList.remove('hidden');
   if (!mobile) {
     wa.classList.add('hidden');
+    sms.classList.add('hidden');
     note.textContent = phone
-      ? `📱 WhatsApp button hidden because ${phone} is a landline, not a mobile — WhatsApp only works on mobiles. Use the image URL or view link in an email or text instead.`
-      : '📱 WhatsApp button hidden — no mobile number listed for this business. Use the image URL or view link instead.';
+      ? `📱 WhatsApp/SMS hidden because ${phone} is a landline, not a mobile — they only work on mobiles. Use the image URL or view link in an email instead.`
+      : '📱 WhatsApp/SMS hidden — no mobile number listed for this business. Use the image URL or view link instead.';
     return;
   }
   const msg = fillWaMessage(loadSettings().waMsg, business, link, personName);
   wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(msg);
   wa.classList.remove('hidden');
-  note.textContent = 'Opens WhatsApp to ' + phone + ' with your message + link pre-filled — you review and press send.';
+  sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(msg);
+  sms.classList.remove('hidden');
+  note.textContent = 'Opens WhatsApp, or your Messages app for SMS, to ' + phone + ' with your message + link pre-filled — you review and press send.';
 }
 
 $('preview-close').addEventListener('click', () => { clearGenRetry(); $('preview').classList.add('hidden'); });
@@ -449,6 +457,7 @@ function openRecent(r) {
   $('download-img').href = '/api/download?img=' + encodeURIComponent(r.imageUrl);
   $('preview-links').classList.remove('hidden');
   $('wa-send').classList.add('hidden');
+  $('sms-send').classList.add('hidden');
   $('wa-note').classList.add('hidden');
   setupWhatsApp(business, r.viewUrl || r.imageUrl, r.personName);
 }

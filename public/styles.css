@@ -84,6 +84,8 @@ button.ghost, .ghost.btn { background: #fff; border: 1px solid var(--line); colo
 button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); color: #fff; width: 100%; margin-top: 12px; }
 .wa.btn { background: #25d366; color: #fff; }
 .wa.btn:hover { background: #1eb955; }
+.sms.btn { background: #0b93f6; color: #fff; }
+.sms.btn:hover { background: #0a82da; }
 
 .settings summary { cursor: pointer; font-weight: 700; color: var(--ink); }
 .settings .muted { font-weight: 400; }
