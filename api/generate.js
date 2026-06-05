@@ -84,12 +84,21 @@ async function sceneAndServices(industry) {
   }
 }
 
+const SHOT_ANGLES = ['at natural eye level', 'from a slightly low, heroic angle', 'as a candid over-the-shoulder moment', 'in a relaxed three-quarter view', 'as a wider environmental shot'];
+const SHOT_LIGHTS = ['soft natural morning light', 'warm golden afternoon light', 'bright, airy daylight', 'gentle cinematic side lighting'];
+
 function buildPrompt(scene, business) {
   const extra = String(business.requirements || '').trim();
   const extraLine = extra
     ? ` IMPORTANT art direction from the client — apply this strongly to the look and feel of the photo (but do NOT render any of it as on-image text): ${extra}.`
     : '';
-  return `Professional, photorealistic commercial photograph for a website hero banner: ${scene}.${extraLine} Bright, clean, modern, high-end advertising photography with soft natural lighting and shallow depth of field. Keep the LEFT side of the frame darker and relatively uncluttered so text can be overlaid later. Absolutely NO text, NO words, NO letters, NO numbers, NO logos and NO watermarks anywhere in the image.`;
+  // deliberate per-generation variety so two businesses in the SAME industry
+  // never get the same-looking photo
+  const a = SHOT_ANGLES[Math.floor(Math.random() * SHOT_ANGLES.length)];
+  const l = SHOT_LIGHTS[Math.floor(Math.random() * SHOT_LIGHTS.length)];
+  const nonce = Math.floor(Math.random() * 1000000);
+  const variety = ` Shoot it ${a}, with ${l}; make the people, their appearance and the specific surroundings look unique and clearly different from any other photo (variation ${nonce}).`;
+  return `Professional, photorealistic commercial photograph for a website hero banner: ${scene}.${extraLine}${variety} Bright, clean, modern, high-end advertising photography with shallow depth of field. Keep the LEFT side of the frame darker and relatively uncluttered so text can be overlaid later. Absolutely NO text, NO words, NO letters, NO numbers, NO logos and NO watermarks anywhere in the image.`;
 }
 
 async function generateHero(prompt) {
