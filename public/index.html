@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Site Pounce — Find local businesses &amp; generate website mockups</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/favicon.svg" />
+  <meta name="theme-color" content="#4375ED" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -18,6 +21,7 @@
             <p>Local lead finder &amp; instant website mockups</p>
           </div>
         </div>
+        <span class="lp-tag">Launching soon · 20 founding spots</span>
         <h2 class="gate-headline">Win local clients by showing them their website before you even call.</h2>
         <p class="gate-desc">Site Pounce finds nearby businesses that don't have a website yet, then builds a polished, on-brand homepage preview in seconds — ready to share and turn into booked work.</p>
         <ul class="gate-points">
@@ -25,11 +29,12 @@
           <li>Auto-generate a professional homepage mockup instantly</li>
           <li>Share a branded preview link or send it straight to WhatsApp</li>
         </ul>
+        <button id="apply-open" class="primary gate-apply">Apply to become a Founding Member →</button>
       </div>
 
       <div class="gate-card">
         <h3>Member sign in</h3>
-        <p class="gate-lead">Access your Site Pounce dashboard.</p>
+        <p class="gate-lead">Already a member? Access your dashboard.</p>
         <label class="block"><span>Username</span><input id="gate-user" type="text" autocomplete="username" /></label>
         <label class="block"><span>Password</span><input id="gate-pass" type="password" autocomplete="current-password" /></label>
         <button id="gate-btn" class="primary gate-btn">Sign in</button>
@@ -37,10 +42,89 @@
       </div>
     </div>
 
+    <!-- Founding members offer -->
+    <section class="lp-section lp-founding">
+      <div class="lp-wrap">
+        <span class="lp-badge">Founding Members · only 20 places</span>
+        <h2>Get in before everyone else — and never pay more.</h2>
+        <p class="lp-lead">We're opening just <strong>20 founding accounts</strong> before launch. Become one and we'll <strong>grandfather you a fixed monthly fee — locked in for life</strong>, no matter how high the price climbs later.</p>
+        <ul class="lp-perks">
+          <li>🔒 A fixed founder rate, locked in forever</li>
+          <li>🎟️ A private demo — included if your application is accepted</li>
+          <li>🗣️ Direct line to shape the roadmap with the founder</li>
+          <li>🚀 First access the moment we go live</li>
+        </ul>
+        <button id="apply-open2" class="primary lp-cta">Apply now →</button>
+        <p class="lp-fine">By application only. We hand-pick our founders — not everyone will be offered a place.</p>
+      </div>
+    </section>
+
+    <!-- What it does (teaser) -->
+    <section class="lp-section lp-how">
+      <div class="lp-wrap">
+        <h2>How Site Pounce wins you work</h2>
+        <div class="lp-cards">
+          <div class="lp-card"><span class="lp-num">1</span><h3>Find the gaps</h3><p>Surface local businesses that have no website — the ones who need you most.</p></div>
+          <div class="lp-card"><span class="lp-num">2</span><h3>Show, don't pitch</h3><p>Hand them a finished homepage of their own business. Instantly credible.</p></div>
+          <div class="lp-card"><span class="lp-num">3</span><h3>Turn it into work</h3><p>Send it, track who's interested, and follow up at exactly the right moment.</p></div>
+        </div>
+        <p class="lp-tease">There's a lot more under the hood than we show here — the smartest parts we keep for members. The best way to really get it is to see it live.</p>
+        <button id="apply-open3" class="ghost lp-cta">See it in a private demo →</button>
+        <p class="lp-fine">Demos are reserved for founding applicants.</p>
+      </div>
+    </section>
+
     <footer class="gate-footer">
       <span>© Site Pounce</span>
       <a href="mailto:ajay@aimpro.co.uk?subject=Site%20Pounce%20enquiry">Make an enquiry</a>
     </footer>
+  </div>
+
+  <!-- FOUNDING MEMBER APPLICATION MODAL -->
+  <div id="apply-modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="preview-head">
+        <h2>Apply to be a Founding Member</h2>
+        <button id="apply-close" class="ghost">Close</button>
+      </div>
+      <div id="apply-form">
+        <p class="muted">We're taking just <strong>20 founders</strong>, and we read every application personally. Tell us about you.</p>
+        <input type="text" id="ap-hp" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <div class="ap-grid">
+          <label class="block"><span>Your name *</span><input id="ap-name" type="text" /></label>
+          <label class="block"><span>Email *</span><input id="ap-email" type="email" /></label>
+          <label class="block"><span>Agency / business name</span><input id="ap-biz" type="text" /></label>
+          <label class="block"><span>Your website (if any)</span><input id="ap-web" type="text" placeholder="https://" /></label>
+        </div>
+        <div class="ap-grid">
+          <label class="block"><span>Which best describes you? *</span>
+            <select id="ap-role">
+              <option value="">Choose…</option>
+              <option>Web design agency</option>
+              <option>Freelance web designer</option>
+              <option>Marketing / SEO agency</option>
+              <option>Other</option>
+            </select>
+          </label>
+          <label class="block"><span>New client sites you deliver / month *</span>
+            <select id="ap-volume">
+              <option value="">Choose…</option>
+              <option>Just getting started</option>
+              <option>1–3</option>
+              <option>4–10</option>
+              <option>10+</option>
+            </select>
+          </label>
+        </div>
+        <label class="block"><span>How do you win new clients today?</span><textarea id="ap-channels" rows="2" placeholder="Referrals, cold outreach, ads, networking…"></textarea></label>
+        <label class="block"><span>Why would you make a great founding member? *</span><textarea id="ap-why" rows="3" placeholder="Sell yourself — we only have 20 places."></textarea></label>
+        <div class="modal-actions">
+          <button id="apply-cancel" class="ghost">Cancel</button>
+          <button id="apply-submit" class="primary">Submit application</button>
+        </div>
+        <p id="apply-msg" class="login-msg hidden"></p>
+      </div>
+    </div>
   </div>
 
   <header class="topbar">

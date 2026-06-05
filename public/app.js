@@ -83,6 +83,46 @@ $('logout-btn').addEventListener('click', () => { setAuthUI(false); showLoginMsg
 // check existing session on load (gate stays up until this confirms a valid cookie)
 fetch('/api/login').then((r) => r.json()).then((d) => setAuthUI(!!d.authed)).catch(() => setAuthUI(false));
 
+// ---- founding-member application (public landing form) -------------------
+function openApply() { applyMsg('', ''); $('apply-modal').classList.remove('hidden'); setTimeout(() => { try { $('ap-name').focus(); } catch (e) {} }, 50); }
+function closeApply() { $('apply-modal').classList.add('hidden'); }
+function applyMsg(text, kind) { const el = $('apply-msg'); el.textContent = text; el.className = 'login-msg ' + (kind || ''); el.classList.toggle('hidden', !text); }
+['apply-open', 'apply-open2', 'apply-open3'].forEach((id) => { const b = $(id); if (b) b.addEventListener('click', openApply); });
+$('apply-close').addEventListener('click', closeApply);
+$('apply-cancel').addEventListener('click', closeApply);
+$('apply-submit').addEventListener('click', submitApply);
+
+async function submitApply() {
+  const name = $('ap-name').value.trim();
+  const email = $('ap-email').value.trim();
+  const role = $('ap-role').value;
+  const volume = $('ap-volume').value;
+  const why = $('ap-why').value.trim();
+  if (!name || !email || !role || !volume || !why) { applyMsg('Please fill in the required fields marked *.', 'err'); return; }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { applyMsg('Please enter a valid email address.', 'err'); return; }
+  const payload = {
+    name, email, role, volume, why,
+    business: $('ap-biz').value.trim(),
+    website: $('ap-web').value.trim(),
+    channels: $('ap-channels').value.trim(),
+    hp: $('ap-hp').value,
+  };
+  $('apply-submit').disabled = true;
+  applyMsg('Sending…', '');
+  try {
+    const r = await fetch('/api/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Something went wrong — please try again.');
+    $('apply-form').innerHTML =
+      '<div class="ap-done"><h3>Application received 🎉</h3>' +
+      '<p>Thank you — we read every founder application personally. If you look like a great fit, we\'ll be in touch with your private demo and your locked-in founder rate. Keep an eye on your inbox.</p></div>';
+  } catch (e) {
+    applyMsg(e.message, 'err');
+  } finally {
+    $('apply-submit').disabled = false;
+  }
+}
+
 // ---- search --------------------------------------------------------------
 $('searchBtn').addEventListener('click', runSearch);
 ['industry', 'location'].forEach((id) =>
