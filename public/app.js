@@ -562,10 +562,19 @@ function renderRecentSearches() {
       `<td>${esc(r.location || '')}</td>` +
       `<td class="rs-filters">${esc(filterSummary(r.filters))}</td>` +
       `<td>${r.matched != null ? esc(String(r.matched)) : ''}</td>` +
-      `<td><button class="primary rs-run">Run again ↻</button></td>`;
+      `<td><button class="primary rs-run">Run again ↻</button></td>` +
+      `<td><button class="rs-del" title="Delete" aria-label="Delete this search">🗑</button></td>`;
     tr.querySelector('.rs-run').addEventListener('click', () => runRecentSearch(r));
+    tr.querySelector('.rs-del').addEventListener('click', () => deleteRecentSearch(r));
     tb.appendChild(tr);
   });
+}
+function deleteRecentSearch(r) {
+  if (!confirm(`Delete this saved search?\n\n${r.industry} · ${r.location}`)) return;
+  const sig = searchSig(r.industry, r.location, r.filters);
+  const list = loadRecentSearches().filter((x) => searchSig(x.industry, x.location, x.filters) !== sig);
+  try { localStorage.setItem('aiwp_searches', JSON.stringify(list)); } catch (e) {}
+  renderRecentSearches();
 }
 function runRecentSearch(r) {
   const f = r.filters || {};

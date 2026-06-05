@@ -194,6 +194,8 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .recent-table .recent-open { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
 .recent-table .rs-run { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
 .recent-table .rs-filters { color: var(--muted); font-size: 13px; }
+.recent-table .rs-del { background: transparent; border: none; cursor: pointer; font-size: 15px; line-height: 1; padding: 7px 9px; border-radius: 8px; opacity: 0.5; transition: opacity .15s, background .15s; }
+.recent-table .rs-del:hover { opacity: 1; background: #fef2f2; }
 .eng { font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
 .eng.hot { background: #fff1ec; color: #c2410c; }
 .eng.seen { background: #ecfdf5; color: #047857; }
