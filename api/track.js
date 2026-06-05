@@ -11,12 +11,13 @@ module.exports = async (req, res) => {
   const q = req.query || {};
   const slug = String(q.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120);
   const event = q.e === 'cta' ? 'cta' : 'view';
+  const platform = (q.p === 'w' || q.p === 's' || q.p === 'e') ? q.p : ''; // how it was sent
   const ua = String(req.headers['user-agent'] || '').slice(0, 300);
 
   // never block the response on the DB write
   res.setHeader('Cache-Control', 'no-store');
   if (slug && !BOT_RE.test(ua)) {
-    try { await recordEvent(slug, event, ua); } catch (e) { /* fail soft */ }
+    try { await recordEvent(slug, event, ua, platform); } catch (e) { /* fail soft */ }
   }
   res.status(204).end();
 };

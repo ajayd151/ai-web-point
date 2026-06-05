@@ -93,7 +93,7 @@ module.exports = async (req, res) => {
   <p class="foot">Designed by <a href="${agencyUrl}" target="_blank" rel="noopener">${AGENCY}</a>. Prefer to talk? We'll walk you through the full website over a quick call.</p>
 </div>${slug ? `<script>
 (function(){var s=${JSON.stringify(slug)};
-function t(e){try{var u='/api/track?slug='+encodeURIComponent(s)+'&e='+e;if(navigator.sendBeacon){navigator.sendBeacon(u);}else{fetch(u,{keepalive:true});}}catch(x){}}
+function t(e){try{var p=(new URLSearchParams(location.search).get('p')||'');var u='/api/track?slug='+encodeURIComponent(s)+'&e='+e+(p?'&p='+encodeURIComponent(p):'');if(navigator.sendBeacon){navigator.sendBeacon(u);}else{fetch(u,{keepalive:true});}}catch(x){}}
 t('view');
 document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest?ev.target.closest('a.demo'):null;if(a){t('cta');}},true);
 })();

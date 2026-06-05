@@ -46,6 +46,7 @@ module.exports = async (req, res) => {
         opens: (s.view && s.view.n) || 0,
         lastOpen: (s.view && s.view.last) || null,
         ctaClicks: (s.cta && s.cta.n) || 0,
+        platform: s.platform || '',
       };
     });
 

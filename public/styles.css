@@ -199,6 +199,9 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .eng.seen { background: #ecfdf5; color: #047857; }
 .eng.none { background: #f1f4f9; color: var(--muted); }
 .eng-when { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.eng-cell { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.followup { background: #eef3ff; color: #2a4fbf; border: 1px solid #d7e1fb; padding: 5px 11px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.followup:hover { background: #e0e9ff; }
 
 .hidden { display: none !important; }
 .muted { color: var(--muted); font-size: 14px; }

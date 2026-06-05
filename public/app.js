@@ -1,6 +1,7 @@
 // Finder runs client-side (mock data). Generation calls the Vercel function.
 let pendingBusiness = null;
 let currentBusiness = null;
+let currentSlug = null; // slug of the mockup shown in the preview modal
 let authed = false;
 const $ = (id) => document.getElementById(id);
 
@@ -9,6 +10,7 @@ const SETTINGS_DEFAULTS = {
   waMsg: "Hi {name}, it's James from Ai Web Point. I was looking through {category} in {location} and came across {business}. I noticed you don't have a website yet, so I put together a free homepage design to show what one could look like for you:\n\n{link}\n\nIf you like it I'd be happy to build the full site, and if not, no worries, we call it a day. Got time for a quick call so I can show you the website I built for you?\n\nCheers,\nJames",
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
+  followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not — happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
 };
 function loadSettings() {
   let s = {};
@@ -21,6 +23,7 @@ function saveSettings() {
       waMsg: $('set-wa-msg').value,
       ctaHero: $('set-cta-hero').value,
       ctaBottom: $('set-cta-bottom').value,
+      followUp: $('set-followup').value,
     }));
   } catch (e) {}
 }
@@ -29,7 +32,8 @@ function saveSettings() {
   $('set-wa-msg').value = s.waMsg;
   $('set-cta-hero').value = s.ctaHero;
   $('set-cta-bottom').value = s.ctaBottom;
-  ['set-wa-msg', 'set-cta-hero', 'set-cta-bottom'].forEach((id) => $(id).addEventListener('input', saveSettings));
+  $('set-followup').value = s.followUp;
+  ['set-wa-msg', 'set-cta-hero', 'set-cta-bottom', 'set-followup'].forEach((id) => $(id).addEventListener('input', saveSettings));
 })();
 
 // ---- auth (protects the paid /api/generate endpoint) ---------------------
@@ -246,6 +250,7 @@ async function proceedGenerate() {
     $('open-view').href = data.viewUrl || data.imageUrl;
     $('download-img').href = '/api/download?img=' + encodeURIComponent(data.imageUrl);
     $('preview-links').classList.remove('hidden');
+    currentSlug = data.slug || data.id || data.imageUrl;
     setupWhatsApp(business, data.viewUrl || data.imageUrl, personName);
     saveRecent({
       id: data.slug || data.id || data.imageUrl,
@@ -328,6 +333,19 @@ function fillWaMessage(tpl, business, link, personName) {
 function smsNumber(phone) {
   return String(phone || '').replace(/[^\d+]/g, ''); // keep digits (+ kept if present)
 }
+// add ?p=<channel> to the preview link so opens are attributed to how it was sent
+function tagLink(link, channel) {
+  if (!link) return link;
+  return link + (link.indexOf('?') === -1 ? '?' : '&') + 'p=' + channel;
+}
+// remember which channel a mockup was last sent on (so follow-ups default right
+// even before it's opened). Keyed by slug in the local recent list.
+function recordSentVia(slug, channel) {
+  if (!slug) return;
+  const list = loadRecent();
+  const r = list.find((x) => x.id === slug);
+  if (r) { r.sentVia = channel; try { localStorage.setItem('aiwp_recent', JSON.stringify(list)); } catch (e) {} renderRecent(); }
+}
 function setupWhatsApp(business, link, personName) {
   const wa = $('wa-send');
   const sms = $('sms-send');
@@ -343,13 +361,18 @@ function setupWhatsApp(business, link, personName) {
       : '📱 WhatsApp/SMS hidden — no mobile number listed for this business. Use the image URL or view link instead.';
     return;
   }
-  const msg = fillWaMessage(loadSettings().waMsg, business, link, personName);
-  wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(msg);
+  const tpl = loadSettings().waMsg;
+  const waMsg = fillWaMessage(tpl, business, tagLink(link, 'w'), personName);
+  const smsMsg = fillWaMessage(tpl, business, tagLink(link, 's'), personName);
+  wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(waMsg);
   wa.classList.remove('hidden');
-  sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(msg);
+  sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(smsMsg);
   sms.classList.remove('hidden');
   note.textContent = 'Opens WhatsApp, or your Messages app for SMS, to ' + phone + ' with your message + link pre-filled — you review and press send.';
 }
+// record the send channel when you actually click a send button
+$('wa-send').addEventListener('click', () => recordSentVia(currentSlug, 'w'));
+$('sms-send').addEventListener('click', () => recordSentVia(currentSlug, 's'));
 
 $('preview-close').addEventListener('click', () => { clearGenRetry(); $('preview').classList.add('hidden'); });
 $('copy-img').addEventListener('click', () => {
@@ -374,8 +397,9 @@ function saveRecent(item) {
 function fmtDate(iso) {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return '';
-  const day = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const tz = { timeZone: 'Europe/London' }; // always show UK time (GMT/BST)
+  const day = d.toLocaleDateString('en-GB', Object.assign({ day: '2-digit', month: 'short', year: 'numeric' }, tz));
+  const time = d.toLocaleTimeString('en-GB', Object.assign({ hour: '2-digit', minute: '2-digit' }, tz));
   return day + ' · ' + time;
 }
 let serverRecent = []; // mockups loaded from the server (all devices)
@@ -385,7 +409,7 @@ function mergedRecent() {
   // local entries first (they carry phone/personName); fold in server open-stats
   loadRecent().forEach((r) => {
     const sv = serverMap.get(r.id);
-    out.set(r.id, sv ? Object.assign({}, r, { opens: sv.opens, lastOpen: sv.lastOpen, ctaClicks: sv.ctaClicks }) : r);
+    out.set(r.id, sv ? Object.assign({}, r, { opens: sv.opens, lastOpen: sv.lastOpen, ctaClicks: sv.ctaClicks, platform: sv.platform }) : r);
   });
   serverRecent.forEach((r) => { if (!out.has(r.id)) out.set(r.id, r); });
   return Array.from(out.values())
@@ -410,6 +434,7 @@ async function loadServerMockups() {
       opens: m.opens || 0,
       lastOpen: m.lastOpen || null,
       ctaClicks: m.ctaClicks || 0,
+      platform: m.platform || '',
     }));
     renderRecent();
   } catch (e) { /* keep showing local-only list */ }
@@ -436,16 +461,18 @@ function renderRecent() {
       `<td>${esc(fmtDate(r.date))}</td>` +
       `<td>${esc(r.name || '')}${r.personName ? '<div class="who">' + esc(r.personName) + '</div>' : ''}</td>` +
       `<td>${esc(r.location || '')}</td>` +
-      `<td>${engagementBadge(r)}</td>` +
+      `<td><div class="eng-cell">${engagementBadge(r)}<button class="followup" title="Send a follow-up message">↩ Follow up</button></div></td>` +
       `<td><button class="ghost recent-open">Open ↗</button></td>`;
     tr.querySelector('.recent-open').addEventListener('click', () => openRecent(r));
     tr.querySelector('.recent-thumb').addEventListener('click', () => openRecent(r));
+    tr.querySelector('.followup').addEventListener('click', () => doFollowUp(r));
     tb.appendChild(tr);
   });
 }
 function openRecent(r) {
   const business = { name: r.name, category: r.category, location: r.location, phones: r.phones || [] };
   currentBusiness = business;
+  currentSlug = r.id;
   $('preview-title').textContent = r.personName
     ? `Hey ${r.personName} 👋 — mockup for ${r.name}`
     : `Mockup · ${r.name}`;
@@ -460,6 +487,26 @@ function openRecent(r) {
   $('sms-send').classList.add('hidden');
   $('wa-note').classList.add('hidden');
   setupWhatsApp(business, r.viewUrl || r.imageUrl, r.personName);
+}
+// ↩ Follow up: opens the same channel they engaged on (or you sent on), with the
+// follow-up message pre-filled. Channel priority: how they OPENED (?p=) → how you
+// SENT (sentVia) → default WhatsApp (mobile). You still press send (compliant).
+function doFollowUp(r) {
+  const phone = (r.phones && r.phones[0]) || '';
+  const mobile = phone && window.BizData.isUkMobile(phone);
+  let channel = r.platform || r.sentVia || (mobile ? 'w' : 'e');
+  if ((channel === 'w' || channel === 's') && !mobile) channel = 'e'; // can't text a landline
+  const business = { name: r.name, category: r.category, location: r.location };
+  const link = tagLink(r.viewUrl || r.imageUrl, channel);
+  const msg = fillWaMessage(loadSettings().followUp, business, link, r.personName);
+  if (channel === 's') {
+    window.location.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(msg);
+  } else if (channel === 'e') {
+    window.open('mailto:?subject=' + encodeURIComponent('Following up — ' + (r.name || 'your website preview')) +
+      '&body=' + encodeURIComponent(msg), '_blank');
+  } else {
+    window.open('https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(msg), '_blank');
+  }
 }
 $('recent-clear').addEventListener('click', () => {
   if (!confirm('Clear your recent mockups list? (The mockups themselves stay live at their links.)')) return;
