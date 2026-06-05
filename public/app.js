@@ -231,8 +231,7 @@ async function proceedGenerate() {
   $('wa-send').classList.add('hidden');
   $('sms-send').classList.add('hidden');
   $('wa-note').classList.add('hidden');
-  $('preview-body').innerHTML =
-    '<div class="empty"><span class="spinner"></span><br/><br/>Generating your AI mockup…<br/><small>This takes ~15–25 seconds.</small></div>';
+  startGenProgress(business);
 
   try {
     const resp = await fetch('/api/generate', {
@@ -248,6 +247,7 @@ async function proceedGenerate() {
     }
     if (!resp.ok) throw new Error(errText(data, resp.status));
 
+    stopGenProgress();
     $('preview-body').innerHTML = `<img src="${esc(data.imageUrl)}" alt="Website mockup" />`;
     $('img-url').value = data.imageUrl;
     $('open-view').href = data.viewUrl || data.imageUrl;
@@ -268,10 +268,44 @@ async function proceedGenerate() {
     });
     renderRecent();
   } catch (err) {
+    stopGenProgress();
     const msg = err && err.message ? err.message : 'Generation failed';
     reportError('generate · ' + (business.name || ''), msg);
     showGenError(msg);
   }
+}
+
+// animated "thinking" steps while the mockup generates (keeps you engaged ~15-25s)
+let genProgressTimers = [];
+function stopGenProgress() { genProgressTimers.forEach(clearTimeout); genProgressTimers = []; }
+function startGenProgress(business) {
+  stopGenProgress();
+  const niche = String(business.category || business.industry || 'this business').toLowerCase();
+  const steps = [
+    `Reading ${business.name || 'the business'}'s details`,
+    `Working out the right look for ${niche}`,
+    `Generating a realistic, on-brand photo`,
+    `Adding their logo, headline & phone number`,
+    `Designing the shareable preview page`,
+    `Hosting your mockup & adding final touches`,
+  ];
+  const delays = [0, 1400, 3000, 11000, 14500, 17500]; // when each line appears (ms)
+  $('preview-body').innerHTML =
+    '<div class="genprog"><div id="genprog-list"></div>' +
+    '<p class="genprog-foot"><small>This usually takes ~15–25 seconds — hang tight.</small></p></div>';
+  const listEl = $('genprog-list');
+  steps.forEach((text, i) => {
+    const timer = setTimeout(() => {
+      if (!listEl.isConnected) return;
+      const prev = listEl.children[i - 1];
+      if (prev) { const ic = prev.querySelector('.gp-ic'); if (ic) ic.outerHTML = '<span class="gp-ic gp-done">✓</span>'; }
+      const row = document.createElement('div');
+      row.className = 'gp-row';
+      row.innerHTML = '<span class="gp-ic"><span class="spinner sm"></span></span><span class="gp-text">' + esc(text) + '…</span>';
+      listEl.appendChild(row);
+    }, delays[i]);
+    genProgressTimers.push(timer);
+  });
 }
 
 // turn a server error payload (string OR Vercel's {code,message} object) into text
@@ -377,7 +411,7 @@ function setupWhatsApp(business, link, personName) {
 $('wa-send').addEventListener('click', () => recordSentVia(currentSlug, 'w'));
 $('sms-send').addEventListener('click', () => recordSentVia(currentSlug, 's'));
 
-$('preview-close').addEventListener('click', () => { clearGenRetry(); $('preview').classList.add('hidden'); });
+$('preview-close').addEventListener('click', () => { clearGenRetry(); stopGenProgress(); $('preview').classList.add('hidden'); });
 $('copy-img').addEventListener('click', () => {
   const el = $('img-url');
   el.select();
