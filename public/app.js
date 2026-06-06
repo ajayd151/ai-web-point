@@ -9,7 +9,7 @@ const $ = (id) => document.getElementById(id);
 
 // ---- editable settings (message + CTA wording, saved per device) ---------
 const SETTINGS_DEFAULTS = {
-  waMsg: "Hi,\n\nI was looking through {category} in {location} and came across {business}.\n\nI noticed you don't currently have a website, so I spent a little time putting together a homepage mock-up to show what one could look like:\n\n{link}\n\nNo obligation whatsoever. I just thought it might give you a few ideas.\n\nIf you'd like me to show you how the rest of the site could look, just reply and I'll happily walk you through it.\n\nIf it's not something you're interested in, just reply \"No\" and I won't contact you again.\n\nThanks,\n\nAjay",
+  waMsg: "Hi {name},\n\nI was looking through {category} in {location} and came across {business}.\n\nI noticed you don't currently have a website, so I spent a little time putting together a homepage mock-up to show what one could look like:\n\n{link}\n\nNo obligation whatsoever. I just thought it might give you a few ideas.\n\nIf you'd like me to show you how the rest of the site could look, just reply and I'll happily walk you through it.\n\nIf it's not something you're interested in, just reply \"No\" and I won't contact you again.\n\nThanks,\n\nAjay",
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
   followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not — happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
@@ -439,12 +439,15 @@ function titleCaseIndustry(s) {
 }
 function fillWaMessage(tpl, business, link, personName) {
   const greet = String(personName || '').trim();
-  return String(tpl || '')
-    .replace(/\{name\}/g, greet || 'there')
+  let out = String(tpl || '')
+    .replace(/\{name\}/g, greet) // empty when no name → cleaned up below
     .replace(/\{business\}/g, business.name || 'there')
     .replace(/\{category\}/g, titleCaseIndustry(business.category || business.industry || 'businesses'))
     .replace(/\{location\}/g, business.location || 'your area')
     .replace(/\{link\}/g, link || '');
+  // tidy up an empty name: "Hi ," → "Hi," and collapse any double spaces
+  out = out.replace(/[ \t]+([,.!?])/g, '$1').replace(/[ \t]{2,}/g, ' ');
+  return out;
 }
 function smsNumber(phone) {
   return String(phone || '').replace(/[^\d+]/g, ''); // keep digits (+ kept if present)
