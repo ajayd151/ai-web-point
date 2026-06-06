@@ -9,7 +9,7 @@ const $ = (id) => document.getElementById(id);
 
 // ---- editable settings (message + CTA wording, saved per device) ---------
 const SETTINGS_DEFAULTS = {
-  waMsg: "Hi {name},\n\nI was looking through {category} in {location} and came across {business}.\n\nI noticed you don't currently have a website, so I spent a little time putting together a homepage mock-up to show what one could look like:\n\n{link}\n\nNo obligation whatsoever. I just thought it might give you a few ideas.\n\nIf you'd like me to show you how the rest of the site could look, just reply and I'll happily walk you through it.\n\nIf it's not something you're interested in, just reply \"No\" and I won't contact you again.\n\nThanks,\n\nAjay",
+  waMsg: "Hi {name},\n\nI came across {business} while looking through {category} in {location}.\n\nI noticed you don't currently have a website, so I put together a website preview for your business:\n\n{link}\n\nI thought it might help you see what your business could look like online.\n\nIf you'd like me to show you how the rest of the website could look, just let me know.\n\nIf it's not something you're interested in, simply reply \"No\" and I won't contact you again.\n\nThanks,\n\nAjay",
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
   followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not — happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
