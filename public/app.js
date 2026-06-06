@@ -4,6 +4,7 @@ let currentBusiness = null;
 let currentSlug = null; // slug of the mockup shown in the preview modal
 let currentPersonName = '';
 let currentRequirements = '';
+let lastSearchResults = [];
 let authed = false;
 const $ = (id) => document.getElementById(id);
 
@@ -147,6 +148,16 @@ async function runSearch() {
     ratingsTo: num('f-ratingsTo'),
     starBuckets,
   };
+  // exclude businesses you've already messaged (so the server digs for fresh ones)
+  const messagedMode = $('f-messaged').value;
+  let excludeIds = [];
+  if (messagedMode && messagedMode !== 'any') {
+    const m = loadMessaged();
+    const cutoff = messagedMode === '3m' ? (Date.now() - 90 * 24 * 3600 * 1000) : 0;
+    excludeIds = Object.keys(m)
+      .filter((k) => k.indexOf('id:') === 0 && new Date(m[k].at).getTime() >= cutoff)
+      .map((k) => k.slice(3));
+  }
 
   const btn = $('searchBtn');
   btn.disabled = true;
@@ -159,7 +170,7 @@ async function runSearch() {
     const resp = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ industry, location, limit: Number($('f-limit').value || 20), filters }),
+      body: JSON.stringify({ industry, location, limit: Number($('f-limit').value || 20), filters, excludeIds }),
     });
     const data = await resp.json();
     if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
@@ -200,6 +211,7 @@ async function runSearch() {
 }
 
 function renderResults(list) {
+  lastSearchResults = list || [];
   const root = $('results');
   root.innerHTML = '';
   if (!list.length) { root.innerHTML = '<div class="empty">No businesses match these filters. Try loosening them.</div>'; return; }
@@ -233,6 +245,14 @@ function card(b) {
       <div>📍 ${esc(b.address)}</div>
       <div><a href="${esc(b.mapsUrl)}" target="_blank" rel="noopener">View on Google Maps ↗</a></div>
     </div>`;
+
+  const mi = messagedInfo(b);
+  if (mi) {
+    const lab = document.createElement('div');
+    lab.className = 'messaged-lab';
+    lab.textContent = '✓ You messaged them on ' + fmtDateShort(mi.at);
+    el.appendChild(lab);
+  }
 
   const btn = document.createElement('button');
   btn.className = 'gen';
@@ -321,6 +341,7 @@ async function runGeneration(business, requirements, personName) {
     setupWhatsApp(business, data.viewUrl || data.imageUrl, personName);
     saveRecent({
       id: data.slug || data.id || data.imageUrl,
+      placeId: business.id || '',
       date: new Date().toISOString(),
       name: business.name,
       category: business.category,
@@ -489,9 +510,29 @@ function setupWhatsApp(business, link, personName) {
   sms.classList.remove('hidden');
   note.textContent = 'Opens WhatsApp, or your Messages app for SMS, to ' + phone + ' with your message + link pre-filled — you review and press send.';
 }
-// record the send channel when you actually click a send button
-$('wa-send').addEventListener('click', () => recordSentVia(currentSlug, 'w'));
-$('sms-send').addEventListener('click', () => recordSentVia(currentSlug, 's'));
+// record the send channel + mark the business as messaged when you click a send button
+$('wa-send').addEventListener('click', () => { recordSentVia(currentSlug, 'w'); markMessaged(currentBusiness); });
+$('sms-send').addEventListener('click', () => { recordSentVia(currentSlug, 's'); markMessaged(currentBusiness); });
+
+// ---- "already messaged" tracking (per device, keyed by Google place id) ----
+function loadMessaged() { try { return JSON.parse(localStorage.getItem('aiwp_messaged') || '{}'); } catch (e) { return {}; } }
+function bizKey(b) {
+  if (b && b.id) return 'id:' + b.id;
+  return 'nm:' + String((b && b.name) || '').toLowerCase().trim() + '|' + String((b && b.location) || '').toLowerCase().trim();
+}
+function messagedInfo(b) { return loadMessaged()[bizKey(b)] || null; }
+function markMessaged(b) {
+  if (!b) return;
+  const m = loadMessaged();
+  m[bizKey(b)] = { at: new Date().toISOString(), name: b.name || '' };
+  try { localStorage.setItem('aiwp_messaged', JSON.stringify(m)); } catch (e) {}
+  if (lastSearchResults.length) renderResults(lastSearchResults); // refresh visible cards
+}
+function fmtDateShort(iso) {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/London' });
+}
 
 $('preview-close').addEventListener('click', () => { clearGenRetry(); stopGenProgress(); $('preview').classList.add('hidden'); });
 $('copy-img').addEventListener('click', () => {
@@ -589,7 +630,7 @@ function renderRecent() {
   });
 }
 function openRecent(r) {
-  const business = { name: r.name, category: r.category, location: r.location, phones: r.phones || [] };
+  const business = { name: r.name, category: r.category, location: r.location, phones: r.phones || [], id: r.placeId || undefined };
   currentBusiness = business;
   currentSlug = r.id;
   $('preview-title').textContent = r.personName

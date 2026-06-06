@@ -124,6 +124,7 @@ module.exports = async (req, res) => {
   // ~60 max) to find them, applying the filters server-side as we go.
   const want = Math.min(50, Math.max(1, Number(body.limit) || 20));
   const filters = body.filters || {};
+  const excludeSet = new Set((Array.isArray(body.excludeIds) ? body.excludeIds : []).map(String));
   const services = servicesFor(industry);
   const category = titleCase(industry);
 
@@ -153,6 +154,7 @@ module.exports = async (req, res) => {
       (data.places || []).forEach((p) => {
         if (p.id && seen.has(p.id)) return;
         if (p.id) seen.add(p.id);
+        if (p.id && excludeSet.has(p.id)) return; // already messaged — skip, keep digging for fresh ones
         scanned++;
         const name = (p.displayName && p.displayName.text) || 'Unknown business';
         const phone = p.nationalPhoneNumber || p.internationalPhoneNumber || null;

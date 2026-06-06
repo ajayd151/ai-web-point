@@ -188,6 +188,14 @@
             </select>
           </label>
           <label>
+            <span>Already messaged</span>
+            <select id="f-messaged">
+              <option value="any" selected>Include all</option>
+              <option value="3m">Exclude (last 3 months)</option>
+              <option value="ever">Exclude (ever messaged)</option>
+            </select>
+          </label>
+          <label>
             <span>No. of ratings (range)</span>
             <div class="range">
               <input id="f-ratingsFrom" type="number" min="0" placeholder="From" />
