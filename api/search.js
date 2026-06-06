@@ -21,8 +21,13 @@ const SERVICE_MAP = {
 };
 const GENERIC_SERVICES = ['Free Consultation', 'Emergency Call-Outs', 'Repairs & Maintenance', 'Installations'];
 
+const INDUSTRY_ACRONYMS = new Set(['mot', 'pat', 'epc', 'hvac', 'cctv', 'hgv', 'pcv', 'it', 'seo', 'ppc', 'tv', 'uk', 'dj', 'pa', 'hr']);
 function titleCase(s) {
-  return String(s || '').replace(/\w\S*/g, (t) => t.charAt(0).toUpperCase() + t.slice(1).toLowerCase());
+  return String(s || '').trim().split(/\s+/).map((w) => {
+    const lw = w.toLowerCase();
+    if (INDUSTRY_ACRONYMS.has(lw)) return lw.toUpperCase();
+    return w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w;
+  }).join(' ');
 }
 
 function servicesFor(industry) {

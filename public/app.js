@@ -9,7 +9,7 @@ const $ = (id) => document.getElementById(id);
 
 // ---- editable settings (message + CTA wording, saved per device) ---------
 const SETTINGS_DEFAULTS = {
-  waMsg: "Hi {name}, it's James from Ai Web Point. I was looking through {category} in {location} and came across {business}. I noticed you don't have a website yet, so I put together a free homepage design to show what one could look like for you:\n\n{link}\n\nIf you like it I'd be happy to build the full site, and if not, no worries, we call it a day. Got time for a quick call so I can show you the website I built for you?\n\nCheers,\nJames",
+  waMsg: "Hi,\n\nI was looking through {category} in {location} and came across {business}.\n\nI noticed you don't currently have a website, so I spent a little time putting together a homepage mock-up to show what one could look like:\n\n{link}\n\nNo obligation whatsoever. I just thought it might give you a few ideas.\n\nIf you'd like me to show you how the rest of the site could look, just reply and I'll happily walk you through it.\n\nIf it's not something you're interested in, just reply \"No\" and I won't contact you again.\n\nThanks,\n\nAjay",
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
   followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not — happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
@@ -428,12 +428,21 @@ function toWaNumber(phone) {
   else if (!d.startsWith('44')) d = '44' + d;        // bare national (rare)
   return d;
 }
+// Title-case an industry, keeping known acronyms all-caps (mot → MOT, dog groomers → Dog Groomers)
+const INDUSTRY_ACRONYMS = new Set(['mot', 'pat', 'epc', 'hvac', 'cctv', 'hgv', 'pcv', 'it', 'seo', 'ppc', 'tv', 'uk', 'dj', 'pa', 'hr']);
+function titleCaseIndustry(s) {
+  return String(s || '').trim().split(/\s+/).map((w) => {
+    const lw = w.toLowerCase();
+    if (INDUSTRY_ACRONYMS.has(lw)) return lw.toUpperCase();
+    return w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w;
+  }).join(' ');
+}
 function fillWaMessage(tpl, business, link, personName) {
   const greet = String(personName || '').trim();
   return String(tpl || '')
     .replace(/\{name\}/g, greet || 'there')
     .replace(/\{business\}/g, business.name || 'there')
-    .replace(/\{category\}/g, (business.category || 'businesses').toLowerCase())
+    .replace(/\{category\}/g, titleCaseIndustry(business.category || business.industry || 'businesses'))
     .replace(/\{location\}/g, business.location || 'your area')
     .replace(/\{link\}/g, link || '');
 }
