@@ -877,6 +877,23 @@ function renderDashboard(d) {
     `<div class="dash-card"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div></div>` +
     `<div class="dash-card"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div></div>` +
     '</div>';
+  const hot = d.hotLeads || [];
+  const hotBlock = hot.length ? (
+    '<div class="dash-hot"><h3>🔥 Hot leads — these prospects requested a demo</h3>' +
+    hot.map((l) => {
+      const phone = l.phone || '';
+      const mobile = phone && window.BizData.isUkMobile(phone);
+      let acts = '';
+      if (mobile) {
+        const biz = { name: l.name, location: l.location, category: '' };
+        const msg = fillWaMessage(loadSettings().followUp, biz, tagLink(l.viewUrl, 'w'), l.who);
+        acts += `<a class="hl-act wa" target="_blank" rel="noopener" href="https://wa.me/${toWaNumber(phone)}?text=${encodeURIComponent(msg)}">📱 WhatsApp</a>`;
+      }
+      if (phone) acts += `<a class="hl-act" href="tel:${esc(phone)}">📞 Call</a>`;
+      acts += `<a class="hl-act" target="_blank" rel="noopener" href="${esc(l.viewUrl)}">View ↗</a>`;
+      return `<div class="hl-card"><div class="hl-main"><b>${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}<div class="hl-meta">${phone ? '📞 ' + esc(phone) : 'No phone on file'} · requested demo ${esc(fmtDate(l.demoAt))}</div></div><div class="hl-acts">${acts}</div></div>`;
+    }).join('') + '</div>'
+  ) : '';
   const insights = '<div class="dash-insights"><h3>📊 Based on your data</h3><ul>' +
     (d.insights || []).map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
   const tips = '<div class="dash-tips"><h3>💡 General tips <span class="muted">(best practice, not your data)</span></h3><ul>' +
@@ -904,9 +921,9 @@ function renderDashboard(d) {
       return `<tr><td>${esc(r.name)}</td><td>${esc(via || '—')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td></tr>`;
     }).join('');
     table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
-      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Demo</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Requested demo</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
-  body.innerHTML = insights + cards + channelBlock + hourChart + dayChart + table + tips +
+  body.innerHTML = hotBlock + insights + cards + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
   const rb = $('dash-refresh'); if (rb) rb.addEventListener('click', loadDashboard);
 }

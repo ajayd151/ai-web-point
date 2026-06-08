@@ -21,12 +21,14 @@ module.exports = async (req, res) => {
   const days = Math.max(0, parseInt((req.query && req.query.days) || '0', 10) || 0);
   const since = days > 0 ? new Date(Date.now() - days * 86400000).toISOString() : null;
 
-  // total mockups generated (blob metadata files), respecting the date range
-  let generated = 0;
-  try {
-    const { blobs } = await list({ prefix: 'mockups/', limit: 1000 });
-    generated = blobs.filter((b) => b.pathname.endsWith('.json') && (!since || new Date(b.uploadedAt).toISOString() >= since)).length;
-  } catch (e) { /* ignore */ }
+  // mockup metadata (for the generated count + hot-lead contact details)
+  let blobs = [];
+  try { blobs = (await list({ prefix: 'mockups/', limit: 1000 })).blobs || []; } catch (e) { /* ignore */ }
+  const generated = blobs.filter((b) => b.pathname.endsWith('.json') && (!since || new Date(b.uploadedAt).toISOString() >= since)).length;
+  const blobByPath = {};
+  blobs.forEach((b) => { blobByPath[b.pathname] = b.url; });
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const linkBase = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
 
   const d = await dashboardData(since);
   if (!d) { res.status(200).json({ configured: false, generated }); return; }
@@ -63,6 +65,25 @@ module.exports = async (req, res) => {
     opens: r.opens,
     demoClicks: r.demo_clicks,
   }));
+
+  // 🔥 hot leads = requested a demo — enrich with contact details from the mockup metadata
+  const hotLeads = (await Promise.all(
+    d.rows.filter((r) => r.demo_clicks > 0).map(async (r) => {
+      let meta = {};
+      const url = blobByPath['mockups/' + r.slug + '.json'];
+      if (url) { try { meta = await (await fetch(url + '?t=' + Date.now())).json(); } catch (e) { /* ignore */ } }
+      return {
+        slug: r.slug,
+        name: meta.name || nameFromSlug(r.slug),
+        phone: meta.phone || '',
+        location: meta.loc || '',
+        who: meta.who || '',
+        demoAt: r.demo_at,
+        openedAt: r.opened_at,
+        viewUrl: `${linkBase}/v/${r.slug}`,
+      };
+    })
+  )).sort((a, b) => String(b.demoAt || '').localeCompare(String(a.demoAt || '')));
 
   // ---- insights / recommendations ----
   const insights = [];
@@ -103,6 +124,7 @@ module.exports = async (req, res) => {
     byChannel: ch,
     opensByHour: hours,
     opensByDow: dows,
+    hotLeads,
     rows,
     insights,
   });
