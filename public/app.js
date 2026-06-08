@@ -130,7 +130,16 @@ async function submitApply() {
 
 // ---- search --------------------------------------------------------------
 $('searchBtn').addEventListener('click', runSearch);
-$('refresh-results').addEventListener('click', () => renderResults(lastSearchResults)); // re-check messaged labels, no new search
+// brief visual feedback so it's obvious a refresh actually happened
+async function refreshFeedback(btn, action) {
+  const orig = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⟳ Refreshing…';
+  try { await action(); } catch (e) {}
+  btn.textContent = '✓ Refreshed';
+  setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1300);
+}
+$('refresh-results').addEventListener('click', (e) => refreshFeedback(e.currentTarget, () => renderResults(lastSearchResults)));
 ['industry', 'location'].forEach((id) =>
   $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); })
 );
@@ -701,7 +710,7 @@ function doFollowUp(r) {
     window.open('https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(msg), '_blank');
   }
 }
-$('recent-refresh').addEventListener('click', loadServerMockups); // re-check open status from the server
+$('recent-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadServerMockups)); // re-check open status from the server
 $('recent-clear').addEventListener('click', () => {
   if (!confirm('Clear your recent mockups list? (The mockups themselves stay live at their links.)')) return;
   try { localStorage.removeItem('aiwp_recent'); } catch (e) {}
