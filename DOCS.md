@@ -1,354 +1,304 @@
-# SitePounce — Technical & Product Documentation
+# Site Pounce — Technical & Product Documentation
 
-_Last updated: 2026-06-05_
+_Last updated: 2026-06-08_
 
-SitePounce is a lead-generation + outreach tool for a web-design agency. It finds
-local businesses that **don't have a website**, generates a **professional AI
-website mockup** of what their homepage could look like, and lets you send that
-mockup to them (currently via WhatsApp) to win the work.
+Site Pounce is a lead-generation, outreach **and sales-intelligence** platform for a
+web-design agency. It finds local businesses with **no website**, generates a
+professional **AI mockup** of their homepage, lets you **send & track** it, surfaces
+**hot leads**, and builds a **sales-intelligence dossier** (and — coming — a full live
+website) for each prospect.
 
 - **Product brand (the tool):** **Site Pounce** — `sitepounce.com`
 - **Agency brand (shown to prospects):** **Ai Web Point** — `aiwebpoint.com`
-- The split is deliberate: *Site Pounce* is the tool you log into; *Ai Web Point*
-  is the agency name the prospect sees on their mockup ("Designed by Ai Web Point").
+- The split is deliberate: *Site Pounce* is the tool you log into; *Ai Web Point* is the
+  agency name prospects see on mockups/sites. Keep the tool brand invisible to cold prospects.
 
 ---
 
-## 1. The big picture (how it works)
+## 1. Live URLs & hosting
 
-```
-   YOU (logged in at sitepounce.com)
-        │
-        │  1. Search: industry + location + filters
-        ▼
-   Google Places API ──► finds businesses, filters to "no website + mobile" etc.
-        │
-        │  2. Click "Generate website mockup" on a result
-        ▼
-   OpenAI gpt-image-1 ──► photoreal hero image (no text)
-        │
-        ▼
-   sharp + canvas ──► composite the photo + crisp branded text into one PNG
-        │
-        ▼
-   Vercel Blob ──► stores the PNG + a small JSON metadata file
-        │
-        │  3. You get: image URL, a short shareable link, WhatsApp/Download buttons
-        ▼
-   Prospect opens preview link  (preview.aiwebpoint.com/v/<slug>)
-        │
-        ▼
-   /api/track beacon ──► Neon Postgres ──► "Opened ✓" badge appears in your dashboard
-```
-
-### The end-to-end user journey
-1. **Sign in** at `sitepounce.com` (full-screen branded login gate; protects your API credits).
-2. **Search** for a trade + town (e.g. "plumbers" / "Birmingham") with filters
-   (no website, mobile only, etc.). If the town is thin, it **auto-expands to
-   nearby areas** to find more leads.
-3. **Review result cards** — each shows phone, ratings, address, map link.
-4. **Generate a mockup** — optionally add a contact name and art-direction notes.
-   ~15–25s later you get a polished PNG + a shareable preview page.
-5. **Send it** — WhatsApp button (mobiles only, you press send manually) or copy
-   the image/link into an email.
-6. **Track engagement** — when the prospect opens the link, the mockup's row in
-   **Recent mockups** flips to "✓ Opened" (and "🔥 Demo clicked" if they hit the CTA).
+- **App:** `https://sitepounce.com` (primary) and `https://ai-web-point.vercel.app` (original).
+- **Prospect links & images:** `https://preview.aiwebpoint.com/v/<slug>` (preview pages) and
+  `/i/<slug>.png` (mockup images) — the agency domain, for trust. `noindex`ed.
+- **Hosting:** **Vercel (Pro plan)** — static frontend in `/public` + Node serverless
+  functions in `/api`. Auto-deploys on every `git push` to `main`.
+- **Database:** **Neon Postgres** (serverless, free tier) via Vercel Storage.
+- **Object storage:** **Vercel Blob** (mockup PNGs, metadata, dossiers).
 
 ---
 
-## 2. Features
+## 2. The app — a top-nav SPA
+
+After signing in (full-screen Site Pounce login gate), the app has a **top navigation**
+with four views (`#view-*` divs toggled by `showView()` in `app.js`):
+
+| Nav | What it is |
+|---|---|
+| **🔍 Search** | Find leads → results → generate mockups → recent searches/mockups |
+| **💬 Messages** | Edit the first-message / follow-up / CTA wording (saved per device) |
+| **📊 Performance** | Dashboard: stats, insights, charts, CSV, date-range (lazy-loads) |
+| **🔥 Hot Leads** | Prospects who requested a demo, with a live count badge + actions |
+
+The login gate doubles as a **Site Pounce landing page** (hero, founding-member offer,
+application form). The whole interface is hidden behind it until signed in.
+
+---
+
+## 3. Features
 
 ### Search & lead-finding
-- **Google Places (New) Text Search** for real businesses.
-- **Filters:** website (any / none / has), phone (any / has / **mobile only** /
-  landline / none), email, **ratings count range** (from–to), and **star buckets**
-  (≤1★ / 2★ / 3★ / 4★ / 5★).
-- **Server-side filtering + deep paging:** scans *all* of Google's results
-  (~60 max per query), not just the top 10, applying filters as it goes.
-- **Auto-expand to nearby areas:** if your town doesn't yield enough matches, an
-  AI call (gpt-4o-mini) suggests the nearest towns/suburbs and searches those too
-  (up to 5), so "Birmingham had 1" becomes "21 across nearby areas".
-- **UK mobile detection:** regex `^07[1-57-9]` (excludes 070 personal & 076 pagers).
-- **Recent searches** table (saved on device) with one-click **Run again**.
+- **Google Places (New)** text search for real businesses.
+- **Filters:** website (any/none/has), phone (any/has/**mobile**/landline/none), email,
+  ratings-count range, star buckets, and **"Already messaged"** (exclude ever / last 3 months).
+- **Deep paging + server-side filtering** (scans ~60 results, not just top 10).
+- **Auto-expand to nearby areas** — if a town is thin, an AI call (gpt-4o-mini) names the
+  nearest towns/suburbs and searches those too, so "Birmingham had 1" → "21 across nearby areas".
+- **Recent searches** table — one-click **Run again** + per-row delete.
+- A **↻ Refresh** (no cost) re-checks messaged labels.
 
 ### Mockup generation
-- **AI hero photo** via OpenAI **gpt-image-1** — trade-specific scene, no text baked in.
-- **Art direction:** free-text notes steer the photo (e.g. "a female plumber",
-  "bright, modern"). Cannot place text on the image (that's intentional).
-- **Crisp branded overlay** composited on top: the business's own logo (initials),
-  headline, tagline, **prominent phone number pill**, "Request a demo" button,
-  service chips, a closing-line CTA button, and a small "Designed by Ai Web Point".
-- **Person's name field:** if set, the shareable preview page greets them by name
-  in a highlight colour ("A website preview for **James** · …").
-- Output: a single **1200×880 PNG**, hosted publicly.
+- **AI hero photo** via OpenAI **gpt-image-1** (no text in image).
+- **AI scene + service chips per industry** (gpt-4o-mini) — works for *any* business, not
+  just trades (fixed a bug where "web designer" got a tradesperson photo).
+- **Per-generation variety** (random angle/lighting/seed) so two businesses in the same
+  trade never get identical photos.
+- **Crisp branded overlay** (sharp + canvas): the business's own logo, headline, prominent
+  phone pill, CTA button, service chips, "Designed by Ai Web Point".
+- **Person's name** field → highlighted on the preview page.
+- **Animated step-by-step progress** while generating; **🔄 Regenerate** reopens the popup
+  pre-filled with an optional "what to change" note (1 credit).
+- **Hardened:** auto-retries transient OpenAI image failures once; `maxDuration` 180s.
 
-### Sending & sharing
-- **Shareable preview page** at a short, clean URL: `preview.aiwebpoint.com/v/<slug>`.
-  Shows the mockup, a brand-coloured "Request a demo" button, and an agency sign-off.
-- **WhatsApp + SMS click-to-send** (mobiles only): opens WhatsApp (`wa.me`) or your
-  Messages app (`sms:`) with a pre-filled, editable message + link — **you press
-  send** (manual = compliant for cold outreach). Each send tags the link with the
+### Sending & messaged-tracking
+- **Branded preview page** at `preview.aiwebpoint.com/v/<slug>`; **branded image URL**
+  `/i/<slug>.png` (hides the blob host) for email embedding + Download PNG.
+- **WhatsApp + SMS** click-to-send (manual, mobiles only). Each send tags the link with the
   channel (`?c=w/s/e`).
-- **Editable message templates** (saved per device): a **first message** and a
-  separate **follow-up message**, with placeholders `{name}` `{business}`
-  `{category}` `{location}` `{link}`.
-- **Branded image URL** for email embedding (`/i/<slug>.png` on the agency domain)
-  + **Download PNG**.
+- **Editable templates** (per device): first message + follow-up, placeholders `{name}`
+  `{business}` `{category}` `{location}` `{link}`. Empty `{name}` collapses to "Hi,".
+  `{category}` is title-cased with acronyms (Dog Groomers / MOT).
+- **Messaged tracking** (per device, by Google place id): cards show "✓ You messaged them
+  via WhatsApp (date·time) & SMS (…)" — accumulates channels with timestamps. The
+  "Already messaged" filter excludes them from new searches so you dig for fresh leads.
 
-### Dashboard / history
-- **Recent mockups** table: thumbnail, date, company, location, **engagement**
-  (Opened / Demo clicked / Not opened yet), and **Open ↗** to reopen the
-  Send/Download tools without regenerating. Loads from the **server**, so every
-  mockup you've ever made appears on any device.
-- **Recent searches** table: re-run past searches in one click.
+### Engagement tracking
+- A JS beacon on the preview page logs **opens (`view`)** and **demo-CTA clicks (`cta`)** to
+  Postgres, with the **channel** (`?c=`) and exact time. Sends are logged as **`sent`** events.
+- Bot-filtered (JS-fired so link-preview crawlers don't create false opens).
+- Recent mockups show an **Engagement** column (Opened ✓ / Demo clicked 🔥 / Not opened) +
+  a **↩ Follow-up** button that opens the channel they engaged on.
 
-### Engagement tracking (Phase 1)
-- Logs when a prospect **opens** the preview link and when they **click the demo CTA**,
-  plus **which channel** they came from (`?c=w/s/e`).
-- Recent mockups show an **Engagement** column (🔥 Demo clicked / ✓ Opened ×N + UK
-  date-time / Not opened yet) and a **↩ Follow up** button that opens the right
-  channel — priority: how they *opened* → how you *sent* → default WhatsApp.
-- Powers the "they didn't open it → send a screenshot/nudge" follow-up workflow.
+### 📊 Performance dashboard
+- Stat cards (mockups made / messaged / opened+rate / demo clicks+rate), avg time-to-open,
+  by-channel open rates, **opens-by-hour & opens-by-day** charts (UK time, peak highlighted),
+  recent-activity table.
+- **Insights split**: "📊 Based on your data" (computed) vs "💡 General tips" (static).
+- **Date range** (7 / 30 / all), **CSV export**, refresh.
+
+### 🔥 Hot Leads
+- Prospects who clicked the demo CTA, enriched with phone/name/location.
+- Per card: **📱 WhatsApp / 📞 Call / View ↗ / 🐾 Prowl**.
+- **Nav count badge** + **animated tab-title alert** — `Site Pounce (N)` when looking,
+  **flashes** "🔥 (N) hot leads!" when you're on another tab; 3-min poll keeps it fresh.
+
+### 🐾 Prowl — lead-intelligence dossier
+- On-demand sales recon per lead. Sources: **Google Places** (live reviews/score, top-3
+  competitors *with* websites → comparison table, recent reviews) + **OpenAI** synthesis →
+  `services`, reputation, **🎯 ammunition** (specific lines to say), suggested opener +
+  **Companies House** (established/director/type — when its key is set; degrades gracefully).
+- Output: competitor comparison table (you vs rivals: website / reviews / score), what-they-do
+  chips, ammunition, opener. **Cached** as `dossiers/<slug>.json` (↩ Re-run to refresh).
+- Rate-limited (`LIMIT_PROWL`, default 20/12h).
+
+### 🐆 Pounce — full website builder (PLANNED; prototype live)
+- Build a real **1-page WOW website** from the Prowl intel + Google Maps photos + 4-5★
+  reviews + AI copy. **Hosted by us** (preview = live, identical); **GHL** provides the
+  Google review system + CRM behind it (live form → GHL webhook).
+- 3 templates, SEO tier dropdown (None/Basic/Intermediate/Advanced=schema), optional
+  pre-build questions, AI-prompt editor for later edits, "Powered by aiwebpoint.com?source="
+  footer.
+- **Prototype:** `/prototype-solihull.html` (design under review).
+
+### Founding-member landing & application
+- The login gate is a landing page with a **Founding-Member** offer ("20 places, fixed fee
+  for life") + an **application form** (`/api/apply`) that emails Ajay (SendGrid) **and**
+  stores to Postgres `applications`. Demos are gated behind applying.
 
 ### Security & cost protection
-- **Login gate** (full-screen) hides the whole interface until signed in.
-- **Server-side auth** on every paid endpoint (search/generate) — credits are safe
-  even if someone saw the UI.
-- **Usage caps:** 20 searches + 20 generations per 12 hours (configurable).
-- **Error alerts:** failed generations email you via SendGrid + show a Retry button
-  (45s countdown).
+- Full-screen **login gate** + server-side auth on every paid endpoint.
+- **Usage caps** (`lib/ratelimit.js`): 20 searches / 20 generations / 20 prowls per 12h
+  (env-overridable `LIMIT_*`).
+- **Error alerts** email you via SendGrid + an on-screen Retry button (45s countdown).
 
 ---
 
-## 3. Architecture
-
-**Hosting:** [Vercel](https://vercel.com) (Hobby plan) — static frontend + Node
-serverless functions. Auto-deploys on every `git push` to `main`.
+## 4. Architecture
 
 ```
-Frontend (static, /public)          Backend (/api, serverless)        Data stores
-─────────────────────────           ──────────────────────────        ───────────
-index.html  — markup & gate         login.js    — auth                Vercel Blob   (PNGs + JSON metadata)
-app.js      — all UI logic          search.js   — Google Places       Neon Postgres (link_events tracking)
-styles.css  — styling               generate.js — gpt-image-1 + PNG    (localStorage — recent lists, settings)
-data.js     — client helpers        view.js     — preview page
-                                    track.js    — open/click beacon
-                                    mockups.js  — list all mockups + stats
-                                    download.js — force-download PNG
-                                    report.js   — SendGrid error email
-Shared libs (/lib)
-─────────────────
-auth.js     — HMAC signed-cookie sign/verify
-ratelimit.js— 12h usage caps (counts blobs)
-filters.js  — server-side lead filtering + UK mobile test
-db.js       — Neon Postgres pool + event recording/stats
+Frontend (static, /public)            Backend (/api, Vercel serverless)
+─────────────────────────             ────────────────────────────────
+index.html  views + gate + modals     login.js     auth (cookie)
+app.js      all UI logic               search.js    Google Places + filters + nearby-expand
+styles.css  styling                    generate.js  gpt-image-1 + sharp/canvas composite + Blob
+data.js     client helpers             view.js      /v/<slug> preview page + tracking beacon
+favicon.svg SP icon                    img.js       /i/<slug>.png branded image proxy
+prototype-solihull.html (Pounce demo)  track.js     open/click/sent beacon → Postgres
+                                       mockups.js   list mockups + merge engagement stats
+Shared libs (/lib)                     apply.js     founding-member form → SendGrid + Postgres
+─────────────────                      report.js    error-alert email (SendGrid)
+auth.js     HMAC signed cookie         dashboard.js analytics aggregation + insights
+ratelimit.js 12h usage caps            hotleads.js  demo-clickers + contact details
+filters.js  server-side lead filtering prowl.js     lead-intelligence dossier (cached)
+db.js       Neon Postgres pool + queries
 ```
 
-### Frontend
-- **Plain static HTML/CSS/JS** — no framework, no build step. Served from `/public`.
-- `app.js` holds everything: login gate, search, render, generate modal, preview
-  modal, WhatsApp builder, recent searches/mockups, settings, tracking merge.
-- **State persistence via `localStorage`:**
-  - `aiwp_settings` — message + CTA wording
-  - `aiwp_recent` — recent mockups (per device)
-  - `aiwp_searches` — recent searches (per device)
-- Server-stored history (`/api/mockups`) is merged with local so mockups appear
-  across devices; local entries keep the phone number so WhatsApp can be rebuilt.
-
-### Backend (Vercel serverless, CommonJS, Node 20)
-Every paid endpoint checks the auth cookie first, then the 12h rate limit, then does its work.
-
-### Image pipeline (important, do not regress)
-- gpt-image-1 returns a JPEG (base64). **`@napi-rs/canvas`'s `loadImage` cannot
-  decode it** ("Invalid SVG image"). So: **canvas renders only the transparent
-  text/branding overlay**, and **`sharp` decodes the photo and composites** the
-  overlay on top. Fonts (Montserrat) are bundled in `/fonts`.
+- **Frontend:** plain static HTML/CSS/JS, no framework/build step. State persists in
+  `localStorage` (`aiwp_settings`, `aiwp_recent`, `aiwp_searches`, `aiwp_messaged`).
+  Server-stored history (`/api/mockups`) merges in so mockups appear across devices.
+- **Image pipeline (don't regress):** gpt-image-1 returns a JPEG that `@napi-rs/canvas`'s
+  `loadImage` **cannot** decode. So canvas renders only the transparent text overlay, and
+  **`sharp`** decodes the photo and composites. Fonts (Montserrat) bundled in `/fonts`.
 
 ---
 
-## 4. API endpoints
+## 5. API endpoints
 
 | Endpoint | Auth | Purpose |
 |---|---|---|
-| `POST /api/login` | — | Validate `APP_USERNAME`/`APP_PASSWORD`, set signed `aiwp` cookie. `GET` returns `{authed, configured}`. |
-| `POST /api/search` | ✅ | Google Places search + server-side filter + nearby-area auto-expand. |
-| `POST /api/generate` | ✅ | gpt-image-1 → sharp/canvas composite → Blob. Returns `{imageUrl, viewUrl, id, slug}`. |
-| `GET /api/view?slug=` | — | Renders the prospect preview page (also wired via `/v/:slug` rewrite). Injects tracking beacon. |
-| `GET /api/img?slug=` | — (public) | Streams a mockup PNG from our domain (`/i/:slug.png` rewrite). Hides the blob host. `?download=1` forces a file save. Immutable-cached. |
-| `GET /api/track?slug=&e=&c=` | — (public) | Records `view` / `cta` events to Postgres with the channel (`c=w/s/e`; legacy `p=` accepted). Bot-filtered. Returns 204. |
-| `GET /api/mockups` | ✅ | Lists all stored mockups (newest 40) + merges open/click stats + last-open channel. |
-| `GET /api/download?img=` | ✅ | (Legacy) proxies a Blob PNG as attachment. Superseded by `/i/:slug.png?download=1`. |
-| `POST /api/report` | ✅ | Emails an error report via SendGrid (no-op if not configured). |
+| `POST /api/login` | — | Validate `APP_USERNAME`/`APP_PASSWORD`, set signed `aiwp` cookie. |
+| `POST /api/search` | ✅ | Google Places + filters + nearby auto-expand (`excludeIds` skips messaged). |
+| `POST /api/generate` | ✅ | gpt-image-1 → composite → Blob. Returns `{imageUrl, viewUrl, id, slug}`. |
+| `GET /api/view?slug=` | — | Preview page (`/v/:slug` rewrite) + tracking beacon. |
+| `GET /api/img?slug=` | — | Branded image proxy (`/i/:slug.png`; `?download=1` to save). Immutable-cached. |
+| `GET /api/track?slug=&e=&c=` | — | Records `view`/`cta`/`sent` + channel to Postgres. Bot-filtered. |
+| `GET /api/mockups` | ✅ | All mockups + engagement stats + last-open channel. |
+| `GET /api/dashboard?days=` | ✅ | Aggregated stats + insights (date-range filtered). |
+| `GET /api/hotleads` | ✅ | Demo-clickers + contact details (from mockup metadata). |
+| `POST /api/prowl` | ✅ | Lead-intelligence dossier (cached as blob; rate-limited). |
+| `POST /api/apply` | — | Founding-member application → SendGrid + Postgres. |
+| `POST /api/report` | ✅ | Error-alert email (SendGrid). |
 
-`vercel.json` sets per-function limits: `generate` (1024 MB, 60 s, bundles fonts),
-`search` (30 s), `mockups` (30 s), and rewrites `/v/:slug → /api/view?slug=:slug`.
+`vercel.json`: per-function config (`generate` 1024MB/180s/fonts, `search`/`mockups` 30s,
+`prowl` 60s); rewrites `/v/:slug`, `/i/:slug`; cache headers (`must-revalidate` on the app
+shell so deploys show without a hard refresh). `api/download.js` was removed (legacy).
 
 ---
 
-## 5. Data model
+## 6. Data model
 
-### Vercel Blob (object storage)
-- `mockups/<slug>.png` — the final mockup image.
-- `mockups/<slug>.json` — metadata: `{ name, loc, who, cta, img, phone, category }`.
-- `usage/...` — rate-limit counters (one blob per use, pruned after 12h).
+### Vercel Blob
+- `mockups/<slug>.png` — final mockup image.
+- `mockups/<slug>.json` — `{ name, loc, who, cta, img, phone, category }`.
+- `dossiers/<slug>.json` — cached Prowl dossier.
+- `usage/...` — rate-limit counters (pruned after 12h).
 - `<slug>` = `<business-name-slug>-<8charid>`.
 
 ### Neon Postgres
 ```sql
-link_events (
-  id       BIGSERIAL PRIMARY KEY,
-  slug     TEXT NOT NULL,       -- which mockup
-  event    TEXT NOT NULL,       -- 'view' (opened) | 'cta' (clicked demo)
-  ts       TIMESTAMPTZ DEFAULT now(),
-  ua       TEXT,                -- user agent (bots filtered before insert)
-  platform TEXT                 -- channel it was sent on: 'w' | 's' | 'e'
-);
+link_events (id BIGSERIAL, slug TEXT, event TEXT['view'|'cta'|'sent'],
+             ts TIMESTAMPTZ, ua TEXT, platform TEXT['w'|'s'|'e'])   -- tracking
+applications (id, created, name, email, phone, jobtitle, business,
+              website, role, volume, channels, why)                 -- founding applicants
 ```
-Created lazily (`CREATE TABLE IF NOT EXISTS`). Read via `statsBySlug()` →
-`{ slug: { view:{n,last}, cta:{n,last}, platform } }` (platform = the most recent open's channel).
+Created lazily (`CREATE TABLE IF NOT EXISTS`). To inspect: Vercel → Storage →
+`neon-green-ladder` → Query (toggle read-only OFF to write, back ON after).
 
 ---
 
-## 6. External services & environment variables
+## 7. External services & environment variables
 
 | Service | Env var(s) | Notes |
 |---|---|---|
-| OpenAI | `OPENAI_API_KEY`, `OPENAI_IMAGE_QUALITY` (opt) | gpt-image-1 (mockups) + gpt-4o-mini (nearby areas). |
-| Google Places (New) | `GOOGLE_PLACES_API_KEY` | Restricted to Places API. |
-| Vercel Blob | `BLOB_READ_WRITE_TOKEN` (+ auto-added) | Public store for PNGs/metadata. |
-| Neon Postgres | `POSTGRES_DATABASE_URL` (+ POSTGRES_* set) | Tracking events. **NB:** no plain `POSTGRES_URL` — `lib/db.js` falls back through the names. |
-| SendGrid | `SENDGRID_API_KEY`, `ERROR_EMAIL_FROM`, `ERROR_EMAIL_TO` | Error alerts ("SitePounce Error — …"). |
-| Auth | `APP_USERNAME`, `APP_PASSWORD` | Login. Cookie HMAC is keyed by the password itself. |
-| Branding/links | `AGENCY_NAME` (default "Ai Web Point"), `DEMO_URL`, `LINK_DOMAIN` | `DEMO_URL`=booking link; `LINK_DOMAIN`=`preview.aiwebpoint.com`. |
-| Rate limits | `LIMIT_SEARCH`, `LIMIT_GENERATE` (default 20) | Per 12 hours. |
+| OpenAI | `OPENAI_API_KEY`, `OPENAI_IMAGE_QUALITY?` | gpt-image-1 (mockups) + gpt-4o-mini (scenes, nearby areas, Prowl synthesis). |
+| Google Places (New) | `GOOGLE_PLACES_API_KEY` | Search + Place Details (reviews/photos for Prowl/Pounce). |
+| Vercel Blob | `BLOB_READ_WRITE_TOKEN` (+ auto) | PNGs, metadata, dossiers. |
+| Neon Postgres | `POSTGRES_DATABASE_URL` (+ POSTGRES_* set) | **No plain `POSTGRES_URL`** — `lib/db.js` falls back through the names. |
+| SendGrid | `SENDGRID_API_KEY`, `ERROR_EMAIL_FROM`, `ERROR_EMAIL_TO`, `APPLY_EMAIL_TO?` | Error alerts + founding applications. `FROM` must be a verified sender. |
+| Companies House | `COMPANIES_HOUSE_API_KEY` (**PENDING**) | Free; unlocks the established/director/type part of Prowl. Auth = HTTP Basic `base64(key:)`. |
+| Auth | `APP_USERNAME`, `APP_PASSWORD` | Login; cookie HMAC keyed by the password. |
+| Branding/links | `AGENCY_NAME?`, `DEMO_URL`, `LINK_DOMAIN` | `DEMO_URL`=booking; `LINK_DOMAIN`=`preview.aiwebpoint.com`. |
+| Limits | `LIMIT_SEARCH`/`LIMIT_GENERATE`/`LIMIT_PROWL` (default 20) | Per 12h. |
 
-**Domains:**
-- `sitepounce.com` — the app (product brand). Also `ai-web-point.vercel.app` (original).
-- `preview.aiwebpoint.com` — prospect preview links + branded image URLs (a subdomain of the agency site).
-- `aiwebpoint.com` — the agency's main site (on Lovable, separate from this app).
+---
 
-### Domain & branding strategy (decision — 2026-06-05)
-Two audiences, two brands — keep them split:
+## 8. Domain & branding strategy (decision)
 
 | Surface | Domain | Why |
 |---|---|---|
-| **The app** (you log in) | **sitepounce.com** | Your product/SaaS brand — the thing you may sell on subscription. |
-| **Prospect-facing links** (preview page + image URLs) | **aiwebpoint.com** (`preview.` / `/i/`) | The **agency** brand. |
+| The app | **sitepounce.com** | Product/SaaS brand. |
+| Prospect pages + images | **aiwebpoint.com** (`preview.` / `/i/`) | Agency brand — matches the "Designed by Ai Web Point" signature; keeps the tool brand invisible to cold prospects. |
 
-**Why prospect links live on `aiwebpoint.com`, NOT `sitepounce.com`:**
-1. It matches the mockup's "Designed by Ai Web Point" signature — a consistent story for the prospect.
-2. It reads as a genuine web-design agency, which builds trust on a cold approach.
-3. "Site Pounce" reveals the tool's nature (lead-finding/outreach). A prospect who googled it would see it's an outreach tool — exactly what you don't want a cold lead to realise. **Keep the tool brand invisible to prospects.**
-
-**Image hosting is also branded:** mockup PNGs are served via `preview.aiwebpoint.com/i/<slug>.png` (the `/api/img` proxy), so the underlying `*.public.blob.vercel-storage.com` host is never exposed in emails or to prospects.
-
-**Future (Phase 3 / white-label SaaS):** when sold to *other* agencies, the prospect-link domain should be a **per-account setting** (each customer's own domain), not aiwebpoint.com or sitepounce.com. The `LINK_DOMAIN` env var is the single switch for this today.
+`aiwebpoint.com` apex is the agency's main site (on Lovable); Site Pounce uses the
+`preview.` subdomain. For white-label SaaS later, the prospect-link domain becomes a
+per-account setting (`LINK_DOMAIN`).
 
 ---
 
-## 7. Security, privacy & compliance notes
+## 9. Security, privacy & compliance
 
-- **Auth:** HttpOnly signed cookie (HMAC, 12h TTL), validated server-side on every
-  paid call. The login gate is a UX deterrent; real protection is server-side.
-- **WhatsApp:** uses manual `wa.me` click-to-send — **compliant for cold outreach**
-  because *you* press send. Only shown for mobile numbers.
-- **Tracking honesty:** the open-beacon fires via JS so link-preview crawlers
-  (WhatsApp/iMessage) don't create fake "opened" hits; bot user-agents are also filtered.
-- **Privacy:** prospect phone numbers are never placed on the public preview page.
-- **Search engines:** preview pages (`/api/view`) and mockup images (`/api/img`) send
-  `noindex` (meta tag + `X-Robots-Tag`) so prospect names/mockups never appear in Google.
-  This matters because `aiwebpoint.com` (incl. the `preview.` subdomain) is verified in
-  Google Search Console — the verification itself was for the agency's main site (on Lovable).
-- **Cold-outreach law (UK, not legal advice):** B2B to limited companies is broadly
-  OK with clear sender ID + opt-out; sole traders/individuals are stricter. Build
-  opt-out/STOP handling before scaling automated SMS/email (Phase 2/3).
+- **Auth:** HttpOnly signed cookie (HMAC, 12h), checked server-side on every paid call.
+- **Cold outreach:** WhatsApp/SMS are manual `wa.me`/`sms:` (compliant for cold; you press send).
+- **Tracking honesty:** open-beacon fires via JS so link-preview crawlers don't fake opens.
+- **Search engines:** preview pages + mockup images send `noindex` (prospect names/mockups
+  stay out of Google). Note `aiwebpoint.com` is verified in Google Search Console.
+- **Privacy:** prospect phone numbers never appear on the public preview page.
+- **Intelligence (Prowl):** all public business data (Google, Companies House, public web) —
+  legitimate B2B research.
+- **Not legal advice:** cold B2B to Ltd companies is broadly OK with sender ID + opt-out;
+  sole traders are stricter. Build opt-out/STOP handling before scaling automated channels.
 
 ---
 
-## 8. Roadmap
+## 10. Hosting & deploying
 
-### ✅ Phase 1 — Engagement tracking (DONE, 2026-06-05)
-- Link-open + demo-click tracking via JS beacon → Neon Postgres.
-- "Opened ✓ / Demo clicked 🔥 / Not opened yet" badges in Recent mockups.
-- Database foundation (Neon) for everything that follows.
-- **Why first:** cheap, compliant, immediately useful, and the single signal
-  ("did they click the link?") works across *every* channel.
-
-### 🔜 Phase 2 — Multi-channel send + delivery receipts
-- **Channel picker:** WhatsApp (manual, as now) **+ SMS (Twilio) + Email (SendGrid)**.
-- **WhatsApp → SMS fallback:** when a number isn't on WhatsApp, one click switches
-  to SMS (there's no reliable, compliant way to *detect* WhatsApp presence without
-  the official API, which forbids cold outreach — so we offer fallbacks instead).
-- **Real delivery receipts:** SMS delivered (Twilio DLR), email delivered/clicked
-  (SendGrid webhooks). All channels share the same link-click tracking from Phase 1.
-- Smart suggestion of the best channel based on the lead's available data.
-
-### 🔮 Phase 3 — The SaaS layer (subscription product)
-- **Delivery-report dashboard:** filterable table of every send — recipient,
-  keyword, location, channel, delivered (y/n), opened (y/n), clicked (y/n),
-  timestamps — with CSV export.
-- **Follow-up action buttons** in the report: e.g. for leads who didn't open,
-  a one-click "send a screenshot / nudge" (manual = compliant) — your idea, and
-  the reason the open-tracking matters.
-- **Multi-user accounts / multi-tenancy:** scope leads, mockups, sends, and reports
-  per user → ready to sell as a subscription.
-- **Compliance built in:** opt-out/STOP handling, sender identity, consent records
-  (a selling point, not just safety).
-- **Billing:** subscription tiers (e.g. Stripe), usage limits per plan.
-
-> Phases 2–3 build *on top of* Phase 1's database and tracking — additive, not a rewrite.
+- **Vercel Pro** — function limit ~100 (was 12 on Hobby; we hit it adding Prowl and removed
+  the unused `download.js`). `maxDuration` up to 300s.
+- **No Node/Homebrew on the dev machine**, iCloud folder sandboxed — ship via Git, not local.
+- **To ship:** edit → `git commit` → `git push` → Vercel auto-builds (~1–2 min; installs
+  `@napi-rs/canvas`, `sharp`, `@vercel/blob`, `@vercel/postgres`).
+- **Env vars** set in the Vercel dashboard (never committed). Cache headers make app-shell
+  changes appear on a normal reload (no hard refresh needed).
 
 ---
 
-## 9. Deploying / making changes
+## 11. Roadmap
 
-- **No Node/Homebrew on the dev machine**, and the iCloud project folder is
-  sandboxed from preview subprocesses — so changes are shipped via Git, not run locally.
-- **To ship:** edit files → `git commit` → `git push` → Vercel auto-builds (~1–2 min;
-  installs `@napi-rs/canvas`, `sharp`, `@vercel/blob`, `@vercel/postgres`).
-- **Env vars** are set in the Vercel dashboard (never committed).
-- **Inspect the database:** Vercel → Storage → `neon-green-ladder` → Query tab.
-
----
-
-## 10. Known limitations
-
-- Google Text Search caps at ~60 results per query → narrow areas / nearby-expand
-  to find more no-website leads.
-- Google doesn't expose email addresses (email is always "not found").
-- gpt-image-1 is ~90% accurate to art-direction notes — occasionally regenerate.
-- Recent lists are per-device (localStorage); the mockup *library* itself is
-  server-backed and cross-device.
-- Email "open" tracking (Phase 2) is unreliable post-Apple Mail Privacy; **click**
-  tracking is the dependable signal.
-- WhatsApp delivered/read receipts are not available with the manual `wa.me` method.
+- **✅ Done:** lead finder, AI mockups, WhatsApp+SMS send, branded links, messaged-tracking,
+  engagement tracking, **Performance dashboard**, **Hot Leads** + tab alert, **🐾 Prowl**.
+- **🔜 🐆 Pounce** — full 1-page website builder (prototype built; awaiting design sign-off),
+  then publish + **GHL** handoff (review system/CRM) at conversion.
+- **🔜 Companies House** — add the free key to enrich Prowl.
+- **🔮 Later:** Prowl Phase B (Trustpilot/Facebook/competitor-gap web search), AI site editor,
+  multi-template, per-keyword dashboard breakdowns, multi-user accounts + billing (SaaS).
 
 ---
 
-## 11. Quick reference — file map
+## 12. Known limitations
+
+- Google Text Search caps at ~60 results/query → narrow areas / nearby-expand for more.
+- Google doesn't expose email (always "not found").
+- gpt-image-1 ~90% accurate to art-direction notes — regenerate if off.
+- Local lists (recent/messaged) are per-device; the mockup library + dashboard are server-backed.
+- Email open-tracking (future) is unreliable post-Apple; **click** tracking is dependable.
+- WhatsApp delivered/read receipts aren't available with manual `wa.me`.
+- GHL's API can't faithfully auto-build styled pages → Pounce sites are hosted by us, GHL
+  used only for reviews/CRM.
+
+---
+
+## 13. File map
 
 ```
 /public
-  index.html   gate (Site Pounce landing) + app shell + modals
-  app.js       login, search, render, generate, preview, WhatsApp, recent lists, tracking merge
+  index.html   gate/landing + top-nav views + modals
+  app.js       all UI logic (search, generate, send, tracking, dashboard, hot leads, prowl)
   styles.css   all styles
-  data.js      client-side BizData helpers (isUkMobile, phone chips)
-/api
-  login.js     auth (set/verify cookie)
-  search.js    Google Places + filters + nearby auto-expand
-  generate.js  gpt-image-1 + sharp/canvas composite + Blob + metadata
-  view.js      /v/<slug> prospect preview page + tracking beacon
-  img.js       /i/<slug>.png — branded image proxy (hides blob host)
-  track.js     public open/click beacon (+ channel) → Postgres
-  mockups.js   list all mockups + merge engagement stats + last-open channel
-  download.js  force-download proxy (legacy; superseded by /i/<slug>.png?download=1)
-  report.js    SendGrid error email
-/lib
-  auth.js      HMAC sign/verify/cookie
-  ratelimit.js 12h usage caps
-  filters.js   server-side lead filtering + UK mobile test
-  db.js        Neon Postgres pool + recordEvent/statsBySlug
-/fonts         Montserrat weights (bundled into generate fn)
-vercel.json    function configs + /v/:slug rewrite
-package.json   deps: @napi-rs/canvas, sharp, @vercel/blob, @vercel/postgres
+  data.js      client BizData helpers (isUkMobile, phone chips)
+  favicon.svg  SP gradient icon
+  prototype-solihull.html  Pounce website prototype (design review)
+/api  login, search, generate, view, img, track, mockups, dashboard, hotleads, prowl, apply, report
+/lib  auth, ratelimit, filters, db
+/fonts  Montserrat (bundled into generate)
+vercel.json  function configs + rewrites + cache headers
+package.json deps: @napi-rs/canvas, sharp, @vercel/blob, @vercel/postgres
 ```
