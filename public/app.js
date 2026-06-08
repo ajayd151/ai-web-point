@@ -45,7 +45,7 @@ function setAuthUI(on) {
   $('gate').classList.toggle('hidden', on);          // full-screen gate hides the app until signed in
   $('logout-btn').classList.toggle('hidden', !on);
   if (!on) { setTimeout(() => { try { $('gate-user').focus(); } catch (e) {} }, 60); }
-  if (on) loadServerMockups();                        // pull every saved mockup so they show on any device
+  if (on) { loadServerMockups(); loadHotLeads(); }    // pull saved mockups + hot-lead count for the badge
 }
 
 function showLoginMsg(text, kind) {
@@ -812,7 +812,7 @@ const GENERIC_TIPS = [
 let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
-  ['search', 'messages', 'performance'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
+  ['search', 'messages', 'performance', 'hotleads'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
 }
@@ -851,6 +851,41 @@ function exportDashboardCsv(rows) {
   const a = document.createElement('a'); a.href = url; a.download = 'sitepounce-activity.csv'; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
+
+// ---- hot leads (its own page) ----
+let lastHotLeads = [];
+function hotLeadCardHTML(l) {
+  const phone = l.phone || '';
+  const mobile = phone && window.BizData.isUkMobile(phone);
+  let acts = '';
+  if (mobile) {
+    const biz = { name: l.name, location: l.location, category: '' };
+    const msg = fillWaMessage(loadSettings().followUp, biz, tagLink(l.viewUrl, 'w'), l.who);
+    acts += `<a class="hl-act wa" target="_blank" rel="noopener" href="https://wa.me/${toWaNumber(phone)}?text=${encodeURIComponent(msg)}">📱 WhatsApp</a>`;
+  }
+  if (phone) acts += `<a class="hl-act" href="tel:${esc(phone)}">📞 Call</a>`;
+  acts += `<a class="hl-act" target="_blank" rel="noopener" href="${esc(l.viewUrl)}">View ↗</a>`;
+  return `<div class="hl-card"><div class="hl-main"><b>${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}<div class="hl-meta">${phone ? '📞 ' + esc(phone) : 'No phone on file'} · requested demo ${esc(fmtDate(l.demoAt))}</div></div><div class="hl-acts">${acts}</div></div>`;
+}
+function renderHotLeads(list) {
+  lastHotLeads = list || [];
+  const n = lastHotLeads.length;
+  const badge = $('hot-count');
+  badge.textContent = n;
+  badge.classList.toggle('hidden', n === 0);
+  const body = $('hot-body');
+  if (!n) { body.innerHTML = '<div class="empty">No hot leads yet. When a prospect opens their preview and clicks "Request a demo", they\'ll appear here with their contact details — ready to follow up.</div>'; return; }
+  body.innerHTML = '<p class="muted view-sub">These prospects opened their preview and clicked "Request a demo" — your warmest leads. Follow up fast.</p>' + lastHotLeads.map(hotLeadCardHTML).join('');
+}
+async function loadHotLeads() {
+  try {
+    const r = await fetch('/api/hotleads');
+    if (!r.ok) return;
+    const d = await r.json();
+    renderHotLeads(d.hotLeads || []);
+  } catch (e) { /* keep showing whatever's there */ }
+}
+$('hot-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadHotLeads));
 function dowName(d) { return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d] || ''; }
 function fmtHourClient(h) { const a = h < 12 ? 'a' : 'p'; const hr = h % 12 === 0 ? 12 : h % 12; return hr + a; }
 function dashBars(items, labelFn, valFn, highlightMax) {
@@ -877,23 +912,6 @@ function renderDashboard(d) {
     `<div class="dash-card"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div></div>` +
     `<div class="dash-card"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div></div>` +
     '</div>';
-  const hot = d.hotLeads || [];
-  const hotBlock = hot.length ? (
-    '<div class="dash-hot"><h3>🔥 Hot leads — these prospects requested a demo</h3>' +
-    hot.map((l) => {
-      const phone = l.phone || '';
-      const mobile = phone && window.BizData.isUkMobile(phone);
-      let acts = '';
-      if (mobile) {
-        const biz = { name: l.name, location: l.location, category: '' };
-        const msg = fillWaMessage(loadSettings().followUp, biz, tagLink(l.viewUrl, 'w'), l.who);
-        acts += `<a class="hl-act wa" target="_blank" rel="noopener" href="https://wa.me/${toWaNumber(phone)}?text=${encodeURIComponent(msg)}">📱 WhatsApp</a>`;
-      }
-      if (phone) acts += `<a class="hl-act" href="tel:${esc(phone)}">📞 Call</a>`;
-      acts += `<a class="hl-act" target="_blank" rel="noopener" href="${esc(l.viewUrl)}">View ↗</a>`;
-      return `<div class="hl-card"><div class="hl-main"><b>${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}<div class="hl-meta">${phone ? '📞 ' + esc(phone) : 'No phone on file'} · requested demo ${esc(fmtDate(l.demoAt))}</div></div><div class="hl-acts">${acts}</div></div>`;
-    }).join('') + '</div>'
-  ) : '';
   const insights = '<div class="dash-insights"><h3>📊 Based on your data</h3><ul>' +
     (d.insights || []).map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
   const tips = '<div class="dash-tips"><h3>💡 General tips <span class="muted">(best practice, not your data)</span></h3><ul>' +
@@ -923,7 +941,7 @@ function renderDashboard(d) {
     table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
       '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Requested demo</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
-  body.innerHTML = hotBlock + insights + cards + channelBlock + hourChart + dayChart + table + tips +
+  body.innerHTML = insights + cards + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
   const rb = $('dash-refresh'); if (rb) rb.addEventListener('click', loadDashboard);
 }
