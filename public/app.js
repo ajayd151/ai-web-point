@@ -5,6 +5,7 @@ let currentSlug = null; // slug of the mockup shown in the preview modal
 let currentPersonName = '';
 let currentRequirements = '';
 let lastSearchResults = [];
+let hotCount = 0;
 let authed = false;
 const $ = (id) => document.getElementById(id);
 
@@ -873,6 +874,8 @@ function renderHotLeads(list) {
   const badge = $('hot-count');
   badge.textContent = n;
   badge.classList.toggle('hidden', n === 0);
+  hotCount = n;
+  updateTabTitle();
   const body = $('hot-body');
   if (!n) { body.innerHTML = '<div class="empty">No hot leads yet. When a prospect opens their preview and clicks "Request a demo", they\'ll appear here with their contact details — ready to follow up.</div>'; return; }
   body.innerHTML = '<p class="muted view-sub">These prospects opened their preview and clicked "Request a demo" — your warmest leads. Follow up fast.</p>' + lastHotLeads.map(hotLeadCardHTML).join('');
@@ -886,6 +889,25 @@ async function loadHotLeads() {
   } catch (e) { /* keep showing whatever's there */ }
 }
 $('hot-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadHotLeads));
+
+// ---- tab-title alert: flashes when you have hot leads + are on another tab ----
+let titleTimer = null;
+const BASE_TITLE = document.title;
+function updateTabTitle() {
+  if (titleTimer) { clearInterval(titleTimer); titleTimer = null; }
+  if (hotCount <= 0) { document.title = BASE_TITLE; return; }
+  const settled = `Site Pounce (${hotCount})`;
+  const alertMsg = `🔥 (${hotCount}) hot ${hotCount === 1 ? 'lead' : 'leads'}!`;
+  if (document.hidden) {
+    let on = false;
+    document.title = alertMsg;
+    titleTimer = setInterval(() => { on = !on; document.title = on ? settled : alertMsg; }, 1000);
+  } else {
+    document.title = settled; // settle to a clean count when you're looking
+  }
+}
+document.addEventListener('visibilitychange', updateTabTitle);
+setInterval(() => { if (authed) loadHotLeads(); }, 180000); // refresh the count every 3 min so it catches new ones while you're away
 function dowName(d) { return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d] || ''; }
 function fmtHourClient(h) { const a = h < 12 ? 'a' : 'p'; const hr = h % 12 === 0 ? 12 : h % 12; return hr + a; }
 function dashBars(items, labelFn, valFn, highlightMax) {
