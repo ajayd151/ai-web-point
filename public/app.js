@@ -250,7 +250,8 @@ function card(b) {
   if (mi) {
     const lab = document.createElement('div');
     lab.className = 'messaged-lab';
-    lab.textContent = '✓ You messaged them on ' + fmtDateShort(mi.at);
+    const via = channelName(mi.via);
+    lab.textContent = '✓ You messaged them' + (via ? ' via ' + via : '') + ' on ' + fmtDateShort(mi.at);
     el.appendChild(lab);
   }
 
@@ -511,8 +512,8 @@ function setupWhatsApp(business, link, personName) {
   note.textContent = 'Opens WhatsApp, or your Messages app for SMS, to ' + phone + ' with your message + link pre-filled — you review and press send.';
 }
 // record the send channel + mark the business as messaged when you click a send button
-$('wa-send').addEventListener('click', () => { recordSentVia(currentSlug, 'w'); markMessaged(currentBusiness); });
-$('sms-send').addEventListener('click', () => { recordSentVia(currentSlug, 's'); markMessaged(currentBusiness); });
+$('wa-send').addEventListener('click', () => { recordSentVia(currentSlug, 'w'); markMessaged(currentBusiness, 'w'); });
+$('sms-send').addEventListener('click', () => { recordSentVia(currentSlug, 's'); markMessaged(currentBusiness, 's'); });
 
 // ---- "already messaged" tracking (per device, keyed by Google place id) ----
 function loadMessaged() { try { return JSON.parse(localStorage.getItem('aiwp_messaged') || '{}'); } catch (e) { return {}; } }
@@ -521,10 +522,11 @@ function bizKey(b) {
   return 'nm:' + String((b && b.name) || '').toLowerCase().trim() + '|' + String((b && b.location) || '').toLowerCase().trim();
 }
 function messagedInfo(b) { return loadMessaged()[bizKey(b)] || null; }
-function markMessaged(b) {
+function channelName(via) { return via === 'w' ? 'WhatsApp' : via === 's' ? 'SMS' : via === 'e' ? 'email' : ''; }
+function markMessaged(b, channel) {
   if (!b) return;
   const m = loadMessaged();
-  m[bizKey(b)] = { at: new Date().toISOString(), name: b.name || '' };
+  m[bizKey(b)] = { at: new Date().toISOString(), name: b.name || '', via: channel || '' };
   try { localStorage.setItem('aiwp_messaged', JSON.stringify(m)); } catch (e) {}
   if (lastSearchResults.length) renderResults(lastSearchResults); // refresh visible cards
 }
