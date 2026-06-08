@@ -101,9 +101,19 @@ function buildPrompt(scene, business) {
   return `Professional, photorealistic commercial photograph for a website hero banner: ${scene}.${extraLine}${variety} Bright, clean, modern, high-end advertising photography with shallow depth of field. Keep the LEFT side of the frame darker and relatively uncluttered so text can be overlaid later. Absolutely NO text, NO words, NO letters, NO numbers, NO logos and NO watermarks anywhere in the image.`;
 }
 
+// Retry transient OpenAI image failures (5xx / rate-limit / network blips) once
+// before surfacing an error — most generate 500s are a momentary OpenAI hiccup.
 async function generateHero(prompt) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY is not set in Vercel → Settings → Environment Variables.');
+  let lastErr;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try { return await generateHeroOnce(prompt, key); }
+    catch (e) { lastErr = e; if (attempt < 2) await new Promise((r) => setTimeout(r, 1500)); }
+  }
+  throw lastErr;
+}
+async function generateHeroOnce(prompt, key) {
   const resp = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
