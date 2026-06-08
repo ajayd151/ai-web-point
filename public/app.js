@@ -972,6 +972,23 @@ function pounceHeroNote(src) {
 }
 // optional pre-build questions
 const POUNCE_ACCENTS = [['', 'Auto (recommended)'], ['blue', 'Blue'], ['green', 'Green'], ['red', 'Red'], ['purple', 'Purple'], ['teal', 'Teal'], ['slate', 'Slate'], ['amber', 'Amber']];
+const ACCRED_BY_TRADE = [
+  [/electric/i, ['NICEIC Approved', 'NAPIT Registered', 'Part P Certified']],
+  [/gas|boiler|heating|plumb/i, ['Gas Safe Registered', 'OFTEC Registered', 'CIPHE Member']],
+  [/roof/i, ['NFRC Member']],
+  [/build|construct|renovat|extension/i, ['FMB Member', 'TrustMark Registered']],
+  [/window|glaz|conservatory/i, ['FENSA Registered', 'CERTASS']],
+  [/pest/i, ['BPCA Member']],
+  [/lock|security/i, ['MLA Approved']],
+  [/garden|landscap|tree|paving|driveway/i, ['Marshalls Approved']],
+];
+const ACCRED_COMMON = ['Checkatrade Member', 'Which? Trusted Trader', 'TrustMark Registered', 'Fully Insured', 'Guaranteed Workmanship'];
+function suggestAccreditations(category) {
+  const set = [];
+  ACCRED_BY_TRADE.forEach((pair) => { if (pair[0].test(category || '')) pair[1].forEach((x) => { if (!set.includes(x)) set.push(x); }); });
+  ACCRED_COMMON.forEach((x) => { if (!set.includes(x)) set.push(x); });
+  return set;
+}
 function pounceQuestionsHTML(lead) {
   return `<div class="pq">
     <p class="muted pq-intro">Optional — tweak the build below, or just hit <b>Build my site</b> for smart defaults.${lead && lead.prowled === false ? '' : ''}</p>
@@ -981,6 +998,8 @@ function pounceQuestionsHTML(lead) {
       <div class="pq-fld wide"><label>Services to highlight</label><input id="pq-highlight" type="text" placeholder="e.g. EV chargers, rewires, fuse boards"></div>
       <div class="pq-fld wide"><label>Their standout selling point</label><input id="pq-usp" type="text" placeholder="e.g. 24/7 emergency callout · 10-year guarantee"></div>
       <div class="pq-fld wide"><label>Special offer banner <span class="muted">(optional)</span></label><input id="pq-offer" type="text" placeholder="e.g. £50 off your first job this month"></div>
+      <div class="pq-fld wide"><label>Accreditations they actually hold <span class="muted">(tick only real ones)</span></label>
+        <div class="pq-accred">${suggestAccreditations(lead && lead.category).map((a) => `<label class="pq-chip"><input type="checkbox" class="pq-acc" value="${esc(a)}"> ${esc(a)}</label>`).join('')}</div></div>
       <div class="pq-fld wide"><label>Anything else to weave in?</label><textarea id="pq-notes" rows="2" placeholder="Any extra detail"></textarea></div>
     </div>
     <div class="pq-actions"><button id="pq-build" class="primary">🐆 Build my site →</button><button id="pq-skip" class="ghost sm">Skip — smart defaults</button></div>
@@ -988,7 +1007,8 @@ function pounceQuestionsHTML(lead) {
 }
 function collectPounceOpts() {
   const v = (id) => { const el = $(id); return el ? (el.type === 'checkbox' ? el.checked : el.value.trim()) : ''; };
-  return { accent: v('pq-accent'), faq: v('pq-faq'), highlightServices: v('pq-highlight'), usp: v('pq-usp'), offer: v('pq-offer'), notes: v('pq-notes') };
+  const accreditations = Array.prototype.slice.call(document.querySelectorAll('.pq-acc:checked')).map((el) => el.value);
+  return { accent: v('pq-accent'), faq: v('pq-faq'), highlightServices: v('pq-highlight'), usp: v('pq-usp'), offer: v('pq-offer'), notes: v('pq-notes'), accreditations };
 }
 function buildPounce(lead, opts, refresh) {
   lastPounceOpts = opts || {};

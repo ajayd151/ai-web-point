@@ -34,8 +34,33 @@ function render(s) {
   const gallery = (s.gallery || []).length
     ? `<section><div class="wrap"><div class="sec-head"><div class="kicker">Our work</div><h2>Recent projects</h2></div><div class="gal">${(s.gallery || []).map((g) => `<div style="background-image:url('${esc(g)}')" role="img" aria-label="Project photo"></div>`).join('')}</div></div></section>`
     : '';
+  const mapsUrl = b.mapsUrl || '';
+  // 1) accreditation strip (only the ones the agency confirmed — never fabricated)
+  const accred = (s.accreditations || []).length
+    ? `<div class="accred"><div class="wrap"><span class="accred-lead">Accredited &amp; trusted</span>${(s.accreditations || []).map((a) => `<span class="ac-badge">🛡️ ${esc(a)}</span>`).join('')}</div></div>`
+    : '';
+  // 3) live Google rating widget
+  const googleBadge = s.rating
+    ? `<a class="gbadge"${mapsUrl ? ` href="${esc(mapsUrl)}" target="_blank" rel="noopener"` : ''}><span class="g-logo">G</span><span class="g-mid"><span class="g-stars">★★★★★</span><span class="g-sub">${esc(s.rating)} · ${esc(s.reviewCount || 0)} Google reviews${mapsUrl ? ' · Read on Google ↗' : ''}</span></span></a>`
+    : '';
+  const googleBand = (!(s.reviews || []).length && s.rating)
+    ? `<section class="gband"><div class="wrap" style="text-align:center">${googleBadge}</div></section>` : '';
+  // 4) service area + keyless embedded map
+  const areas = s.areasCovered || [];
+  const mapEmbed = (b.address || b.location) ? `https://www.google.com/maps?q=${encodeURIComponent(b.address || b.location)}&output=embed` : '';
+  const areaSec = (areas.length || mapEmbed)
+    ? `<section id="area" class="areasec"><div class="wrap"><div class="sec-head"><div class="kicker">Where we work</div><h2>Areas we cover</h2>${areas.length ? `<p>Proudly serving ${esc(b.location)} and the surrounding area.</p>` : ''}</div>
+      <div class="area-grid">
+        ${mapEmbed ? `<iframe class="area-map" src="${esc(mapEmbed)}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Service area map"></iframe>` : ''}
+        <div class="area-list">${areas.length ? `<div class="area-chips">${areas.map((a) => `<span>📍 ${esc(a)}</span>`).join('')}</div>` : ''}${phone ? `<a class="btn btn-amber" href="${telHref(phone)}" style="margin-top:6px">📞 Call ${esc(phone)}</a>` : ''}</div>
+      </div></div></section>`
+    : '';
+  // 2) sticky mobile call bar
+  const mobileBar = phone
+    ? `<div class="mobilebar"><a href="${telHref(phone)}">📞 Call now</a><a href="#contact" class="mb-quote">Free quote</a></div>`
+    : `<div class="mobilebar"><a href="#contact" class="mb-quote" style="flex:1">Get a free quote →</a></div>`;
   const reviews = (s.reviews || []).length
-    ? `<section id="reviews" class="reviews"><div class="wrap"><div class="sec-head"><div class="kicker" style="color:var(--amber)">Reviews</div><h2>What our customers say</h2></div><div class="rev-grid">${(s.reviews || []).map((r) => {
+    ? `<section id="reviews" class="reviews"><div class="wrap"><div class="sec-head"><div class="kicker" style="color:var(--amber)">Reviews</div><h2>What our customers say</h2>${s.rating ? `<div class="gbadge-wrap">${(s.rating ? `<a class="gbadge"${(b.mapsUrl) ? ` href="${esc(b.mapsUrl)}" target="_blank" rel="noopener"` : ''}><span class="g-logo">G</span><span class="g-mid"><span class="g-stars">★★★★★</span><span class="g-sub">${esc(s.rating)} · ${esc(s.reviewCount || 0)} Google reviews${(b.mapsUrl) ? ' · Read on Google ↗' : ''}</span></span></a>` : '')}</div>` : ''}</div><div class="rev-grid">${(s.reviews || []).map((r) => {
         const init = (r.name || 'C').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
         return `<div class="rev"><div class="stars">${'★'.repeat(Math.round(r.rating || 5))}</div><p>"${esc(r.text)}"</p><div class="who"><div class="av">${esc(init)}</div><div><b>${esc(r.name)}</b><span>Google review</span></div></div></div>`;
       }).join('')}</div></div></section>`
@@ -152,6 +177,24 @@ footer{background:#07142b;color:#aebbd2;padding:44px 0 26px}
 .foot-top{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,.1)}.foot-top .logo-txt b{color:#fff}
 .foot-links{display:flex;gap:22px;flex-wrap:wrap}.foot-links a{font-size:14px}.foot-links a:hover{color:#fff}
 .foot-bot{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding-top:22px;font-size:13px}.foot-bot a{color:var(--amber);font-weight:600}
+.accred{background:#fff;border-bottom:1px solid var(--line)}.accred .wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:16px;padding-bottom:16px}
+.accred-lead{font-weight:700;color:var(--navy);font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+.ac-badge{display:inline-flex;align-items:center;gap:6px;background:#eef3fb;border:1px solid var(--line);color:var(--navy);font-weight:600;font-size:13px;padding:7px 12px;border-radius:8px}
+.gbadge-wrap{display:flex;justify-content:center;margin-top:18px}
+.gbadge{display:inline-flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 18px;box-shadow:0 6px 18px rgba(16,42,82,.12)}
+.g-logo{width:30px;height:30px;border-radius:50%;background:conic-gradient(#ea4335,#fbbc05,#34a853,#4285f4,#ea4335);display:grid;place-items:center;color:#fff;font-weight:800;font-family:Arial;font-size:17px}
+.g-mid{display:flex;flex-direction:column;line-height:1.2}.g-stars{color:#fbbc05;letter-spacing:1px;font-size:14px}.g-sub{font-size:13px;color:var(--ink);font-weight:600}
+.gband{padding:40px 0;background:var(--bg)}
+.areasec{background:#fff}.area-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:30px;align-items:stretch}
+.area-map{width:100%;min-height:320px;border:0;border-radius:16px;box-shadow:0 18px 40px rgba(16,42,82,.12)}
+.area-list{display:flex;flex-direction:column;justify-content:center;gap:16px}
+.area-chips{display:flex;flex-wrap:wrap;gap:9px}.area-chips span{background:var(--bg);border:1px solid var(--line);color:var(--navy);font-weight:600;font-size:13.5px;padding:7px 12px;border-radius:8px}
+@media(max-width:820px){.area-grid{grid-template-columns:1fr}.area-map{min-height:240px}}
+.mobilebar{display:none}
+@media(max-width:760px){.mobilebar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:60;gap:1px;background:var(--line);box-shadow:0 -6px 20px rgba(0,0,0,.18)}
+.mobilebar a{flex:1;text-align:center;padding:14px 8px;font-weight:800;font-size:15px;font-family:'Poppins';background:var(--navy);color:#fff}
+.mobilebar a.mb-quote{background:linear-gradient(135deg,var(--amber),var(--amber-d));color:var(--acc-ink)}
+body{padding-bottom:56px}}
 </style></head><body>
 <header><div class="wrap hbar">
   <div class="brand"><span class="badge">${esc(s.initials || 'SP')}</span><span class="logo-txt"><b>${esc(b.name)}</b><span>Local · Trusted</span></span></div>
@@ -173,12 +216,13 @@ ${offerBar}
     </div>
   </div>
 </section>
+${accred}
 <section id="services"><div class="wrap"><div class="sec-head"><div class="kicker">What we do</div><h2>Our services</h2></div><div class="svc-grid">${services}</div></div></section>
 <section id="about" class="about"><div class="wrap about-grid">
   <div><div class="kicker">About us</div><h2>${esc((s.about && s.about.heading) || 'About us')}</h2>${paras}${stats ? `<div class="stats">${stats}</div>` : ''}</div>
   ${aboutVisual}
 </div></section>
-${gallery}${reviews}${faqSec}
+${gallery}${reviews}${googleBand}${areaSec}${faqSec}
 <section id="contact"><div class="wrap"><div class="sec-head"><div class="kicker">Get in touch</div><h2>Get your free quote</h2></div>
   <div class="contact-grid">
     <div>
@@ -194,6 +238,7 @@ ${gallery}${reviews}${faqSec}
     <div class="foot-links"><a href="#services">Services</a><a href="#about">About</a><a href="#contact">Contact</a>${phone ? `<a href="${telHref(phone)}">${esc(phone)}</a>` : ''}</div></div>
   <div class="foot-bot"><span>© 2026 ${esc(b.name)}. All rights reserved.</span><span>Powered by <a href="https://aiwebpoint.com/?source=${encodeURIComponent(s.slug || '')}" target="_blank" rel="noopener">aiwebpoint.com</a></span></div>
 </div></footer>
+${mobileBar}
 </body></html>`;
 }
 

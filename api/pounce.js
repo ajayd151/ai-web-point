@@ -10,7 +10,7 @@ const GKEY = () => process.env.GOOGLE_PLACES_API_KEY;
 const OKEY = () => process.env.OPENAI_API_KEY;
 
 // bump when the generator/template changes so cached previews auto-rebuild
-const SITE_VERSION = 3;
+const SITE_VERSION = 4;
 const ACCENTS = {
   amber: { a: '#ffb703', d: '#f59e0b' }, blue: { a: '#2f6df6', d: '#1d4fd0' },
   green: { a: '#16a34a', d: '#0f7d39' }, red: { a: '#e23b3b', d: '#c01f1f' },
@@ -61,6 +61,7 @@ async function writeCopy(ctx) {
     aboutHeading: `About ${ctx.name}`, aboutParas: [`${ctx.name} is a trusted local ${ctx.category} serving ${ctx.location} and the surrounding area.`],
     stats: [{ num: ctx.rating ? ctx.rating + '★' : '5★', label: 'Customer rating' }, { num: (ctx.reviews || 0) + '+', label: 'Happy customers' }],
     seoTitle: `${ctx.name} | ${ctx.category} in ${ctx.location}`, seoDesc: `${ctx.name} — trusted ${ctx.category} in ${ctx.location}. Free quotes.`,
+    areasCovered: [],
   };
   fallback.faq = [];
   if (!OKEY()) return fallback;
@@ -75,7 +76,7 @@ async function writeCopy(ctx) {
     o.notes ? `Extra notes from the agency: ${o.notes}.` : '',
   ].filter(Boolean).join(' ');
   const faqAsk = o.faq ? ',"faq":[{"q":"a real question a local customer would ask this trade","a":"a helpful 1-2 sentence answer"} (4-5 items)]' : '';
-  const prompt = `Write website copy for a local ${ctx.category} called "${ctx.name}" in ${ctx.location} (Google: ${ctx.reviews} reviews at ${ctx.rating}★). Known services: ${svc || 'infer from the trade'}. ${extras}\nRecent reviews:\n${revs || 'none'}\n\nReturn JSON: {"headline":"punchy hero headline","sub":"1 sentence subheadline","trust":["3-4 short trust badges e.g. Fully Insured, Free Quotes"],"services":[{"icon":"a fitting emoji","title":"2-3 words","desc":"1 short sentence"} x4-6],"aboutHeading":"short","aboutParas":["2 short warm paragraphs about the business using the real reputation${ctx.establishedYear ? ' and mentioning they were established ' + ctx.establishedYear : ''}"],"stats":[{"num":"e.g. 10+","label":"short"} x3],"seoTitle":"SEO title <60 chars","seoDesc":"meta description <155 chars"${faqAsk}}. Be specific to the trade, warm and credible. No fluff.`;
+  const prompt = `Write website copy for a local ${ctx.category} called "${ctx.name}" in ${ctx.location} (Google: ${ctx.reviews} reviews at ${ctx.rating}★). Known services: ${svc || 'infer from the trade'}. ${extras}\nRecent reviews:\n${revs || 'none'}\n\nReturn JSON: {"headline":"punchy hero headline","sub":"1 sentence subheadline","trust":["3-4 short trust badges e.g. Fully Insured, Free Quotes"],"services":[{"icon":"a fitting emoji","title":"2-3 words","desc":"1 short sentence"} x4-6],"aboutHeading":"short","aboutParas":["2 short warm paragraphs about the business using the real reputation${ctx.establishedYear ? ' and mentioning they were established ' + ctx.establishedYear : ''}"],"stats":[{"num":"e.g. 10+","label":"short"} x3],"areasCovered":["4-6 real nearby towns/areas a ${ctx.category} based in ${ctx.location} would realistically cover"],"seoTitle":"SEO title <60 chars","seoDesc":"meta description <155 chars"${faqAsk}}. Be specific to the trade, warm and credible. No fluff.`;
   try {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 22000);
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -94,6 +95,7 @@ async function writeCopy(ctx) {
       stats: Array.isArray(p.stats) ? p.stats.slice(0, 3) : fallback.stats,
       seoTitle: p.seoTitle || fallback.seoTitle, seoDesc: p.seoDesc || fallback.seoDesc,
       faq: Array.isArray(p.faq) ? p.faq.map((f) => ({ q: String(f.q || '').trim(), a: String(f.a || '').trim() })).filter((f) => f.q && f.a).slice(0, 6) : [],
+      areasCovered: Array.isArray(p.areasCovered) ? p.areasCovered.map((x) => String(x).trim()).filter(Boolean).slice(0, 8) : [],
     };
   } catch (e) { return fallback; }
 }
@@ -169,8 +171,9 @@ module.exports = async (req, res) => {
     offer: String(body.offer || '').trim().slice(0, 160),
     faq: !!body.faq,
     notes: String(body.notes || '').trim().slice(0, 500),
+    accreditations: Array.isArray(body.accreditations) ? body.accreditations.map((x) => String(x).trim()).filter(Boolean).slice(0, 8) : [],
   };
-  const hasOpts = !!(opts.accent || opts.highlightServices || opts.usp || opts.offer || opts.faq || opts.notes);
+  const hasOpts = !!(opts.accent || opts.highlightServices || opts.usp || opts.offer || opts.faq || opts.notes || opts.accreditations.length);
 
   const host = req.headers['x-forwarded-host'] || req.headers.host;
   const linkBase = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
@@ -252,6 +255,7 @@ module.exports = async (req, res) => {
     slug, mode: 'preview', v: SITE_VERSION, createdAt: new Date().toISOString(),
     business: { name, location, category, phone: realPhone, address, mapsUrl: place ? 'https://www.google.com/maps/place/?q=place_id:' + place.id : '' },
     initials, accent: opts.accent || null, offer: opts.offer || '',
+    accreditations: opts.accreditations || [],
     hero: { headline: copy.headline, sub: copy.sub, image: heroImage, source: heroSource },
     trust: copy.trust,
     services: copy.services,
@@ -259,6 +263,7 @@ module.exports = async (req, res) => {
     gallery,
     reviews: goodReviews,
     faq: copy.faq || [],
+    areasCovered: copy.areasCovered || [],
     contact: { phone: realPhone, area: location, hours },
     rating, reviewCount, establishedYear, usedProwl,
     seo: { title: copy.seoTitle, description: copy.seoDesc },
