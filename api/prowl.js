@@ -133,8 +133,8 @@ module.exports = async (req, res) => {
     || leadResults.find((p) => norm(nameOf(p)).includes(leadNorm) || leadNorm.includes(norm(nameOf(p))))
     || leadResults[0] || null;
   const google = leadPlace
-    ? { placeId: leadPlace.id, rating: leadPlace.rating || 0, reviews: leadPlace.userRatingCount || 0, website: leadPlace.websiteUri || '' }
-    : { placeId: '', rating: 0, reviews: 0, website: '' };
+    ? { placeId: leadPlace.id, rating: leadPlace.rating || 0, reviews: leadPlace.userRatingCount || 0, website: leadPlace.websiteUri || '', mapsUrl: 'https://www.google.com/maps/place/?q=place_id:' + leadPlace.id }
+    : { placeId: '', rating: 0, reviews: 0, website: '', mapsUrl: '' };
 
   const competitors = compResults
     .filter((p) => p.websiteUri && norm(nameOf(p)) !== leadNorm)

@@ -855,6 +855,11 @@ function exportDashboardCsv(rows) {
 
 // ---- hot leads (its own page) ----
 let lastHotLeads = [];
+// exact stored Google Maps URL if we have it, else a name+location search link
+function mapsLink(l) {
+  if (l.mapsUrl) return l.mapsUrl;
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(((l.name || '') + ' ' + (l.location || '')).trim());
+}
 function hotLeadCardHTML(l) {
   const phone = l.phone || '';
   const mobile = phone && window.BizData.isUkMobile(phone);
@@ -865,6 +870,7 @@ function hotLeadCardHTML(l) {
     acts += `<a class="hl-act wa" target="_blank" rel="noopener" href="https://wa.me/${toWaNumber(phone)}?text=${encodeURIComponent(msg)}">📱 WhatsApp</a>`;
   }
   if (phone) acts += `<a class="hl-act" href="tel:${esc(phone)}">📞 Call</a>`;
+  acts += `<a class="hl-act" target="_blank" rel="noopener" href="${esc(mapsLink(l))}">📍 Maps</a>`;
   acts += `<a class="hl-act" target="_blank" rel="noopener" href="${esc(l.viewUrl)}">View ↗</a>`;
   return `<div class="hl-card"><div class="hl-main"><b>${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}<div class="hl-meta">${phone ? '📞 ' + esc(phone) : 'No phone on file'} · requested demo ${esc(fmtDate(l.demoAt))}</div></div><div class="hl-acts">${acts}</div></div>`;
 }
@@ -932,7 +938,7 @@ function renderDossier(d, lead) {
   const opener = d.openingLine ? `<div class="dos-open"><h3>💬 Suggested opener</h3><p>${esc(d.openingLine)}</p></div>` : '';
   $('prowl-body').innerHTML =
     `<div class="dos-snap">${snapshot}</div>` +
-    `<div class="dos-rep">⭐ Google: <b>${g.reviews}</b> reviews at <b>${g.rating}★</b>${g.website ? '' : ' · <b>no website</b>'}${d.reputationSummary ? ' — ' + esc(d.reputationSummary) : ''}</div>` +
+    `<div class="dos-rep">⭐ Google: <b>${g.reviews}</b> reviews at <b>${g.rating}★</b>${g.mapsUrl ? ' · <a href="' + esc(g.mapsUrl) + '" target="_blank" rel="noopener">📍 Maps</a>' : ''}${g.website ? '' : ' · <b>no website</b>'}${d.reputationSummary ? ' — ' + esc(d.reputationSummary) : ''}</div>` +
     compTable + services + ammo + opener +
     `<div class="dos-foot"><span class="muted">Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-rerun" class="ghost">↻ Re-run</button></div>`;
   const rr = $('prowl-rerun');

@@ -32,6 +32,7 @@ module.exports = async (req, res) => {
       phone: meta.phone || '',
       location: meta.loc || '',
       category: meta.category || '',
+      mapsUrl: meta.mapsUrl || '',
       who: meta.who || '',
       demoAt: r.demo_at,
       openedAt: r.opened_at,
