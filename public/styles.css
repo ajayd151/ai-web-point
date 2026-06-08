@@ -272,7 +272,24 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .hl-acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .hl-act { font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 8px; text-decoration: none; background: #fff; border: 1px solid var(--line); color: var(--ink); }
 .hl-act.wa { background: #25d366; color: #fff; border-color: transparent; }
+.hl-act.hl-prowl { background: linear-gradient(90deg, var(--blue), var(--mauve)); color: #fff; border-color: transparent; }
 .hl-act:hover { filter: brightness(0.97); }
+
+/* 🐾 Prowl dossier */
+.dos-snap { font-size: 14px; margin: 4px 0 10px; }
+.dos-rep { font-size: 14px; margin: 0 0 8px; color: var(--ink); }
+#prowl-body h3 { font-size: 14px; margin: 18px 0 8px; }
+.dos-table .dos-you { background: #f0f5ff; }
+.dos-table td:first-child { font-weight: 600; }
+.dos-table a { color: var(--blue); text-decoration: none; }
+.dos-ammo { background: linear-gradient(120deg, rgba(67,117,237,.08), rgba(196,133,177,.08)); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin: 16px 0; }
+.dos-ammo h3 { margin: 0 0 8px; }
+.dos-ammo ul { margin: 0; padding-left: 18px; }
+.dos-ammo li { font-size: 14px; line-height: 1.75; }
+.dos-open { background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; }
+.dos-open h3 { margin: 0 0 6px; }
+.dos-open p { margin: 0; font-size: 14px; line-height: 1.6; }
+.dos-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
 .dash-tips { background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; }
 .dash-tips h3 { margin: 0 0 8px; font-size: 14px; }
 .dash-tips ul { margin: 0; padding-left: 18px; }

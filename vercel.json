@@ -11,6 +11,9 @@
     },
     "api/mockups.js": {
       "maxDuration": 30
+    },
+    "api/prowl.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [

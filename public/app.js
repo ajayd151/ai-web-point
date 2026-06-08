@@ -858,7 +858,7 @@ let lastHotLeads = [];
 function hotLeadCardHTML(l) {
   const phone = l.phone || '';
   const mobile = phone && window.BizData.isUkMobile(phone);
-  let acts = '';
+  let acts = `<button class="hl-act hl-prowl" data-slug="${esc(l.slug)}">🐾 Prowl</button>`;
   if (mobile) {
     const biz = { name: l.name, location: l.location, category: '' };
     const msg = fillWaMessage(loadSettings().followUp, biz, tagLink(l.viewUrl, 'w'), l.who);
@@ -889,6 +889,55 @@ async function loadHotLeads() {
   } catch (e) { /* keep showing whatever's there */ }
 }
 $('hot-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadHotLeads));
+
+// ---- 🐾 Prowl: lead intelligence dossier ----
+$('hot-body').addEventListener('click', (e) => {
+  const b = e.target.closest('.hl-prowl');
+  if (b) { const lead = lastHotLeads.find((l) => l.slug === b.dataset.slug); if (lead) openProwl(lead); }
+});
+$('prowl-close').addEventListener('click', () => $('prowl-modal').classList.add('hidden'));
+function startProwlProgress() {
+  const steps = ['Checking Companies House', 'Pulling Google reviews & score', 'Scouting nearby competitors', 'Reading recent reviews', 'Writing your sales briefing'];
+  $('prowl-body').innerHTML = '<div class="genprog"><div>' +
+    steps.map((s) => `<div class="gp-row"><span class="gp-ic"><span class="spinner sm"></span></span><span class="gp-text">${esc(s)}…</span></div>`).join('') +
+    '</div><p class="genprog-foot"><small>Gathering public intel… ~10–20 seconds.</small></p></div>';
+}
+function prowlFetch(lead, refresh) {
+  return fetch('/api/prowl', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: lead.slug, name: lead.name, location: lead.location, category: lead.category || '', phone: lead.phone || '', refresh: !!refresh }) })
+    .then((r) => r.json().then((j) => ({ status: r.status, j })));
+}
+function openProwl(lead) {
+  $('prowl-title').textContent = '🐾 Prowl · ' + lead.name;
+  $('prowl-modal').classList.remove('hidden');
+  startProwlProgress();
+  prowlFetch(lead, false)
+    .then(({ status, j }) => { if (status !== 200) throw new Error(j.error || 'Prowl failed'); renderDossier(j.dossier, lead); })
+    .catch((e) => { $('prowl-body').innerHTML = `<div class="empty">⚠️ ${esc(e && e.message ? e.message : 'Prowl failed')}</div>`; });
+}
+function renderDossier(d, lead) {
+  const ch = d.companiesHouse || {};
+  const g = d.google || {};
+  const comps = d.competitors || [];
+  const snapshot = ch.found
+    ? `<b>${esc(ch.name)}</b>${ch.type ? ' · ' + esc(ch.type) : ''} · established <b>${esc(fmtDateShort(ch.established))}</b> · ${esc(ch.status || '')}${ch.director ? ' · director <b>' + esc(ch.director) + '</b>' : ''}`
+    : `<span class="muted">${esc(ch.note || 'No Companies House record (likely a sole trader).')}</span>`;
+  let compTable = '';
+  if (comps.length) {
+    const youRow = `<tr class="dos-you"><td><b>${esc(d.business.name)} (you)</b></td><td>❌ No website</td><td>${g.reviews}</td><td>${g.rating}★</td></tr>`;
+    const rows = comps.map((c) => `<tr><td>${esc(c.name)}</td><td>✅ <a href="${esc(c.website)}" target="_blank" rel="noopener">${esc(c.website.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 28))}</a></td><td>${c.reviews}</td><td>${c.score}★</td></tr>`).join('');
+    compTable = `<h3>How they stack up against nearby competitors</h3><div class="recent-scroll"><table class="recent-table dos-table"><thead><tr><th>Business</th><th>Website</th><th>Google reviews</th><th>Score</th></tr></thead><tbody>${youRow}${rows}</tbody></table></div>`;
+  }
+  const services = (d.services && d.services.length) ? `<h3>What they do</h3><div class="chips">${d.services.map((s) => `<span class="chip site">${esc(s)}</span>`).join('')}</div>` : '';
+  const ammo = (d.ammunition && d.ammunition.length) ? `<div class="dos-ammo"><h3>🎯 Your ammunition</h3><ul>${d.ammunition.map((a) => `<li>${esc(a)}</li>`).join('')}</ul></div>` : '';
+  const opener = d.openingLine ? `<div class="dos-open"><h3>💬 Suggested opener</h3><p>${esc(d.openingLine)}</p></div>` : '';
+  $('prowl-body').innerHTML =
+    `<div class="dos-snap">${snapshot}</div>` +
+    `<div class="dos-rep">⭐ Google: <b>${g.reviews}</b> reviews at <b>${g.rating}★</b>${g.website ? '' : ' · <b>no website</b>'}${d.reputationSummary ? ' — ' + esc(d.reputationSummary) : ''}</div>` +
+    compTable + services + ammo + opener +
+    `<div class="dos-foot"><span class="muted">Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-rerun" class="ghost">↻ Re-run</button></div>`;
+  const rr = $('prowl-rerun');
+  if (rr) rr.addEventListener('click', () => { startProwlProgress(); prowlFetch(lead, true).then(({ j }) => renderDossier(j.dossier || {}, lead)).catch(() => {}); });
+}
 
 // ---- tab-title alert: flashes when you have hot leads + are on another tab ----
 let titleTimer = null;

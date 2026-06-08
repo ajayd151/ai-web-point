@@ -31,6 +31,7 @@ module.exports = async (req, res) => {
       name: meta.name || nameFromSlug(r.slug),
       phone: meta.phone || '',
       location: meta.loc || '',
+      category: meta.category || '',
       who: meta.who || '',
       demoAt: r.demo_at,
       openedAt: r.opened_at,
