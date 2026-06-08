@@ -97,7 +97,7 @@ application form). The whole interface is hidden behind it until signed in.
 
 ### 🔥 Hot Leads
 - Prospects who clicked the demo CTA, enriched with phone/name/location.
-- Per card: **📱 WhatsApp / 📞 Call / View ↗ / 🐾 Prowl**.
+- Per card: **📱 WhatsApp / 📞 Call / 📍 Maps / View ↗ / 🐾 Prowl / 🐆 Pounce**.
 - **Nav count badge** + **animated tab-title alert** — `Site Pounce (N)` when looking,
   **flashes** "🔥 (N) hot leads!" when you're on another tab; 3-min poll keeps it fresh.
 
@@ -110,14 +110,30 @@ application form). The whole interface is hidden behind it until signed in.
   chips, ammunition, opener. **Cached** as `dossiers/<slug>.json` (↩ Re-run to refresh).
 - Rate-limited (`LIMIT_PROWL`, default 20/12h).
 
-### 🐆 Pounce — full website builder (PLANNED; prototype live)
-- Build a real **1-page WOW website** from the Prowl intel + Google Maps photos + 4-5★
-  reviews + AI copy. **Hosted by us** (preview = live, identical); **GHL** provides the
-  Google review system + CRM behind it (live form → GHL webhook).
-- 3 templates, SEO tier dropdown (None/Basic/Intermediate/Advanced=schema), optional
-  pre-build questions, AI-prompt editor for later edits, "Powered by aiwebpoint.com?source="
-  footer.
-- **Prototype:** `/prototype-solihull.html` (design under review).
+### 🐆 Pounce — one-click website builder (LIVE)
+- One click on a Hot Lead (button next to 🐾 Prowl, **also** a CTA inside the Prowl dossier so
+  it reuses the gathered intel) builds a real **1-page WOW website** for that business and
+  opens it inline (iframe) with **Open full site ↗ / Copy link / Rebuild**.
+- **Sources:** `api/pounce.js` → **Google Place Details** (real business **photos**, **4-5★
+  reviews**, opening hours, address, phone) + the cached **Prowl dossier** (services) +
+  **gpt-4o-mini** copywriting (headline, trust badges, service cards, about, stats, SEO meta).
+- **Hosting:** **by us** — served at **`/s/<slug>`** (`api/site.js`) from `sites/<slug>.json`.
+  Preview = the live page (identical when published). **GHL** later provides the Google review
+  system + CRM behind it.
+- **Photos** are served via **`api/photo.js`** — a proxy that fetches the Google photo
+  server-side so `GOOGLE_PLACES_API_KEY` never appears in the page (validated name, cached,
+  noindex).
+- **Favicon:** every generated site gets a **per-business** inline-SVG favicon (initials badge).
+- **No crawling in preview:** preview sites render `<meta robots noindex>` **and** an
+  `X-Robots-Tag: noindex` header (the whole site only drops noindex when `mode:'published'`).
+- **Preview registry / tidy-up:** every build writes `sites/<slug>.json` with `mode:'preview'`
+  + `createdAt`. **`GET /api/sites`** (login-gated) lists them all (slug, name, mode, createdAt,
+  url) so old previews can be reviewed/cleaned in a later tidy-up session.
+- Rate-limited (`LIMIT_POUNCE`, default 30/12h). Footer: "Powered by
+  aiwebpoint.com?source=<slug>".
+- **Prototype reference:** `/prototype-solihull.html` (the template the generator mirrors).
+- **Planned next:** 3 selectable templates, SEO-tier dropdown (None/Basic/Intermediate/
+  Advanced=schema), pre-build questions, AI-prompt editor for revisions, publish flow.
 
 ### Founding-member landing & application
 - The login gate is a landing page with a **Founding-Member** offer ("20 places, fixed fee
@@ -126,7 +142,7 @@ application form). The whole interface is hidden behind it until signed in.
 
 ### Security & cost protection
 - Full-screen **login gate** + server-side auth on every paid endpoint.
-- **Usage caps** (`lib/ratelimit.js`): 20 searches / 20 generations / 20 prowls per 12h
+- **Usage caps** (`lib/ratelimit.js`): 20 searches / 20 generations / 30 prowls / 30 pounces per 12h
   (env-overridable `LIMIT_*`).
 - **Error alerts** email you via SendGrid + an on-screen Retry button (45s countdown).
 
@@ -142,14 +158,17 @@ app.js      all UI logic               search.js    Google Places + filters + ne
 styles.css  styling                    generate.js  gpt-image-1 + sharp/canvas composite + Blob
 data.js     client helpers             view.js      /v/<slug> preview page + tracking beacon
 favicon.svg SP icon                    img.js       /i/<slug>.png branded image proxy
-prototype-solihull.html (Pounce demo)  track.js     open/click/sent beacon → Postgres
+prototype-solihull.html (Pounce ref)   track.js     open/click/sent beacon → Postgres
                                        mockups.js   list mockups + merge engagement stats
 Shared libs (/lib)                     apply.js     founding-member form → SendGrid + Postgres
 ─────────────────                      report.js    error-alert email (SendGrid)
 auth.js     HMAC signed cookie         dashboard.js analytics aggregation + insights
 ratelimit.js 12h usage caps            hotleads.js  demo-clickers + contact details
 filters.js  server-side lead filtering prowl.js     lead-intelligence dossier (cached)
-db.js       Neon Postgres pool + queries
+db.js       Neon Postgres pool+queries pounce.js    builds 1-page site → sites/<slug>.json
+                                       site.js      renders /s/<slug> (noindex preview)
+                                       photo.js     Google-photo proxy (hides API key)
+                                       sites.js     lists preview sites (tidy-up registry)
 ```
 
 - **Frontend:** plain static HTML/CSS/JS, no framework/build step. State persists in
@@ -175,12 +194,17 @@ db.js       Neon Postgres pool + queries
 | `GET /api/dashboard?days=` | ✅ | Aggregated stats + insights (date-range filtered). |
 | `GET /api/hotleads` | ✅ | Demo-clickers + contact details (from mockup metadata). |
 | `POST /api/prowl` | ✅ | Lead-intelligence dossier (cached as blob; rate-limited). |
+| `POST /api/pounce` | ✅ | Builds a 1-page site → `sites/<slug>.json`. Returns `{siteUrl, slug, cached}`. Rate-limited. |
+| `GET /s/<slug>` | — | Renders the generated site (`/api/site`). Preview = `noindex` (meta + header). |
+| `GET /api/photo?n=` | — | Proxies a Google place photo (key stays server-side; validated; cached; noindex). |
+| `GET /api/sites` | ✅ | Lists all generated preview sites (the tidy-up registry). |
 | `POST /api/apply` | — | Founding-member application → SendGrid + Postgres. |
 | `POST /api/report` | ✅ | Error-alert email (SendGrid). |
 
 `vercel.json`: per-function config (`generate` 1024MB/180s/fonts, `search`/`mockups` 30s,
-`prowl` 60s); rewrites `/v/:slug`, `/i/:slug`; cache headers (`must-revalidate` on the app
-shell so deploys show without a hard refresh). `api/download.js` was removed (legacy).
+`prowl`/`pounce` 60s, `site` 15s); rewrites `/v/:slug`, `/i/:slug`, `/s/:slug`; cache headers
+(`must-revalidate` on the app shell so deploys show without a hard refresh). `api/download.js`
+was removed (legacy).
 
 ---
 
@@ -190,6 +214,8 @@ shell so deploys show without a hard refresh). `api/download.js` was removed (le
 - `mockups/<slug>.png` — final mockup image.
 - `mockups/<slug>.json` — `{ name, loc, who, cta, img, phone, category }`.
 - `dossiers/<slug>.json` — cached Prowl dossier.
+- `sites/<slug>.json` — generated Pounce site content + `mode` (`preview`/`published`) +
+  `createdAt`. **This prefix is the preview registry** (`GET /api/sites` lists it).
 - `usage/...` — rate-limit counters (pruned after 12h).
 - `<slug>` = `<business-name-slug>-<8charid>`.
 
@@ -264,12 +290,15 @@ per-account setting (`LINK_DOMAIN`).
 ## 11. Roadmap
 
 - **✅ Done:** lead finder, AI mockups, WhatsApp+SMS send, branded links, messaged-tracking,
-  engagement tracking, **Performance dashboard**, **Hot Leads** + tab alert, **🐾 Prowl**.
-- **🔜 🐆 Pounce** — full 1-page website builder (prototype built; awaiting design sign-off),
-  then publish + **GHL** handoff (review system/CRM) at conversion.
+  engagement tracking, **Performance dashboard**, **Hot Leads** + tab alert, **🐾 Prowl**,
+  **🐆 Pounce** (one-click 1-page website builder, live, noindex previews + tidy-up registry).
+- **🔜 Pounce v2** — 3 selectable templates, SEO-tier dropdown, pre-build questions, AI-prompt
+  editor for revisions, **publish flow** (flip `mode` → `published`, drop noindex, custom
+  domain) + **GHL** handoff (review system/CRM) at conversion.
 - **🔜 Companies House** — add the free key to enrich Prowl.
-- **🔮 Later:** Prowl Phase B (Trustpilot/Facebook/competitor-gap web search), AI site editor,
-  multi-template, per-keyword dashboard breakdowns, multi-user accounts + billing (SaaS).
+- **🔮 Later:** Prowl Phase B (Trustpilot/Facebook/competitor-gap web search),
+  tidy-up admin UI (bulk-delete stale previews), per-keyword dashboard breakdowns,
+  multi-user accounts + billing (SaaS).
 
 ---
 
