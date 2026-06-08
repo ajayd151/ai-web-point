@@ -117,6 +117,14 @@ application form). The whole interface is hidden behind it until signed in.
 - **Sources:** `api/pounce.js` → **Google Place Details** (real business **photos**, **4-5★
   reviews**, opening hours, address, phone) + the cached **Prowl dossier** (services) +
   **gpt-4o-mini** copywriting (headline, trust badges, service cards, about, stats, SEO meta).
+- **Photo intelligence (don't regress):** GMB photos are often poor (logos, receipts, plain
+  storefronts). `rankPhotos()` runs **gpt-4o-mini vision** over every Google photo (512px,
+  `detail:'low'`) and scores each for **hero** and **gallery** suitability + a **junk** flag.
+  Only a photo scoring ≥ `POUNCE_HERO_MIN` (default **7**) becomes the hero; gallery uses
+  non-junk photos ≥ `POUNCE_GALLERY_MIN` (default **5**). **If nothing clears the bar,
+  `generateHeroImage()` curates a clean, text-free, on-trade hero with gpt-image-1** (stored
+  as `sites/<slug>-hero.jpg`). The chosen path (`heroSource`: their photo / AI-curated) is
+  shown in the result bar.
 - **Hosting:** **by us** — served at **`/s/<slug>`** (`api/site.js`) from `sites/<slug>.json`.
   Preview = the live page (identical when published). **GHL** later provides the Google review
   system + CRM behind it.
@@ -201,8 +209,9 @@ db.js       Neon Postgres pool+queries pounce.js    builds 1-page site → sites
 | `POST /api/apply` | — | Founding-member application → SendGrid + Postgres. |
 | `POST /api/report` | ✅ | Error-alert email (SendGrid). |
 
-`vercel.json`: per-function config (`generate` 1024MB/180s/fonts, `search`/`mockups` 30s,
-`prowl`/`pounce` 60s, `site` 15s); rewrites `/v/:slug`, `/i/:slug`, `/s/:slug`; cache headers
+`vercel.json`: per-function config (`generate` 1024MB/180s/fonts, `pounce` 1024MB/120s,
+`search`/`mockups` 30s, `prowl` 60s, `site` 15s); rewrites `/v/:slug`, `/i/:slug`, `/s/:slug`;
+cache headers
 (`must-revalidate` on the app shell so deploys show without a hard refresh). `api/download.js`
 was removed (legacy).
 
