@@ -93,6 +93,7 @@ button, .btn {
 button.primary, .primary.btn { background: linear-gradient(90deg, var(--blue), var(--mauve)); color: #fff; }
 button.primary:hover { filter: brightness(1.05); }
 button.ghost, .ghost.btn { background: #fff; border: 1px solid var(--line); color: var(--ink); }
+button.sm, .btn.sm { padding: 8px 14px; font-size: 13px; }
 button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); color: #fff; width: 100%; margin-top: 12px; }
 .wa.btn { background: #25d366; color: #fff; }
 .wa.btn:hover { background: #1eb955; }
@@ -273,7 +274,15 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .hl-act { font-size: 13px; font-weight: 700; padding: 7px 12px; border-radius: 8px; text-decoration: none; background: #fff; border: 1px solid var(--line); color: var(--ink); }
 .hl-act.wa { background: #25d366; color: #fff; border-color: transparent; }
 .hl-act.hl-prowl { background: linear-gradient(90deg, var(--blue), var(--mauve)); color: #fff; border-color: transparent; }
+.hl-act.hl-pounce { background: linear-gradient(90deg, #f59e0b, #ef6c00); color: #fff; border-color: transparent; }
 .hl-act:hover { filter: brightness(0.97); }
+
+/* 🐆 Pounce website preview */
+.pounce-card { width: 1040px; }
+.pounce-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.pounce-bar .btn { text-decoration: none; }
+.pounce-note { margin-left: auto; font-size: 12.5px; }
+.pounce-frame { width: 100%; height: 70vh; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 
 /* 🐾 Prowl dossier */
 .dos-snap { font-size: 14px; margin: 4px 0 10px; }

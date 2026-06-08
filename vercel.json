@@ -14,11 +14,18 @@
     },
     "api/prowl.js": {
       "maxDuration": 60
+    },
+    "api/pounce.js": {
+      "maxDuration": 60
+    },
+    "api/site.js": {
+      "maxDuration": 15
     }
   },
   "rewrites": [
     { "source": "/v/:slug", "destination": "/api/view?slug=:slug" },
-    { "source": "/i/:slug", "destination": "/api/img?slug=:slug" }
+    { "source": "/i/:slug", "destination": "/api/img?slug=:slug" },
+    { "source": "/s/:slug", "destination": "/api/site?slug=:slug" }
   ],
   "headers": [
     {
