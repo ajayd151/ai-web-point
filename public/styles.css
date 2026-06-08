@@ -251,6 +251,10 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .dash-insights h3 { margin: 0 0 8px; font-size: 15px; }
 .dash-insights ul { margin: 0; padding-left: 18px; }
 .dash-insights li { font-size: 14px; line-height: 1.75; color: var(--ink); }
+.dash-tips { background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; }
+.dash-tips h3 { margin: 0 0 8px; font-size: 14px; }
+.dash-tips ul { margin: 0; padding-left: 18px; }
+.dash-tips li { font-size: 13px; line-height: 1.7; color: var(--muted); }
 .dash-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
 .dash-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-align: center; box-shadow: var(--shadow); }
 .dc-num { font-size: 30px; font-weight: 800; color: var(--blue); line-height: 1; }

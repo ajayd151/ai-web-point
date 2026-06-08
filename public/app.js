@@ -790,6 +790,15 @@ $('rs-clear').addEventListener('click', () => {
 renderRecentSearches();
 
 // ---- performance dashboard -----------------------------------------------
+// Generic best-practice tips (NOT based on your data — general outreach advice)
+const GENERIC_TIPS = [
+  'Tradespeople are often easiest to reach early (7–8am) or after they finish on site (5–7pm) — they\'re rarely at a desk during the day.',
+  'Tuesday to Thursday usually beats Mondays (catching up) and Fridays (winding down) for B2B replies.',
+  'Keep the first message short and low-pressure — you\'re offering something free, not selling.',
+  'Most replies come from a single polite follow-up 2–3 days later — use the ↩ Follow up button for those who didn\'t open.',
+  'WhatsApp tends to feel more personal than SMS for sole traders and often gets a warmer response.',
+  'Avoid weekends for trades that work Mon–Fri; weekends are fine for consumer-facing ones (salons, groomers, cleaners).',
+];
 $('dash-details').addEventListener('toggle', () => { if ($('dash-details').open) loadDashboard(); });
 async function loadDashboard() {
   const body = $('dash-body');
@@ -828,8 +837,10 @@ function renderDashboard(d) {
     `<div class="dash-card"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div></div>` +
     `<div class="dash-card"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div></div>` +
     '</div>';
-  const insights = '<div class="dash-insights"><h3>💡 Insights &amp; recommendations</h3><ul>' +
+  const insights = '<div class="dash-insights"><h3>📊 Based on your data</h3><ul>' +
     (d.insights || []).map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
+  const tips = '<div class="dash-tips"><h3>💡 General tips <span class="muted">(best practice, not your data)</span></h3><ul>' +
+    GENERIC_TIPS.map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
   const channelBlock = (ch.w.sent || ch.s.sent)
     ? '<div class="dash-chan"><h3>By channel</h3>' +
       `<div class="dash-chrow"><span>📱 WhatsApp</span><span>${ch.w.opened}/${ch.w.sent} opened · <b>${ch.w.rate}%</b></span></div>` +
@@ -855,7 +866,7 @@ function renderDashboard(d) {
     table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
       '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Demo</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
-  body.innerHTML = insights + cards + channelBlock + hourChart + dayChart + table +
+  body.innerHTML = insights + cards + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
   const rb = $('dash-refresh'); if (rb) rb.addEventListener('click', loadDashboard);
 }
