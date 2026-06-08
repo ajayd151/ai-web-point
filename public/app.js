@@ -958,8 +958,10 @@ function startPounceProgress() {
     steps.map((s) => `<div class="gp-row"><span class="gp-ic"><span class="spinner sm"></span></span><span class="gp-text">${esc(s)}…</span></div>`).join('') +
     '</div><p class="genprog-foot"><small>Building their website… ~15–30 seconds.</small></p></div>';
 }
-function pounceFetch(lead, refresh) {
-  return fetch('/api/pounce', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: lead.slug, name: lead.name, location: lead.location, category: lead.category || '', phone: lead.phone || '', refresh: !!refresh }) })
+let lastPounceOpts = {};
+function pounceFetch(lead, refresh, opts) {
+  const payload = Object.assign({ slug: lead.slug, name: lead.name, location: lead.location, category: lead.category || '', phone: lead.phone || '', refresh: !!refresh }, opts || {});
+  return fetch('/api/pounce', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     .then((r) => r.json().then((j) => ({ status: r.status, j })));
 }
 function pounceHeroNote(src) {
@@ -968,29 +970,57 @@ function pounceHeroNote(src) {
   if (src === 'google-unvetted') return '🖼️ Hero: their Google photo (unchecked)';
   return '';
 }
+// optional pre-build questions
+const POUNCE_ACCENTS = [['', 'Auto (recommended)'], ['blue', 'Blue'], ['green', 'Green'], ['red', 'Red'], ['purple', 'Purple'], ['teal', 'Teal'], ['slate', 'Slate'], ['amber', 'Amber']];
+function pounceQuestionsHTML(lead) {
+  return `<div class="pq">
+    <p class="muted pq-intro">Optional — tweak the build below, or just hit <b>Build my site</b> for smart defaults.${lead && lead.prowled === false ? '' : ''}</p>
+    <div class="pq-grid">
+      <div class="pq-fld"><label>Accent colour</label><select id="pq-accent">${POUNCE_ACCENTS.map((a) => `<option value="${a[0]}">${a[1]}</option>`).join('')}</select></div>
+      <div class="pq-fld"><label>Add an FAQ section?</label><label class="pq-toggle"><input id="pq-faq" type="checkbox"> Yes, generate FAQs</label></div>
+      <div class="pq-fld wide"><label>Services to highlight</label><input id="pq-highlight" type="text" placeholder="e.g. EV chargers, rewires, fuse boards"></div>
+      <div class="pq-fld wide"><label>Their standout selling point</label><input id="pq-usp" type="text" placeholder="e.g. 24/7 emergency callout · 10-year guarantee"></div>
+      <div class="pq-fld wide"><label>Special offer banner <span class="muted">(optional)</span></label><input id="pq-offer" type="text" placeholder="e.g. £50 off your first job this month"></div>
+      <div class="pq-fld wide"><label>Anything else to weave in?</label><textarea id="pq-notes" rows="2" placeholder="Any extra detail"></textarea></div>
+    </div>
+    <div class="pq-actions"><button id="pq-build" class="primary">🐆 Build my site →</button><button id="pq-skip" class="ghost sm">Skip — smart defaults</button></div>
+  </div>`;
+}
+function collectPounceOpts() {
+  const v = (id) => { const el = $(id); return el ? (el.type === 'checkbox' ? el.checked : el.value.trim()) : ''; };
+  return { accent: v('pq-accent'), faq: v('pq-faq'), highlightServices: v('pq-highlight'), usp: v('pq-usp'), offer: v('pq-offer'), notes: v('pq-notes') };
+}
+function buildPounce(lead, opts, refresh) {
+  lastPounceOpts = opts || {};
+  startPounceProgress();
+  pounceFetch(lead, refresh, opts)
+    .then(({ status, j }) => { if (status !== 200) throw new Error(j.error || 'Could not build the site'); renderPounceResult(j, lead); })
+    .catch((e) => { $('pounce-body').innerHTML = `<div class="empty">⚠️ ${esc(e && e.message ? e.message : 'Pounce failed')}</div>`; });
+}
 function renderPounceResult(j, lead) {
   const url = j.siteUrl;
   const hero = pounceHeroNote(j.heroSource);
   $('pounce-body').innerHTML =
     `<div class="pounce-bar"><a class="primary btn" href="${esc(url)}" target="_blank" rel="noopener">Open full site ↗</a>` +
     `<button id="pounce-copy" class="ghost sm">📋 Copy link</button>` +
-    `<button id="pounce-rebuild" class="ghost sm">↻ Rebuild</button>` +
+    `<button id="pounce-edit" class="ghost sm">✎ Edit & rebuild</button>` +
     (hero ? `<span class="muted pounce-note">${esc(hero)}</span>` : '') +
+    (j.usedProwl ? `<span class="muted pounce-note">🐾 Used Prowl intel</span>` : '') +
     `<span class="muted pounce-note">Private preview · hidden from Google</span></div>` +
     `<iframe class="pounce-frame" src="${esc(url)}" title="Website preview"></iframe>`;
   const cp = $('pounce-copy');
   if (cp) cp.addEventListener('click', () => { navigator.clipboard.writeText(url).then(() => { cp.textContent = '✓ Copied'; setTimeout(() => { cp.textContent = '📋 Copy link'; }, 1500); }).catch(() => {}); });
-  const rb = $('pounce-rebuild');
-  if (rb) rb.addEventListener('click', () => { startPounceProgress(); pounceFetch(lead, true).then(({ j }) => renderPounceResult(j, lead)).catch(() => {}); });
+  const ed = $('pounce-edit');
+  if (ed) ed.addEventListener('click', () => openPounceQuestions(lead));
 }
-function openPounce(lead) {
+function openPounceQuestions(lead) {
   $('pounce-title').textContent = '🐆 Pounce · ' + lead.name;
   $('pounce-modal').classList.remove('hidden');
-  startPounceProgress();
-  pounceFetch(lead, false)
-    .then(({ status, j }) => { if (status !== 200) throw new Error(j.error || 'Could not build the site'); renderPounceResult(j, lead); })
-    .catch((e) => { $('pounce-body').innerHTML = `<div class="empty">⚠️ ${esc(e && e.message ? e.message : 'Pounce failed')}</div>`; });
+  $('pounce-body').innerHTML = pounceQuestionsHTML(lead);
+  $('pq-build').addEventListener('click', () => buildPounce(lead, collectPounceOpts(), true));
+  $('pq-skip').addEventListener('click', () => buildPounce(lead, {}, false));
 }
+function openPounce(lead) { openPounceQuestions(lead); }
 
 // ---- tab-title alert: flashes when you have hot leads + are on another tab ----
 let titleTimer = null;

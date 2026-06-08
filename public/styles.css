@@ -283,6 +283,18 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .pounce-bar .btn { text-decoration: none; }
 .pounce-note { margin-left: auto; font-size: 12.5px; }
 .pounce-frame { width: 100%; height: 70vh; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+/* Pounce pre-build questions */
+.pq-intro { margin-bottom: 16px; }
+.pq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 18px; }
+.pq-fld { display: flex; flex-direction: column; gap: 6px; }
+.pq-fld.wide { grid-column: 1 / -1; }
+.pq-fld label { font-weight: 700; font-size: 13px; color: var(--ink); }
+.pq-fld input, .pq-fld select, .pq-fld textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: #fff; width: 100%; }
+.pq-fld input:focus, .pq-fld select:focus, .pq-fld textarea:focus { outline: none; border-color: var(--blue); }
+.pq-toggle { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 14px; padding: 9px 0; }
+.pq-toggle input { width: auto; }
+.pq-actions { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+@media (max-width: 560px) { .pq-grid { grid-template-columns: 1fr; } }
 
 /* 🐾 Prowl dossier */
 .dos-snap { font-size: 14px; margin: 4px 0 10px; }

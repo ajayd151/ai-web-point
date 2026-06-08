@@ -12,12 +12,21 @@ function favicon(initials) {
   return 'data:image/svg+xml,' + svg;
 }
 
+function lum(hex) {
+  const m = String(hex || '').replace('#', '');
+  if (m.length < 6) return 200;
+  return 0.299 * parseInt(m.slice(0, 2), 16) + 0.587 * parseInt(m.slice(2, 4), 16) + 0.114 * parseInt(m.slice(4, 6), 16);
+}
+
 function render(s) {
   const b = s.business || {};
   const hero = s.hero || {};
+  const acc = (s.accent && /^#[0-9a-f]{6}$/i.test(s.accent.a || '')) ? s.accent : { a: '#ffb703', d: '#f59e0b' };
+  const accInk = lum(acc.a) > 150 ? '#1a1206' : '#ffffff';
   const heroBg = hero.image
-    ? `linear-gradient(90deg, rgba(10,28,58,.94), rgba(10,28,58,.45)), url('${esc(hero.image)}')`
-    : `linear-gradient(120deg, #0a1c3a, #102a52)`;
+    ? `linear-gradient(90deg, rgba(8,18,38,.92), rgba(8,18,38,.55)), url('${esc(hero.image)}')`
+    : `linear-gradient(120deg, #0a1c3a, #15315c)`;
+  const phone = b.phone || '';
   const trust = (s.trust || []).map((t) => `<span><span class="tick">✓</span> ${esc(t)}</span>`).join('');
   const services = (s.services || []).map((sv) => `<div class="svc"><div class="ic">${esc(sv.icon || '⭐')}</div><h3>${esc(sv.title || '')}</h3><p>${esc(sv.desc || '')}</p></div>`).join('');
   const stats = ((s.about && s.about.stats) || []).map((st) => `<div class="stat"><b>${esc(st.num || '')}</b><span>${esc(st.label || '')}</span></div>`).join('');
@@ -31,10 +40,32 @@ function render(s) {
         return `<div class="rev"><div class="stars">${'★'.repeat(Math.round(r.rating || 5))}</div><p>"${esc(r.text)}"</p><div class="who"><div class="av">${esc(init)}</div><div><b>${esc(r.name)}</b><span>Google review</span></div></div></div>`;
       }).join('')}</div></div></section>`
     : '';
+  const faq = (s.faq || []).filter((f) => f && f.q && f.a);
+  const faqSec = faq.length
+    ? `<section id="faq" class="faqsec"><div class="wrap narrow"><div class="sec-head"><div class="kicker">FAQs</div><h2>Frequently asked questions</h2></div><div class="faq">${faq.map((f) => `<details><summary>${esc(f.q)}<span class="fic">+</span></summary><p>${esc(f.a)}</p></details>`).join('')}</div></div></section>`
+    : '';
+  const offerBar = s.offer ? `<div class="offer-bar"><div class="wrap">🎉 ${esc(s.offer)}</div></div>` : '';
   const hours = ((s.contact && s.contact.hours) || []).length
     ? `<div class="ci"><div class="cic">🕒</div><div><b>Opening hours</b><span>${(s.contact.hours || []).map(esc).join('<br>')}</span></div></div>` : '';
-  const phone = b.phone || '';
   const cta = phone ? `<a class="btn btn-amber" href="${telHref(phone)}">📞 Call ${esc(phone)}</a>` : `<a class="btn btn-amber" href="#contact">Get a Free Quote</a>`;
+  const quoteForm = (id) => `<form id="${id}" onsubmit="event.preventDefault();this.querySelector('.form-ok').style.display='block';this.reset();">
+      <div class="form-ok">✓ Thanks! We've got your details and will be in touch shortly.</div>
+      <div class="row"><div class="fld"><label>Your name</label><input type="text" required placeholder="Jane Smith" /></div><div class="fld"><label>Phone</label><input type="tel" required placeholder="07…" /></div></div>
+      <div class="fld"><label>Email</label><input type="email" placeholder="you@email.com" /></div>
+      <div class="fld"><label>How can we help?</label><textarea rows="3" placeholder="Tell us what you need…"></textarea></div>
+      <button class="btn btn-amber" type="submit" style="width:100%;justify-content:center">Send my enquiry →</button>
+    </form>`;
+  // About visual: real photo if we have one, otherwise a branded highlight card (never blank)
+  const aboutVisual = (s.gallery || [])[0]
+    ? `<div class="about-img" style="background-image:url('${esc((s.gallery || [])[0])}')" role="img" aria-label="${esc(b.name)}"></div>`
+    : `<div class="about-card">
+        ${s.rating ? `<div class="ac-score"><b>${esc(s.rating)}</b><div><div class="ac-stars">★★★★★</div><small>${esc(s.reviewCount || '')} Google reviews</small></div></div>` : ''}
+        <div class="ac-list">
+          <div>📍 Proudly serving ${esc(b.location)}</div>
+          ${(s.trust || []).slice(0, 3).map((t) => `<div>✓ ${esc(t)}</div>`).join('')}
+        </div>
+        <a class="btn btn-amber" href="#contact" style="width:100%;justify-content:center">Get your free quote →</a>
+      </div>`;
   const noindex = s.mode !== 'published';
 
   return `<!DOCTYPE html><html lang="en"><head>
@@ -48,54 +79,68 @@ ${noindex ? '<meta name="robots" content="noindex, nofollow" />' : ''}
 <link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
-:root{--navy:#0a1c3a;--navy2:#102a52;--amber:#ffb703;--amber-d:#f59e0b;--ink:#14233b;--muted:#5d6b82;--line:#e6eaf1;--bg:#f6f8fc}
+:root{--navy:#0a1c3a;--navy2:#102a52;--amber:${acc.a};--amber-d:${acc.d};--acc-ink:${accInk};--ink:#14233b;--muted:#5d6b82;--line:#e6eaf1;--bg:#f6f8fc}
 *{box-sizing:border-box;margin:0;padding:0}html{scroll-behavior:smooth}
 body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);background:#fff;line-height:1.6}
 h1,h2,h3,.logo-txt,.btn{font-family:'Poppins',sans-serif}a{color:inherit;text-decoration:none}
-.wrap{max-width:1140px;margin:0 auto;padding:0 22px}
-.btn{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:15px;padding:13px 24px;border-radius:10px;cursor:pointer;border:none;transition:transform .12s,filter .12s}
+.wrap{max-width:1140px;margin:0 auto;padding:0 22px}.wrap.narrow{max-width:780px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:700;font-size:15px;padding:13px 24px;border-radius:10px;cursor:pointer;border:none;transition:transform .12s,filter .12s}
 .btn:hover{transform:translateY(-2px)}
-.btn-amber{background:linear-gradient(135deg,var(--amber),var(--amber-d));color:#1a1206;box-shadow:0 8px 22px rgba(245,158,11,.35)}
+.btn-amber{background:linear-gradient(135deg,var(--amber),var(--amber-d));color:var(--acc-ink);box-shadow:0 8px 22px rgba(0,0,0,.18)}
 .btn-ghost{background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.5)}
+.offer-bar{background:linear-gradient(90deg,var(--amber),var(--amber-d));color:var(--acc-ink);font-weight:700;font-size:14.5px;text-align:center;padding:9px 0}
 header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
 .hbar{display:flex;align-items:center;justify-content:space-between;height:72px}
 .brand{display:flex;align-items:center;gap:12px}
-.badge{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--amber),var(--amber-d));display:grid;place-items:center;font-weight:800;color:#1a1206;font-size:17px}
+.badge{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--amber),var(--amber-d));display:grid;place-items:center;font-weight:800;color:var(--acc-ink);font-size:17px}
 .logo-txt b{display:block;font-size:17px;font-weight:800;color:var(--navy);line-height:1.1}.logo-txt span{font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
 .nav{display:flex;align-items:center;gap:24px}.nav a.lnk{font-weight:600;font-size:14.5px}.nav a.lnk:hover{color:var(--amber-d)}
 .htel{font-weight:700;color:var(--navy);font-size:15px}
 @media(max-width:880px){.nav .lnk,.htel-txt{display:none}}
+.hero{position:relative;overflow:hidden;background:linear-gradient(120deg,var(--navy),var(--navy2))}
 .hero-img{position:absolute;inset:0;background-size:cover;background-position:center}
-.hero-inner{position:relative;padding:84px 0 92px;max-width:660px}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,183,3,.16);border:1px solid rgba(255,183,3,.4);color:#ffd887;font-weight:600;font-size:13px;padding:6px 14px;border-radius:999px;margin-bottom:20px}
-.hero h1{font-size:46px;line-height:1.1;font-weight:800;margin-bottom:16px;color:#fff}.hero h1 .hl{color:var(--amber)}
-.hero p.lead{font-size:18px;color:#cdd8ec;margin-bottom:28px}.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
-.trust-row{display:flex;gap:22px;flex-wrap:wrap;margin-top:30px}.trust-row span{font-size:14px;color:#e6edf8;font-weight:600;display:flex;align-items:center;gap:7px}.trust-row .tick{color:var(--amber);font-weight:800}
-@media(max-width:700px){.hero h1{font-size:33px}.hero-inner{padding:56px 0 64px}}
-section{padding:76px 0}.sec-head{text-align:center;max-width:620px;margin:0 auto 46px}
+.hero-grid{position:relative;display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center;padding:72px 0 80px}
+.hero-content{max-width:600px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.28);color:#fff;font-weight:600;font-size:13px;padding:6px 14px;border-radius:999px;margin-bottom:20px}
+.hero h1{font-size:44px;line-height:1.08;font-weight:800;margin-bottom:16px;color:#fff}
+.hero p.lead{font-size:18px;color:#d4ddee;margin-bottom:26px}.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.trust-row{display:flex;gap:20px;flex-wrap:wrap;margin-top:28px}.trust-row span{font-size:13.5px;color:#eef2f9;font-weight:600;display:flex;align-items:center;gap:7px}.trust-row .tick{color:var(--amber);font-weight:800}
+.hero-card{background:#fff;border-radius:18px;padding:24px;box-shadow:0 30px 60px rgba(0,0,0,.35)}
+.hero-card h3{font-size:20px;color:var(--navy)}.hero-card .hc-sub{font-size:13.5px;color:var(--muted);margin-bottom:16px}
+.hero-card form{background:none;border:none;box-shadow:none;padding:0}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:32px;padding:52px 0 60px}.hero h1{font-size:34px}.hero-card{max-width:520px}}
+section{padding:76px 0}.sec-head{text-align:center;max-width:640px;margin:0 auto 46px}
 .kicker{color:var(--amber-d);font-weight:700;font-size:13px;letter-spacing:1.5px;text-transform:uppercase}
 .sec-head h2{font-size:33px;font-weight:800;color:var(--navy);margin:8px 0 12px}.sec-head p{color:var(--muted);font-size:16px}
 .svc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .svc{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px;transition:transform .15s,box-shadow .15s}
 .svc:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(16,42,82,.1)}
-.svc .ic{width:52px;height:52px;border-radius:13px;background:linear-gradient(135deg,#fff5e0,#ffe9bd);display:grid;place-items:center;font-size:24px;margin-bottom:16px}
+.svc .ic{width:52px;height:52px;border-radius:13px;background:#eef3fb;display:grid;place-items:center;font-size:24px;margin-bottom:16px}
 .svc h3{font-size:18px;color:var(--navy);margin-bottom:7px}.svc p{color:var(--muted);font-size:14.5px}
 @media(max-width:860px){.svc-grid{grid-template-columns:1fr 1fr}}@media(max-width:560px){.svc-grid{grid-template-columns:1fr}}
 .about{background:var(--bg)}.about-grid{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center}
 .about h2{font-size:31px;color:var(--navy);margin-bottom:16px}.about p{color:var(--muted);margin-bottom:14px;font-size:16px}
 .stats{display:flex;gap:30px;margin-top:24px;flex-wrap:wrap}.stat b{display:block;font-family:'Poppins';font-size:30px;font-weight:800;color:var(--amber-d)}.stat span{font-size:13.5px;color:var(--muted);font-weight:600}
 .about-img{height:420px;border-radius:18px;background:var(--navy2);background-size:cover;background-position:center;box-shadow:0 24px 50px rgba(16,42,82,.18)}
+.about-card{background:linear-gradient(150deg,var(--navy),var(--navy2));border-radius:18px;padding:32px;color:#fff;box-shadow:0 24px 50px rgba(16,42,82,.22)}
+.ac-score{display:flex;align-items:center;gap:16px;padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,.15)}
+.ac-score b{font-family:'Poppins';font-size:46px;font-weight:800;color:#fff;line-height:1}.ac-stars{color:var(--amber);font-size:18px;letter-spacing:2px}.ac-score small{color:#aebdd6;font-size:13px}
+.ac-list{display:flex;flex-direction:column;gap:11px;margin-bottom:22px}.ac-list div{font-size:15px;color:#e3eaf6;font-weight:500}
 @media(max-width:820px){.about-grid{grid-template-columns:1fr}.about-img{height:280px}}
 .gal{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.gal div{height:190px;border-radius:14px;background:var(--navy2);background-size:cover;background-position:center}
 @media(max-width:820px){.gal{grid-template-columns:1fr 1fr}}
 .reviews{background:var(--navy)}.reviews .sec-head h2{color:#fff}
-.rev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
-.rev{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:24px}
-.stars{color:var(--amber);letter-spacing:2px;font-size:16px;margin-bottom:12px}.rev p{color:#e3eaf6;font-size:15px;margin-bottom:16px}
-.rev .who{display:flex;align-items:center;gap:11px}.rev .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--amber-d));display:grid;place-items:center;font-weight:800;color:#1a1206}.rev .who b{font-size:14.5px}.rev .who span{display:block;font-size:12px;color:#9fb0cc}
+.rev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start}
+.rev{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:24px}
+.stars{color:var(--amber);letter-spacing:2px;font-size:16px;margin-bottom:12px}.rev p{color:#eef2f9;font-size:15px;margin-bottom:16px}
+.rev .who{display:flex;align-items:center;gap:11px}.rev .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--amber-d));display:grid;place-items:center;font-weight:800;color:var(--acc-ink)}.rev .who b{font-size:14.5px;color:#fff}.rev .who span{display:block;font-size:12px;color:#a9b8d2}
 @media(max-width:860px){.rev-grid{grid-template-columns:1fr}}
+.faqsec{background:var(--bg)}.faq details{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.faq summary{list-style:none;cursor:pointer;padding:18px 22px;font-weight:700;color:var(--navy);font-size:16px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.faq summary::-webkit-details-marker{display:none}.faq .fic{color:var(--amber-d);font-size:22px;font-weight:700;transition:transform .2s}.faq details[open] .fic{transform:rotate(45deg)}
+.faq details p{padding:0 22px 20px;color:var(--muted);font-size:15px}
 .contact-grid{display:grid;grid-template-columns:1fr 1.1fr;gap:44px;align-items:start}
-.ci{display:flex;gap:14px;margin-bottom:18px}.ci .cic{width:44px;height:44px;border-radius:11px;background:#fff5e0;display:grid;place-items:center;font-size:19px;flex:0 0 44px}.ci b{display:block;color:var(--navy);font-size:15px}.ci span{color:var(--muted);font-size:14.5px}
+.ci{display:flex;gap:14px;margin-bottom:18px}.ci .cic{width:44px;height:44px;border-radius:11px;background:#eef3fb;display:grid;place-items:center;font-size:19px;flex:0 0 44px}.ci b{display:block;color:var(--navy);font-size:15px}.ci span{color:var(--muted);font-size:14.5px}
 form{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 18px 44px rgba(16,42,82,.08)}
 form label{display:block;font-weight:600;font-size:13.5px;margin:0 0 6px}.fld{margin-bottom:15px}
 form input,form textarea{width:100%;font:inherit;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fbfcfe}
@@ -112,21 +157,28 @@ footer{background:#07142b;color:#aebbd2;padding:44px 0 26px}
   <div class="brand"><span class="badge">${esc(s.initials || 'SP')}</span><span class="logo-txt"><b>${esc(b.name)}</b><span>Local · Trusted</span></span></div>
   <nav class="nav"><a class="lnk" href="#services">Services</a><a class="lnk" href="#about">About</a>${(s.reviews || []).length ? '<a class="lnk" href="#reviews">Reviews</a>' : ''}<a class="lnk" href="#contact">Contact</a>${phone ? `<a class="htel" href="${telHref(phone)}"><span class="htel-txt">📞 ${esc(phone)}</span></a>` : ''}<a class="btn btn-amber" href="#contact">Get a Free Quote</a></nav>
 </div></header>
-<section class="hero" style="position:relative;overflow:hidden;background:linear-gradient(120deg,var(--navy),var(--navy2))">
+${offerBar}
+<section class="hero">
   <div class="hero-img" style="background-image:${heroBg}"></div>
-  <div class="wrap hero-inner">
-    ${s.rating ? `<span class="eyebrow">★★★★★ Rated ${esc(s.rating)} by ${esc(s.reviewCount)} customers on Google</span>` : ''}
-    <h1>${esc(hero.headline)}</h1><p class="lead">${esc(hero.sub)}</p>
-    <div class="hero-cta">${cta}<a class="btn btn-ghost" href="#contact">Get a Free Quote</a></div>
-    ${trust ? `<div class="trust-row">${trust}</div>` : ''}
+  <div class="wrap hero-grid">
+    <div class="hero-content">
+      ${s.rating ? `<span class="eyebrow">★★★★★ Rated ${esc(s.rating)} by ${esc(s.reviewCount)} customers on Google</span>` : ''}
+      <h1>${esc(hero.headline)}</h1><p class="lead">${esc(hero.sub)}</p>
+      <div class="hero-cta">${cta}<a class="btn btn-ghost" href="#contact">Get a Free Quote</a></div>
+      ${trust ? `<div class="trust-row">${trust}</div>` : ''}
+    </div>
+    <div class="hero-card">
+      <h3>Get a free quote</h3><div class="hc-sub">No obligation — we'll reply fast.</div>
+      ${quoteForm('hero-form')}
+    </div>
   </div>
 </section>
 <section id="services"><div class="wrap"><div class="sec-head"><div class="kicker">What we do</div><h2>Our services</h2></div><div class="svc-grid">${services}</div></div></section>
 <section id="about" class="about"><div class="wrap about-grid">
   <div><div class="kicker">About us</div><h2>${esc((s.about && s.about.heading) || 'About us')}</h2>${paras}${stats ? `<div class="stats">${stats}</div>` : ''}</div>
-  <div class="about-img" style="${(s.gallery || [])[0] ? `background-image:url('${esc((s.gallery || [])[0])}')` : ''}" role="img" aria-label="${esc(b.name)}"></div>
+  ${aboutVisual}
 </div></section>
-${gallery}${reviews}
+${gallery}${reviews}${faqSec}
 <section id="contact"><div class="wrap"><div class="sec-head"><div class="kicker">Get in touch</div><h2>Get your free quote</h2></div>
   <div class="contact-grid">
     <div>
@@ -135,13 +187,7 @@ ${gallery}${reviews}
       ${hours}
       ${phone ? `<a class="btn btn-amber" style="margin-top:8px" href="${telHref(phone)}">📞 Call now</a>` : ''}
     </div>
-    <form onsubmit="event.preventDefault();this.querySelector('.form-ok').style.display='block';this.reset();">
-      <div class="form-ok">✓ Thanks! We've got your details and will be in touch shortly.</div>
-      <div class="row"><div class="fld"><label>Your name</label><input type="text" required placeholder="Jane Smith" /></div><div class="fld"><label>Phone</label><input type="tel" required placeholder="07…" /></div></div>
-      <div class="fld"><label>Email</label><input type="email" placeholder="you@email.com" /></div>
-      <div class="fld"><label>How can we help?</label><textarea rows="4" placeholder="Tell us what you need…"></textarea></div>
-      <button class="btn btn-amber" type="submit" style="width:100%;justify-content:center">Send my enquiry →</button>
-    </form>
+    ${quoteForm('contact-form')}
   </div></div></section>
 <footer><div class="wrap">
   <div class="foot-top"><div class="brand"><span class="badge">${esc(s.initials || 'SP')}</span><span class="logo-txt"><b>${esc(b.name)}</b><span>${esc(b.location)}</span></span></div>
