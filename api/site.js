@@ -60,7 +60,7 @@ function render(s) {
     ? `<div class="mobilebar"><a href="${telHref(phone)}">📞 Call now</a><a href="#contact" class="mb-quote">Free quote</a></div>`
     : `<div class="mobilebar"><a href="#contact" class="mb-quote" style="flex:1">Get a free quote →</a></div>`;
   const reviews = (s.reviews || []).length
-    ? `<section id="reviews" class="reviews"><div class="wrap"><div class="sec-head"><div class="kicker" style="color:var(--amber)">Reviews</div><h2>What our customers say</h2>${s.rating ? `<div class="gbadge-wrap">${(s.rating ? `<a class="gbadge"${(b.mapsUrl) ? ` href="${esc(b.mapsUrl)}" target="_blank" rel="noopener"` : ''}><span class="g-logo">G</span><span class="g-mid"><span class="g-stars">★★★★★</span><span class="g-sub">${esc(s.rating)} · ${esc(s.reviewCount || 0)} Google reviews${(b.mapsUrl) ? ' · Read on Google ↗' : ''}</span></span></a>` : '')}</div>` : ''}</div><div class="rev-grid">${(s.reviews || []).map((r) => {
+    ? `<section id="reviews" class="reviews"><div class="wrap"><div class="sec-head"><div class="kicker" style="color:var(--amber)">Reviews</div><h2>What our customers say</h2>${googleBadge ? `<div class="gbadge-wrap">${googleBadge}</div>` : ''}</div><div class="rev-grid">${(s.reviews || []).map((r) => {
         const init = (r.name || 'C').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
         return `<div class="rev"><div class="stars">${'★'.repeat(Math.round(r.rating || 5))}</div><p>"${esc(r.text)}"</p><div class="who"><div class="av">${esc(init)}</div><div><b>${esc(r.name)}</b><span>Google review</span></div></div></div>`;
       }).join('')}</div></div></section>`
