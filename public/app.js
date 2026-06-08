@@ -953,7 +953,7 @@ function renderDossier(d, lead) {
 // ---- 🐆 Pounce: build a real 1-page website for the lead ----
 $('pounce-close').addEventListener('click', () => $('pounce-modal').classList.add('hidden'));
 function startPounceProgress() {
-  const steps = ['Pulling their Google photos', 'Collecting 5★ reviews', 'Writing tailored website copy', 'Designing the page', 'Publishing a private preview'];
+  const steps = ['Pulling their Google photos', 'Checking each photo for quality', 'Collecting 5★ reviews', 'Writing tailored website copy', 'Curating the hero image', 'Designing the page', 'Publishing a private preview'];
   $('pounce-body').innerHTML = '<div class="genprog"><div>' +
     steps.map((s) => `<div class="gp-row"><span class="gp-ic"><span class="spinner sm"></span></span><span class="gp-text">${esc(s)}…</span></div>`).join('') +
     '</div><p class="genprog-foot"><small>Building their website… ~15–30 seconds.</small></p></div>';
@@ -962,12 +962,20 @@ function pounceFetch(lead, refresh) {
   return fetch('/api/pounce', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: lead.slug, name: lead.name, location: lead.location, category: lead.category || '', phone: lead.phone || '', refresh: !!refresh }) })
     .then((r) => r.json().then((j) => ({ status: r.status, j })));
 }
+function pounceHeroNote(src) {
+  if (src === 'google') return '🖼️ Hero: their own Google photo';
+  if (src === 'generated') return '✨ Hero: AI-curated (no good photo on Google)';
+  if (src === 'google-unvetted') return '🖼️ Hero: their Google photo (unchecked)';
+  return '';
+}
 function renderPounceResult(j, lead) {
   const url = j.siteUrl;
+  const hero = pounceHeroNote(j.heroSource);
   $('pounce-body').innerHTML =
     `<div class="pounce-bar"><a class="primary btn" href="${esc(url)}" target="_blank" rel="noopener">Open full site ↗</a>` +
     `<button id="pounce-copy" class="ghost sm">📋 Copy link</button>` +
     `<button id="pounce-rebuild" class="ghost sm">↻ Rebuild</button>` +
+    (hero ? `<span class="muted pounce-note">${esc(hero)}</span>` : '') +
     `<span class="muted pounce-note">Private preview · hidden from Google</span></div>` +
     `<iframe class="pounce-frame" src="${esc(url)}" title="Website preview"></iframe>`;
   const cp = $('pounce-copy');
