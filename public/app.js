@@ -250,8 +250,7 @@ function card(b) {
   if (mi) {
     const lab = document.createElement('div');
     lab.className = 'messaged-lab';
-    const via = channelName(mi.via);
-    lab.textContent = '✓ You messaged them' + (via ? ' via ' + via : '') + ' on ' + fmtDateShort(mi.at);
+    lab.textContent = messagedLabel(mi);
     el.appendChild(lab);
   }
 
@@ -526,9 +525,29 @@ function channelName(via) { return via === 'w' ? 'WhatsApp' : via === 's' ? 'SMS
 function markMessaged(b, channel) {
   if (!b) return;
   const m = loadMessaged();
-  m[bizKey(b)] = { at: new Date().toISOString(), name: b.name || '', via: channel || '' };
+  const key = bizKey(b);
+  const now = new Date().toISOString();
+  const prev = m[key] || {};
+  const channels = Object.assign({}, prev.channels);
+  if (prev.via && !channels[prev.via]) channels[prev.via] = prev.at || now; // migrate old single-channel records
+  if (channel) channels[channel] = now;                                     // record/refresh this channel's date
+  m[key] = { name: b.name || prev.name || '', channels, at: now };          // `at` = most recent contact (used by the 3-month filter)
   try { localStorage.setItem('aiwp_messaged', JSON.stringify(m)); } catch (e) {}
   if (lastSearchResults.length) renderResults(lastSearchResults); // refresh visible cards
+}
+// build the "You messaged them via … on …" label (supports multiple channels)
+function messagedLabel(mi) {
+  const order = ['w', 's', 'e'];
+  const used = mi.channels ? order.filter((c) => mi.channels[c]) : [];
+  if (used.length === 1) {
+    return '✓ You messaged them via ' + channelName(used[0]) + ' on ' + fmtDateShort(mi.channels[used[0]]);
+  }
+  if (used.length > 1) {
+    return '✓ You messaged them via ' + used.map((c) => channelName(c) + ' (' + fmtDateShort(mi.channels[c]) + ')').join(' & ');
+  }
+  // legacy records (single `via`, or none)
+  if (mi.via) return '✓ You messaged them via ' + channelName(mi.via) + ' on ' + fmtDateShort(mi.at);
+  return '✓ You messaged them on ' + fmtDateShort(mi.at);
 }
 function fmtDateShort(iso) {
   const d = new Date(iso);
