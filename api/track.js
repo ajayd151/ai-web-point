@@ -10,7 +10,7 @@ const BOT_RE = /bot|crawl|spider|facebookexternalhit|whatsapp|telegram|slackbot|
 module.exports = async (req, res) => {
   const q = req.query || {};
   const slug = String(q.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120);
-  const event = q.e === 'cta' ? 'cta' : 'view';
+  const event = (q.e === 'cta' || q.e === 'sent') ? q.e : 'view'; // 'sent' = you messaged a prospect
   const ch = q.c || q.p; // 'c' (channel) is canonical; 'p' kept for older links
   const platform = (ch === 'w' || ch === 's' || ch === 'e') ? ch : ''; // how it was sent
   const ua = String(req.headers['user-agent'] || '').slice(0, 300);

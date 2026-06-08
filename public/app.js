@@ -250,7 +250,7 @@ function card(b) {
   if (mi) {
     const lab = document.createElement('div');
     lab.className = 'messaged-lab';
-    lab.textContent = messagedLabel(mi);
+    lab.innerHTML = messagedLabel(mi);
     el.appendChild(lab);
   }
 
@@ -510,9 +510,17 @@ function setupWhatsApp(business, link, personName) {
   sms.classList.remove('hidden');
   note.textContent = 'Opens WhatsApp, or your Messages app for SMS, to ' + phone + ' with your message + link pre-filled — you review and press send.';
 }
+// log the send server-side (channel + exact time) for later send-time analysis
+function recordSendServer(channel) {
+  if (!currentSlug) return;
+  try {
+    const u = '/api/track?slug=' + encodeURIComponent(currentSlug) + '&e=sent&c=' + channel;
+    if (navigator.sendBeacon) navigator.sendBeacon(u); else fetch(u, { keepalive: true }).catch(() => {});
+  } catch (e) {}
+}
 // record the send channel + mark the business as messaged when you click a send button
-$('wa-send').addEventListener('click', () => { recordSentVia(currentSlug, 'w'); markMessaged(currentBusiness, 'w'); });
-$('sms-send').addEventListener('click', () => { recordSentVia(currentSlug, 's'); markMessaged(currentBusiness, 's'); });
+$('wa-send').addEventListener('click', () => { recordSentVia(currentSlug, 'w'); markMessaged(currentBusiness, 'w'); recordSendServer('w'); });
+$('sms-send').addEventListener('click', () => { recordSentVia(currentSlug, 's'); markMessaged(currentBusiness, 's'); recordSendServer('s'); });
 
 // ---- "already messaged" tracking (per device, keyed by Google place id) ----
 function loadMessaged() { try { return JSON.parse(localStorage.getItem('aiwp_messaged') || '{}'); } catch (e) { return {}; } }
@@ -535,19 +543,21 @@ function markMessaged(b, channel) {
   try { localStorage.setItem('aiwp_messaged', JSON.stringify(m)); } catch (e) {}
   if (lastSearchResults.length) renderResults(lastSearchResults); // refresh visible cards
 }
-// build the "You messaged them via … on …" label (supports multiple channels)
+// build the "You messaged them via …" label HTML (date+time on its own line(s))
 function messagedLabel(mi) {
   const order = ['w', 's', 'e'];
   const used = mi.channels ? order.filter((c) => mi.channels[c]) : [];
   if (used.length === 1) {
-    return '✓ You messaged them via ' + channelName(used[0]) + ' on ' + fmtDateShort(mi.channels[used[0]]);
+    const c = used[0];
+    return '✓ You messaged them via ' + channelName(c) + '<span class="ml-when">' + esc(fmtDate(mi.channels[c])) + '</span>';
   }
   if (used.length > 1) {
-    return '✓ You messaged them via ' + used.map((c) => channelName(c) + ' (' + fmtDateShort(mi.channels[c]) + ')').join(' & ');
+    return '✓ You messaged them via ' + used.map(channelName).join(' & ') +
+      used.map((c) => '<span class="ml-when">' + channelName(c) + ' · ' + esc(fmtDate(mi.channels[c])) + '</span>').join('');
   }
   // legacy records (single `via`, or none)
-  if (mi.via) return '✓ You messaged them via ' + channelName(mi.via) + ' on ' + fmtDateShort(mi.at);
-  return '✓ You messaged them on ' + fmtDateShort(mi.at);
+  if (mi.via) return '✓ You messaged them via ' + channelName(mi.via) + '<span class="ml-when">' + esc(fmtDate(mi.at)) + '</span>';
+  return '✓ You messaged them<span class="ml-when">' + esc(fmtDate(mi.at)) + '</span>';
 }
 function fmtDateShort(iso) {
   const d = new Date(iso);

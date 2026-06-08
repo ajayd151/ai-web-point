@@ -125,7 +125,8 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .chip.phone { background: #eef3ff; color: #2a4fbf; }
 .chip.email { background: #f6eefb; color: #8b3fa8; }
 .chip.rating { background: #fffbeb; color: #b45309; }
-.messaged-lab { margin-top: 12px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 8px; padding: 7px 10px; font-size: 12.5px; font-weight: 700; text-align: center; }
+.messaged-lab { margin-top: 12px; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; border-radius: 8px; padding: 8px 10px; font-size: 12.5px; font-weight: 700; text-align: center; }
+.messaged-lab .ml-when { display: block; font-weight: 600; font-size: 11.5px; margin-top: 2px; opacity: 0.85; }
 
 .top-right { display: flex; align-items: center; gap: 10px; }
 .logoutbtn { cursor: pointer; color: #fff; }
