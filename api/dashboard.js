@@ -18,14 +18,17 @@ function nameFromSlug(slug) {
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
 
-  // total mockups generated (blob metadata files)
+  const days = Math.max(0, parseInt((req.query && req.query.days) || '0', 10) || 0);
+  const since = days > 0 ? new Date(Date.now() - days * 86400000).toISOString() : null;
+
+  // total mockups generated (blob metadata files), respecting the date range
   let generated = 0;
   try {
     const { blobs } = await list({ prefix: 'mockups/', limit: 1000 });
-    generated = blobs.filter((b) => b.pathname.endsWith('.json')).length;
+    generated = blobs.filter((b) => b.pathname.endsWith('.json') && (!since || new Date(b.uploadedAt).toISOString() >= since)).length;
   } catch (e) { /* ignore */ }
 
-  const d = await dashboardData();
+  const d = await dashboardData(since);
   if (!d) { res.status(200).json({ configured: false, generated }); return; }
 
   const counts = {};

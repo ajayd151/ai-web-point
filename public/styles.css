@@ -41,7 +41,18 @@ body {
   padding: 5px 12px; border-radius: 999px; font-size: 12px; white-space: nowrap;
 }
 
-main { max-width: 1100px; margin: 24px auto; padding: 0 20px 80px; }
+.topnav { display: flex; gap: 8px; max-width: 1100px; margin: 18px auto 0; padding: 0 20px; flex-wrap: wrap; }
+.navbtn { background: #fff; border: 1px solid var(--line); color: var(--ink); border-radius: 10px; padding: 9px 18px; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: var(--shadow); }
+.navbtn:hover { background: #f1f4f9; }
+.navbtn.active { background: linear-gradient(90deg, var(--blue), var(--mauve)); color: #fff; border-color: transparent; }
+.view-title { margin: 0 0 2px; font-size: 19px; }
+.view-sub { margin: 0 0 16px; }
+.dash-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.dash-range { display: flex; gap: 6px; }
+.dash-rbtn { background: #fff; border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 7px 13px; font-weight: 700; font-size: 13px; cursor: pointer; }
+.dash-rbtn.active { background: var(--blue); color: #fff; border-color: transparent; }
+
+main { max-width: 1100px; margin: 16px auto; padding: 0 20px 80px; }
 
 .panel {
   background: var(--panel); border: 1px solid var(--line);

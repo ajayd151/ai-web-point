@@ -145,7 +145,14 @@
     </div>
   </header>
 
+  <nav class="topnav">
+    <button class="navbtn active" data-view="search">🔍 Search</button>
+    <button class="navbtn" data-view="messages">💬 Messages</button>
+    <button class="navbtn" data-view="performance">📊 Performance</button>
+  </nav>
+
   <main>
+    <div id="view-search" class="view">
     <section class="panel search">
       <div class="row">
         <label>
@@ -228,40 +235,6 @@
       </div>
     </section>
 
-    <section class="panel">
-      <details class="settings">
-        <summary>⚙ Message &amp; CTA wording <span class="muted">(edit what gets sent / shown)</span></summary>
-        <div class="settings-grid">
-          <label class="block">
-            <span>First message — placeholders: <code>{name}</code> <code>{business}</code> <code>{category}</code> <code>{location}</code> <code>{link}</code></span>
-            <textarea id="set-wa-msg" rows="4"></textarea>
-          </label>
-          <label class="block">
-            <span>Follow-up message <span class="muted">(used by the ↩ follow-up button)</span> — same placeholders</span>
-            <textarea id="set-followup" rows="4"></textarea>
-          </label>
-          <div class="cta-row">
-            <label class="block">
-              <span>Mockup CTA button</span>
-              <input id="set-cta-hero" type="text" maxlength="48" />
-            </label>
-            <label class="block">
-              <span>Mockup closing line</span>
-              <input id="set-cta-bottom" type="text" maxlength="52" />
-            </label>
-          </div>
-          <p class="hint">Saved on this device. <code>{business}</code> &amp; <code>{link}</code> are filled in automatically when you hit Send.</p>
-        </div>
-      </details>
-    </section>
-
-    <section class="panel">
-      <details class="settings" id="dash-details">
-        <summary>📊 Performance dashboard <span class="muted">(your sends, opens &amp; best-time insights)</span></summary>
-        <div id="dash-body" class="dash-body"><div class="muted" style="padding:14px 2px">Open this panel to load your stats…</div></div>
-      </details>
-    </section>
-
     <div class="results-bar">
       <section id="summary" class="summary hidden"></section>
       <button id="refresh-results" class="refresh-btn hidden" title="Refresh the list — re-checks who you've messaged. No new search, no cost.">↻ Refresh</button>
@@ -296,6 +269,44 @@
         </table>
       </div>
     </section>
+    </div><!-- /view-search -->
+
+    <div id="view-messages" class="view hidden">
+      <section class="panel">
+        <h2 class="view-title">💬 Message &amp; CTA wording</h2>
+        <p class="muted view-sub">Edit what gets sent and shown. Saved on this device.</p>
+        <div class="settings-grid">
+          <label class="block">
+            <span>First message — placeholders: <code>{name}</code> <code>{business}</code> <code>{category}</code> <code>{location}</code> <code>{link}</code></span>
+            <textarea id="set-wa-msg" rows="5"></textarea>
+          </label>
+          <label class="block">
+            <span>Follow-up message <span class="muted">(used by the ↩ follow-up button)</span> — same placeholders</span>
+            <textarea id="set-followup" rows="5"></textarea>
+          </label>
+          <div class="cta-row">
+            <label class="block"><span>Mockup CTA button</span><input id="set-cta-hero" type="text" maxlength="48" /></label>
+            <label class="block"><span>Mockup closing line</span><input id="set-cta-bottom" type="text" maxlength="52" /></label>
+          </div>
+          <p class="hint">Saved on this device. <code>{business}</code> &amp; <code>{link}</code> are filled in automatically when you hit Send.</p>
+        </div>
+      </section>
+    </div>
+
+    <div id="view-performance" class="view hidden">
+      <section class="panel">
+        <h2 class="view-title">📊 Performance</h2>
+        <div class="dash-toolbar">
+          <div class="dash-range">
+            <button class="dash-rbtn" data-days="7">Last 7 days</button>
+            <button class="dash-rbtn" data-days="30">Last 30 days</button>
+            <button class="dash-rbtn active" data-days="0">All time</button>
+          </div>
+          <button id="dash-csv" class="ghost">⬇ Export CSV</button>
+        </div>
+        <div id="dash-body" class="dash-body"></div>
+      </section>
+    </div>
   </main>
 
   <!-- GENERATE MODAL -->

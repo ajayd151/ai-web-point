@@ -799,17 +799,48 @@ const GENERIC_TIPS = [
   'WhatsApp tends to feel more personal than SMS for sole traders and often gets a warmer response.',
   'Avoid weekends for trades that work Mon–Fri; weekends are fine for consumer-facing ones (salons, groomers, cleaners).',
 ];
-$('dash-details').addEventListener('toggle', () => { if ($('dash-details').open) loadDashboard(); });
-async function loadDashboard() {
+// ---- top navigation (views) ----
+let currentDashDays = 0;
+let lastDashboard = null;
+function showView(name) {
+  ['search', 'messages', 'performance'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
+  document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
+  if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
+}
+document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
+document.querySelectorAll('.dash-rbtn').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.dash-rbtn').forEach((x) => x.classList.toggle('active', x === b));
+  currentDashDays = Number(b.dataset.days) || 0;
+  loadDashboard(currentDashDays);
+}));
+$('dash-csv').addEventListener('click', () => { if (lastDashboard) exportDashboardCsv(lastDashboard.rows || []); });
+
+async function loadDashboard(days) {
+  if (days == null) days = currentDashDays;
   const body = $('dash-body');
   body.innerHTML = '<div class="muted" style="padding:14px 2px">Loading your stats…</div>';
   try {
-    const r = await fetch('/api/dashboard');
+    const r = await fetch('/api/dashboard?days=' + (days || 0));
     if (r.status === 401) { setAuthUI(false); body.innerHTML = '<div class="muted" style="padding:14px 2px">Please sign in to view the dashboard.</div>'; return; }
-    renderDashboard(await r.json());
+    lastDashboard = await r.json();
+    renderDashboard(lastDashboard);
   } catch (e) {
     body.innerHTML = '<div class="empty">Could not load the dashboard. Try again shortly.</div>';
   }
+}
+function csvCell(v) { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function exportDashboardCsv(rows) {
+  if (!rows || !rows.length) { alert('No activity to export yet.'); return; }
+  const head = ['Business', 'Sent via', 'Sent (UK)', 'Opened (UK)', 'Opens', 'Demo clicked'];
+  const lines = [head.map(csvCell).join(',')];
+  rows.forEach((r) => {
+    const via = String(r.sentVia || '').split(',').map(channelName).filter(Boolean).join(' & ');
+    lines.push([r.name, via, r.sentAt ? fmtDate(r.sentAt) : '', r.openedAt ? fmtDate(r.openedAt) : '', r.opens, r.demoClicks > 0 ? 'Yes' : 'No'].map(csvCell).join(','));
+  });
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'sitepounce-activity.csv'; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 function dowName(d) { return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d] || ''; }
 function fmtHourClient(h) { const a = h < 12 ? 'a' : 'p'; const hr = h % 12 === 0 ? 12 : h % 12; return hr + a; }
