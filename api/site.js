@@ -59,6 +59,14 @@ function render(s) {
   const mobileBar = phone
     ? `<div class="mobilebar"><a href="${telHref(phone)}">📞 Call now</a><a href="#contact" class="mb-quote">Free quote</a></div>`
     : `<div class="mobilebar"><a href="#contact" class="mb-quote" style="flex:1">Get a free quote →</a></div>`;
+  // PREVIEW-ONLY sales bar: "Yes, sign me up" → subscribe page (env-configurable).
+  // Tracks the click as a 'signup' hot signal. Never renders on a published site.
+  const isPreview = s.mode !== 'published';
+  const subBase = process.env.SUBSCRIBE_URL || 'https://aiwebpoint.com/subscribe';
+  const subUrl = subBase + (subBase.indexOf('?') >= 0 ? '&' : '?') + 'source=' + encodeURIComponent(s.slug || '');
+  const previewBar = isPreview
+    ? `<div class="pvbar"><div class="pvbar-in"><span class="pv-txt"><b>👋 Like your new website${b.name ? ', ' + esc(b.name) : ''}?</b> 🚀 Founding-member offer — get it live this month.</span><a class="pv-cta" href="${esc(subUrl)}" target="_blank" rel="noopener" onclick="if(navigator.sendBeacon){navigator.sendBeacon('/api/track?slug=${encodeURIComponent(s.slug || '')}&e=signup');}">Yes, sign me up →</a></div></div>`
+    : '';
   const reviews = (s.reviews || []).length
     ? `<section id="reviews" class="reviews"><div class="wrap"><div class="sec-head"><div class="kicker" style="color:var(--amber)">Reviews</div><h2>What our customers say</h2>${googleBadge ? `<div class="gbadge-wrap">${googleBadge}</div>` : ''}</div><div class="rev-grid">${(s.reviews || []).map((r) => {
         const init = (r.name || 'C').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
@@ -195,7 +203,15 @@ footer{background:#07142b;color:#aebbd2;padding:44px 0 26px}
 .mobilebar a{flex:1;text-align:center;padding:14px 8px;font-weight:800;font-size:15px;font-family:'Poppins';background:var(--navy);color:#fff}
 .mobilebar a.mb-quote{background:linear-gradient(135deg,var(--amber),var(--amber-d));color:var(--acc-ink)}
 body{padding-bottom:56px}}
-</style></head><body>
+.pvbar{position:fixed;top:0;left:0;right:0;z-index:200;background:linear-gradient(90deg,#0a1c3a,#15315c);border-bottom:2px solid var(--amber)}
+.pvbar-in{max-width:1140px;margin:0 auto;min-height:46px;padding:7px 22px;display:flex;align-items:center;justify-content:center;gap:16px}
+.pv-txt{color:#fff;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pv-txt b{color:#fff}
+.pv-cta{flex:0 0 auto;background:linear-gradient(135deg,var(--amber),var(--amber-d));color:var(--acc-ink);font-weight:800;font-size:13.5px;padding:8px 16px;border-radius:8px;white-space:nowrap;animation:pvpulse 2s infinite}
+@keyframes pvpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,183,3,.55)}50%{box-shadow:0 0 0 9px rgba(255,183,3,0)}}
+body.preview{padding-top:46px}body.preview header{top:46px}
+@media(max-width:640px){.pv-txt{font-size:12px}.pvbar-in{gap:10px;padding:6px 12px}}
+</style></head><body${noindex ? ' class="preview"' : ''}>
+${previewBar}
 <header><div class="wrap hbar">
   <div class="brand"><span class="badge">${esc(s.initials || 'SP')}</span><span class="logo-txt"><b>${esc(b.name)}</b><span>Local · Trusted</span></span></div>
   <nav class="nav"><a class="lnk" href="#services">Services</a><a class="lnk" href="#about">About</a>${(s.reviews || []).length ? '<a class="lnk" href="#reviews">Reviews</a>' : ''}<a class="lnk" href="#contact">Contact</a>${phone ? `<a class="htel" href="${telHref(phone)}"><span class="htel-txt">📞 ${esc(phone)}</span></a>` : ''}<a class="btn btn-amber" href="#contact">Get a Free Quote</a></nav>
