@@ -786,6 +786,77 @@ $('rs-clear').addEventListener('click', () => {
 });
 renderRecentSearches();
 
+// ---- performance dashboard -----------------------------------------------
+$('dash-details').addEventListener('toggle', () => { if ($('dash-details').open) loadDashboard(); });
+async function loadDashboard() {
+  const body = $('dash-body');
+  body.innerHTML = '<div class="muted" style="padding:14px 2px">Loading your stats…</div>';
+  try {
+    const r = await fetch('/api/dashboard');
+    if (r.status === 401) { setAuthUI(false); body.innerHTML = '<div class="muted" style="padding:14px 2px">Please sign in to view the dashboard.</div>'; return; }
+    renderDashboard(await r.json());
+  } catch (e) {
+    body.innerHTML = '<div class="empty">Could not load the dashboard. Try again shortly.</div>';
+  }
+}
+function dowName(d) { return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d] || ''; }
+function fmtHourClient(h) { const a = h < 12 ? 'a' : 'p'; const hr = h % 12 === 0 ? 12 : h % 12; return hr + a; }
+function dashBars(items, labelFn, valFn, highlightMax) {
+  const vals = items.map(valFn);
+  const max = Math.max(1, ...vals);
+  const maxIdx = vals.reduce((bi, v, i) => (v > vals[bi] ? i : bi), 0);
+  return '<div class="dash-bars">' + items.map((it, i) => {
+    const v = valFn(it); const ht = Math.round((v / max) * 72) + 2;
+    const hot = highlightMax && v > 0 && i === maxIdx ? ' hot' : '';
+    return `<div class="dash-barwrap" title="${esc(String(labelFn(it, true)))}: ${v}"><div class="dash-bar${hot}" style="height:${ht}px"></div><span class="dash-blabel">${esc(String(labelFn(it)))}</span></div>`;
+  }).join('') + '</div>';
+}
+function renderDashboard(d) {
+  const body = $('dash-body');
+  if (!d || d.configured === false) {
+    body.innerHTML = '<div class="empty">Stats will appear here once you start sending.' + (d && d.generated ? ' You\'ve generated ' + d.generated + ' mockups so far.' : '') + '</div>';
+    return;
+  }
+  const t = d.totals, rates = d.rates, ch = d.byChannel;
+  const cards =
+    '<div class="dash-cards">' +
+    `<div class="dash-card"><div class="dc-num">${t.generated}</div><div class="dc-lab">Mockups made</div></div>` +
+    `<div class="dash-card"><div class="dc-num">${t.sent}</div><div class="dc-lab">Businesses messaged</div></div>` +
+    `<div class="dash-card"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div></div>` +
+    `<div class="dash-card"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div></div>` +
+    '</div>';
+  const insights = '<div class="dash-insights"><h3>💡 Insights &amp; recommendations</h3><ul>' +
+    (d.insights || []).map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
+  const channelBlock = (ch.w.sent || ch.s.sent)
+    ? '<div class="dash-chan"><h3>By channel</h3>' +
+      `<div class="dash-chrow"><span>📱 WhatsApp</span><span>${ch.w.opened}/${ch.w.sent} opened · <b>${ch.w.rate}%</b></span></div>` +
+      `<div class="dash-chrow"><span>💬 SMS</span><span>${ch.s.opened}/${ch.s.sent} opened · <b>${ch.s.rate}%</b></span></div></div>`
+    : '';
+  const hourChart = t.opened > 0
+    ? '<div class="dash-chart"><h3>Opens by hour <span class="muted">(UK time)</span></h3>' +
+      dashBars(d.opensByHour, (it, full) => (full || it.h % 4 === 0 ? fmtHourClient(it.h) : ''), (it) => it.n, true) + '</div>'
+    : '';
+  const dayChart = t.opened > 0
+    ? '<div class="dash-chart"><h3>Opens by day</h3>' +
+      dashBars(d.opensByDow, (it) => dowName(it.d), (it) => it.n, true) + '</div>'
+    : '';
+  let table = '';
+  if (d.rows && d.rows.length) {
+    const tr = d.rows.map((r) => {
+      const via = String(r.sentVia || '').split(',').map((c) => channelName(c)).filter(Boolean).join(' & ');
+      const sent = r.sentAt ? fmtDate(r.sentAt) : '—';
+      const opened = r.openedAt ? ('✓ ' + fmtDate(r.openedAt) + (r.opens > 1 ? ' (' + r.opens + '×)' : '')) : '<span class="muted">Not yet</span>';
+      const demo = r.demoClicks > 0 ? '🔥 Yes' : '—';
+      return `<tr><td>${esc(r.name)}</td><td>${esc(via || '—')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td></tr>`;
+    }).join('');
+    table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
+      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Demo</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+  }
+  body.innerHTML = insights + cards + channelBlock + hourChart + dayChart + table +
+    '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
+  const rb = $('dash-refresh'); if (rb) rb.addEventListener('click', loadDashboard);
+}
+
 function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
