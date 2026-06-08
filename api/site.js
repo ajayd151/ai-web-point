@@ -1,6 +1,7 @@
 // Renders a generated 1-page website from sites/<slug>.json (built by /api/pounce).
 // Wired via the /s/:slug rewrite. Preview sites are noindex. Per-business favicon.
 const { list } = require('@vercel/blob');
+const { SAMPLES } = require('../lib/samples');
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -261,6 +262,13 @@ ${mobileBar}
 module.exports = async (req, res) => {
   const slug = String((req.query && req.query.slug) || '').replace(/[^a-z0-9-]/gi, '');
   if (!slug) { res.status(400).send('Missing site.'); return; }
+  // built-in demo sites (no login / no paid build needed) — same renderer
+  if (SAMPLES[slug]) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    res.status(200).send(render(SAMPLES[slug]));
+    return;
+  }
   try {
     const path = 'sites/' + slug + '.json';
     const { blobs } = await list({ prefix: path });
