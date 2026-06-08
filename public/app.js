@@ -6,6 +6,7 @@ let currentPersonName = '';
 let currentRequirements = '';
 let lastSearchResults = [];
 let hotCount = 0;
+let signupCount = 0;
 let authed = false;
 const $ = (id) => document.getElementById(id);
 
@@ -873,7 +874,12 @@ function hotLeadCardHTML(l) {
   if (phone) acts += `<a class="hl-act" href="tel:${esc(phone)}">📞 Call</a>`;
   acts += `<a class="hl-act" target="_blank" rel="noopener" href="${esc(mapsLink(l))}">📍 Maps</a>`;
   acts += `<a class="hl-act" target="_blank" rel="noopener" href="${esc(l.viewUrl)}">View ↗</a>`;
-  return `<div class="hl-card"><div class="hl-main"><b>${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}<div class="hl-meta">${phone ? '📞 ' + esc(phone) : 'No phone on file'} · requested demo ${esc(fmtDate(l.demoAt))}</div></div><div class="hl-acts">${acts}</div></div>`;
+  const signed = !!l.signupAt;
+  const badge = signed ? `<span class="hl-tag signup">🤑 Clicked Sign Up</span>` : '';
+  const signal = signed
+    ? `🤑 clicked “Sign me up” ${esc(fmtDate(l.signupAt))}`
+    : `requested demo ${esc(fmtDate(l.demoAt))}`;
+  return `<div class="hl-card${signed ? ' hl-signup' : ''}"><div class="hl-main"><b>${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}${badge}<div class="hl-meta">${phone ? '📞 ' + esc(phone) : 'No phone on file'} · ${signal}</div></div><div class="hl-acts">${acts}</div></div>`;
 }
 function renderHotLeads(list) {
   lastHotLeads = list || [];
@@ -882,10 +888,14 @@ function renderHotLeads(list) {
   badge.textContent = n;
   badge.classList.toggle('hidden', n === 0);
   hotCount = n;
+  signupCount = lastHotLeads.filter((l) => l.signupAt).length;
   updateTabTitle();
   const body = $('hot-body');
-  if (!n) { body.innerHTML = '<div class="empty">No hot leads yet. When a prospect opens their preview and clicks "Request a demo", they\'ll appear here with their contact details — ready to follow up.</div>'; return; }
-  body.innerHTML = '<p class="muted view-sub">These prospects opened their preview and clicked "Request a demo" — your warmest leads. Follow up fast.</p>' + lastHotLeads.map(hotLeadCardHTML).join('');
+  if (!n) { body.innerHTML = '<div class="empty">No hot leads yet. When a prospect opens their preview and clicks "Request a demo" — or "Yes, sign me up" — they\'ll appear here with their contact details, ready to follow up.</div>'; return; }
+  const intro = signupCount
+    ? `<p class="muted view-sub"><b>🤑 ${signupCount} ${signupCount === 1 ? 'prospect' : 'prospects'} clicked “Sign me up”</b> — call these first. Below them, prospects who clicked "Request a demo".</p>`
+    : '<p class="muted view-sub">These prospects opened their preview and clicked "Request a demo" — your warmest leads. Follow up fast.</p>';
+  body.innerHTML = intro + lastHotLeads.map(hotLeadCardHTML).join('');
 }
 async function loadHotLeads() {
   try {
@@ -1049,7 +1059,9 @@ function updateTabTitle() {
   if (titleTimer) { clearInterval(titleTimer); titleTimer = null; }
   if (hotCount <= 0) { document.title = BASE_TITLE; return; }
   const settled = `Site Pounce (${hotCount})`;
-  const alertMsg = `🔥 (${hotCount}) hot ${hotCount === 1 ? 'lead' : 'leads'}!`;
+  const alertMsg = signupCount > 0
+    ? `🤑 (${signupCount}) want to sign up!`
+    : `🔥 (${hotCount}) hot ${hotCount === 1 ? 'lead' : 'leads'}!`;
   if (document.hidden) {
     let on = false;
     document.title = alertMsg;

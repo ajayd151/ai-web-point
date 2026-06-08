@@ -35,6 +35,8 @@ module.exports = async (req, res) => {
       mapsUrl: meta.mapsUrl || '',
       who: meta.who || '',
       demoAt: r.demo_at,
+      signupAt: r.signup_at,
+      signups: r.signups || 0,
       openedAt: r.opened_at,
       viewUrl: `${linkBase}/v/${r.slug}`,
     };
