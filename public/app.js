@@ -130,6 +130,7 @@ async function submitApply() {
 
 // ---- search --------------------------------------------------------------
 $('searchBtn').addEventListener('click', runSearch);
+$('refresh-results').addEventListener('click', () => renderResults(lastSearchResults)); // re-check messaged labels, no new search
 ['industry', 'location'].forEach((id) =>
   $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); })
 );
@@ -212,6 +213,7 @@ async function runSearch() {
 
 function renderResults(list) {
   lastSearchResults = list || [];
+  $('refresh-results').classList.toggle('hidden', !(list && list.length));
   const root = $('results');
   root.innerHTML = '';
   if (!list.length) { root.innerHTML = '<div class="empty">No businesses match these filters. Try loosening them.</div>'; return; }
@@ -699,6 +701,7 @@ function doFollowUp(r) {
     window.open('https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(msg), '_blank');
   }
 }
+$('recent-refresh').addEventListener('click', loadServerMockups); // re-check open status from the server
 $('recent-clear').addEventListener('click', () => {
   if (!confirm('Clear your recent mockups list? (The mockups themselves stay live at their links.)')) return;
   try { localStorage.removeItem('aiwp_recent'); } catch (e) {}

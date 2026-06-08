@@ -262,7 +262,10 @@
       </details>
     </section>
 
-    <section id="summary" class="summary hidden"></section>
+    <div class="results-bar">
+      <section id="summary" class="summary hidden"></section>
+      <button id="refresh-results" class="refresh-btn hidden" title="Refresh the list — re-checks who you've messaged. No new search, no cost.">↻ Refresh</button>
+    </div>
     <section id="results" class="results"></section>
 
     <section id="recent-searches" class="panel recent hidden">
@@ -281,7 +284,10 @@
     <section id="recent" class="panel recent hidden">
       <div class="recent-head">
         <h2 class="recent-title">Recent mockups</h2>
-        <button id="recent-clear" class="linkbtn">Clear</button>
+        <div class="recent-head-actions">
+          <button id="recent-refresh" class="linkbtn" title="Refresh — check if anyone has opened their preview (no cost)">↻ Refresh</button>
+          <button id="recent-clear" class="linkbtn">Clear</button>
+        </div>
       </div>
       <div class="recent-scroll">
         <table class="recent-table">
