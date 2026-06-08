@@ -36,8 +36,10 @@ module.exports = async (req, res) => {
   const sent = (counts.sent && counts.sent.slugs) || 0;
   const opened = (counts.view && counts.view.slugs) || 0;
   const demoClicks = (counts.cta && counts.cta.slugs) || 0;
+  const signups = (counts.signup && counts.signup.slugs) || 0;
   const openRate = sent ? Math.round((opened / sent) * 100) : 0;
   const demoRate = sent ? Math.round((demoClicks / sent) * 100) : 0;
+  const signupRate = sent ? Math.round((signups / sent) * 100) : 0;
 
   const ch = { w: { sent: 0, opened: 0, rate: 0 }, s: { sent: 0, opened: 0, rate: 0 } };
   d.channel.forEach((r) => {
@@ -62,6 +64,7 @@ module.exports = async (req, res) => {
     openedAt: r.opened_at,
     opens: r.opens,
     demoClicks: r.demo_clicks,
+    signedUp: (r.signups || 0) > 0,
   }));
 
   // ---- insights / recommendations ----
@@ -92,13 +95,16 @@ module.exports = async (req, res) => {
     } else if (opened >= 5) {
       insights.push('No demo clicks yet — consider a follow-up nudge to the people who opened but didn\'t click.');
     }
+    if (signups > 0) {
+      insights.push(`🤑 ${signups} ${signups === 1 ? 'prospect' : 'prospects'} clicked "Yes, sign me up" on a preview — your hottest signal. Call them before anything else.`);
+    }
   }
 
   res.status(200).json({
     configured: true,
     generated,
-    totals: { generated, sent, opened, demoClicks },
-    rates: { openRate, demoRate },
+    totals: { generated, sent, opened, demoClicks, signups },
+    rates: { openRate, demoRate, signupRate },
     avgTtoMin: avgTto,
     byChannel: ch,
     opensByHour: hours,

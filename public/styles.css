@@ -325,6 +325,9 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .dash-tips li { font-size: 13px; line-height: 1.7; color: var(--muted); }
 .dash-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
 .dash-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-align: center; box-shadow: var(--shadow); }
+.dash-card.signup { background: linear-gradient(120deg, #f0fdf4, #ecfdf5); border-color: #86efac; }
+.dash-card.signup .dc-num { color: #16a34a; }
+.recent-table tr.tr-signup td { background: #f0fdf4; font-weight: 600; }
 .dc-num { font-size: 30px; font-weight: 800; color: var(--blue); line-height: 1; }
 .dc-lab { font-size: 12.5px; color: var(--muted); margin-top: 6px; font-weight: 700; }
 .dc-sub { display: block; font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }

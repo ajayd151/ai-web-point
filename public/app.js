@@ -842,11 +842,11 @@ async function loadDashboard(days) {
 function csvCell(v) { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
 function exportDashboardCsv(rows) {
   if (!rows || !rows.length) { alert('No activity to export yet.'); return; }
-  const head = ['Business', 'Sent via', 'Sent (UK)', 'Opened (UK)', 'Opens', 'Demo clicked'];
+  const head = ['Business', 'Sent via', 'Sent (UK)', 'Opened (UK)', 'Opens', 'Demo clicked', 'Signed up'];
   const lines = [head.map(csvCell).join(',')];
   rows.forEach((r) => {
     const via = String(r.sentVia || '').split(',').map(channelName).filter(Boolean).join(' & ');
-    lines.push([r.name, via, r.sentAt ? fmtDate(r.sentAt) : '', r.openedAt ? fmtDate(r.openedAt) : '', r.opens, r.demoClicks > 0 ? 'Yes' : 'No'].map(csvCell).join(','));
+    lines.push([r.name, via, r.sentAt ? fmtDate(r.sentAt) : '', r.openedAt ? fmtDate(r.openedAt) : '', r.opens, r.demoClicks > 0 ? 'Yes' : 'No', r.signedUp ? 'Yes' : 'No'].map(csvCell).join(','));
   });
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -1097,6 +1097,7 @@ function renderDashboard(d) {
     `<div class="dash-card"><div class="dc-num">${t.sent}</div><div class="dc-lab">Businesses messaged</div></div>` +
     `<div class="dash-card"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div></div>` +
     `<div class="dash-card"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div></div>` +
+    `<div class="dash-card signup"><div class="dc-num">🤑 ${t.signups || 0}</div><div class="dc-lab">Sign-ups<span class="dc-sub">${rates.signupRate || 0}% of sent</span></div></div>` +
     '</div>';
   const insights = '<div class="dash-insights"><h3>📊 Based on your data</h3><ul>' +
     (d.insights || []).map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
@@ -1122,10 +1123,11 @@ function renderDashboard(d) {
       const sent = r.sentAt ? fmtDate(r.sentAt) : '—';
       const opened = r.openedAt ? ('✓ ' + fmtDate(r.openedAt) + (r.opens > 1 ? ' (' + r.opens + '×)' : '')) : '<span class="muted">Not yet</span>';
       const demo = r.demoClicks > 0 ? '🔥 Yes' : '—';
-      return `<tr><td>${esc(r.name)}</td><td>${esc(via || '—')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td></tr>`;
+      const signed = r.signedUp ? '🤑 Yes' : '—';
+      return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td>${esc(r.name)}</td><td>${esc(via || '—')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td></tr>`;
     }).join('');
     table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
-      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Requested demo</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Requested demo</th><th>Signed up</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
   body.innerHTML = insights + cards + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
