@@ -1,7 +1,7 @@
 // Client-side business-data generator (no server needed).
 // Same (industry, location) always produces the same list, so results are
 // stable while you tweak filters. Replace generateBusinesses() with a real
-// data source (Google Places etc.) later — keep the returned shape identical.
+// data source (Google Places etc.) later, keep the returned shape identical.
 (function () {
   function hashString(str) {
     let h = 2166136261;

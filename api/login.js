@@ -4,7 +4,7 @@ const { sign, constantEquals } = require('../lib/auth');
 
 module.exports = async (req, res) => {
   if (req.method === 'GET') {
-    // status check (does a valid session cookie exist?) — used by the UI on load
+    // status check (does a valid session cookie exist?), used by the UI on load
     const { verify, parseCookie } = require('../lib/auth');
     res.status(200).json({ authed: verify(parseCookie(req, 'aiwp'), Date.now()), configured: !!process.env.APP_PASSWORD });
     return;

@@ -1,4 +1,4 @@
-// 🐆 Pounce — builds a real 1-page website for a lead and stores it as a PREVIEW.
+// 🐆 Pounce, builds a real 1-page website for a lead and stores it as a PREVIEW.
 // Sources: Google Place Details (real photos + 4-5★ reviews + hours/address) +
 // the cached Prowl dossier (services) + OpenAI copywriting. Stored as
 // sites/<slug>.json with mode:'preview' (the preview registry for tidy-ups).
@@ -60,7 +60,7 @@ async function writeCopy(ctx) {
     services: [{ icon: '⭐', title: 'Quality Service', desc: 'Professional, reliable work every time.' }],
     aboutHeading: `About ${ctx.name}`, aboutParas: [`${ctx.name} is a trusted local ${ctx.category} serving ${ctx.location} and the surrounding area.`],
     stats: [{ num: ctx.rating ? ctx.rating + '★' : '5★', label: 'Customer rating' }, { num: (ctx.reviews || 0) + '+', label: 'Happy customers' }],
-    seoTitle: `${ctx.name} | ${ctx.category} in ${ctx.location}`, seoDesc: `${ctx.name} — trusted ${ctx.category} in ${ctx.location}. Free quotes.`,
+    seoTitle: `${ctx.name} | ${ctx.category} in ${ctx.location}`, seoDesc: `${ctx.name}, trusted ${ctx.category} in ${ctx.location}. Free quotes.`,
     areasCovered: [],
   };
   fallback.faq = [];
@@ -76,7 +76,7 @@ async function writeCopy(ctx) {
     o.notes ? `Extra notes from the agency: ${o.notes}.` : '',
   ].filter(Boolean).join(' ');
   const faqAsk = o.faq ? ',"faq":[{"q":"a real question a local customer would ask this trade","a":"a helpful 1-2 sentence answer"} (4-5 items)]' : '';
-  const prompt = `Write website copy for a local ${ctx.category} called "${ctx.name}" in ${ctx.location} (Google: ${ctx.reviews} reviews at ${ctx.rating}★). Known services: ${svc || 'infer from the trade'}. ${extras}\nRecent reviews:\n${revs || 'none'}\n\nReturn JSON: {"headline":"punchy hero headline","sub":"1 sentence subheadline","trust":["3-4 short trust badges e.g. Fully Insured, Free Quotes"],"services":[{"icon":"a fitting emoji","title":"2-3 words","desc":"1 short sentence"} x4-6],"aboutHeading":"short","aboutParas":["2 short warm paragraphs about the business using the real reputation${ctx.establishedYear ? ' and mentioning they were established ' + ctx.establishedYear : ''}"],"stats":[{"num":"e.g. 10+","label":"short"} x3],"areasCovered":["4-6 real nearby towns/areas a ${ctx.category} based in ${ctx.location} would realistically cover"],"seoTitle":"SEO title <60 chars","seoDesc":"meta description <155 chars"${faqAsk}}. Be specific to the trade, warm and credible. No fluff.`;
+  const prompt = `Write website copy for a local ${ctx.category} called "${ctx.name}" in ${ctx.location} (Google: ${ctx.reviews} reviews at ${ctx.rating}★). Known services: ${svc || 'infer from the trade'}. ${extras}\nRecent reviews:\n${revs || 'none'}\n\nReturn JSON: {"headline":"punchy hero headline","sub":"1 sentence subheadline","trust":["3-4 short trust badges e.g. Fully Insured, Free Quotes"],"services":[{"icon":"a fitting emoji","title":"2-3 words","desc":"1 short sentence"} x4-6],"aboutHeading":"short","aboutParas":["2 short warm paragraphs about the business using the real reputation${ctx.establishedYear ? ' and mentioning they were established ' + ctx.establishedYear : ''}"],"stats":[{"num":"e.g. 10+","label":"short"} x3],"areasCovered":["4-6 real nearby towns/areas a ${ctx.category} based in ${ctx.location} would realistically cover"],"seoTitle":"SEO title <60 chars","seoDesc":"meta description <155 chars"${faqAsk}}. Be specific to the trade, warm and credible. No fluff. Never use em dashes anywhere in the copy; use commas, full stops or brackets instead.`;
   try {
     const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 22000);
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -135,7 +135,7 @@ async function rankPhotos(photoNames, category) {
 // enough. Stored to blob; returns its URL (or '' on failure).
 async function generateHeroImage(slug, category) {
   if (!OKEY()) return '';
-  const prompt = `Professional photorealistic wide-angle hero photograph for the website of a ${category} business in the UK. A clean, modern, well-lit real-world scene that represents this trade — either skilled work in progress or a pristine finished result. High-end commercial photography, natural daylight, shallow depth of field, vibrant and aspirational. Absolutely NO text, NO logos, NO watermarks, NO collage, NO people posing at the camera.`;
+  const prompt = `Professional photorealistic wide-angle hero photograph for the website of a ${category} business in the UK. A clean, modern, well-lit real-world scene that represents this trade, either skilled work in progress or a pristine finished result. High-end commercial photography, natural daylight, shallow depth of field, vibrant and aspirational. Absolutely NO text, NO logos, NO watermarks, NO collage, NO people posing at the camera.`;
   try {
     const resp = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + OKEY() },
@@ -225,7 +225,7 @@ module.exports = async (req, res) => {
     gallery = ranked.filter((r) => !r.junk && r.gallery >= GAL_MIN && r.i !== heroI && photoNames[r.i])
       .sort((a, b) => b.gallery - a.gallery).slice(0, 4).map((r) => proxy(photoNames[r.i]));
   } else if (photoNames.length) {
-    // vision unavailable: can't vet — use the first photo conservatively, no gallery
+    // vision unavailable: can't vet, use the first photo conservatively, no gallery
     heroImage = proxy(photoNames[0]); heroSource = 'google-unvetted';
   }
   if (!heroImage) {

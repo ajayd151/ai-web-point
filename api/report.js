@@ -30,7 +30,7 @@ module.exports = async (req, res) => {
       body: JSON.stringify({
         personalizations: [{ to: [{ email: to }] }],
         from: { email: from, name: 'SitePounce' },
-        subject: 'SitePounce Error — ' + context,
+        subject: 'SitePounce Error, ' + context,
         content: [{
           type: 'text/plain',
           value: `A SitePounce error was reported.\n\nError:\n${message}\n\nContext: ${context}\nPage: ${url}\nWhen: ${when}\n`,

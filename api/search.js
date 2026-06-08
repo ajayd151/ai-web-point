@@ -1,7 +1,7 @@
 // Live business search via Google Places API (New) Text Search.
 // Login-gated (protects your Google credit). Returns businesses in the same
 // shape as the old mock data so filters + the mockup generator just work.
-// NOTE: Google does not return email addresses — `email` is always null.
+// NOTE: Google does not return email addresses, `email` is always null.
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
 const { matchesFilters } = require('../lib/filters');
@@ -154,7 +154,7 @@ module.exports = async (req, res) => {
       (data.places || []).forEach((p) => {
         if (p.id && seen.has(p.id)) return;
         if (p.id) seen.add(p.id);
-        if (p.id && excludeSet.has(p.id)) return; // already messaged — skip, keep digging for fresh ones
+        if (p.id && excludeSet.has(p.id)) return; // already messaged, skip, keep digging for fresh ones
         scanned++;
         const name = (p.displayName && p.displayName.text) || 'Unknown business';
         const phone = p.nationalPhoneNumber || p.internationalPhoneNumber || null;

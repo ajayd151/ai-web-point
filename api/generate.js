@@ -44,7 +44,7 @@ let FONTS_OK = false;
 
 // ---- AI scene + services for ANY industry (no trade assumptions) ---------
 // Asks gpt-4o-mini to describe the right photo scene AND a fitting service list
-// for whatever industry was entered — works for web designers, accountants,
+// for whatever industry was entered, works for web designers, accountants,
 // cafes, gyms, plumbers, anything. Falls back to a generic, non-trade default.
 async function sceneAndServices(industry) {
   const label = String(industry || 'local business').trim();
@@ -67,7 +67,7 @@ async function sceneAndServices(industry) {
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: 'You write concise art direction and service lists for website hero designs. Output JSON only.' },
-          { role: 'user', content: `For the website hero of a "${label}" business, return JSON {"scene":"...","services":["..","..","..",".."]}. "scene" = ONE vivid sentence describing the most fitting photorealistic photo: the right person/people doing their ACTUAL work in an authentic, modern, professional setting — and it must contain NO text, signage, logos or watermarks. "services" = exactly 4 short labels (2-3 words each) of things this specific kind of business genuinely offers. Do not assume it is a trade.` },
+          { role: 'user', content: `For the website hero of a "${label}" business, return JSON {"scene":"...","services":["..","..","..",".."]}. "scene" = ONE vivid sentence describing the most fitting photorealistic photo: the right person/people doing their ACTUAL work in an authentic, modern, professional setting, and it must contain NO text, signage, logos or watermarks. "services" = exactly 4 short labels (2-3 words each) of things this specific kind of business genuinely offers. Do not assume it is a trade. Never use em dashes anywhere in the output.` },
         ],
       }),
     });
@@ -90,7 +90,7 @@ const SHOT_LIGHTS = ['soft natural morning light', 'warm golden afternoon light'
 function buildPrompt(scene, business) {
   const extra = String(business.requirements || '').trim();
   const extraLine = extra
-    ? ` IMPORTANT art direction from the client — apply this strongly to the look and feel of the photo (but do NOT render any of it as on-image text): ${extra}.`
+    ? ` IMPORTANT art direction from the client, apply this strongly to the look and feel of the photo (but do NOT render any of it as on-image text): ${extra}.`
     : '';
   // deliberate per-generation variety so two businesses in the SAME industry
   // never get the same-looking photo
@@ -102,7 +102,7 @@ function buildPrompt(scene, business) {
 }
 
 // Retry transient OpenAI image failures (5xx / rate-limit / network blips) once
-// before surfacing an error — most generate 500s are a momentary OpenAI hiccup.
+// before surfacing an error, most generate 500s are a momentary OpenAI hiccup.
 async function generateHero(prompt) {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY is not set in Vercel → Settings → Environment Variables.');
@@ -294,7 +294,7 @@ async function composeMockup(heroBuffer, business, opts) {
   ctx.font = `16px 'Montserrat Bold'`;
   ctx.fillText('CALL NOW FOR A FREE QUOTE', X, cursor);
 
-  // phone pill (white, brand-blue number — high contrast = emphasis)
+  // phone pill (white, brand-blue number, high contrast = emphasis)
   const phone = (business.phones && business.phones[0]) || 'Call us today';
   ctx.font = `40px 'Montserrat ExtraBold'`;
   const pw = Math.min(620, ctx.measureText(phone).width + 110);
@@ -468,7 +468,7 @@ module.exports = async (req, res) => {
     const linkBase = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
     const slug = `${safe}-${id}`;
     const viewUrl = `${linkBase}/v/${slug}`;
-    const imageUrl = `${linkBase}/i/${slug}.png`; // branded — hides the blob host
+    const imageUrl = `${linkBase}/i/${slug}.png`; // branded, hides the blob host
 
     res.status(200).json({ imageUrl, viewUrl, id, slug });
   } catch (err) {

@@ -4,7 +4,7 @@
 // bot user-agents server-side as a backstop. Always returns 204 quickly.
 const { recordEvent } = require('../lib/db');
 
-// crawlers / link-unfurlers that may execute or fetch — never count these
+// crawlers / link-unfurlers that may execute or fetch, never count these
 const BOT_RE = /bot|crawl|spider|facebookexternalhit|whatsapp|telegram|slackbot|discord|twitterbot|linkedinbot|embedly|preview|pinterest|google-inspectiontool|bingpreview|headless|monitor|uptime|curl|wget|python-requests|axios|node-fetch/i;
 
 module.exports = async (req, res) => {

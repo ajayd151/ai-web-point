@@ -15,7 +15,7 @@ const SETTINGS_DEFAULTS = {
   waMsg: "Hi {name},\n\nI came across {business} while looking through {category} in {location}.\n\nI noticed you don't currently have a website, so I put together a website preview for your business:\n\n{link}\n\nI thought it might help you see what your business could look like online.\n\nIf you'd like me to show you how the rest of the website could look, just let me know.\n\nIf it's not something you're interested in, simply reply \"No\" and I won't contact you again.\n\nThanks,\n\nAjay",
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
-  followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not — happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
+  followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not, happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
 };
 function loadSettings() {
   let s = {};
@@ -119,10 +119,10 @@ async function submitApply() {
   try {
     const r = await fetch('/api/apply', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(d.error || 'Something went wrong — please try again.');
+    if (!r.ok) throw new Error(d.error || 'Something went wrong, please try again.');
     $('apply-form').innerHTML =
       '<div class="ap-done"><h3>Application received 🎉</h3>' +
-      '<p>Thank you — we read every founder application personally. If you look like a great fit, we\'ll be in touch with your private demo and your locked-in founder rate. Keep an eye on your inbox.</p></div>';
+      '<p>Thank you, we read every founder application personally. If you look like a great fit, we\'ll be in touch with your private demo and your locked-in founder rate. Keep an eye on your inbox.</p></div>';
   } catch (e) {
     applyMsg(e.message, 'err');
   } finally {
@@ -195,12 +195,12 @@ async function runSearch() {
     let summary;
     if (results.length === 0) {
       const areasNote = expanded.length ? `, plus ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}),` : '';
-      summary = `No ${industry} in ${primaryLoc}${areasNote} matched your filters — I scanned ${scanned} Google listings. Try loosening them: set Phone to "Has phone" (not "Mobile only"), or Website to "Any". Well-established businesses (solicitors, accountants, etc.) nearly all have a website, so "No website" + "Mobile only" together often returns nothing.`;
+      summary = `No ${industry} in ${primaryLoc}${areasNote} matched your filters, I scanned ${scanned} Google listings. Try loosening them: set Phone to "Has phone" (not "Mobile only"), or Website to "Any". Well-established businesses (solicitors, accountants, etc.) nearly all have a website, so "No website" + "Mobile only" together often returns nothing.`;
     } else if (expanded.length) {
       const primaryCount = data.primaryCount != null ? data.primaryCount : 0;
-      summary = `🚀 Deep search complete! ${primaryLoc} only had ${primaryCount}, so I didn't stop there — I expanded the hunt across ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}) and combed through ${scanned} listings to bring you ${results.length} ready-to-contact leads. 🔥`;
+      summary = `🚀 Deep search complete! ${primaryLoc} only had ${primaryCount}, so I didn't stop there, I expanded the hunt across ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}) and combed through ${scanned} listings to bring you ${results.length} ready-to-contact leads. 🔥`;
     } else {
-      summary = `✅ Nailed it — ${results.length} ${industry} in ${primaryLoc} matched your filters. I combed through ${scanned} Google listings to find them.`;
+      summary = `✅ Nailed it, ${results.length} ${industry} in ${primaryLoc} matched your filters. I combed through ${scanned} Google listings to find them.`;
     }
     $('summary').textContent = summary;
     renderResults(results);
@@ -278,12 +278,12 @@ function card(b) {
 // ---- generate modal ------------------------------------------------------
 function openGenerateModal(business) {
   if (!authed) {
-    setAuthUI(false); // session expired — bring the login gate back up
-    showLoginMsg('Your session ended — please sign in again.', 'err');
+    setAuthUI(false); // session expired, bring the login gate back up
+    showLoginMsg('Your session ended, please sign in again.', 'err');
     return;
   }
   pendingBusiness = business;
-  $('modal-biz').textContent = `${business.name} — ${business.category}, ${business.location}`;
+  $('modal-biz').textContent = `${business.name}, ${business.category}, ${business.location}`;
   $('modal-name').value = '';
   $('modal-req').value = '';
   $('modal').classList.remove('hidden');
@@ -303,10 +303,10 @@ async function proceedGenerate() {
 // regenerate a fresh version: reopens the generate popup pre-filled, so you can
 // optionally add a comment on what to change before it runs (costs 1 credit)
 function regenerateMockup() {
-  if (!authed) { setAuthUI(false); showLoginMsg('Your session ended — please sign in again.', 'err'); return; }
+  if (!authed) { setAuthUI(false); showLoginMsg('Your session ended, please sign in again.', 'err'); return; }
   if (!currentBusiness) return;
   pendingBusiness = currentBusiness;
-  $('modal-biz').textContent = `${currentBusiness.name}${currentBusiness.category ? ' — ' + currentBusiness.category : ''}${currentBusiness.location ? ', ' + currentBusiness.location : ''}`;
+  $('modal-biz').textContent = `${currentBusiness.name}${currentBusiness.category ? ', ' + currentBusiness.category : ''}${currentBusiness.location ? ', ' + currentBusiness.location : ''}`;
   $('modal-name').value = currentPersonName || '';
   $('modal-req').value = currentRequirements || '';
   $('preview').classList.add('hidden'); // close the preview so the popup sits on top
@@ -320,7 +320,7 @@ async function runGeneration(business, requirements, personName) {
   currentPersonName = personName || '';
 
   $('preview-title').textContent = personName
-    ? `Hey ${personName} 👋 — mockup for ${business.name}`
+    ? `Hey ${personName} 👋, mockup for ${business.name}`
     : `Mockup · ${business.name}`;
   $('preview').classList.remove('hidden');
   $('preview-warn').classList.add('hidden');
@@ -340,7 +340,7 @@ async function runGeneration(business, requirements, personName) {
     try { data = await resp.json(); } catch (e) { data = {}; }
     if (resp.status === 401) {
       setAuthUI(false);
-      throw new Error('Your session expired — please log in again (top of the page).');
+      throw new Error('Your session expired, please log in again (top of the page).');
     }
     if (!resp.ok) throw new Error(errText(data, resp.status));
 
@@ -395,7 +395,7 @@ function startGenProgress(business) {
   const delays = [0, 1200, 2600, 4000, 12000, 13500, 15000, 16500, 18000, 19500, 21000]; // when each line appears (ms)
   $('preview-body').innerHTML =
     '<div class="genprog"><div id="genprog-list"></div>' +
-    '<p class="genprog-foot"><small>This usually takes ~15–25 seconds — hang tight.</small></p></div>';
+    '<p class="genprog-foot"><small>This usually takes ~15–25 seconds, hang tight.</small></p></div>';
   const listEl = $('genprog-list');
   steps.forEach((text, i) => {
     const timer = setTimeout(() => {
@@ -416,7 +416,7 @@ function errText(data, status) {
   const e = data && data.error;
   if (typeof e === 'string' && e.trim()) return e;
   if (e && typeof e === 'object') return e.message || e.code || JSON.stringify(e);
-  return 'The server hit an error (HTTP ' + status + '). This is usually a timeout while the AI image generates — please retry.';
+  return 'The server hit an error (HTTP ' + status + '). This is usually a timeout while the AI image generates, please retry.';
 }
 
 // error panel with a Retry button that unlocks after a 45s countdown
@@ -510,8 +510,8 @@ function setupWhatsApp(business, link, personName) {
     wa.classList.add('hidden');
     sms.classList.add('hidden');
     note.textContent = phone
-      ? `📱 WhatsApp/SMS hidden because ${phone} is a landline, not a mobile — they only work on mobiles. Use the image URL or view link in an email instead.`
-      : '📱 WhatsApp/SMS hidden — no mobile number listed for this business. Use the image URL or view link instead.';
+      ? `📱 WhatsApp/SMS hidden because ${phone} is a landline, not a mobile, they only work on mobiles. Use the image URL or view link in an email instead.`
+      : '📱 WhatsApp/SMS hidden, no mobile number listed for this business. Use the image URL or view link instead.';
     return;
   }
   const tpl = loadSettings().waMsg;
@@ -521,7 +521,7 @@ function setupWhatsApp(business, link, personName) {
   wa.classList.remove('hidden');
   sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(smsMsg);
   sms.classList.remove('hidden');
-  note.textContent = 'Opens WhatsApp, or your Messages app for SMS, to ' + phone + ' with your message + link pre-filled — you review and press send.';
+  note.textContent = 'Opens WhatsApp, or your Messages app for SMS, to ' + phone + ' with your message + link pre-filled, you review and press send.';
 }
 // log the send server-side (channel + exact time) for later send-time analysis
 function recordSendServer(channel) {
@@ -678,7 +678,7 @@ function openRecent(r) {
   currentBusiness = business;
   currentSlug = r.id;
   $('preview-title').textContent = r.personName
-    ? `Hey ${r.personName} 👋 — mockup for ${r.name}`
+    ? `Hey ${r.personName} 👋, mockup for ${r.name}`
     : `Mockup · ${r.name}`;
   $('preview').classList.remove('hidden');
   $('preview-warn').classList.add('hidden');
@@ -706,7 +706,7 @@ function doFollowUp(r) {
   if (channel === 's') {
     window.location.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(msg);
   } else if (channel === 'e') {
-    window.open('mailto:?subject=' + encodeURIComponent('Following up — ' + (r.name || 'your website preview')) +
+    window.open('mailto:?subject=' + encodeURIComponent('Following up, ' + (r.name || 'your website preview')) +
       '&body=' + encodeURIComponent(msg), '_blank');
   } else {
     window.open('https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(msg), '_blank');
@@ -801,12 +801,12 @@ $('rs-clear').addEventListener('click', () => {
 renderRecentSearches();
 
 // ---- performance dashboard -----------------------------------------------
-// Generic best-practice tips (NOT based on your data — general outreach advice)
+// Generic best-practice tips (NOT based on your data, general outreach advice)
 const GENERIC_TIPS = [
-  'Tradespeople are often easiest to reach early (7–8am) or after they finish on site (5–7pm) — they\'re rarely at a desk during the day.',
+  'Tradespeople are often easiest to reach early (7–8am) or after they finish on site (5–7pm), they\'re rarely at a desk during the day.',
   'Tuesday to Thursday usually beats Mondays (catching up) and Fridays (winding down) for B2B replies.',
-  'Keep the first message short and low-pressure — you\'re offering something free, not selling.',
-  'Most replies come from a single polite follow-up 2–3 days later — use the ↩ Follow up button for those who didn\'t open.',
+  'Keep the first message short and low-pressure, you\'re offering something free, not selling.',
+  'Most replies come from a single polite follow-up 2–3 days later, use the ↩ Follow up button for those who didn\'t open.',
   'WhatsApp tends to feel more personal than SMS for sole traders and often gets a warmer response.',
   'Avoid weekends for trades that work Mon–Fri; weekends are fine for consumer-facing ones (salons, groomers, cleaners).',
 ];
@@ -891,10 +891,10 @@ function renderHotLeads(list) {
   signupCount = lastHotLeads.filter((l) => l.signupAt).length;
   updateTabTitle();
   const body = $('hot-body');
-  if (!n) { body.innerHTML = '<div class="empty">No hot leads yet. When a prospect opens their preview and clicks "Request a demo" — or "Yes, sign me up" — they\'ll appear here with their contact details, ready to follow up.</div>'; return; }
+  if (!n) { body.innerHTML = '<div class="empty">No hot leads yet. When a prospect opens their preview and clicks "Request a demo", or "Yes, sign me up", they\'ll appear here with their contact details, ready to follow up.</div>'; return; }
   const intro = signupCount
-    ? `<p class="muted view-sub"><b>🤑 ${signupCount} ${signupCount === 1 ? 'prospect' : 'prospects'} clicked “Sign me up”</b> — call these first. Below them, prospects who clicked "Request a demo".</p>`
-    : '<p class="muted view-sub">These prospects opened their preview and clicked "Request a demo" — your warmest leads. Follow up fast.</p>';
+    ? `<p class="muted view-sub"><b>🤑 ${signupCount} ${signupCount === 1 ? 'prospect' : 'prospects'} clicked “Sign me up”</b>, call these first. Below them, prospects who clicked "Request a demo".</p>`
+    : '<p class="muted view-sub">These prospects opened their preview and clicked "Request a demo", your warmest leads. Follow up fast.</p>';
   body.innerHTML = intro + lastHotLeads.map(hotLeadCardHTML).join('');
 }
 async function loadHotLeads() {
@@ -951,9 +951,9 @@ function renderDossier(d, lead) {
   const opener = d.openingLine ? `<div class="dos-open"><h3>💬 Suggested opener</h3><p>${esc(d.openingLine)}</p></div>` : '';
   $('prowl-body').innerHTML =
     `<div class="dos-snap">${snapshot}</div>` +
-    `<div class="dos-rep">⭐ Google: <b>${g.reviews}</b> reviews at <b>${g.rating}★</b>${g.mapsUrl ? ' · <a href="' + esc(g.mapsUrl) + '" target="_blank" rel="noopener">📍 Maps</a>' : ''}${g.website ? '' : ' · <b>no website</b>'}${d.reputationSummary ? ' — ' + esc(d.reputationSummary) : ''}</div>` +
+    `<div class="dos-rep">⭐ Google: <b>${g.reviews}</b> reviews at <b>${g.rating}★</b>${g.mapsUrl ? ' · <a href="' + esc(g.mapsUrl) + '" target="_blank" rel="noopener">📍 Maps</a>' : ''}${g.website ? '' : ' · <b>no website</b>'}${d.reputationSummary ? ', ' + esc(d.reputationSummary) : ''}</div>` +
     compTable + services + ammo + opener +
-    `<div class="dos-foot"><span class="muted">Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-pounce" class="primary sm">🐆 Pounce — build their website</button> <button id="prowl-rerun" class="ghost">↻ Re-run</button></div>`;
+    `<div class="dos-foot"><span class="muted">Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-pounce" class="primary sm">🐆 Pounce, build their website</button> <button id="prowl-rerun" class="ghost">↻ Re-run</button></div>`;
   const rr = $('prowl-rerun');
   if (rr) rr.addEventListener('click', () => { startProwlProgress(); prowlFetch(lead, true).then(({ j }) => renderDossier(j.dossier || {}, lead)).catch(() => {}); });
   const pb = $('prowl-pounce');
@@ -1001,7 +1001,7 @@ function suggestAccreditations(category) {
 }
 function pounceQuestionsHTML(lead) {
   return `<div class="pq">
-    <p class="muted pq-intro">Optional — tweak the build below, or just hit <b>Build my site</b> for smart defaults.${lead && lead.prowled === false ? '' : ''}</p>
+    <p class="muted pq-intro">Optional, tweak the build below, or just hit <b>Build my site</b> for smart defaults.${lead && lead.prowled === false ? '' : ''}</p>
     <div class="pq-grid">
       <div class="pq-fld"><label>Accent colour</label><select id="pq-accent">${POUNCE_ACCENTS.map((a) => `<option value="${a[0]}">${a[1]}</option>`).join('')}</select></div>
       <div class="pq-fld"><label>Add an FAQ section?</label><label class="pq-toggle"><input id="pq-faq" type="checkbox"> Yes, generate FAQs</label></div>
@@ -1012,7 +1012,7 @@ function pounceQuestionsHTML(lead) {
         <div class="pq-accred">${suggestAccreditations(lead && lead.category).map((a) => `<label class="pq-chip"><input type="checkbox" class="pq-acc" value="${esc(a)}"> ${esc(a)}</label>`).join('')}</div></div>
       <div class="pq-fld wide"><label>Anything else to weave in?</label><textarea id="pq-notes" rows="2" placeholder="Any extra detail"></textarea></div>
     </div>
-    <div class="pq-actions"><button id="pq-build" class="primary">🐆 Build my site →</button><button id="pq-skip" class="ghost sm">Skip — smart defaults</button></div>
+    <div class="pq-actions"><button id="pq-build" class="primary">🐆 Build my site →</button><button id="pq-skip" class="ghost sm">Skip, smart defaults</button></div>
   </div>`;
 }
 function collectPounceOpts() {
@@ -1120,11 +1120,11 @@ function renderDashboard(d) {
   if (d.rows && d.rows.length) {
     const tr = d.rows.map((r) => {
       const via = String(r.sentVia || '').split(',').map((c) => channelName(c)).filter(Boolean).join(' & ');
-      const sent = r.sentAt ? fmtDate(r.sentAt) : '—';
+      const sent = r.sentAt ? fmtDate(r.sentAt) : ', ';
       const opened = r.openedAt ? ('✓ ' + fmtDate(r.openedAt) + (r.opens > 1 ? ' (' + r.opens + '×)' : '')) : '<span class="muted">Not yet</span>';
-      const demo = r.demoClicks > 0 ? '🔥 Yes' : '—';
-      const signed = r.signedUp ? '🤑 Yes' : '—';
-      return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td>${esc(r.name)}</td><td>${esc(via || '—')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td></tr>`;
+      const demo = r.demoClicks > 0 ? '🔥 Yes' : ', ';
+      const signed = r.signedUp ? '🤑 Yes' : ', ';
+      return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td>${esc(r.name)}</td><td>${esc(via || ', ')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td></tr>`;
     }).join('');
     table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
       '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Requested demo</th><th>Signed up</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';

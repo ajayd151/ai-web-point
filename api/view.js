@@ -1,5 +1,5 @@
 // Serves the shareable "view mockup" page on our own domain.
-// Short form: /v/<slug>  (rewritten to ?slug=<slug>) — looks up stored metadata.
+// Short form: /v/<slug>  (rewritten to ?slug=<slug>), looks up stored metadata.
 // Legacy form: ?img=&name=&loc=&cta=  still supported.
 const { list } = require('@vercel/blob');
 
@@ -62,10 +62,10 @@ module.exports = async (req, res) => {
   const imgSrc = slug ? `${base}/i/${slug}.png` : img;
 
   const demo = process.env.DEMO_URL || 'mailto:hello@aiwebpoint.com?subject=Website%20demo%20-%20' + encodeURIComponent(name);
-  // tracked link back to the agency site — utm identifies which prospect viewed
+  // tracked link back to the agency site, utm identifies which prospect viewed
   const utm = 'preview' + (slug ? '-' + slug : '');
   const agencyUrl = `https://aiwebpoint.com/?utm_source=${encodeURIComponent(utm)}`;
-  const title = `${esc(name)} — website preview by ${AGENCY}`;
+  const title = `${esc(name)}, website preview by ${AGENCY}`;
   const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <meta name="robots" content="noindex, nofollow"/>

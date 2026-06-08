@@ -1,5 +1,5 @@
 // Lists every mockup ever generated (from Vercel Blob) so the "Recent mockups"
-// table can show them on any device — reopen to download or re-send.
+// table can show them on any device, reopen to download or re-send.
 // Login-gated.
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
@@ -31,7 +31,7 @@ module.exports = async (req, res) => {
             who: m.who || '',
             category: m.category || '',
             phone: m.phone || '',
-            img: `${linkBase}/i/${slug}.png`, // branded — hides the blob host
+            img: `${linkBase}/i/${slug}.png`, // branded, hides the blob host
             viewUrl: `${linkBase}/v/${slug}`,
           };
         } catch (e) { return null; }

@@ -1,4 +1,4 @@
-// 🐾 Prowl — gathers public sales intelligence on a lead and turns it into a
+// 🐾 Prowl, gathers public sales intelligence on a lead and turns it into a
 // briefing ("ammunition"). Free sources: Companies House (if key set) + Google
 // Places (existing key) + OpenAI synthesis. Result is cached in Blob per slug.
 const { list, put } = require('@vercel/blob');
@@ -39,7 +39,7 @@ async function companiesHouse(name) {
     const sr = await fetch('https://api.company-information.service.gov.uk/search/companies?items_per_page=5&q=' + encodeURIComponent(name), { headers: { Authorization: auth } });
     const sd = await sr.json().catch(() => ({}));
     const item = (sd.items || []).find((i) => i.company_status === 'active') || (sd.items || [])[0];
-    if (!item) return { found: false, note: 'No Companies House match — likely a sole trader.' };
+    if (!item) return { found: false, note: 'No Companies House match, likely a sole trader.' };
     const num = item.company_number;
     const profile = await (await fetch('https://api.company-information.service.gov.uk/company/' + num, { headers: { Authorization: auth } })).json().catch(() => ({}));
     let director = '';
@@ -70,7 +70,7 @@ async function synthesize(ctx) {
   const chText = ctx.ch && ctx.ch.found
     ? `Companies House: ${ctx.ch.name}, established ${ctx.ch.established}, status ${ctx.ch.status}, SIC codes ${(ctx.ch.sic || []).join(', ')}, director ${ctx.ch.director || 'unknown'}`
     : 'Not a registered company (likely a sole trader).';
-  const prompt = `You are a sales-intelligence analyst helping a web-design agency pitch a local business that currently has NO website. Turn these facts into a punchy, specific sales briefing.\n\nBusiness: ${ctx.name} (${ctx.category}) in ${ctx.location}.\nGoogle: ${ctx.google.reviews} reviews at ${ctx.google.rating} stars. Website: ${ctx.google.website || 'NONE'}.\n${chText}\nNearby competitors:\n${compText}\nRecent reviews:\n${reviewsText || 'none available'}\n\nReturn JSON: {"services":["short service labels they offer"],"reputationSummary":"one sentence on their reputation","ammunition":["3-5 specific, persuasive talking points the salesperson can literally say, citing the REAL numbers and gaps — e.g. strong reviews with nowhere to send people, competitors who have sites, no online booking"],"openingLine":"a warm, non-salesy opening message line referencing something specific about them"}. Use the real numbers. Be concrete, no fluff.`;
+  const prompt = `You are a sales-intelligence analyst helping a web-design agency pitch a local business that currently has NO website. Turn these facts into a punchy, specific sales briefing.\n\nBusiness: ${ctx.name} (${ctx.category}) in ${ctx.location}.\nGoogle: ${ctx.google.reviews} reviews at ${ctx.google.rating} stars. Website: ${ctx.google.website || 'NONE'}.\n${chText}\nNearby competitors:\n${compText}\nRecent reviews:\n${reviewsText || 'none available'}\n\nReturn JSON: {"services":["short service labels they offer"],"reputationSummary":"one sentence on their reputation","ammunition":["3-5 specific, persuasive talking points the salesperson can literally say, citing the REAL numbers and gaps, e.g. strong reviews with nowhere to send people, competitors who have sites, no online booking"],"openingLine":"a warm, non-salesy opening message line referencing something specific about them"}. Use the real numbers. Be concrete, no fluff. Never use em dashes; use commas or full stops instead.`;
   try {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 22000);

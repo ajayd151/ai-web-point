@@ -36,7 +36,7 @@ function render(s) {
     ? `<section><div class="wrap"><div class="sec-head"><div class="kicker">Our work</div><h2>Recent projects</h2></div><div class="gal">${(s.gallery || []).map((g) => `<div style="background-image:url('${esc(g)}')" role="img" aria-label="Project photo"></div>`).join('')}</div></div></section>`
     : '';
   const mapsUrl = b.mapsUrl || '';
-  // 1) accreditation strip (only the ones the agency confirmed — never fabricated)
+  // 1) accreditation strip (only the ones the agency confirmed, never fabricated)
   const accred = (s.accreditations || []).length
     ? `<div class="accred"><div class="wrap"><span class="accred-lead">Accredited &amp; trusted</span>${(s.accreditations || []).map((a) => `<span class="ac-badge">🛡️ ${esc(a)}</span>`).join('')}</div></div>`
     : '';
@@ -66,7 +66,7 @@ function render(s) {
   const subBase = process.env.SUBSCRIBE_URL || 'https://aiwebpoint.com/subscribe';
   const subUrl = subBase + (subBase.indexOf('?') >= 0 ? '&' : '?') + 'source=' + encodeURIComponent(s.slug || '');
   const previewBar = isPreview
-    ? `<div class="pvbar"><div class="pvbar-in"><span class="pv-txt"><b>👋 Like your new website${b.name ? ', ' + esc(b.name) : ''}?</b> 🚀 Founding-member offer — get it live this month.</span><a class="pv-cta" href="${esc(subUrl)}" target="_blank" rel="noopener" onclick="if(navigator.sendBeacon){navigator.sendBeacon('/api/track?slug=${encodeURIComponent(s.slug || '')}&e=signup');}">Yes, sign me up →</a></div></div>`
+    ? `<div class="pvbar"><div class="pvbar-in"><span class="pv-txt"><b>👋 Like your new website${b.name ? ', ' + esc(b.name) : ''}?</b> 🚀 Founding-member offer, get it live this month.</span><a class="pv-cta" href="${esc(subUrl)}" target="_blank" rel="noopener" onclick="if(navigator.sendBeacon){navigator.sendBeacon('/api/track?slug=${encodeURIComponent(s.slug || '')}&e=signup');}">Yes, sign me up →</a></div></div>`
     : '';
   const reviews = (s.reviews || []).length
     ? `<section id="reviews" class="reviews"><div class="wrap"><div class="sec-head"><div class="kicker" style="color:var(--amber)">Reviews</div><h2>What our customers say</h2>${googleBadge ? `<div class="gbadge-wrap">${googleBadge}</div>` : ''}</div><div class="rev-grid">${(s.reviews || []).map((r) => {
@@ -228,7 +228,7 @@ ${offerBar}
       ${trust ? `<div class="trust-row">${trust}</div>` : ''}
     </div>
     <div class="hero-card">
-      <h3>Get a free quote</h3><div class="hc-sub">No obligation — we'll reply fast.</div>
+      <h3>Get a free quote</h3><div class="hc-sub">No obligation, we'll reply fast.</div>
       ${quoteForm('hero-form')}
     </div>
   </div>
@@ -262,7 +262,7 @@ ${mobileBar}
 module.exports = async (req, res) => {
   const slug = String((req.query && req.query.slug) || '').replace(/[^a-z0-9-]/gi, '');
   if (!slug) { res.status(400).send('Missing site.'); return; }
-  // built-in demo sites (no login / no paid build needed) — same renderer
+  // built-in demo sites (no login / no paid build needed), same renderer
   if (SAMPLES[slug]) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('X-Robots-Tag', 'noindex, nofollow');
