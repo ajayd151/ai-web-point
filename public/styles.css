@@ -308,6 +308,7 @@ tr.tr-blocked td { background: #fafafa; }
 .lead-name { background: none; border: none; padding: 0; margin: 0; font: inherit; font-weight: 700; color: var(--blue); cursor: pointer; text-align: left; }
 .lead-name:hover { text-decoration: underline; }
 /* lead profile popup */
+.lead-kicker { font-size: 11.5px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: var(--blue); margin-bottom: 2px; }
 .lead-sub { color: var(--muted); font-size: 14.5px; margin-bottom: 12px; }
 .lead-blocked { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 10px; padding: 9px 12px; font-weight: 600; font-size: 13.5px; margin-bottom: 12px; }
 .lead-eng { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
