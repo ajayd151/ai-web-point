@@ -279,9 +279,20 @@ function card(b) {
 
   const btn = document.createElement('button');
   btn.className = 'gen';
-  btn.textContent = 'Generate website mockup';
+  btn.textContent = rec ? 'Regenerate mockup' : 'Generate website mockup';
   btn.addEventListener('click', () => openGenerateModal(b));
   el.appendChild(btn);
+
+  // once a mockup exists, you can Prowl + Pounce this business straight from here
+  if (rec) {
+    const acts = document.createElement('div');
+    acts.className = 'card-acts';
+    const lead = { slug: rec.id, name: b.name, location: b.location, category: b.category || '', phone: (b.phones && b.phones[0]) || '', mapsUrl: b.mapsUrl || '', viewUrl: rec.viewUrl, who: rec.personName };
+    const pb = document.createElement('button'); pb.className = 'mini rc-prowl'; pb.textContent = '🐾 Prowl'; pb.addEventListener('click', () => openProwl(lead));
+    const cb = document.createElement('button'); cb.className = 'mini rc-pounce'; cb.textContent = '🐆 Pounce'; cb.addEventListener('click', () => openPounce(lead));
+    acts.appendChild(pb); acts.appendChild(cb);
+    el.appendChild(acts);
+  }
   return el;
 }
 

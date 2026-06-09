@@ -284,6 +284,8 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .hl-act.hl-pounce { background: linear-gradient(90deg, #f59e0b, #ef6c00); color: #fff; border-color: transparent; }
 /* Recent mockups: Prowl/Pounce actions + Sent column */
 .recent-acts { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.card-acts { display: flex; gap: 8px; margin-top: 8px; }
+.card-acts .mini { flex: 1; padding: 9px 10px; text-align: center; }
 .mini { font-size: 12px; font-weight: 700; padding: 6px 9px; border-radius: 7px; border: none; cursor: pointer; color: #fff; }
 .mini.rc-prowl { background: linear-gradient(90deg, var(--blue), var(--mauve)); }
 .mini.rc-pounce { background: linear-gradient(90deg, #f59e0b, #ef6c00); }
