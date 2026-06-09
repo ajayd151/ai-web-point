@@ -5,7 +5,7 @@
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 
-const STATUSES = ['contacted', 'interested', 'callback', 'not-interested', 'invalid-phone', 'won', 'lost'];
+const STATUSES = ['contacted', 'no-answer', 'interested', 'callback', 'not-interested', 'invalid-phone', 'won', 'lost'];
 
 async function readJson(path) {
   try {
