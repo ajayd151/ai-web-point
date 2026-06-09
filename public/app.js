@@ -1353,6 +1353,10 @@ function renderLeads() {
     if (leadsFilter === 'blocked') return blocked;
     return true;
   });
+  // status filter (Any / New / Contacted / … / Not interested / Won / Lost)
+  const sel = $('leads-status-filter');
+  const sf = sel ? sel.value : '__any';
+  if (sf !== '__any') { const statuses = (leadsData && leadsData.statuses) || {}; list = list.filter((r) => (statuses[r.id] || '') === sf); }
   if (!list.length) { tb.innerHTML = '<tr><td colspan="4" class="muted" style="padding:14px">No leads match.</td></tr>'; return; }
   tb.innerHTML = '';
   list.forEach((r) => {
@@ -1374,6 +1378,7 @@ function renderLeads() {
   });
 }
 $('leads-search').addEventListener('input', renderLeads);
+$('leads-status-filter').addEventListener('change', renderLeads);
 $('leads-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadLeads));
 document.querySelectorAll('.leadf-btn').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.leadf-btn').forEach((x) => x.classList.toggle('active', x === b));
