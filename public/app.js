@@ -492,13 +492,18 @@ function titleCaseIndustry(s) {
     return w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : w;
   }).join(' ');
 }
+// capitalise the first letter of each word (wolverhampton → Wolverhampton,
+// west bromwich → West Bromwich) without lowercasing the rest (keeps WV2, etc.)
+function titleCaseLocation(s) {
+  return String(s || '').trim().split(/\s+/).map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(' ');
+}
 function fillWaMessage(tpl, business, link, personName) {
   const greet = String(personName || '').trim();
   let out = String(tpl || '')
     .replace(/\{name\}/g, greet) // empty when no name → cleaned up below
     .replace(/\{business\}/g, business.name || 'there')
     .replace(/\{category\}/g, titleCaseIndustry(business.category || business.industry || 'businesses'))
-    .replace(/\{location\}/g, business.location || 'your area')
+    .replace(/\{location\}/g, titleCaseLocation(business.location) || 'your area')
     .replace(/\{link\}/g, link || '');
   // tidy up an empty name: "Hi ," → "Hi," and collapse any double spaces
   out = out.replace(/[ \t]+([,.!?])/g, '$1').replace(/[ \t]{2,}/g, ' ');
