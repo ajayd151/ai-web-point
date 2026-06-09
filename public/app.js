@@ -688,13 +688,15 @@ function renderRecent() {
       `<td>${esc(r.location || '')}</td>` +
       `<td>${sentBadge(r)}</td>` +
       `<td><div class="eng-cell">${engagementBadge(r)}<button class="followup" title="Send a follow-up message">↩ Follow up</button></div></td>` +
-      `<td><div class="recent-acts"><button class="mini rc-prowl" title="Gather intelligence on this business">🐾 Prowl</button><button class="mini rc-pounce" title="Build them a website">🐆 Pounce</button><button class="ghost recent-open">Open ↗</button></div></td>`;
+      `<td><div class="recent-acts"><button class="mini rc-prowl" title="Gather intelligence on this business">🐾 Prowl</button><button class="mini rc-pounce" title="Build them a website">🐆 Pounce</button><button class="ghost recent-open">Open ↗</button><button class="ghost recent-regen" title="Regenerate the mockup (add a tweak first)">🔄 Regenerate</button></div></td>`;
     const lead = { slug: r.id, name: r.name, location: r.location, category: r.category || '', phone: (r.phones && r.phones[0]) || '', mapsUrl: r.mapsUrl || '', viewUrl: r.viewUrl, who: r.personName };
+    const biz = { name: r.name, category: r.category, location: r.location, phones: r.phones || [], id: r.placeId };
     tr.querySelector('.recent-open').addEventListener('click', () => openRecent(r));
     tr.querySelector('.recent-thumb').addEventListener('click', () => openRecent(r));
     tr.querySelector('.followup').addEventListener('click', () => doFollowUp(r));
     tr.querySelector('.rc-prowl').addEventListener('click', () => openProwl(lead));
     tr.querySelector('.rc-pounce').addEventListener('click', () => openPounce(lead));
+    tr.querySelector('.recent-regen').addEventListener('click', () => openGenerateModal(biz));
     tb.appendChild(tr);
   });
 }
