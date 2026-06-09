@@ -996,7 +996,7 @@ function hotLeadCardHTML(l) {
     ? `<span class="hl-tag signup" title="Clicked &quot;Yes, sign me up&quot; on their preview (opens your subscribe page). An interest click, not a payment.">🤑 Clicked Sign Up</span>`
     : (l.demoAt ? `<span class="hl-tag demo" title="Clicked the &quot;Request a demo&quot; button on their preview (opens your booking page). An interest click, not a confirmed booking.">🔥 Requested a demo</span>` : '');
   const stChip = l.status ? `<span class="hl-tag lchip ${statusClass(l.status)}" title="Your status for this lead">${esc(statusLabel(l.status))}</span>` : '';
-  const dim = (l.status === 'not-interested' || l.status === 'lost') ? ' hl-dim' : '';
+  const dim = (l.status === 'not-interested' || l.status === 'lost' || l.status === 'invalid-phone') ? ' hl-dim' : '';
   const signal = signed
     ? `🤑 clicked “Sign me up” ${esc(fmtDate(l.signupAt))}`
     : `requested demo ${esc(fmtDate(l.demoAt))}`;
@@ -1293,7 +1293,7 @@ function renderLeadStatus(l, dossier, pounce) {
   const bk = q('.lead-block'); if (bk) bk.addEventListener('click', () => confirmBlock(l, () => { $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); }));
   const ub = q('.lead-unblock'); if (ub) ub.addEventListener('click', () => { unblockKey(blockKey(l)); $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); });
 }
-const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['interested', 'Interested'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['won', 'Won, customer'], ['lost', 'Lost']];
+const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['interested', 'Interested'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['invalid-phone', 'Invalid phone'], ['won', 'Won, customer'], ['lost', 'Lost']];
 function statusLabel(s) { const f = LEAD_STATUSES.find((x) => x[0] === (s || '')); return f ? f[1] : 'New'; }
 function statusClass(s) { return 'st-' + (s || 'new'); }
 function renderLeadNotes(l, note) {
