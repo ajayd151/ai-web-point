@@ -416,7 +416,7 @@ function startGenProgress(business) {
   const delays = [0, 1200, 2600, 4000, 12000, 13500, 15000, 16500, 18000, 19500, 21000]; // when each line appears (ms)
   $('preview-body').innerHTML =
     '<div class="genprog"><div id="genprog-list"></div>' +
-    '<p class="genprog-foot"><small>This usually takes ~15–25 seconds, hang tight.</small></p></div>';
+    '<p class="genprog-foot"><small>This usually takes around 20 to 40 seconds, hang tight.</small></p></div>';
   const listEl = $('genprog-list');
   steps.forEach((text, i) => {
     const timer = setTimeout(() => {
@@ -1022,7 +1022,7 @@ function startPounceProgress(lead) {
   ];
   const body = $('pounce-body');
   body.innerHTML = '<div class="genprog"><div class="gp-list"></div>' +
-    '<p class="genprog-foot"><small>Doing the clever stuff… this can take 30 to 60 seconds.</small></p></div>';
+    '<p class="genprog-foot"><small>Doing the clever stuff. Building a full website usually takes around a minute, sometimes a little longer.</small></p></div>';
   const listEl = body.querySelector('.gp-list');
   const span = 44000; const n = steps.length; // spread steps so there is almost always movement
   steps.forEach((text, i) => {
