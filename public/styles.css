@@ -392,4 +392,8 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .gp-done { color: #34d399; font-weight: 800; font-size: 15px; }
 .gp-text { color: #e2e8f4; }
 .genprog-foot { color: #7e8ca3; margin-top: 18px; text-align: center; }
+/* the Prowl/Pounce modals are white, so use dark, readable text there */
+.modal-card .gp-text { color: var(--ink); }
+.modal-card .gp-done { color: #16a34a; }
+.modal-card .genprog-foot { color: var(--muted); }
 .spinner.sm { width: 14px; height: 14px; border-width: 2px; }
