@@ -995,10 +995,12 @@ function hotLeadCardHTML(l) {
   const badge = signed
     ? `<span class="hl-tag signup" title="Clicked &quot;Yes, sign me up&quot; on their preview (opens your subscribe page). An interest click, not a payment.">🤑 Clicked Sign Up</span>`
     : (l.demoAt ? `<span class="hl-tag demo" title="Clicked the &quot;Request a demo&quot; button on their preview (opens your booking page). An interest click, not a confirmed booking.">🔥 Requested a demo</span>` : '');
+  const stChip = l.status ? `<span class="hl-tag lchip ${statusClass(l.status)}" title="Your status for this lead">${esc(statusLabel(l.status))}</span>` : '';
+  const dim = (l.status === 'not-interested' || l.status === 'lost') ? ' hl-dim' : '';
   const signal = signed
     ? `🤑 clicked “Sign me up” ${esc(fmtDate(l.signupAt))}`
     : `requested demo ${esc(fmtDate(l.demoAt))}`;
-  return `<div class="hl-card${signed ? ' hl-signup' : ''}"><div class="hl-main"><b class="lead-name" data-slug="${esc(l.slug)}">${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}${badge}<div class="hl-meta">${phone ? '📞 ' + esc(phone) : 'No phone on file'} · ${signal}</div></div><div class="hl-acts">${acts}</div></div>`;
+  return `<div class="hl-card${signed ? ' hl-signup' : ''}${dim}"><div class="hl-main"><b class="lead-name" data-slug="${esc(l.slug)}">${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}${badge}${stChip}<div class="hl-meta">${phone ? '📞 ' + esc(phone) : 'No phone on file'} · ${signal}</div></div><div class="hl-acts">${acts}</div></div>`;
 }
 function renderHotLeads(list) {
   lastHotLeads = list || [];

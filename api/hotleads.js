@@ -22,6 +22,13 @@ module.exports = async (req, res) => {
   let rows = [];
   try { rows = await hotLeadRows(); } catch (e) { rows = []; }
 
+  // CRM statuses (slug -> status) from the notes index, so cards can show them
+  let statusMap = {};
+  try {
+    const idxBlob = blobs.find((b) => b.pathname === 'notes/_index.json') || (await list({ prefix: 'notes/_index.json' })).blobs.find((b) => b.pathname === 'notes/_index.json');
+    if (idxBlob) { const idx = await (await fetch(idxBlob.url + '?t=' + Date.now())).json(); for (const k in idx) { if (idx[k] && idx[k].status) statusMap[k] = idx[k].status; } }
+  } catch (e) { /* ignore */ }
+
   const hotLeads = await Promise.all(rows.map(async (r) => {
     let meta = {};
     const url = byPath['mockups/' + r.slug + '.json'];
@@ -38,6 +45,7 @@ module.exports = async (req, res) => {
       signupAt: r.signup_at,
       signups: r.signups || 0,
       openedAt: r.opened_at,
+      status: statusMap[r.slug] || '',
       viewUrl: `${linkBase}/v/${r.slug}`,
     };
   }));
