@@ -28,8 +28,16 @@ module.exports = async (req, res) => {
     generated = blobs.filter((b) => b.pathname.endsWith('.json') && (!since || new Date(b.uploadedAt).toISOString() >= since)).length;
   } catch (e) { /* ignore */ }
 
+  // CRM statuses (slug -> status) from the notes index
+  let statuses = {};
+  try {
+    const { blobs } = await list({ prefix: 'notes/_index.json' });
+    const b = blobs.find((x) => x.pathname === 'notes/_index.json');
+    if (b) { const idx = await (await fetch(b.url + '?t=' + Date.now())).json(); for (const k in idx) { if (idx[k] && idx[k].status) statuses[k] = idx[k].status; } }
+  } catch (e) { /* ignore */ }
+
   const d = await dashboardData(since);
-  if (!d) { res.status(200).json({ configured: false, generated }); return; }
+  if (!d) { res.status(200).json({ configured: false, generated, statuses }); return; }
 
   const counts = {};
   d.counts.forEach((c) => { counts[c.event] = c; });
@@ -103,6 +111,7 @@ module.exports = async (req, res) => {
   res.status(200).json({
     configured: true,
     generated,
+    statuses,
     totals: { generated, sent, opened, demoClicks, signups },
     rates: { openRate, demoRate, signupRate },
     avgTtoMin: avgTto,

@@ -951,11 +951,15 @@ async function loadDashboard(days) {
 function csvCell(v) { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
 function exportDashboardCsv(rows) {
   if (!rows || !rows.length) { alert('No activity to export yet.'); return; }
-  const head = ['Business', 'Sent via', 'Sent (UK)', 'Opened (UK)', 'Opens', 'Demo clicked', 'Signed up'];
+  const head = ['Business', 'Sent via', 'Sent (UK)', 'Opened (UK)', 'Opens', 'Demo click', 'Sign-up click', 'Status'];
   const lines = [head.map(csvCell).join(',')];
+  const statuses = (lastDashboard && lastDashboard.statuses) || {};
+  const recMap = new Map(); try { mergedRecent().forEach((x) => recMap.set(x.id, x)); } catch (e) { /* ignore */ }
   rows.forEach((r) => {
     const via = String(r.sentVia || '').split(',').map(channelName).filter(Boolean).join(' & ');
-    lines.push([r.name, via, r.sentAt ? fmtDate(r.sentAt) : '', r.openedAt ? fmtDate(r.openedAt) : '', r.opens, r.demoClicks > 0 ? 'Yes' : 'No', r.signedUp ? 'Yes' : 'No'].map(csvCell).join(','));
+    const rec = recMap.get(r.slug);
+    const status = (rec && isBlocked(rec)) ? 'Blocked' : (statuses[r.slug] ? statusLabel(statuses[r.slug]) : '');
+    lines.push([r.name, via, r.sentAt ? fmtDate(r.sentAt) : '', r.openedAt ? fmtDate(r.openedAt) : '', r.opens, r.demoClicks > 0 ? 'Yes' : 'No', r.signedUp ? 'Yes' : 'No', status].map(csvCell).join(','));
   });
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -1475,16 +1479,22 @@ function renderDashboard(d) {
     : '';
   let table = '';
   if (d.rows && d.rows.length) {
+    const recMap = new Map(); try { mergedRecent().forEach((x) => recMap.set(x.id, x)); } catch (e) { /* ignore */ }
+    const statuses = d.statuses || {};
     const tr = d.rows.map((r) => {
       const via = String(r.sentVia || '').split(',').map((c) => channelName(c)).filter(Boolean).join(' & ');
       const sent = r.sentAt ? fmtDate(r.sentAt) : '·';
       const opened = r.openedAt ? ('✓ ' + fmtDate(r.openedAt) + (r.opens > 1 ? ' (' + r.opens + '×)' : '')) : '<span class="muted">Not yet</span>';
       const demo = r.demoClicks > 0 ? '🔥 Yes' : '·';
       const signed = r.signedUp ? '🤑 Yes' : '·';
-      return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td><button class="lead-name" data-slug="${esc(r.slug)}" data-name="${esc(r.name)}">${esc(r.name)}</button></td><td>${esc(via || '·')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td></tr>`;
+      const rec = recMap.get(r.slug);
+      const blocked = rec ? isBlocked(rec) : false;
+      const stKey = statuses[r.slug] || '';
+      const statusCell = blocked ? '<span class="lchip blk">🚫 Blocked</span>' : (stKey ? `<span class="lchip ${statusClass(stKey)}">${esc(statusLabel(stKey))}</span>` : '<span class="muted">·</span>');
+      return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td><button class="lead-name" data-slug="${esc(r.slug)}" data-name="${esc(r.name)}">${esc(r.name)}</button></td><td>${esc(via || '·')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td><td>${statusCell}</td></tr>`;
     }).join('');
     table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
-      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Requested demo</th><th>Signed up</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Demo click</th><th>Sign-up click</th><th>Status</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
   body.innerHTML = insights + top + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
