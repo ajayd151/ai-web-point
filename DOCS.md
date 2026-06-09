@@ -80,6 +80,11 @@ application form). The whole interface is hidden behind it until signed in.
 - **Messaged tracking** (per device, by Google place id): cards show "✓ You messaged them
   via WhatsApp (date·time) & SMS (…)", accumulates channels with timestamps. The
   "Already messaged" filter excludes them from new searches so you dig for fresh leads.
+- **🚫 Block (do-not-contact):** a Block button on search-result cards, Hot Lead cards and
+  Recent mockups rows (e.g. someone replied "No"). Blocked businesses **never appear in search
+  results** (server `excludeIds` by place id + client filter by name+location) and their
+  **outreach buttons are removed** (Blocked state + Unblock shown in Hot Leads / Recent).
+  Managed in **Messages → 🚫 Blocked contacts** (list + Unblock). Per device (`aiwp_blocked`).
 
 ### Engagement tracking
 - A JS beacon on the preview page logs **opens (`view`)** and **demo-CTA clicks (`cta`)** to
