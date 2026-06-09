@@ -18,9 +18,6 @@
     "api/pounce.js": {
       "memory": 1024,
       "maxDuration": 120
-    },
-    "api/site.js": {
-      "maxDuration": 15
     }
   },
   "rewrites": [
