@@ -292,6 +292,17 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .mini:hover { filter: brightness(0.97); }
 .sent-yes { font-size: 12.5px; font-weight: 700; color: #15803d; }
 .sent-no { font-size: 12.5px; color: var(--muted); }
+/* Block / do-not-contact */
+.card-block { margin-top: 8px; width: 100%; background: #fff; border: 1px solid var(--line); color: #b91c1c; font-weight: 600; font-size: 13px; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
+.card-block:hover { background: #fef2f2; }
+.hl-card.hl-blocked { background: #fafafa; border-style: dashed; opacity: .85; }
+.hl-act.hl-block, .rc-block { color: #b91c1c; }
+.hl-act.hl-unblock, .rc-unblock { color: var(--blue); }
+.blk-flag { font-size: 12px; font-weight: 700; color: #b91c1c; }
+tr.tr-blocked td { background: #fafafa; }
+.blk-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 14px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
+.blk-main b { font-size: 14.5px; }
+.blk-when { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .hl-act:hover { filter: brightness(0.97); }
 
 /* 🐆 Pounce website preview */

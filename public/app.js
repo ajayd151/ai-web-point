@@ -172,6 +172,9 @@ async function runSearch() {
       .filter((k) => k.indexOf('id:') === 0 && new Date(m[k].at).getTime() >= cutoff)
       .map((k) => k.slice(3));
   }
+  // always exclude blocked businesses (do-not-contact) from the server query
+  const blockedIds = Object.values(loadBlocked()).map((r) => r.placeId).filter(Boolean);
+  excludeIds = Array.from(new Set(excludeIds.concat(blockedIds)));
 
   const btn = $('searchBtn');
   btn.disabled = true;
@@ -232,7 +235,9 @@ function renderResults(list) {
   const root = $('results');
   root.innerHTML = '';
   if (!list.length) { root.innerHTML = '<div class="empty">No businesses match these filters. Try loosening them.</div>'; return; }
-  list.forEach((b) => root.appendChild(card(b)));
+  const shown = list.filter((b) => !isBlocked(b)); // hide do-not-contact businesses
+  if (!shown.length) { root.innerHTML = '<div class="empty">Every match here is on your blocked list. Try a different search.</div>'; return; }
+  shown.forEach((b) => root.appendChild(card(b)));
 }
 
 function card(b) {
@@ -293,6 +298,12 @@ function card(b) {
     acts.appendChild(pb); acts.appendChild(cb);
     el.appendChild(acts);
   }
+  const blockBtn = document.createElement('button');
+  blockBtn.className = 'card-block';
+  blockBtn.textContent = '🚫 Block (not interested)';
+  blockBtn.title = 'Hide this business and never contact them';
+  blockBtn.addEventListener('click', () => confirmBlock(b, () => renderResults(lastSearchResults)));
+  el.appendChild(blockBtn);
   return el;
 }
 
@@ -582,6 +593,42 @@ function markMessaged(b, channel) {
   try { localStorage.setItem('aiwp_messaged', JSON.stringify(m)); } catch (e) {}
   if (lastSearchResults.length) renderResults(lastSearchResults); // refresh visible cards
 }
+
+// ---- block list (do-not-contact, per device) -----------------------------
+// Keyed by name+location (stable across search results, hot leads & mockups),
+// storing the Google place id too so the server can exclude blocked leads.
+function loadBlocked() { try { return JSON.parse(localStorage.getItem('aiwp_blocked') || '{}'); } catch (e) { return {}; } }
+function blockKey(b) { return 'nm:' + String((b && b.name) || '').toLowerCase().trim() + '|' + String((b && b.location) || '').toLowerCase().trim(); }
+function isBlocked(b) { return !!loadBlocked()[blockKey(b)]; }
+function blockBiz(b) {
+  if (!b || !b.name) return;
+  const m = loadBlocked();
+  m[blockKey(b)] = { name: b.name || '', location: b.location || '', placeId: b.id || b.placeId || '', at: new Date().toISOString() };
+  try { localStorage.setItem('aiwp_blocked', JSON.stringify(m)); } catch (e) {}
+  renderBlocked();
+}
+function unblockKey(key) {
+  const m = loadBlocked(); delete m[key];
+  try { localStorage.setItem('aiwp_blocked', JSON.stringify(m)); } catch (e) {}
+  renderBlocked();
+}
+function confirmBlock(b, after) {
+  if (!b || !b.name) return;
+  if (!confirm('Block ' + b.name + '?\n\nThey will be hidden from searches and you will not be able to message them. You can unblock later from Messages, Blocked contacts.')) return;
+  blockBiz(b);
+  if (typeof after === 'function') after();
+}
+function renderBlocked() {
+  const el = $('blocked-list'); if (!el) return;
+  const m = loadBlocked();
+  const keys = Object.keys(m).sort((a, b) => String(m[b].at || '').localeCompare(String(m[a].at || '')));
+  if (!keys.length) { el.innerHTML = '<div class="empty">No blocked contacts yet. Use the 🚫 Block button on a business to add one.</div>'; return; }
+  el.innerHTML = keys.map((k) => {
+    const r = m[k];
+    return `<div class="blk-row"><div class="blk-main"><b>${esc(r.name || '')}</b>${r.location ? ' · ' + esc(r.location) : ''}<div class="blk-when">Blocked ${esc(fmtDate(r.at))}</div></div><button class="ghost sm blk-unblock" data-key="${esc(k)}">Unblock</button></div>`;
+  }).join('');
+  Array.prototype.forEach.call(el.querySelectorAll('.blk-unblock'), (btn) => btn.addEventListener('click', () => unblockKey(btn.dataset.key)));
+}
 // build the "You messaged them via …" label HTML (date+time on its own line(s))
 function messagedLabel(mi) {
   const order = ['w', 's', 'e'];
@@ -685,23 +732,36 @@ function renderRecent() {
   sec.classList.remove('hidden');
   tb.innerHTML = '';
   list.forEach((r) => {
+    const blk = isBlocked(r);
+    const lead = { slug: r.id, name: r.name, location: r.location, category: r.category || '', phone: (r.phones && r.phones[0]) || '', mapsUrl: r.mapsUrl || '', viewUrl: r.viewUrl, who: r.personName };
+    const biz = { name: r.name, category: r.category, location: r.location, phones: r.phones || [], id: r.placeId };
+    const engCell = blk
+      ? `<div class="eng-cell">${engagementBadge(r)}<span class="blk-flag">🚫 Blocked</span></div>`
+      : `<div class="eng-cell">${engagementBadge(r)}<button class="followup" title="Send a follow-up message">↩ Follow up</button></div>`;
+    const actsCell = blk
+      ? `<div class="recent-acts"><button class="ghost recent-open">Open ↗</button><button class="ghost sm rc-unblock">Unblock</button></div>`
+      : `<div class="recent-acts"><button class="mini rc-prowl" title="Gather intelligence on this business">🐾 Prowl</button><button class="mini rc-pounce" title="Build them a website">🐆 Pounce</button><button class="ghost recent-open">Open ↗</button><button class="ghost recent-regen" title="Regenerate the mockup (add a tweak first)">🔄 Regenerate</button><button class="ghost sm rc-block" title="Mark not interested, hide & stop contacting">🚫 Block</button></div>`;
     const tr = document.createElement('tr');
+    if (blk) tr.className = 'tr-blocked';
     tr.innerHTML =
       `<td><img class="recent-thumb" src="${esc(r.imageUrl)}" alt="mockup" /></td>` +
       `<td>${esc(fmtDate(r.date))}</td>` +
       `<td>${esc(r.name || '')}${r.personName ? '<div class="who">' + esc(r.personName) + '</div>' : ''}</td>` +
       `<td>${esc(r.location || '')}</td>` +
       `<td>${sentBadge(r)}</td>` +
-      `<td><div class="eng-cell">${engagementBadge(r)}<button class="followup" title="Send a follow-up message">↩ Follow up</button></div></td>` +
-      `<td><div class="recent-acts"><button class="mini rc-prowl" title="Gather intelligence on this business">🐾 Prowl</button><button class="mini rc-pounce" title="Build them a website">🐆 Pounce</button><button class="ghost recent-open">Open ↗</button><button class="ghost recent-regen" title="Regenerate the mockup (add a tweak first)">🔄 Regenerate</button></div></td>`;
-    const lead = { slug: r.id, name: r.name, location: r.location, category: r.category || '', phone: (r.phones && r.phones[0]) || '', mapsUrl: r.mapsUrl || '', viewUrl: r.viewUrl, who: r.personName };
-    const biz = { name: r.name, category: r.category, location: r.location, phones: r.phones || [], id: r.placeId };
+      `<td>${engCell}</td>` +
+      `<td>${actsCell}</td>`;
     tr.querySelector('.recent-open').addEventListener('click', () => openRecent(r));
     tr.querySelector('.recent-thumb').addEventListener('click', () => openRecent(r));
-    tr.querySelector('.followup').addEventListener('click', () => doFollowUp(r));
-    tr.querySelector('.rc-prowl').addEventListener('click', () => openProwl(lead));
-    tr.querySelector('.rc-pounce').addEventListener('click', () => openPounce(lead));
-    tr.querySelector('.recent-regen').addEventListener('click', () => openGenerateModal(biz));
+    if (blk) {
+      tr.querySelector('.rc-unblock').addEventListener('click', () => { unblockKey(blockKey(r)); renderRecent(); });
+    } else {
+      tr.querySelector('.followup').addEventListener('click', () => doFollowUp(r));
+      tr.querySelector('.rc-prowl').addEventListener('click', () => openProwl(lead));
+      tr.querySelector('.rc-pounce').addEventListener('click', () => openPounce(lead));
+      tr.querySelector('.recent-regen').addEventListener('click', () => openGenerateModal(biz));
+      tr.querySelector('.rc-block').addEventListener('click', () => confirmBlock(biz, () => renderRecent()));
+    }
     tb.appendChild(tr);
   });
 }
@@ -764,6 +824,7 @@ $('recent-clear').addEventListener('click', () => {
   renderRecent();
 });
 renderRecent();
+renderBlocked();
 
 // ---- recent searches (saved on this device, one-click re-run) -------------
 function loadRecentSearches() {
@@ -862,6 +923,7 @@ function showView(name) {
   ['search', 'messages', 'performance', 'hotleads'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
+  if (name === 'messages') renderBlocked();
 }
 document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 document.querySelectorAll('.dash-rbtn').forEach((b) => b.addEventListener('click', () => {
@@ -909,6 +971,9 @@ function mapsLink(l) {
 function hotLeadCardHTML(l) {
   const phone = l.phone || '';
   const mobile = phone && window.BizData.isUkMobile(phone);
+  if (isBlocked(l)) {
+    return `<div class="hl-card hl-blocked"><div class="hl-main"><b>${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}<div class="hl-meta">🚫 Blocked, you marked them not interested</div></div><div class="hl-acts"><button class="hl-act hl-unblock" data-key="${esc(blockKey(l))}">Unblock</button></div></div>`;
+  }
   let acts = `<button class="hl-act hl-prowl" data-slug="${esc(l.slug)}">🐾 Prowl</button>`;
   acts += `<button class="hl-act hl-pounce" data-slug="${esc(l.slug)}">🐆 Pounce</button>`;
   if (mobile) {
@@ -919,6 +984,7 @@ function hotLeadCardHTML(l) {
   if (phone) acts += `<a class="hl-act" href="tel:${esc(phone)}">📞 Call</a>`;
   acts += `<a class="hl-act" target="_blank" rel="noopener" href="${esc(mapsLink(l))}">📍 Maps</a>`;
   acts += `<a class="hl-act" target="_blank" rel="noopener" href="${esc(l.viewUrl)}">View ↗</a>`;
+  acts += `<button class="hl-act hl-block" data-slug="${esc(l.slug)}" title="Mark not interested, hide & stop contacting">🚫 Block</button>`;
   const signed = !!l.signupAt;
   const badge = signed ? `<span class="hl-tag signup">🤑 Clicked Sign Up</span>` : '';
   const signal = signed
@@ -957,7 +1023,11 @@ $('hot-body').addEventListener('click', (e) => {
   const b = e.target.closest('.hl-prowl');
   if (b) { const lead = lastHotLeads.find((l) => l.slug === b.dataset.slug); if (lead) openProwl(lead); return; }
   const p = e.target.closest('.hl-pounce');
-  if (p) { const lead = lastHotLeads.find((l) => l.slug === p.dataset.slug); if (lead) openPounce(lead); }
+  if (p) { const lead = lastHotLeads.find((l) => l.slug === p.dataset.slug); if (lead) openPounce(lead); return; }
+  const bl = e.target.closest('.hl-block');
+  if (bl) { const lead = lastHotLeads.find((l) => l.slug === bl.dataset.slug); if (lead) confirmBlock(lead, () => renderHotLeads(lastHotLeads)); return; }
+  const ub = e.target.closest('.hl-unblock');
+  if (ub) { unblockKey(ub.dataset.key); renderHotLeads(lastHotLeads); }
 });
 $('prowl-close').addEventListener('click', () => $('prowl-modal').classList.add('hidden'));
 function startProwlProgress() {
