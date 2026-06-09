@@ -38,6 +38,13 @@ with four views (`#view-*` divs toggled by `showView()` in `app.js`):
 | **💬 Messages** | Edit the first-message / follow-up / CTA wording (saved per device) |
 | **📊 Performance** | Dashboard: stats, insights, charts, CSV, date-range (lazy-loads) |
 | **🔥 Hot Leads** | Prospects who requested a demo, with a live count badge + actions |
+| **👤 Leads** | Every business worked: searchable/filterable table (Prowled / Website built / Messaged / Blocked); each row opens the Lead Profile |
+
+**Lead Profile popup:** click any business name (Leads, Hot Leads, dashboard activity, Recent
+mockups) to open a profile with contact details + one-tap **Call / WhatsApp / Maps / View
+preview**, engagement chips, **Prowl** status (view dossier or Prowl now), **Pounce** status
+(open website or build), and Block/Unblock. Uses `peek` mode on `/api/prowl` + `/api/pounce`
+(checks for an existing dossier/site without gathering, building or spending a credit).
 
 The login gate doubles as a **Site Pounce landing page** (hero, founding-member offer,
 application form). The whole interface is hidden behind it until signed in.
