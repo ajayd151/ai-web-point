@@ -713,6 +713,7 @@ async function loadServerMockups() {
       opens: m.opens || 0,
       lastOpen: m.lastOpen || null,
       ctaClicks: m.ctaClicks || 0,
+      signups: m.signups || 0,
       platform: m.platform || '',
     }));
     renderRecent();
@@ -1413,27 +1414,43 @@ function exportLeadsCsv() {
   const pro = leadsData ? leadsData.prowled : new Set();
   const pou = leadsData ? leadsData.pounced : new Set();
   const statuses = (leadsData && leadsData.statuses) || {};
-  const header = ['Business', 'Location', 'Category', 'Phone', 'Status', 'Messaged via', 'Opened', 'Demo click', 'Sign-up click', 'Prowled', 'Website built', 'Blocked', 'Preview URL'];
+  const header = ['Business', 'Person name', 'Location', 'Category', 'Phone', 'Google Maps', 'Status', 'Messaged via', 'Opened', 'Last opened', 'Demo click', 'Sign-up click', 'Prowled', 'Website built', 'Blocked', 'Preview URL'];
   const rows = filteredLeads().map((r) => [
-    r.name || '', r.location || '', r.category || '', (r.phones && r.phones[0]) || '',
+    r.name || '', r.personName || '', r.location || '', r.category || '', (r.phones && r.phones[0]) || '', r.mapsUrl || '',
     statuses[r.id] ? statusLabel(statuses[r.id]) : '',
     recentSentVia(r) ? channelName(recentSentVia(r)) : '',
-    (r.opens || 0) > 0 ? 'Yes' : 'No', (r.ctaClicks || 0) > 0 ? 'Yes' : 'No', (r.signups || 0) > 0 ? 'Yes' : 'No',
+    (r.opens || 0) > 0 ? 'Yes' : 'No', r.lastOpen ? fmtDate(r.lastOpen) : '',
+    (r.ctaClicks || 0) > 0 ? 'Yes' : 'No', (r.signups || 0) > 0 ? 'Yes' : 'No',
     pro.has(r.id) ? 'Yes' : 'No', pou.has(r.id) ? 'Yes' : 'No', isBlocked(r) ? 'Yes' : 'No', r.viewUrl || '',
   ]);
   downloadCsv('leads.csv', header, rows);
 }
-function exportSearchCsv() {
+async function exportSearchCsv() {
   const list = (lastSearchResults || []).filter((b) => !isBlocked(b));
-  const header = ['Company', 'Category', 'Location', 'Address', 'Has website', 'Website', 'Phone(s)', 'Mobile?', 'Email', 'Star rating', 'Number of ratings', 'Google Maps'];
+  if (!list.length) { alert('No results to export yet.'); return; }
+  // make sure the lead intel (statuses / prowled / pounced) is loaded
+  if (!leadsData) { try { const r = await fetch('/api/leads'); const d = await r.json(); leadsData = { prowled: new Set(d.prowled || []), pounced: new Set(d.pounced || []), statuses: d.statuses || {} }; } catch (e) { leadsData = { prowled: new Set(), pounced: new Set(), statuses: {} }; } }
+  const pro = leadsData.prowled; const pou = leadsData.pounced; const statuses = leadsData.statuses || {};
+  const recMap = new Map(); try { mergedRecent().forEach((x) => recMap.set(normKey(x.name, x.location), x)); } catch (e) { /* ignore */ }
+  const header = ['Company', 'Category', 'Location', 'Address', 'Has website', 'Website', 'Phone(s)', 'Mobile?', 'Email', 'Star rating', 'Number of ratings', 'Google Maps', 'Status', 'Mockup made', 'Messaged via', 'Opened', 'Demo click', 'Sign-up click', 'Prowled', 'Website built'];
   const rows = list.map((b) => {
     const phones = (b.phones || []);
     const anyMobile = phones.some((p) => window.BizData.isUkMobile(p));
+    const rec = recMap.get(normKey(b.name, b.location));
+    const slug = rec ? rec.id : '';
     return [
       b.name || '', b.category || '', b.location || '', b.address || '',
       b.website ? 'Yes' : 'No', b.website || '',
       phones.join(' / '), anyMobile ? 'Yes' : 'No', b.email || '',
       b.rating != null ? b.rating : '', b.userRatingsTotal != null ? b.userRatingsTotal : '', b.mapsUrl || '',
+      slug && statuses[slug] ? statusLabel(statuses[slug]) : '',
+      rec ? 'Yes' : 'No',
+      rec && recentSentVia(rec) ? channelName(recentSentVia(rec)) : '',
+      rec && (rec.opens || 0) > 0 ? 'Yes' : 'No',
+      rec && (rec.ctaClicks || 0) > 0 ? 'Yes' : 'No',
+      rec && (rec.signups || 0) > 0 ? 'Yes' : 'No',
+      slug && pro.has(slug) ? 'Yes' : 'No',
+      slug && pou.has(slug) ? 'Yes' : 'No',
     ];
   });
   downloadCsv('search-results.csv', header, rows);
