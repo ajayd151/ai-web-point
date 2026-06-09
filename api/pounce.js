@@ -129,10 +129,12 @@ async function generateHeroImage(slug, category) {
   if (!OKEY()) return '';
   const prompt = `Professional photorealistic wide-angle hero photograph for the website of a ${category} business in the UK. A clean, modern, well-lit real-world scene that represents this trade, either skilled work in progress or a pristine finished result. High-end commercial photography, natural daylight, shallow depth of field, vibrant and aspirational. Absolutely NO text, NO logos, NO watermarks, NO collage, NO people posing at the camera.`;
   try {
+    const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 55000);
     const resp = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + OKEY() },
+      method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + OKEY() }, signal: ctrl.signal,
       body: JSON.stringify({ model: 'gpt-image-1', prompt, size: '1536x1024', quality: process.env.OPENAI_IMAGE_QUALITY || 'medium', output_format: 'jpeg', n: 1 }),
     });
+    clearTimeout(t);
     const d = await resp.json().catch(() => ({}));
     const item = (d.data && d.data[0]) || {};
     let buf = null;
@@ -189,6 +191,10 @@ module.exports = async (req, res) => {
   const rl = await checkAndRecord('pounce', Date.now());
   if (!rl.ok) { res.status(429).json({ error: `Pounce limit reached (${rl.limit} per 12 hours).` }); return; }
 
+  // Kick off the Prowl intel gather NOW so it runs in parallel with the photo
+  // work below (cuts ~30s off the build). Reuse a cached dossier if present.
+  const dossierP = readDossier(slug).then((d) => d || gatherDossier({ slug, name, location, category, phone }).catch(() => null)).catch(() => null);
+
   // find the place + pull details (photos, reviews, hours, address)
   const found = await gSearch(`${name} ${location}`, 'places.id,places.displayName');
   const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -228,12 +234,8 @@ module.exports = async (req, res) => {
   const address = (det && det.formattedAddress) || location;
   const realPhone = phone || (det && det.nationalPhoneNumber) || '';
 
-  // --- Prowl intel: reuse the cached dossier, or auto-gather it now so the site
-  // always has intel (services, reputation, established year) behind it ---
-  let dossier = await readDossier(slug);
-  if (!dossier) {
-    try { dossier = await gatherDossier({ slug, name, location, category, phone }); } catch (e) { dossier = null; }
-  }
+  // --- Prowl intel (gathered in parallel above): services, reputation, established year ---
+  const dossier = await dossierP;
   const ch = dossier && dossier.companiesHouse && dossier.companiesHouse.found ? dossier.companiesHouse : null;
   const establishedYear = ch && ch.established ? String(ch.established).slice(0, 4) : '';
   const usedProwl = !!(dossier && (dossier.services || dossier.reputationSummary || establishedYear));

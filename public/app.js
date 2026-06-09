@@ -1002,11 +1002,41 @@ function renderDossier(d, lead) {
 
 // ---- 🐆 Pounce: build a real 1-page website for the lead ----
 $('pounce-close').addEventListener('click', () => $('pounce-modal').classList.add('hidden'));
-function startPounceProgress() {
-  const steps = ['Pulling their Google photos', 'Checking each photo for quality', 'Collecting 5★ reviews', 'Writing tailored website copy', 'Curating the hero image', 'Designing the page', 'Publishing a private preview'];
-  $('pounce-body').innerHTML = '<div class="genprog"><div>' +
-    steps.map((s) => `<div class="gp-row"><span class="gp-ic"><span class="spinner sm"></span></span><span class="gp-text">${esc(s)}…</span></div>`).join('') +
-    '</div><p class="genprog-foot"><small>Building their website… ~15–30 seconds.</small></p></div>';
+let pounceProgTimers = [];
+function stopPounceProgress() { pounceProgTimers.forEach(clearTimeout); pounceProgTimers = []; }
+function startPounceProgress(lead) {
+  stopPounceProgress();
+  const who = (lead && lead.name) ? lead.name : 'this business';
+  const steps = [
+    'Researching ' + who + ' online',
+    'Studying their Google Business profile',
+    'Pulling in their best photos',
+    'Checking each photo for quality',
+    'Reading their 5★ reviews',
+    'Sizing up nearby competitors',
+    'Working out what makes them stand out',
+    'Writing tailored website copy',
+    'Curating the hero image',
+    'Designing and laying out the page',
+    'Publishing a private preview',
+  ];
+  const body = $('pounce-body');
+  body.innerHTML = '<div class="genprog"><div class="gp-list"></div>' +
+    '<p class="genprog-foot"><small>Doing the clever stuff… this can take 30 to 60 seconds.</small></p></div>';
+  const listEl = body.querySelector('.gp-list');
+  const span = 44000; const n = steps.length; // spread steps so there is almost always movement
+  steps.forEach((text, i) => {
+    const at = Math.round((i / n) * span);
+    pounceProgTimers.push(setTimeout(() => {
+      if (!listEl.isConnected) return;
+      const prev = listEl.children[i - 1];
+      if (prev) { const ic = prev.querySelector('.gp-ic'); if (ic) ic.outerHTML = '<span class="gp-ic gp-done">✓</span>'; }
+      const row = document.createElement('div');
+      row.className = 'gp-row';
+      row.innerHTML = '<span class="gp-ic"><span class="spinner sm"></span></span><span class="gp-text">' + esc(text) + '…</span>';
+      listEl.appendChild(row);
+    }, at));
+  });
 }
 let lastPounceOpts = {};
 function pounceFetch(lead, refresh, opts) {
@@ -1062,10 +1092,10 @@ function collectPounceOpts() {
 }
 function buildPounce(lead, opts, refresh) {
   lastPounceOpts = opts || {};
-  startPounceProgress();
+  startPounceProgress(lead);
   pounceFetch(lead, refresh, opts)
-    .then(({ status, j }) => { if (status !== 200) throw new Error(j.error || 'Could not build the site'); renderPounceResult(j, lead); })
-    .catch((e) => { $('pounce-body').innerHTML = `<div class="empty">⚠️ ${esc(e && e.message ? e.message : 'Pounce failed')}</div>`; });
+    .then(({ status, j }) => { stopPounceProgress(); if (status !== 200) throw new Error(j.error || 'Could not build the site'); renderPounceResult(j, lead); })
+    .catch((e) => { stopPounceProgress(); $('pounce-body').innerHTML = `<div class="empty">⚠️ ${esc(e && e.message ? e.message : 'Pounce failed')}</div>`; });
 }
 function renderPounceResult(j, lead) {
   const url = j.siteUrl;
