@@ -11,6 +11,13 @@ module.exports = async (req, res) => {
   if (typeof body === 'string') { try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; } }
   body = body || {};
   const slug = String(body.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120);
+  // peek: return the cached dossier (or null) without gathering, no credit spent
+  if (body.peek) {
+    if (!slug) { res.status(400).json({ error: 'Missing slug.' }); return; }
+    const cached = await readDossier(slug);
+    res.status(200).json({ dossier: cached || null, peek: true });
+    return;
+  }
   const name = String(body.name || '').trim();
   const location = String(body.location || '').trim();
   const category = String(body.category || '').trim() || 'local business';

@@ -174,6 +174,17 @@ module.exports = async (req, res) => {
   const siteUrl = `${linkBase}/s/${slug}`;
   const path = 'sites/' + slug + '.json';
 
+  // peek: report whether a site already exists, without building one
+  if (body.peek) {
+    try {
+      const { blobs } = await list({ prefix: path });
+      const hit = blobs.find((x) => x.pathname === path);
+      if (hit) { const j = await (await fetch(hit.url + '?t=' + Date.now())).json().catch(() => ({})); res.status(200).json({ exists: true, siteUrl, mode: j.mode || 'preview' }); return; }
+    } catch (e) { /* fall through */ }
+    res.status(200).json({ exists: false });
+    return;
+  }
+
   // Serve cache only if it's the current version AND the caller didn't pass new
   // answers; stale-version previews auto-rebuild on the next click.
   if (!refresh && !hasOpts) {

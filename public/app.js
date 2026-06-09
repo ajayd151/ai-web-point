@@ -746,11 +746,12 @@ function renderRecent() {
     tr.innerHTML =
       `<td><img class="recent-thumb" src="${esc(r.imageUrl)}" alt="mockup" /></td>` +
       `<td>${esc(fmtDate(r.date))}</td>` +
-      `<td>${esc(r.name || '')}${r.personName ? '<div class="who">' + esc(r.personName) + '</div>' : ''}</td>` +
+      `<td><button class="lead-name" data-slug="${esc(r.id)}">${esc(r.name || '')}</button>${r.personName ? '<div class="who">' + esc(r.personName) + '</div>' : ''}</td>` +
       `<td>${esc(r.location || '')}</td>` +
       `<td>${sentBadge(r)}</td>` +
       `<td>${engCell}</td>` +
       `<td>${actsCell}</td>`;
+    const ln = tr.querySelector('.lead-name'); if (ln) ln.addEventListener('click', () => openLead(lead));
     tr.querySelector('.recent-open').addEventListener('click', () => openRecent(r));
     tr.querySelector('.recent-thumb').addEventListener('click', () => openRecent(r));
     if (blk) {
@@ -992,7 +993,7 @@ function hotLeadCardHTML(l) {
   const signal = signed
     ? `🤑 clicked “Sign me up” ${esc(fmtDate(l.signupAt))}`
     : `requested demo ${esc(fmtDate(l.demoAt))}`;
-  return `<div class="hl-card${signed ? ' hl-signup' : ''}"><div class="hl-main"><b>${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}${badge}<div class="hl-meta">${phone ? '📞 ' + esc(phone) : 'No phone on file'} · ${signal}</div></div><div class="hl-acts">${acts}</div></div>`;
+  return `<div class="hl-card${signed ? ' hl-signup' : ''}"><div class="hl-main"><b class="lead-name" data-slug="${esc(l.slug)}">${esc(l.name)}</b>${l.location ? ' · ' + esc(l.location) : ''}${badge}<div class="hl-meta">${phone ? '📞 ' + esc(phone) : 'No phone on file'} · ${signal}</div></div><div class="hl-acts">${acts}</div></div>`;
 }
 function renderHotLeads(list) {
   lastHotLeads = list || [];
@@ -1029,7 +1030,9 @@ $('hot-body').addEventListener('click', (e) => {
   const bl = e.target.closest('.hl-block');
   if (bl) { const lead = lastHotLeads.find((l) => l.slug === bl.dataset.slug); if (lead) confirmBlock(lead, () => renderHotLeads(lastHotLeads)); return; }
   const ub = e.target.closest('.hl-unblock');
-  if (ub) { unblockKey(ub.dataset.key); renderHotLeads(lastHotLeads); }
+  if (ub) { unblockKey(ub.dataset.key); renderHotLeads(lastHotLeads); return; }
+  const nm = e.target.closest('.lead-name');
+  if (nm) { const lead = lastHotLeads.find((l) => l.slug === nm.dataset.slug); if (lead) openLead(lead); }
 });
 $('prowl-close').addEventListener('click', () => $('prowl-modal').classList.add('hidden'));
 function startProwlProgress() {
@@ -1200,6 +1203,88 @@ function openPounceQuestions(lead) {
 }
 function openPounce(lead) { openPounceQuestions(lead); }
 
+// ---- Lead profile popup: contact + Prowl + Pounce in one place ----
+function prettySlug(slug) { return String(slug || '').replace(/-[0-9a-f]{8}$/i, '').split('-').map((w) => (w ? w[0].toUpperCase() + w.slice(1) : '')).join(' ').trim() || slug; }
+$('lead-close').addEventListener('click', () => $('lead-modal').classList.add('hidden'));
+function leadFromAny(biz) {
+  const slug = biz.slug || biz.id;
+  const m = mergedRecent().find((r) => r.id === slug) || {};
+  const phone = biz.phone || (biz.phones && biz.phones[0]) || (m.phones && m.phones[0]) || '';
+  return {
+    slug, name: biz.name || m.name || prettySlug(slug), location: biz.location || m.location || '',
+    category: biz.category || m.category || '', phone, phones: phone ? [phone] : [],
+    mapsUrl: biz.mapsUrl || m.mapsUrl || '', viewUrl: biz.viewUrl || m.viewUrl || '', who: biz.who || m.personName || '',
+    opens: m.opens, lastOpen: m.lastOpen, ctaClicks: m.ctaClicks, demoAt: biz.demoAt, signupAt: biz.signupAt,
+  };
+}
+function refreshLeadSurfaces() {
+  try { renderRecent(); } catch (e) { /* ignore */ }
+  try { if (lastHotLeads) renderHotLeads(lastHotLeads); } catch (e) { /* ignore */ }
+  try { if (lastSearchResults.length) renderResults(lastSearchResults); } catch (e) { /* ignore */ }
+  renderBlocked();
+}
+function renderLeadShell(l) {
+  const phone = l.phone;
+  const mobile = phone && window.BizData.isUkMobile(phone);
+  const blocked = isBlocked(l);
+  let acts = '';
+  if (phone && !blocked) acts += `<a class="lead-act call" href="tel:${esc(phone)}">📞 Call ${esc(phone)}</a>`;
+  if (mobile && !blocked) {
+    const msg = fillWaMessage(loadSettings().followUp, { name: l.name, location: l.location, category: l.category }, tagLink(l.viewUrl || '', 'w'), l.who);
+    acts += `<a class="lead-act wa" target="_blank" rel="noopener" href="https://wa.me/${toWaNumber(phone)}?text=${encodeURIComponent(msg)}">📱 WhatsApp</a>`;
+  }
+  if (l.mapsUrl || (l.name && l.location)) acts += `<a class="lead-act" target="_blank" rel="noopener" href="${esc(mapsLink(l))}">📍 Maps</a>`;
+  if (l.viewUrl) acts += `<a class="lead-act" target="_blank" rel="noopener" href="${esc(l.viewUrl)}">View preview ↗</a>`;
+  const eng = [];
+  if (l.signupAt) eng.push('🤑 Clicked Sign Up');
+  if ((l.ctaClicks || 0) > 0 || l.demoAt) eng.push('🔥 Requested a demo');
+  if ((l.opens || 0) > 0) eng.push('✓ Opened' + (l.opens > 1 ? ' ×' + l.opens : ''));
+  const engHtml = eng.length ? `<div class="lead-eng">${eng.map((e) => `<span class="lead-chip">${esc(e)}</span>`).join('')}</div>` : '';
+  return `<div class="lead-sub">${l.category ? esc(titleCaseIndustry(l.category)) + ' · ' : ''}${esc(l.location || '')}${phone ? '' : ' · <span class="muted">no phone on file</span>'}</div>` +
+    (blocked ? '<div class="lead-blocked">🚫 This contact is blocked (do not contact).</div>' : '') +
+    engHtml + `<div class="lead-acts">${acts}</div>`;
+}
+function renderLeadStatus(l, dossier, pounce) {
+  const el = $('lead-status'); if (!el) return;
+  let html = '';
+  if (dossier) {
+    const g = dossier.google || {}; const ch = dossier.companiesHouse || {}; const facts = [];
+    if (ch.found && ch.established) facts.push('Est. ' + fmtDateShort(ch.established));
+    if (g.reviews) facts.push(g.reviews + ' reviews at ' + g.rating + '★');
+    if ((dossier.ammunition || []).length) facts.push(dossier.ammunition.length + ' talking points');
+    html += `<div class="lead-card"><div class="lead-card-h">🐾 Prowled <span class="ok">✓</span></div><div class="muted">${esc(facts.join(' · ') || 'Intel gathered')}</div><div class="lead-card-acts"><button class="primary sm lead-viewprowl">View full dossier</button></div></div>`;
+  } else {
+    html += `<div class="lead-card"><div class="lead-card-h">🐾 Prowl</div><div class="muted">Not researched yet.</div><div class="lead-card-acts"><button class="primary sm lead-doprowl">🐾 Prowl now</button></div></div>`;
+  }
+  if (pounce && pounce.exists) {
+    html += `<div class="lead-card"><div class="lead-card-h">🐆 Website built <span class="ok">✓</span></div><div class="muted">${pounce.mode === 'published' ? 'Published' : 'Private preview'}</div><div class="lead-card-acts"><a class="primary btn sm" href="${esc(pounce.siteUrl)}" target="_blank" rel="noopener">Open website ↗</a><button class="ghost sm lead-dopounce">↻ Rebuild</button></div></div>`;
+  } else {
+    html += `<div class="lead-card"><div class="lead-card-h">🐆 Pounce</div><div class="muted">No website built yet.</div><div class="lead-card-acts"><button class="primary sm lead-dopounce">🐆 Build website</button></div></div>`;
+  }
+  html += isBlocked(l)
+    ? '<div class="lead-foot"><button class="ghost sm lead-unblock">Unblock contact</button></div>'
+    : '<div class="lead-foot"><button class="ghost sm lead-block">🚫 Block (not interested)</button></div>';
+  el.className = 'lead-cards';
+  el.innerHTML = html;
+  const q = (s) => el.querySelector(s);
+  const vp = q('.lead-viewprowl'); if (vp) vp.addEventListener('click', () => openProwl(l));
+  const dp = q('.lead-doprowl'); if (dp) dp.addEventListener('click', () => openProwl(l));
+  const po = q('.lead-dopounce'); if (po) po.addEventListener('click', () => openPounce(l));
+  const bk = q('.lead-block'); if (bk) bk.addEventListener('click', () => confirmBlock(l, () => { $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); }));
+  const ub = q('.lead-unblock'); if (ub) ub.addEventListener('click', () => { unblockKey(blockKey(l)); $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); });
+}
+function openLead(biz) {
+  const l = leadFromAny(biz);
+  if (!l.slug) return;
+  $('lead-title').textContent = l.name;
+  $('lead-modal').classList.remove('hidden');
+  $('lead-body').innerHTML = renderLeadShell(l) + '<div id="lead-status" class="lead-status"><span class="spinner sm"></span> Checking Prowl & website…</div>';
+  const peek = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: l.slug, peek: true }) }).then((r) => r.json()).catch(() => ({}));
+  Promise.all([peek('/api/prowl'), peek('/api/pounce')]).then(([pr, pc]) => renderLeadStatus(l, pr && pr.dossier, pc));
+}
+// clickable business names → lead profile (dashboard activity table)
+$('dash-body').addEventListener('click', (e) => { const n = e.target.closest('.lead-name'); if (n) openLead({ slug: n.dataset.slug, name: n.dataset.name }); });
+
 // ---- tab-title alert: flashes when you have hot leads + are on another tab ----
 let titleTimer = null;
 const BASE_TITLE = document.title;
@@ -1296,7 +1381,7 @@ function renderDashboard(d) {
       const opened = r.openedAt ? ('✓ ' + fmtDate(r.openedAt) + (r.opens > 1 ? ' (' + r.opens + '×)' : '')) : '<span class="muted">Not yet</span>';
       const demo = r.demoClicks > 0 ? '🔥 Yes' : '·';
       const signed = r.signedUp ? '🤑 Yes' : '·';
-      return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td>${esc(r.name)}</td><td>${esc(via || '·')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td></tr>`;
+      return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td><button class="lead-name" data-slug="${esc(r.slug)}" data-name="${esc(r.name)}">${esc(r.name)}</button></td><td>${esc(via || '·')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td></tr>`;
     }).join('');
     table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
       '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Requested demo</th><th>Signed up</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
