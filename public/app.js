@@ -573,6 +573,17 @@ function recordSendServer(channel) {
 // record the send channel + mark the business as messaged when you click a send button
 $('wa-send').addEventListener('click', () => { recordSentVia(currentSlug, 'w'); markMessaged(currentBusiness, 'w'); recordSendServer('w'); });
 $('sms-send').addEventListener('click', () => { recordSentVia(currentSlug, 's'); markMessaged(currentBusiness, 's'); recordSendServer('s'); });
+// record a send from ANY surface (hot leads, lead profile, follow-up) so the
+// "messaged" stat is accurate, not just the original preview button
+function trackSentServer(slug, channel) {
+  if (!slug) return;
+  try { const u = '/api/track?slug=' + encodeURIComponent(slug) + '&e=sent&c=' + channel; if (navigator.sendBeacon) navigator.sendBeacon(u); else fetch(u, { keepalive: true }).catch(() => {}); } catch (e) { /* best effort */ }
+}
+function markSent(slug, biz, channel) {
+  if (slug) recordSentVia(slug, channel);
+  if (biz) markMessaged(biz, channel);
+  trackSentServer(slug, channel);
+}
 
 // ---- "already messaged" tracking (per device, keyed by Google place id) ----
 function loadMessaged() { try { return JSON.parse(localStorage.getItem('aiwp_messaged') || '{}'); } catch (e) { return {}; } }
@@ -809,9 +820,10 @@ function doFollowUp(r) {
   const mobile = phone && window.BizData.isUkMobile(phone);
   let channel = r.platform || r.sentVia || (mobile ? 'w' : 'e');
   if ((channel === 'w' || channel === 's') && !mobile) channel = 'e'; // can't text a landline
-  const business = { name: r.name, category: r.category, location: r.location };
+  const business = { name: r.name, category: r.category, location: r.location, id: r.placeId };
   const link = tagLink(r.viewUrl || r.imageUrl, channel);
   const msg = fillWaMessage(loadSettings().followUp, business, link, r.personName);
+  markSent(r.id, business, channel); // a follow-up is still a send, record it
   if (channel === 's') {
     window.location.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(msg);
   } else if (channel === 'e') {
@@ -1043,7 +1055,9 @@ $('hot-body').addEventListener('click', (e) => {
   const ub = e.target.closest('.hl-unblock');
   if (ub) { unblockKey(ub.dataset.key); renderHotLeads(lastHotLeads); return; }
   const nm = e.target.closest('.lead-name');
-  if (nm) { const lead = lastHotLeads.find((l) => l.slug === nm.dataset.slug); if (lead) openLead(lead); }
+  if (nm) { const lead = lastHotLeads.find((l) => l.slug === nm.dataset.slug); if (lead) openLead(lead); return; }
+  const wa = e.target.closest('.hl-act.wa');
+  if (wa) { const card = wa.closest('.hl-card'); const slug = card && card.querySelector('.lead-name') && card.querySelector('.lead-name').dataset.slug; const lead = lastHotLeads.find((l) => l.slug === slug); if (lead) markSent(slug, lead, 'w'); } // let the link still open WhatsApp
 });
 $('prowl-close').addEventListener('click', () => $('prowl-modal').classList.add('hidden'));
 function startProwlProgress() {
@@ -1229,6 +1243,8 @@ function openPounce(lead) { openPounceQuestions(lead); }
 // ---- Lead profile popup: contact + Prowl + Pounce in one place ----
 function prettySlug(slug) { return String(slug || '').replace(/-[0-9a-f]{8}$/i, '').split('-').map((w) => (w ? w[0].toUpperCase() + w.slice(1) : '')).join(' ').trim() || slug; }
 $('lead-close').addEventListener('click', () => $('lead-modal').classList.add('hidden'));
+let currentLeadProfile = null;
+$('lead-body').addEventListener('click', (e) => { if (e.target.closest('.lead-act.wa') && currentLeadProfile) markSent(currentLeadProfile.slug, currentLeadProfile, 'w'); });
 function leadFromAny(biz) {
   const slug = biz.slug || biz.id;
   const m = mergedRecent().find((r) => r.id === slug) || {};
@@ -1324,6 +1340,7 @@ function saveNote(l, payload) {
 function openLead(biz) {
   const l = leadFromAny(biz);
   if (!l.slug) return;
+  currentLeadProfile = l;
   $('lead-title').textContent = l.name;
   $('lead-modal').classList.remove('hidden');
   $('lead-body').innerHTML = renderLeadShell(l) + '<div id="lead-status" class="lead-status"><span class="spinner sm"></span> Checking Prowl & website…</div><div id="lead-notes"></div>';
