@@ -986,7 +986,9 @@ function hotLeadCardHTML(l) {
   acts += `<a class="hl-act" target="_blank" rel="noopener" href="${esc(l.viewUrl)}">View ↗</a>`;
   acts += `<button class="hl-act hl-block" data-slug="${esc(l.slug)}" title="Mark not interested, hide & stop contacting">🚫 Block</button>`;
   const signed = !!l.signupAt;
-  const badge = signed ? `<span class="hl-tag signup">🤑 Clicked Sign Up</span>` : '';
+  const badge = signed
+    ? `<span class="hl-tag signup">🤑 Clicked Sign Up</span>`
+    : (l.demoAt ? `<span class="hl-tag demo">🔥 Requested a demo</span>` : '');
   const signal = signed
     ? `🤑 clicked “Sign me up” ${esc(fmtDate(l.signupAt))}`
     : `requested demo ${esc(fmtDate(l.demoAt))}`;
@@ -1237,14 +1239,35 @@ function renderDashboard(d) {
     return;
   }
   const t = d.totals, rates = d.rates, ch = d.byChannel;
+  // names behind each number (hover to see the latest 10)
+  const rws = d.rows || [];
+  const namesOf = (pred) => rws.filter(pred).map((r) => r.name).filter(Boolean).slice(0, 10);
+  const pop = (title, names) => (names.length ? `<div class="stat-pop"><b>Latest ${esc(title)}</b><ul>${names.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>` : '');
+  let mockNames = []; try { mockNames = mergedRecent().map((r) => r.name).filter(Boolean).slice(0, 10); } catch (e) { /* ignore */ }
   const cards =
     '<div class="dash-cards">' +
-    `<div class="dash-card"><div class="dc-num">${t.generated}</div><div class="dc-lab">Mockups made</div></div>` +
-    `<div class="dash-card"><div class="dc-num">${t.sent}</div><div class="dc-lab">Businesses messaged</div></div>` +
-    `<div class="dash-card"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div></div>` +
-    `<div class="dash-card"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div></div>` +
-    `<div class="dash-card signup"><div class="dc-num">🤑 ${t.signups || 0}</div><div class="dc-lab">Sign-ups<span class="dc-sub">${rates.signupRate || 0}% of sent</span></div></div>` +
+    `<div class="dash-card pop-host"><div class="dc-num">${t.generated}</div><div class="dc-lab">Mockups made</div>${pop('mockups', mockNames)}</div>` +
+    `<div class="dash-card pop-host"><div class="dc-num">${t.sent}</div><div class="dc-lab">Businesses messaged</div>${pop('messaged', namesOf((r) => r.sentAt))}</div>` +
+    `<div class="dash-card pop-host"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div>${pop('opened', namesOf((r) => r.openedAt))}</div>` +
+    `<div class="dash-card pop-host"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div>${pop('demo clicks', namesOf((r) => (r.demoClicks || 0) > 0))}</div>` +
+    `<div class="dash-card signup pop-host"><div class="dc-num">🤑 ${t.signups || 0}</div><div class="dc-lab">Sign-ups<span class="dc-sub">${rates.signupRate || 0}% of sent</span></div>${pop('sign-ups', namesOf((r) => r.signedUp))}</div>` +
     '</div>';
+  // colourful funnel: each stage narrower than the last, with step conversion %
+  const F = [
+    { label: 'Mockups made', n: t.generated, color: '#6366f1' },
+    { label: 'Messaged', n: t.sent, color: '#3b82f6' },
+    { label: 'Opened', n: t.opened, color: '#0ea5e9' },
+    { label: 'Demo clicks', n: t.demoClicks, color: '#f59e0b' },
+    { label: 'Sign-ups', n: t.signups || 0, color: '#16a34a' },
+  ];
+  const fMax = Math.max(1, ...F.map((s) => s.n));
+  const funnel = '<div class="dash-funnel"><h3>Funnel</h3><div class="funnel">' +
+    F.map((s, i) => {
+      const w = Math.max(16, Math.round((s.n / fMax) * 100));
+      const pct = i > 0 && F[i - 1].n ? Math.round((s.n / F[i - 1].n) * 100) : null;
+      return `<div class="fn-row"><div class="fn-bar" style="width:${w}%;background:${s.color}"><span>${s.n}</span></div><div class="fn-lab">${esc(s.label)}${pct != null ? ' · <b>' + pct + '%</b> of previous' : ''}</div></div>`;
+    }).join('') + '</div></div>';
+  const top = '<div class="dash-top">' + cards + funnel + '</div>';
   const insights = '<div class="dash-insights"><h3>📊 Based on your data</h3><ul>' +
     (d.insights || []).map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
   const tips = '<div class="dash-tips"><h3>💡 General tips <span class="muted">(best practice, not your data)</span></h3><ul>' +
@@ -1266,16 +1289,16 @@ function renderDashboard(d) {
   if (d.rows && d.rows.length) {
     const tr = d.rows.map((r) => {
       const via = String(r.sentVia || '').split(',').map((c) => channelName(c)).filter(Boolean).join(' & ');
-      const sent = r.sentAt ? fmtDate(r.sentAt) : ', ';
+      const sent = r.sentAt ? fmtDate(r.sentAt) : '·';
       const opened = r.openedAt ? ('✓ ' + fmtDate(r.openedAt) + (r.opens > 1 ? ' (' + r.opens + '×)' : '')) : '<span class="muted">Not yet</span>';
-      const demo = r.demoClicks > 0 ? '🔥 Yes' : ', ';
-      const signed = r.signedUp ? '🤑 Yes' : ', ';
-      return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td>${esc(r.name)}</td><td>${esc(via || ', ')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td></tr>`;
+      const demo = r.demoClicks > 0 ? '🔥 Yes' : '·';
+      const signed = r.signedUp ? '🤑 Yes' : '·';
+      return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td>${esc(r.name)}</td><td>${esc(via || '·')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td></tr>`;
     }).join('');
     table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
       '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Requested demo</th><th>Signed up</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
-  body.innerHTML = insights + cards + channelBlock + hourChart + dayChart + table + tips +
+  body.innerHTML = insights + top + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
   const rb = $('dash-refresh'); if (rb) rb.addEventListener('click', loadDashboard);
 }

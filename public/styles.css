@@ -273,6 +273,7 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .hl-card.hl-signup { border: 2px solid #16a34a; background: linear-gradient(120deg, #f0fdf4, #ecfdf5); box-shadow: 0 6px 18px rgba(22,163,74,.14); }
 .hl-tag { display: inline-block; margin-left: 8px; font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; vertical-align: middle; }
 .hl-tag.signup { background: #16a34a; color: #fff; animation: hlpulse 1.6s infinite; }
+.hl-tag.demo { background: #fff4ec; color: #c2410c; border: 1px solid #fcd9c2; }
 @keyframes hlpulse { 0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,.5); } 50% { box-shadow: 0 0 0 6px rgba(22,163,74,0); } }
 .hl-main b { font-size: 15px; }
 .hl-meta { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
@@ -352,6 +353,24 @@ tr.tr-blocked td { background: #fafafa; }
 .dash-card.signup { background: linear-gradient(120deg, #f0fdf4, #ecfdf5); border-color: #86efac; }
 .dash-card.signup .dc-num { color: #16a34a; }
 .recent-table tr.tr-signup td { background: #f0fdf4; font-weight: 600; }
+/* numbers (left) + funnel (right) */
+.dash-top { display: flex; gap: 20px; align-items: stretch; margin-bottom: 18px; }
+.dash-top .dash-cards { flex: 1; margin-bottom: 0; align-content: start; }
+.dash-funnel { flex: 0 0 300px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); }
+.dash-funnel h3 { margin: 0 0 14px; font-size: 15px; }
+.funnel { display: flex; flex-direction: column; align-items: center; gap: 11px; }
+.fn-row { width: 100%; display: flex; flex-direction: column; align-items: center; }
+.fn-bar { height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 16px; min-width: 50px; box-shadow: 0 4px 12px rgba(16,42,82,.16); }
+.fn-lab { font-size: 12.5px; color: var(--muted); margin-top: 4px; text-align: center; }
+.fn-lab b { color: var(--ink); }
+@media (max-width: 880px) { .dash-top { flex-direction: column; } .dash-funnel { flex: 1 1 auto; width: 100%; } }
+/* hover popover: the latest 10 names behind a stat */
+.pop-host { position: relative; cursor: default; }
+.stat-pop { display: none; position: absolute; z-index: 40; top: calc(100% + 6px); left: 50%; transform: translateX(-50%); min-width: 180px; max-width: 240px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 14px 34px rgba(16,42,82,.2); padding: 10px 13px; text-align: left; }
+.pop-host:hover .stat-pop { display: block; }
+.stat-pop b { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.stat-pop ul { margin: 7px 0 0; padding-left: 16px; }
+.stat-pop li { font-size: 13px; line-height: 1.55; color: var(--ink); }
 .dc-num { font-size: 30px; font-weight: 800; color: var(--blue); line-height: 1; }
 .dc-lab { font-size: 12.5px; color: var(--muted); margin-top: 6px; font-weight: 700; }
 .dc-sub { display: block; font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
