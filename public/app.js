@@ -7,6 +7,8 @@ let currentRequirements = '';
 let lastSearchResults = [];
 let hotCount = 0;
 let signupCount = 0;
+let recentIndex = new Map(); // normalized name|location -> recent mockup (for search-result status)
+function normKey(name, loc) { return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '') + '|' + String(loc || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
 let authed = false;
 const $ = (id) => document.getElementById(id);
 
@@ -225,6 +227,8 @@ async function runSearch() {
 function renderResults(list) {
   lastSearchResults = list || [];
   $('refresh-results').classList.toggle('hidden', !(list && list.length));
+  // index generated mockups so each result can show its status
+  try { recentIndex = new Map(mergedRecent().map((r) => [normKey(r.name, r.location), r])); } catch (e) { recentIndex = new Map(); }
   const root = $('results');
   root.innerHTML = '';
   if (!list.length) { root.innerHTML = '<div class="empty">No businesses match these filters. Try loosening them.</div>'; return; }
@@ -234,6 +238,11 @@ function renderResults(list) {
 function card(b) {
   const el = document.createElement('div');
   el.className = 'card';
+  const rec = recentIndex.get(normKey(b.name, b.location));
+  const recVia = rec ? recentSentVia(rec) : '';
+  const statusChip = rec
+    ? (recVia ? '<span class="chip gensent">✓ Mockup sent</span>' : '<span class="chip genmade">✓ Mockup made · not sent</span>')
+    : '';
   const phones = b.phones && b.phones.length
     ? b.phones.map((p) => `<div>📞 ${esc(p)}</div>`).join('')
     : '<div class="muted">📞 No phone listed</div>';
@@ -250,6 +259,7 @@ function card(b) {
       ${phoneChip(b)}
       ${b.email ? '<span class="chip email">Email</span>' : ''}
       <span class="chip rating">★ ${b.rating} (${b.userRatingsTotal})</span>
+      ${statusChip}
     </div>
     <div class="meta">
       ${phones}
@@ -665,13 +675,30 @@ function renderRecent() {
       `<td>${esc(fmtDate(r.date))}</td>` +
       `<td>${esc(r.name || '')}${r.personName ? '<div class="who">' + esc(r.personName) + '</div>' : ''}</td>` +
       `<td>${esc(r.location || '')}</td>` +
+      `<td>${sentBadge(r)}</td>` +
       `<td><div class="eng-cell">${engagementBadge(r)}<button class="followup" title="Send a follow-up message">↩ Follow up</button></div></td>` +
-      `<td><button class="ghost recent-open">Open ↗</button></td>`;
+      `<td><div class="recent-acts"><button class="mini rc-prowl" title="Gather intelligence on this business">🐾 Prowl</button><button class="mini rc-pounce" title="Build them a website">🐆 Pounce</button><button class="ghost recent-open">Open ↗</button></div></td>`;
+    const lead = { slug: r.id, name: r.name, location: r.location, category: r.category || '', phone: (r.phones && r.phones[0]) || '', mapsUrl: r.mapsUrl || '', viewUrl: r.viewUrl, who: r.personName };
     tr.querySelector('.recent-open').addEventListener('click', () => openRecent(r));
     tr.querySelector('.recent-thumb').addEventListener('click', () => openRecent(r));
     tr.querySelector('.followup').addEventListener('click', () => doFollowUp(r));
+    tr.querySelector('.rc-prowl').addEventListener('click', () => openProwl(lead));
+    tr.querySelector('.rc-pounce').addEventListener('click', () => openPounce(lead));
     tb.appendChild(tr);
   });
+}
+// has a mockup been sent? prefer the per-row sentVia, fall back to the messaged map
+function recentSentVia(r) {
+  if (r.sentVia) return r.sentVia;
+  const mi = messagedInfo({ name: r.name, location: r.location, id: r.placeId });
+  if (mi && mi.channels) { const u = ['w', 's', 'e'].find((c) => mi.channels[c]); if (u) return u; }
+  if (mi && mi.via) return mi.via;
+  return '';
+}
+function sentBadge(r) {
+  const via = recentSentVia(r);
+  if (via) return `<span class="sent-yes">✓ Sent${channelName(via) ? ' · ' + channelName(via) : ''}</span>`;
+  return '<span class="sent-no">Not sent yet</span>';
 }
 function openRecent(r) {
   const business = { name: r.name, category: r.category, location: r.location, phones: r.phones || [], id: r.placeId || undefined };

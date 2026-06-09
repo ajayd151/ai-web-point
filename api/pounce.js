@@ -5,6 +5,7 @@
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
+const { readDossier, gatherDossier } = require('../lib/intel');
 
 const GKEY = () => process.env.GOOGLE_PLACES_API_KEY;
 const OKEY = () => process.env.OPENAI_API_KEY;
@@ -42,15 +43,6 @@ async function gDetails(placeId, mask) {
     const r = await fetch('https://places.googleapis.com/v1/places/' + encodeURIComponent(placeId), { headers: { 'X-Goog-Api-Key': GKEY(), 'X-Goog-FieldMask': mask } });
     return await r.json().catch(() => null);
   } catch (e) { return null; }
-}
-async function readDossier(slug) {
-  try {
-    const path = 'dossiers/' + slug + '.json';
-    const { blobs } = await list({ prefix: path });
-    const b = blobs.find((x) => x.pathname === path);
-    if (b) return await (await fetch(b.url + '?t=' + Date.now())).json();
-  } catch (e) { /* none */ }
-  return null;
 }
 
 async function writeCopy(ctx) {
@@ -236,8 +228,12 @@ module.exports = async (req, res) => {
   const address = (det && det.formattedAddress) || location;
   const realPhone = phone || (det && det.nationalPhoneNumber) || '';
 
-  // --- Prowl intel: reuse the cached dossier (services, reputation, established year) ---
-  const dossier = await readDossier(slug);
+  // --- Prowl intel: reuse the cached dossier, or auto-gather it now so the site
+  // always has intel (services, reputation, established year) behind it ---
+  let dossier = await readDossier(slug);
+  if (!dossier) {
+    try { dossier = await gatherDossier({ slug, name, location, category, phone }); } catch (e) { dossier = null; }
+  }
   const ch = dossier && dossier.companiesHouse && dossier.companiesHouse.found ? dossier.companiesHouse : null;
   const establishedYear = ch && ch.established ? String(ch.established).slice(0, 4) : '';
   const usedProwl = !!(dossier && (dossier.services || dossier.reputationSummary || establishedYear));
