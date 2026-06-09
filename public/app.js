@@ -1250,15 +1250,15 @@ function renderDashboard(d) {
     `<div class="dash-card pop-host"><div class="dc-num">${t.sent}</div><div class="dc-lab">Businesses messaged</div>${pop('messaged', 'Businesses you have sent a preview to (WhatsApp, SMS or email).', namesOf((r) => r.sentAt))}</div>` +
     `<div class="dash-card pop-host"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div>${pop('opened', 'They opened their preview link at least once.', namesOf((r) => r.openedAt))}</div>` +
     `<div class="dash-card pop-host"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div>${pop('demo clicks', 'Clicked "Request a demo" on their preview, which opens your booking page. A click showing interest, not a confirmed booking.', namesOf((r) => (r.demoClicks || 0) > 0))}</div>` +
-    `<div class="dash-card signup pop-host"><div class="dc-num">🤑 ${t.signups || 0}</div><div class="dc-lab">Sign-ups<span class="dc-sub">${rates.signupRate || 0}% of sent</span></div>${pop('sign-ups', 'Clicked "Yes, sign me up" on their preview, which opens your subscribe page. A strong intent click, not a payment yet.', namesOf((r) => r.signedUp))}</div>` +
+    `<div class="dash-card signup pop-host"><div class="dc-num">🤑 ${t.signups || 0}</div><div class="dc-lab">Sign-up clicks<span class="dc-sub">${rates.signupRate || 0}% of sent</span></div>${pop('sign-up clicks', 'Clicked "Yes, sign me up" on their preview, which opens your subscribe page. A strong intent click, not a payment yet.', namesOf((r) => r.signedUp))}</div>` +
     '</div>';
   // colourful funnel: continuous trapezoids tapering top-to-bottom (a real funnel)
   const F = [
     { label: 'Mockups', n: t.generated, color: '#6366f1' },
     { label: 'Messaged', n: t.sent, color: '#3b82f6' },
     { label: 'Opened', n: t.opened, color: '#0ea5e9' },
-    { label: 'Demo clicks', n: t.demoClicks, color: '#f59e0b' },
-    { label: 'Sign-ups', n: t.signups || 0, color: '#16a34a' },
+    { label: 'Demos', n: t.demoClicks, color: '#f59e0b' },
+    { label: 'Signup clicks', n: t.signups || 0, color: '#16a34a' },
   ];
   const FW = [100, 80, 62, 46, 32]; // visual widths so it always tapers like a funnel
   const funnel = '<div class="dash-funnel"><h3>Funnel</h3><div class="funnel">' +
@@ -1269,7 +1269,7 @@ function renderDashboard(d) {
       const pct = i > 0 && F[i - 1].n ? Math.round((s.n / F[i - 1].n) * 100) : null;
       return `<div class="fn-seg" style="background:${s.color};-webkit-clip-path:${clip};clip-path:${clip}"><b>${s.n}</b><span>${esc(s.label)}${pct != null ? ' · ' + pct + '%' : ''}</span></div>`;
     }).join('') + '</div><p class="fn-note">Each % is conversion from the stage above.</p></div>';
-  const defnote = '<p class="dash-defnote">ⓘ <b>Demo clicks</b> = clicked "Request a demo" on their preview (opens your booking page). <b>Sign-ups</b> = clicked "Yes, sign me up" on their preview (opens your subscribe page). Both are interest clicks, <b>not</b> a confirmed booking or a payment. Hover any number to see who.</p>';
+  const defnote = '<p class="dash-defnote">ⓘ <b>Demo clicks</b> = clicked "Request a demo" on their preview (opens your booking page). <b>Sign-up clicks</b> = clicked "Yes, sign me up" on their preview (opens your subscribe page). Both are interest clicks, <b>not</b> a confirmed booking or a payment. Hover any number to see who.</p>';
   const top = '<div class="dash-top">' + cards + funnel + '</div>' + defnote;
   const insights = '<div class="dash-insights"><h3>📊 Based on your data</h3><ul>' +
     (d.insights || []).map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
