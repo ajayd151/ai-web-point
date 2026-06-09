@@ -364,6 +364,12 @@ tr.tr-blocked td { background: #fafafa; }
 @media (max-width: 560px) { .pq-grid { grid-template-columns: 1fr; } }
 
 /* 🐾 Prowl dossier */
+.dos-contact { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin: 2px 0 14px; background: var(--bg); }
+.dos-cline { font-size: 15px; margin-bottom: 10px; }
+.dos-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+.dos-act { font-size: 13.5px; font-weight: 700; padding: 8px 13px; border-radius: 9px; text-decoration: none; background: #fff; border: 1px solid var(--line); color: var(--ink); }
+.dos-act.call { background: var(--navy, #0a1c3a); color: #fff; border-color: transparent; }
+.dos-act.wa { background: #25d366; color: #fff; border-color: transparent; }
 .dos-snap { font-size: 14px; margin: 4px 0 10px; }
 .dos-rep { font-size: 14px; margin: 0 0 8px; color: var(--ink); }
 #prowl-body h3 { font-size: 14px; margin: 18px 0 8px; }
