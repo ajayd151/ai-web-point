@@ -1242,32 +1242,35 @@ function renderDashboard(d) {
   // names behind each number (hover to see the latest 10)
   const rws = d.rows || [];
   const namesOf = (pred) => rws.filter(pred).map((r) => r.name).filter(Boolean).slice(0, 10);
-  const pop = (title, names) => (names.length ? `<div class="stat-pop"><b>Latest ${esc(title)}</b><ul>${names.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>` : '');
+  const pop = (title, def, names) => `<div class="stat-pop"><p class="sp-def">${esc(def)}</p>${names.length ? `<b>Latest ${esc(title)}</b><ul>${names.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>` : '<span class="sp-none">No names yet.</span>'}</div>`;
   let mockNames = []; try { mockNames = mergedRecent().map((r) => r.name).filter(Boolean).slice(0, 10); } catch (e) { /* ignore */ }
   const cards =
     '<div class="dash-cards">' +
-    `<div class="dash-card pop-host"><div class="dc-num">${t.generated}</div><div class="dc-lab">Mockups made</div>${pop('mockups', mockNames)}</div>` +
-    `<div class="dash-card pop-host"><div class="dc-num">${t.sent}</div><div class="dc-lab">Businesses messaged</div>${pop('messaged', namesOf((r) => r.sentAt))}</div>` +
-    `<div class="dash-card pop-host"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div>${pop('opened', namesOf((r) => r.openedAt))}</div>` +
-    `<div class="dash-card pop-host"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div>${pop('demo clicks', namesOf((r) => (r.demoClicks || 0) > 0))}</div>` +
-    `<div class="dash-card signup pop-host"><div class="dc-num">🤑 ${t.signups || 0}</div><div class="dc-lab">Sign-ups<span class="dc-sub">${rates.signupRate || 0}% of sent</span></div>${pop('sign-ups', namesOf((r) => r.signedUp))}</div>` +
+    `<div class="dash-card pop-host"><div class="dc-num">${t.generated}</div><div class="dc-lab">Mockups made</div>${pop('mockups', 'Website mockups you have generated.', mockNames)}</div>` +
+    `<div class="dash-card pop-host"><div class="dc-num">${t.sent}</div><div class="dc-lab">Businesses messaged</div>${pop('messaged', 'Businesses you have sent a preview to (WhatsApp, SMS or email).', namesOf((r) => r.sentAt))}</div>` +
+    `<div class="dash-card pop-host"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div>${pop('opened', 'They opened their preview link at least once.', namesOf((r) => r.openedAt))}</div>` +
+    `<div class="dash-card pop-host"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div>${pop('demo clicks', 'Clicked "Request a demo" on their preview, which opens your booking page. A click showing interest, not a confirmed booking.', namesOf((r) => (r.demoClicks || 0) > 0))}</div>` +
+    `<div class="dash-card signup pop-host"><div class="dc-num">🤑 ${t.signups || 0}</div><div class="dc-lab">Sign-ups<span class="dc-sub">${rates.signupRate || 0}% of sent</span></div>${pop('sign-ups', 'Clicked "Yes, sign me up" on their preview, which opens your subscribe page. A strong intent click, not a payment yet.', namesOf((r) => r.signedUp))}</div>` +
     '</div>';
-  // colourful funnel: each stage narrower than the last, with step conversion %
+  // colourful funnel: continuous trapezoids tapering top-to-bottom (a real funnel)
   const F = [
-    { label: 'Mockups made', n: t.generated, color: '#6366f1' },
+    { label: 'Mockups', n: t.generated, color: '#6366f1' },
     { label: 'Messaged', n: t.sent, color: '#3b82f6' },
     { label: 'Opened', n: t.opened, color: '#0ea5e9' },
     { label: 'Demo clicks', n: t.demoClicks, color: '#f59e0b' },
     { label: 'Sign-ups', n: t.signups || 0, color: '#16a34a' },
   ];
-  const fMax = Math.max(1, ...F.map((s) => s.n));
+  const FW = [100, 80, 62, 46, 32]; // visual widths so it always tapers like a funnel
   const funnel = '<div class="dash-funnel"><h3>Funnel</h3><div class="funnel">' +
     F.map((s, i) => {
-      const w = Math.max(16, Math.round((s.n / fMax) * 100));
+      const wt = i === 0 ? FW[0] : FW[i - 1];
+      const wb = FW[i];
+      const clip = `polygon(${50 - wt / 2}% 0, ${50 + wt / 2}% 0, ${50 + wb / 2}% 100%, ${50 - wb / 2}% 100%)`;
       const pct = i > 0 && F[i - 1].n ? Math.round((s.n / F[i - 1].n) * 100) : null;
-      return `<div class="fn-row"><div class="fn-bar" style="width:${w}%;background:${s.color}"><span>${s.n}</span></div><div class="fn-lab">${esc(s.label)}${pct != null ? ' · <b>' + pct + '%</b> of previous' : ''}</div></div>`;
-    }).join('') + '</div></div>';
-  const top = '<div class="dash-top">' + cards + funnel + '</div>';
+      return `<div class="fn-seg" style="background:${s.color};-webkit-clip-path:${clip};clip-path:${clip}"><b>${s.n}</b><span>${esc(s.label)}${pct != null ? ' · ' + pct + '%' : ''}</span></div>`;
+    }).join('') + '</div><p class="fn-note">Each % is conversion from the stage above.</p></div>';
+  const defnote = '<p class="dash-defnote">ⓘ <b>Demo clicks</b> = clicked "Request a demo" on their preview (opens your booking page). <b>Sign-ups</b> = clicked "Yes, sign me up" on their preview (opens your subscribe page). Both are interest clicks, <b>not</b> a confirmed booking or a payment. Hover any number to see who.</p>';
+  const top = '<div class="dash-top">' + cards + funnel + '</div>' + defnote;
   const insights = '<div class="dash-insights"><h3>📊 Based on your data</h3><ul>' +
     (d.insights || []).map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
   const tips = '<div class="dash-tips"><h3>💡 General tips <span class="muted">(best practice, not your data)</span></h3><ul>' +

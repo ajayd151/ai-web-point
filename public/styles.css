@@ -358,11 +358,12 @@ tr.tr-blocked td { background: #fafafa; }
 .dash-top .dash-cards { flex: 1; margin-bottom: 0; align-content: start; }
 .dash-funnel { flex: 0 0 300px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); }
 .dash-funnel h3 { margin: 0 0 14px; font-size: 15px; }
-.funnel { display: flex; flex-direction: column; align-items: center; gap: 11px; }
-.fn-row { width: 100%; display: flex; flex-direction: column; align-items: center; }
-.fn-bar { height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 16px; min-width: 50px; box-shadow: 0 4px 12px rgba(16,42,82,.16); }
-.fn-lab { font-size: 12.5px; color: var(--muted); margin-top: 4px; text-align: center; }
-.fn-lab b { color: var(--ink); }
+.funnel { display: flex; flex-direction: column; align-items: stretch; }
+.fn-seg { height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; line-height: 1.12; text-align: center; }
+.fn-seg + .fn-seg { margin-top: -1px; }
+.fn-seg b { font-size: 18px; font-weight: 800; }
+.fn-seg span { font-size: 11.5px; font-weight: 600; opacity: .96; }
+.fn-note { font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center; }
 @media (max-width: 880px) { .dash-top { flex-direction: column; } .dash-funnel { flex: 1 1 auto; width: 100%; } }
 /* hover popover: the latest 10 names behind a stat */
 .pop-host { position: relative; cursor: default; }
@@ -371,6 +372,10 @@ tr.tr-blocked td { background: #fafafa; }
 .stat-pop b { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
 .stat-pop ul { margin: 7px 0 0; padding-left: 16px; }
 .stat-pop li { font-size: 13px; line-height: 1.55; color: var(--ink); }
+.sp-def { font-size: 12.5px; color: var(--ink); line-height: 1.5; margin: 0 0 6px; }
+.sp-none { font-size: 12.5px; color: var(--muted); }
+.dash-defnote { font-size: 12.5px; color: var(--muted); line-height: 1.6; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 13px; margin: 0 0 18px; }
+.dash-defnote b { color: var(--ink); }
 .dc-num { font-size: 30px; font-weight: 800; color: var(--blue); line-height: 1; }
 .dc-lab { font-size: 12.5px; color: var(--muted); margin-top: 6px; font-weight: 700; }
 .dc-sub { display: block; font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
