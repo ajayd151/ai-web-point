@@ -182,6 +182,24 @@ application form). The whole interface is hidden behind it until signed in.
   selectable templates, SEO-tier dropdown, AI-prompt editor for revisions, the publish flow
   (flip `mode`→`published`, custom domain) + GHL handoff (review system/CRM) at conversion.
 
+### 👤 Leads, CRM status & CSV exports
+- **Lead Profile popup** (click any business name in Leads / Hot Leads / dashboard / Recent
+  mockups): contact details + one-tap Call / WhatsApp / Maps / View, engagement chips, Prowl
+  status (view dossier or Prowl now), Pounce status (open site or build), Block, and the CRM
+  block below. Uses `peek` on Prowl/Pounce so it never spends a credit just to check status.
+- **CRM status + notes:** a Status dropdown (New / Contacted / Doesn't answer / Interested /
+  Call back / Not interested / Invalid phone / Won / Lost) and a **timestamped notes log**
+  (server-side in `notes/<slug>.json`, so it persists and is shared across devices, unlike the
+  per-device messaged/blocked flags). Status shows as a colour chip in the Leads table, the
+  dashboard activity table, and Hot Lead cards (which dim for not-interested/lost/invalid-phone).
+- **👤 Leads view:** searchable, filterable table of every business worked (All / Prowled /
+  Website built / Messaged / Not messaged / Opened / Blocked + a status dropdown). Each row opens
+  the Lead Profile.
+- **CSV export** on the Leads tab and the Search results, both rich: Search adds website Yes/No,
+  address, phone(s), email, star rating, no. of ratings, plus pipeline fields (status, opened,
+  demo/sign-up click, prowled, website built); Leads adds person name, status, engagement,
+  prowled/pounced, blocked, preview URL. Exports respect the active filters.
+
 ### Founding-member landing & application
 - The login gate is a landing page with a **Founding-Member** offer ("20 places, fixed fee
   for life") + an **application form** (`/api/apply`) that emails Ajay (SendGrid) **and**
@@ -189,7 +207,8 @@ application form). The whole interface is hidden behind it until signed in.
 
 ### Security & cost protection
 - Full-screen **login gate** + server-side auth on every paid endpoint.
-- **Usage caps** (`lib/ratelimit.js`): 20 searches / 20 generations / 30 prowls / 30 pounces per 12h
+- **Usage caps** (`lib/ratelimit.js`): 30 searches / 30 generations / 30 prowls / 30 pounces per **20h**
+  window (env `LIMIT_*` + `RATE_WINDOW_HOURS`). Caps generation/search COST, not WhatsApp sending.
   (env-overridable `LIMIT_*`).
 - **Error alerts** email you via SendGrid + an on-screen Retry button (45s countdown).
 
@@ -245,11 +264,16 @@ db.js       Neon Postgres pool+queries pounce.js    builds 1-page site → sites
 | `GET /s/<slug>` |, | Renders the generated site (`/api/site`). Preview = `noindex` (meta + header). |
 | `GET /api/photo?n=` |, | Proxies a Google place photo (key stays server-side; validated; cached; noindex). |
 | `GET /api/sites` | ✅ | Lists all generated preview sites (the tidy-up registry). |
+| `GET /api/leads` | ✅ | Which slugs are Prowled / Pounced + a slug→status map (for the Leads view). |
+| `GET\|POST /api/note` | ✅ | Per-lead CRM: read / set status + append timestamped comments (`notes/<slug>.json` + `notes/_index.json`). |
 | `POST /api/apply` |, | Founding-member application → SendGrid + Postgres. |
 | `POST /api/report` | ✅ | Error-alert email (SendGrid). |
 
+Both Prowl and Pounce also accept `{peek:true}` to report whether a dossier/site already exists
+without gathering, building, or spending a credit (used by the Lead Profile popup).
+
 `vercel.json`: per-function config (`generate` 1024MB/180s/fonts, `pounce` 1024MB/120s,
-`search`/`mockups` 30s, `prowl` 60s, `site` 15s); rewrites `/v/:slug`, `/i/:slug`, `/s/:slug`;
+`search`/`mockups` 30s, `prowl` 60s); rewrites `/v/:slug`, `/i/:slug`, `/s/:slug`;
 cache headers
 (`must-revalidate` on the app shell so deploys show without a hard refresh). `api/download.js`
 was removed (legacy).
@@ -333,6 +357,18 @@ per-account setting (`LINK_DOMAIN`).
 - **Env vars** set in the Vercel dashboard (never committed). Cache headers make app-shell
   changes appear on a normal reload (no hard refresh needed).
 
+**Deploy gotchas (learned the hard way 2026-06-09):**
+- A serverless function with **both a rewrite and a `functions` config entry** can break Vercel's
+  function detection: build fails fast with *"The pattern api/X.js doesn't match any Serverless
+  Functions"* (NOT a cache issue, a no-cache rebuild fails the same). `api/site.js` hit this (it
+  has the `/s/:slug` rewrite). Fix: remove its `functions` entry, it works like `api/view.js` /
+  `api/img.js` (rewrite, default config). Don't give a rewrite-target function a `functions` entry
+  unless it genuinely needs non-default memory/maxDuration.
+- **Verify deploys gently.** Do not curl-poll the live URL in a tight loop, Vercel's automatic
+  **DDoS Mitigation** will challenge the IP (403 with `x-vercel-mitigated: challenge`) and blind
+  you. Wait ~60-90s, do one or two spaced checks, or just confirm in a browser / the Deployments
+  tab. (Bot Protection / Attack Challenge Mode stays Inactive, so real users are unaffected.)
+
 ---
 
 ## 11. Roadmap
@@ -394,7 +430,8 @@ that produce user-facing text are instructed accordingly.
   prototype-solihull.html  Pounce website prototype (design review)
 /api  login, search, generate, view, img, track (view/cta/sent/signup), mockups, dashboard,
       hotleads, prowl, pounce, site (/s/:slug), photo (Google-photo proxy), sites (preview
-      registry), apply, report
+      registry), leads (prowled/pounced/status map), note (CRM status + timestamped notes),
+      apply, report
 /lib  auth, ratelimit, filters, db, intel (shared Prowl gather, used by prowl + pounce),
       samples (built-in demo sites for /s/sample-*)
 /fonts  Montserrat (bundled into generate)
