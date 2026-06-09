@@ -239,6 +239,7 @@
 
     <div class="results-bar">
       <section id="summary" class="summary hidden"></section>
+      <button id="export-results" class="refresh-btn hidden" title="Download all these results as a CSV (company, website, phones, email, ratings, address)">⬇ Export CSV</button>
       <button id="refresh-results" class="refresh-btn hidden" title="Refresh the list, re-checks who you've messaged. No new search, no cost.">↻ Refresh</button>
     </div>
     <section id="results" class="results"></section>
@@ -337,6 +338,7 @@
             <button class="leadf-btn" data-f="pounced">🐆 Website built</button>
             <button class="leadf-btn" data-f="messaged">✓ Messaged</button>
             <button class="leadf-btn" data-f="notmessaged">Not messaged</button>
+            <button class="leadf-btn" data-f="opened">✓ Opened</button>
             <button class="leadf-btn" data-f="blocked">🚫 Blocked</button>
           </div>
           <select id="leads-status-filter" class="leads-statusf" title="Filter by status">
@@ -351,6 +353,7 @@
             <option value="won">Won</option>
             <option value="lost">Lost</option>
           </select>
+          <button id="leads-export" class="linkbtn">⬇ Export CSV</button>
           <button id="leads-refresh" class="linkbtn">↻ Refresh</button>
         </div>
         <div class="recent-scroll">

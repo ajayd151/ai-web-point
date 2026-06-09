@@ -144,6 +144,7 @@ async function refreshFeedback(btn, action) {
   setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1300);
 }
 $('refresh-results').addEventListener('click', (e) => refreshFeedback(e.currentTarget, () => renderResults(lastSearchResults)));
+$('export-results').addEventListener('click', exportSearchCsv);
 ['industry', 'location'].forEach((id) =>
   $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); })
 );
@@ -230,6 +231,7 @@ async function runSearch() {
 function renderResults(list) {
   lastSearchResults = list || [];
   $('refresh-results').classList.toggle('hidden', !(list && list.length));
+  $('export-results').classList.toggle('hidden', !(list && list.length));
   // index generated mockups so each result can show its status
   try { recentIndex = new Map(mergedRecent().map((r) => [normKey(r.name, r.location), r])); } catch (e) { recentIndex = new Map(); }
   const root = $('results');
@@ -1342,9 +1344,8 @@ async function loadLeads() {
   catch (e) { leadsData = { prowled: new Set(), pounced: new Set(), statuses: {} }; }
   renderLeads();
 }
-function renderLeads() {
-  const tb = $('leads-rows'); if (!tb) return;
-  const q = ($('leads-search').value || '').toLowerCase().trim();
+function filteredLeads() {
+  const q = ($('leads-search') ? $('leads-search').value : '').toLowerCase().trim();
   const pro = leadsData ? leadsData.prowled : new Set();
   const pou = leadsData ? leadsData.pounced : new Set();
   let list = mergedRecent();
@@ -1356,13 +1357,20 @@ function renderLeads() {
     if (leadsFilter === 'pounced') return pou.has(r.id);
     if (leadsFilter === 'messaged') return messaged;
     if (leadsFilter === 'notmessaged') return !messaged && !blocked;
+    if (leadsFilter === 'opened') return (r.opens || 0) > 0;
     if (leadsFilter === 'blocked') return blocked;
     return true;
   });
-  // status filter (Any / New / Contacted / … / Not interested / Won / Lost)
   const sel = $('leads-status-filter');
   const sf = sel ? sel.value : '__any';
   if (sf !== '__any') { const statuses = (leadsData && leadsData.statuses) || {}; list = list.filter((r) => (statuses[r.id] || '') === sf); }
+  return list;
+}
+function renderLeads() {
+  const tb = $('leads-rows'); if (!tb) return;
+  const pro = leadsData ? leadsData.prowled : new Set();
+  const pou = leadsData ? leadsData.pounced : new Set();
+  const list = filteredLeads();
   if (!list.length) { tb.innerHTML = '<tr><td colspan="4" class="muted" style="padding:14px">No leads match.</td></tr>'; return; }
   tb.innerHTML = '';
   list.forEach((r) => {
@@ -1386,10 +1394,50 @@ function renderLeads() {
 $('leads-search').addEventListener('input', renderLeads);
 $('leads-status-filter').addEventListener('change', renderLeads);
 $('leads-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadLeads));
+$('leads-export').addEventListener('click', exportLeadsCsv);
 document.querySelectorAll('.leadf-btn').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.leadf-btn').forEach((x) => x.classList.toggle('active', x === b));
   leadsFilter = b.dataset.f; renderLeads();
 }));
+
+// ---- CSV exports (Leads + Search results) ----
+function downloadCsv(filename, header, rows) {
+  if (!rows.length) { alert('Nothing to export yet.'); return; }
+  const lines = [header.map(csvCell).join(',')].concat(rows.map((row) => row.map(csvCell).join(',')));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function exportLeadsCsv() {
+  const pro = leadsData ? leadsData.prowled : new Set();
+  const pou = leadsData ? leadsData.pounced : new Set();
+  const statuses = (leadsData && leadsData.statuses) || {};
+  const header = ['Business', 'Location', 'Category', 'Phone', 'Status', 'Messaged via', 'Opened', 'Demo click', 'Sign-up click', 'Prowled', 'Website built', 'Blocked', 'Preview URL'];
+  const rows = filteredLeads().map((r) => [
+    r.name || '', r.location || '', r.category || '', (r.phones && r.phones[0]) || '',
+    statuses[r.id] ? statusLabel(statuses[r.id]) : '',
+    recentSentVia(r) ? channelName(recentSentVia(r)) : '',
+    (r.opens || 0) > 0 ? 'Yes' : 'No', (r.ctaClicks || 0) > 0 ? 'Yes' : 'No', (r.signups || 0) > 0 ? 'Yes' : 'No',
+    pro.has(r.id) ? 'Yes' : 'No', pou.has(r.id) ? 'Yes' : 'No', isBlocked(r) ? 'Yes' : 'No', r.viewUrl || '',
+  ]);
+  downloadCsv('leads.csv', header, rows);
+}
+function exportSearchCsv() {
+  const list = (lastSearchResults || []).filter((b) => !isBlocked(b));
+  const header = ['Company', 'Category', 'Location', 'Address', 'Has website', 'Website', 'Phone(s)', 'Mobile?', 'Email', 'Star rating', 'Number of ratings', 'Google Maps'];
+  const rows = list.map((b) => {
+    const phones = (b.phones || []);
+    const anyMobile = phones.some((p) => window.BizData.isUkMobile(p));
+    return [
+      b.name || '', b.category || '', b.location || '', b.address || '',
+      b.website ? 'Yes' : 'No', b.website || '',
+      phones.join(' / '), anyMobile ? 'Yes' : 'No', b.email || '',
+      b.rating != null ? b.rating : '', b.userRatingsTotal != null ? b.userRatingsTotal : '', b.mapsUrl || '',
+    ];
+  });
+  downloadCsv('search-results.csv', header, rows);
+}
 
 // ---- tab-title alert: flashes when you have hot leads + are on another tab ----
 let titleTimer = null;
