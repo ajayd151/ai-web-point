@@ -15,6 +15,13 @@ module.exports = async (req, res) => {
     const { blobs } = await list({ prefix: 'sites/' });
     blobs.forEach((b) => { const m = b.pathname.match(/^sites\/([^/]+)\.json$/); if (m) pounced.push(m[1]); });
   } catch (e) { /* ignore */ }
+  // statuses from the notes index (slug -> status)
+  let statuses = {};
+  try {
+    const { blobs } = await list({ prefix: 'notes/_index.json' });
+    const b = blobs.find((x) => x.pathname === 'notes/_index.json');
+    if (b) { const idx = await (await fetch(b.url + '?t=' + Date.now())).json(); for (const k in idx) { if (idx[k] && idx[k].status) statuses[k] = idx[k].status; } }
+  } catch (e) { /* ignore */ }
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ prowled, pounced });
+  res.status(200).json({ prowled, pounced, statuses });
 };

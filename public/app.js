@@ -1287,14 +1287,40 @@ function renderLeadStatus(l, dossier, pounce) {
   const bk = q('.lead-block'); if (bk) bk.addEventListener('click', () => confirmBlock(l, () => { $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); }));
   const ub = q('.lead-unblock'); if (ub) ub.addEventListener('click', () => { unblockKey(blockKey(l)); $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); });
 }
+const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['interested', 'Interested'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['won', 'Won, customer'], ['lost', 'Lost']];
+function statusLabel(s) { const f = LEAD_STATUSES.find((x) => x[0] === (s || '')); return f ? f[1] : 'New'; }
+function statusClass(s) { return 'st-' + (s || 'new'); }
+function renderLeadNotes(l, note) {
+  const el = $('lead-notes'); if (!el) return;
+  const cur = note.status || '';
+  const comments = (note.comments || []).slice().reverse();
+  el.innerHTML = '<div class="lead-notes-inner"><h3 class="ln-h">Status & notes</h3>' +
+    '<div class="ln-row"><label>Status</label>' +
+    `<select id="ln-status">${LEAD_STATUSES.map((o) => `<option value="${o[0]}"${o[0] === cur ? ' selected' : ''}>${o[1]}</option>`).join('')}</select>` +
+    '<span class="ln-saved" id="ln-saved"></span></div>' +
+    '<div class="ln-add"><textarea id="ln-comment" rows="2" placeholder="Add a note (e.g. Called, not interested, already has a website but not on Maps, doing it as a sideline)…"></textarea><button id="ln-add-btn" class="primary sm">Add note</button></div>' +
+    `<div class="ln-log">${comments.length ? comments.map((c) => `<div class="ln-item"><div class="ln-when">${esc(fmtDate(c.at))}</div><div class="ln-text">${esc(c.text)}</div></div>`).join('') : '<div class="muted">No notes yet.</div>'}</div></div>`;
+  $('ln-status').addEventListener('change', (e) => saveNote(l, { status: e.target.value }));
+  $('ln-add-btn').addEventListener('click', () => { const text = ($('ln-comment').value || '').trim(); if (text) saveNote(l, { comment: text }); });
+}
+function saveNote(l, payload) {
+  const sv = $('ln-saved'); if (sv) sv.textContent = 'Saving…';
+  fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: l.slug }, payload)) })
+    .then((r) => r.json()).then((d) => {
+      renderLeadNotes(l, (d && d.note) || {});
+      const s2 = $('ln-saved'); if (s2) { s2.textContent = '✓ Saved'; setTimeout(() => { if ($('ln-saved')) $('ln-saved').textContent = ''; }, 1500); }
+      if (leadsData && payload.status !== undefined) { leadsData.statuses = leadsData.statuses || {}; if (payload.status) leadsData.statuses[l.slug] = payload.status; else delete leadsData.statuses[l.slug]; try { renderLeads(); } catch (e) { /* ignore */ } }
+    }).catch(() => { const s3 = $('ln-saved'); if (s3) s3.textContent = '⚠️ Failed'; });
+}
 function openLead(biz) {
   const l = leadFromAny(biz);
   if (!l.slug) return;
   $('lead-title').textContent = l.name;
   $('lead-modal').classList.remove('hidden');
-  $('lead-body').innerHTML = renderLeadShell(l) + '<div id="lead-status" class="lead-status"><span class="spinner sm"></span> Checking Prowl & website…</div>';
+  $('lead-body').innerHTML = renderLeadShell(l) + '<div id="lead-status" class="lead-status"><span class="spinner sm"></span> Checking Prowl & website…</div><div id="lead-notes"></div>';
   const peek = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: l.slug, peek: true }) }).then((r) => r.json()).catch(() => ({}));
-  Promise.all([peek('/api/prowl'), peek('/api/pounce')]).then(([pr, pc]) => renderLeadStatus(l, pr && pr.dossier, pc));
+  const getNote = fetch('/api/note?slug=' + encodeURIComponent(l.slug)).then((r) => r.json()).catch(() => ({}));
+  Promise.all([peek('/api/prowl'), peek('/api/pounce'), getNote]).then(([pr, pc, nt]) => { renderLeadStatus(l, pr && pr.dossier, pc); renderLeadNotes(l, (nt && nt.note) || {}); });
 }
 // clickable business names → lead profile (dashboard activity table)
 $('dash-body').addEventListener('click', (e) => { const n = e.target.closest('.lead-name'); if (n) openLead({ slug: n.dataset.slug, name: n.dataset.name }); });
@@ -1306,8 +1332,8 @@ async function loadLeads() {
   const tb = $('leads-rows'); if (tb) tb.innerHTML = '<tr><td colspan="4" class="muted" style="padding:14px">Loading…</td></tr>';
   if (!authed) return;
   try { await loadServerMockups(); } catch (e) { /* keep local */ }
-  try { const r = await fetch('/api/leads'); const d = await r.json(); leadsData = { prowled: new Set(d.prowled || []), pounced: new Set(d.pounced || []) }; }
-  catch (e) { leadsData = { prowled: new Set(), pounced: new Set() }; }
+  try { const r = await fetch('/api/leads'); const d = await r.json(); leadsData = { prowled: new Set(d.prowled || []), pounced: new Set(d.pounced || []), statuses: d.statuses || {} }; }
+  catch (e) { leadsData = { prowled: new Set(), pounced: new Set(), statuses: {} }; }
   renderLeads();
 }
 function renderLeads() {
@@ -1331,6 +1357,8 @@ function renderLeads() {
   tb.innerHTML = '';
   list.forEach((r) => {
     const chips = [];
+    const st = (leadsData && leadsData.statuses) ? leadsData.statuses[r.id] : '';
+    if (st) chips.push(`<span class="lchip ${statusClass(st)}">${esc(statusLabel(st))}</span>`);
     if (recentSentVia(r)) chips.push('<span class="lchip ok">✓ Messaged</span>');
     if ((r.ctaClicks || 0) > 0) chips.push('<span class="lchip hot">🔥 Demo</span>');
     else if ((r.opens || 0) > 0) chips.push('<span class="lchip">✓ Opened</span>');
