@@ -989,8 +989,8 @@ function hotLeadCardHTML(l) {
   acts += `<button class="hl-act hl-block" data-slug="${esc(l.slug)}" title="Mark not interested, hide & stop contacting">🚫 Block</button>`;
   const signed = !!l.signupAt;
   const badge = signed
-    ? `<span class="hl-tag signup">🤑 Clicked Sign Up</span>`
-    : (l.demoAt ? `<span class="hl-tag demo">🔥 Requested a demo</span>` : '');
+    ? `<span class="hl-tag signup" title="Clicked &quot;Yes, sign me up&quot; on their preview (opens your subscribe page). An interest click, not a payment.">🤑 Clicked Sign Up</span>`
+    : (l.demoAt ? `<span class="hl-tag demo" title="Clicked the &quot;Request a demo&quot; button on their preview (opens your booking page). An interest click, not a confirmed booking.">🔥 Requested a demo</span>` : '');
   const signal = signed
     ? `🤑 clicked “Sign me up” ${esc(fmtDate(l.signupAt))}`
     : `requested demo ${esc(fmtDate(l.demoAt))}`;
@@ -1010,7 +1010,8 @@ function renderHotLeads(list) {
   const intro = signupCount
     ? `<p class="muted view-sub"><b>🤑 ${signupCount} ${signupCount === 1 ? 'prospect' : 'prospects'} clicked “Sign me up”</b>, call these first. Below them, prospects who clicked "Request a demo".</p>`
     : '<p class="muted view-sub">These prospects opened their preview and clicked "Request a demo", your warmest leads. Follow up fast.</p>';
-  body.innerHTML = intro + lastHotLeads.map(hotLeadCardHTML).join('');
+  const defnote = '<p class="dash-defnote">ⓘ <b>Requested a demo</b> = clicked the "Request a demo" button on their preview (which opens your booking page). <b>Clicked Sign Up</b> = clicked "Yes, sign me up" (opens your subscribe page). Both are interest clicks, <b>not</b> a confirmed booking or a payment.</p>';
+  body.innerHTML = intro + defnote + lastHotLeads.map(hotLeadCardHTML).join('');
 }
 async function loadHotLeads() {
   try {
