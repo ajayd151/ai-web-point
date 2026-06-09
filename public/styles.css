@@ -313,7 +313,8 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .pq-accred { display: flex; flex-wrap: wrap; gap: 8px; }
 .pq-chip { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 7px 11px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .pq-chip input { width: auto; }
-.pq-actions { display: flex; align-items: center; gap: 12px; margin-top: 20px; }
+.pq-photonote { font-size: 12.5px; line-height: 1.5; margin-top: 14px; background: #f6f8fc; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+.pq-actions { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
 @media (max-width: 560px) { .pq-grid { grid-template-columns: 1fr; } }
 
 /* 🐾 Prowl dossier */

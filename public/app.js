@@ -1080,8 +1080,9 @@ function pounceQuestionsHTML(lead) {
       <div class="pq-fld wide"><label>Special offer banner <span class="muted">(optional)</span></label><input id="pq-offer" type="text" placeholder="e.g. £50 off your first job this month"></div>
       <div class="pq-fld wide"><label>Accreditations they actually hold <span class="muted">(tick only real ones)</span></label>
         <div class="pq-accred">${suggestAccreditations(lead && lead.category).map((a) => `<label class="pq-chip"><input type="checkbox" class="pq-acc" value="${esc(a)}"> ${esc(a)}</label>`).join('')}</div></div>
-      <div class="pq-fld wide"><label>Anything else to weave in?</label><textarea id="pq-notes" rows="2" placeholder="Any extra detail"></textarea></div>
+      <div class="pq-fld wide"><label>Anything to emphasise in the wording? <span class="muted">(shapes the copy only)</span></label><textarea id="pq-notes" rows="2" placeholder="e.g. family run since 2005, eco-friendly products, free callouts"></textarea></div>
     </div>
+    <p class="muted pq-photonote">📸 Photos are pulled from their Google profile (we pick the best ones), or AI-generated if those are weak. Using the business's own photos, or before / after shots, needs them to send the images first (coming soon). The notes box steers the wording, not the photos or sections.</p>
     <div class="pq-actions"><button id="pq-build" class="primary">🐆 Build my site →</button><button id="pq-skip" class="ghost sm">Skip, smart defaults</button></div>
   </div>`;
 }
