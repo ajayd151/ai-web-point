@@ -921,10 +921,11 @@ const GENERIC_TIPS = [
 let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
-  ['search', 'messages', 'performance', 'hotleads'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
+  ['search', 'messages', 'performance', 'hotleads', 'leads'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'messages') renderBlocked();
+  if (name === 'leads') loadLeads();
 }
 document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 document.querySelectorAll('.dash-rbtn').forEach((b) => b.addEventListener('click', () => {
@@ -1284,6 +1285,59 @@ function openLead(biz) {
 }
 // clickable business names → lead profile (dashboard activity table)
 $('dash-body').addEventListener('click', (e) => { const n = e.target.closest('.lead-name'); if (n) openLead({ slug: n.dataset.slug, name: n.dataset.name }); });
+
+// ---- 👤 Leads view: browse every business, filter by Prowled / Pounced / etc ----
+let leadsData = null; // { prowled:Set, pounced:Set }
+let leadsFilter = 'all';
+async function loadLeads() {
+  const tb = $('leads-rows'); if (tb) tb.innerHTML = '<tr><td colspan="4" class="muted" style="padding:14px">Loading…</td></tr>';
+  if (!authed) return;
+  try { await loadServerMockups(); } catch (e) { /* keep local */ }
+  try { const r = await fetch('/api/leads'); const d = await r.json(); leadsData = { prowled: new Set(d.prowled || []), pounced: new Set(d.pounced || []) }; }
+  catch (e) { leadsData = { prowled: new Set(), pounced: new Set() }; }
+  renderLeads();
+}
+function renderLeads() {
+  const tb = $('leads-rows'); if (!tb) return;
+  const q = ($('leads-search').value || '').toLowerCase().trim();
+  const pro = leadsData ? leadsData.prowled : new Set();
+  const pou = leadsData ? leadsData.pounced : new Set();
+  let list = mergedRecent();
+  if (q) list = list.filter((r) => (String(r.name || '') + ' ' + String(r.location || '')).toLowerCase().indexOf(q) >= 0);
+  list = list.filter((r) => {
+    const messaged = !!recentSentVia(r);
+    const blocked = isBlocked(r);
+    if (leadsFilter === 'prowled') return pro.has(r.id);
+    if (leadsFilter === 'pounced') return pou.has(r.id);
+    if (leadsFilter === 'messaged') return messaged;
+    if (leadsFilter === 'notmessaged') return !messaged && !blocked;
+    if (leadsFilter === 'blocked') return blocked;
+    return true;
+  });
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="4" class="muted" style="padding:14px">No leads match.</td></tr>'; return; }
+  tb.innerHTML = '';
+  list.forEach((r) => {
+    const chips = [];
+    if (recentSentVia(r)) chips.push('<span class="lchip ok">✓ Messaged</span>');
+    if ((r.ctaClicks || 0) > 0) chips.push('<span class="lchip hot">🔥 Demo</span>');
+    else if ((r.opens || 0) > 0) chips.push('<span class="lchip">✓ Opened</span>');
+    if (pro.has(r.id)) chips.push('<span class="lchip prowl">🐾 Prowled</span>');
+    if (pou.has(r.id)) chips.push('<span class="lchip pounce">🐆 Site</span>');
+    if (isBlocked(r)) chips.push('<span class="lchip blk">🚫 Blocked</span>');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td><button class="lead-name" data-slug="${esc(r.id)}">${esc(r.name || '')}</button></td><td>${esc(r.location || '')}</td><td><div class="lchips">${chips.join('') || '<span class="muted">New</span>'}</div></td><td><button class="ghost sm leadrow-open">Open profile →</button></td>`;
+    const open = () => openLead({ slug: r.id, name: r.name, location: r.location, category: r.category, phone: (r.phones && r.phones[0]) || '', mapsUrl: r.mapsUrl, viewUrl: r.viewUrl, who: r.personName });
+    tr.querySelector('.lead-name').addEventListener('click', open);
+    tr.querySelector('.leadrow-open').addEventListener('click', open);
+    tb.appendChild(tr);
+  });
+}
+$('leads-search').addEventListener('input', renderLeads);
+$('leads-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadLeads));
+document.querySelectorAll('.leadf-btn').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.leadf-btn').forEach((x) => x.classList.toggle('active', x === b));
+  leadsFilter = b.dataset.f; renderLeads();
+}));
 
 // ---- tab-title alert: flashes when you have hot leads + are on another tab ----
 let titleTimer = null;

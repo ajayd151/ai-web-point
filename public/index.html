@@ -150,6 +150,7 @@
     <button class="navbtn" data-view="messages">💬 Messages</button>
     <button class="navbtn" data-view="performance">📊 Performance</button>
     <button class="navbtn" data-view="hotleads">🔥 Hot Leads <span id="hot-count" class="navbadge hidden">0</span></button>
+    <button class="navbtn" data-view="leads">👤 Leads</button>
   </nav>
 
   <main>
@@ -321,6 +322,31 @@
           <button id="hot-refresh" class="ghost">↻ Refresh</button>
         </div>
         <div id="hot-body" class="dash-body"></div>
+      </section>
+    </div>
+
+    <div id="view-leads" class="view hidden">
+      <section class="panel">
+        <h2 class="view-title">👤 Leads</h2>
+        <p class="muted view-sub">Every business you have worked. Click a name to open its Lead Profile (contact, Prowl, website).</p>
+        <div class="leads-toolbar">
+          <input id="leads-search" type="text" placeholder="Search name or location…" />
+          <div class="leads-filters">
+            <button class="leadf-btn active" data-f="all">All</button>
+            <button class="leadf-btn" data-f="prowled">🐾 Prowled</button>
+            <button class="leadf-btn" data-f="pounced">🐆 Website built</button>
+            <button class="leadf-btn" data-f="messaged">✓ Messaged</button>
+            <button class="leadf-btn" data-f="notmessaged">Not messaged</button>
+            <button class="leadf-btn" data-f="blocked">🚫 Blocked</button>
+          </div>
+          <button id="leads-refresh" class="linkbtn">↻ Refresh</button>
+        </div>
+        <div class="recent-scroll">
+          <table class="recent-table">
+            <thead><tr><th>Business</th><th>Location</th><th>Status</th><th></th></tr></thead>
+            <tbody id="leads-rows"></tbody>
+          </table>
+        </div>
       </section>
     </div>
   </main>
