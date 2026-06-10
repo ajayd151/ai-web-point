@@ -1580,7 +1580,7 @@ function bySearchTypeHTML() {
     return `<tr><td><b>${esc(g.niche)}</b>${g.area ? '<div class="muted st-area">📍 ' + esc(g.area) + '</div>' : ''}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${demoCell}</td><td>${signupCell}</td></tr>`;
   }).join('');
   return '<div class="dash-table-wrap"><h3>🔎 By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. Open % is of those you messaged. Sorted by most messaged.</p>' +
-    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Viewed</th><th>Demo clicks</th><th>Sign-up clicks</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Mockup viewed</th><th>Demo clicks</th><th>Sign-up clicks</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
 function renderDashboard(d) {
   const body = $('dash-body');
@@ -1656,7 +1656,7 @@ function renderDashboard(d) {
       return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td><button class="lead-name" data-slug="${esc(r.slug)}" data-name="${esc(r.name)}">${esc(r.name)}</button></td><td>${esc(via || '·')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td><td>${statusCell}</td></tr>`;
     }).join('');
     table = '<div class="dash-table-wrap"><h3>🕒 Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
-      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Viewed</th><th>Demo click</th><th>Sign-up click</th><th>Status</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Mockup viewed</th><th>Demo click</th><th>Sign-up click</th><th>Status</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
   body.innerHTML = insights + top + bySearchTypeHTML() + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
