@@ -1571,8 +1571,18 @@ function bySearchTypeHTML() {
     if ((r.signups || 0) > 0) { g.signup++; if (r.name) g.signupNames.push(r.name); }
     groups.set(key, g);
   });
-  const rows = Array.from(groups.values()).sort((a, b) => b.messaged - a.messaged || b.made - a.made);
+  // group by niche (keep all areas of a niche together), busiest niche first,
+  // then within a niche order areas by most messaged
+  const allRows = Array.from(groups.values());
+  const nicheMsg = {};
+  allRows.forEach((g) => { nicheMsg[g.niche] = (nicheMsg[g.niche] || 0) + g.messaged; });
+  const rows = allRows.sort((a, b) =>
+    (nicheMsg[b.niche] - nicheMsg[a.niche]) || a.niche.localeCompare(b.niche) ||
+    (b.messaged - a.messaged) || (b.made - a.made));
+  let prevNiche = null;
   const tr = rows.map((g) => {
+    const firstOfNiche = g.niche !== prevNiche;
+    prevNiche = g.niche;
     const rate = g.messaged ? Math.round((g.opened / g.messaged) * 100) : 0;
     const demoCell = g.demo > 0
       ? `<span class="hovname" title="Clicked Request a demo: ${esc(g.demoNames.join(', '))}">🔥 ${g.demo}</span>`
@@ -1589,9 +1599,9 @@ function bySearchTypeHTML() {
         ? '<div class="muted st-area">📍 ' + esc(core) + ' <span class="st-exp">(' + esc(g.area) + ')</span></div>'
         : '<div class="muted st-area">📍 ' + esc(g.area) + '</div>';
     }
-    return `<tr><td><b>${esc(g.niche)}</b>${locHtml}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${demoCell}</td><td>${signupCell}</td></tr>`;
+    return `<tr${firstOfNiche ? ' class="bst-gstart"' : ''}><td><b>${esc(g.niche)}</b>${locHtml}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${demoCell}</td><td>${signupCell}</td></tr>`;
   }).join('');
-  return '<div class="dash-table-wrap"><h3>🔎 By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. The location is what you searched, with the lead\'s actual town in brackets if it differs (auto-expanded nearby). Mockup viewed % is of those you messaged. Sorted by most messaged.</p>' +
+  return '<div class="dash-table-wrap"><h3>🔎 By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. The location is what you searched, with the lead\'s actual town in brackets if it differs (auto-expanded nearby). Mockup viewed % is of those you messaged. Grouped by niche, busiest first.</p>' +
     '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Mockup viewed</th><th>Demo clicks</th><th>Sign-up clicks</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
 function renderDashboard(d) {
