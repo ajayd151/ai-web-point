@@ -744,7 +744,7 @@ function mergedRecent() {
   // local entries first (they carry phone/personName); fold in server open-stats
   loadRecent().forEach((r) => {
     const sv = serverMap.get(r.id);
-    out.set(r.id, sv ? Object.assign({}, r, { opens: sv.opens, lastOpen: sv.lastOpen, ctaClicks: sv.ctaClicks, platform: sv.platform }) : r);
+    out.set(r.id, sv ? Object.assign({}, r, { opens: sv.opens, lastOpen: sv.lastOpen, ctaClicks: sv.ctaClicks, signups: sv.signups, declines: sv.declines, sent: sv.sent, platform: sv.platform }) : r);
   });
   serverRecent.forEach((r) => { if (!out.has(r.id)) out.set(r.id, r); });
   return Array.from(out.values())
@@ -771,6 +771,7 @@ async function loadServerMockups() {
       lastOpen: m.lastOpen || null,
       ctaClicks: m.ctaClicks || 0,
       signups: m.signups || 0,
+      declines: m.declines || 0,
       sent: m.sent || 0,
       platform: m.platform || '',
     }));
@@ -1562,13 +1563,14 @@ function bySearchTypeHTML() {
     const niche = titleCaseIndustry(r.category || '') || '(unknown)';
     const area = r.location || '';
     const key = niche + '||' + area;
-    const g = groups.get(key) || { niche, area, made: 0, messaged: 0, opened: 0, demo: 0, signup: 0, demoNames: [], signupNames: [], searchLocs: new Set() };
+    const g = groups.get(key) || { niche, area, made: 0, messaged: 0, opened: 0, demo: 0, signup: 0, declined: 0, demoNames: [], signupNames: [], declineNames: [], searchLocs: new Set() };
     if (r.searchLoc) g.searchLocs.add(r.searchLoc);
     g.made++;
     if ((r.sent || 0) > 0 || recentSentVia(r)) g.messaged++;
     if ((r.opens || 0) > 0) g.opened++;
     if ((r.ctaClicks || 0) > 0) { g.demo++; if (r.name) g.demoNames.push(r.name); }
     if ((r.signups || 0) > 0) { g.signup++; if (r.name) g.signupNames.push(r.name); }
+    if ((r.declines || 0) > 0) { g.declined++; if (r.name) g.declineNames.push(r.name); }
     groups.set(key, g);
   });
   // group by niche (keep all areas of a niche together), busiest niche first,
@@ -1590,6 +1592,9 @@ function bySearchTypeHTML() {
     const signupCell = g.signup > 0
       ? `<span class="hovname" title="Clicked Sign me up: ${esc(g.signupNames.join(', '))}">🤑 ${g.signup}</span>`
       : g.signup;
+    const declineCell = g.declined > 0
+      ? `<span class="hovname" title="Clicked No thanks on the mockup: ${esc(g.declineNames.join(', '))}">🙅 ${g.declined}</span>`
+      : g.declined;
     // show the core location you searched, with the lead's actual town in brackets
     // (the area may be an auto-expanded nearby town, e.g. you searched Wolverhampton, lead is in Dudley)
     const core = Array.from(g.searchLocs).find((c) => c && c.toLowerCase() !== (g.area || '').toLowerCase());
@@ -1599,10 +1604,10 @@ function bySearchTypeHTML() {
         ? '<div class="muted st-area">📍 ' + esc(core) + ' <span class="st-exp">(' + esc(g.area) + ')</span></div>'
         : '<div class="muted st-area">📍 ' + esc(g.area) + '</div>';
     }
-    return `<tr${firstOfNiche ? ' class="bst-gstart"' : ''}><td><b>${esc(g.niche)}</b>${locHtml}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${demoCell}</td><td>${signupCell}</td></tr>`;
+    return `<tr${firstOfNiche ? ' class="bst-gstart"' : ''}><td><b>${esc(g.niche)}</b>${locHtml}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${demoCell}</td><td>${signupCell}</td><td>${declineCell}</td></tr>`;
   }).join('');
   return '<div class="dash-table-wrap"><h3>🔎 By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. The location is what you searched, with the lead\'s actual town in brackets if it differs (auto-expanded nearby). Mockup viewed % is of those you messaged. Grouped by niche, busiest first.</p>' +
-    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Mockup viewed</th><th>Demo clicks</th><th>Sign-up clicks</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Mockup viewed</th><th>Demo clicks</th><th>Sign-up clicks</th><th>Not interested</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
 function renderDashboard(d) {
   const body = $('dash-body');

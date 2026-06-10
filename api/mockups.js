@@ -48,6 +48,7 @@ module.exports = async (req, res) => {
         lastOpen: (s.view && s.view.last) || null,
         ctaClicks: (s.cta && s.cta.n) || 0,
         signups: (s.signup && s.signup.n) || 0,
+        declines: (s.decline && s.decline.n) || 0,
         sent: (s.sent && s.sent.n) || 0,
         platform: s.platform || '',
       };
