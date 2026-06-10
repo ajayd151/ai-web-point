@@ -1,6 +1,6 @@
 # Site Pounce, Technical & Product Documentation
 
-_Last updated: 2026-06-09_
+_Last updated: 2026-06-10_
 
 Site Pounce is a lead-generation, outreach **and sales-intelligence** platform for a
 web-design agency. It finds local businesses with **no website**, generates a
@@ -79,6 +79,11 @@ application form). The whole interface is hidden behind it until signed in.
 ### Sending & messaged-tracking
 - **Branded preview page** at `preview.aiwebpoint.com/v/<slug>`; **branded image URL**
   `/i/<slug>.png` (hides the blob host) for email embedding + Download PNG.
+- **Preview CTA row:** a bold green, **personalised** "📞 Yes, I'd like a demo for <Business> →"
+  button (fires the `cta`/demo event) beside a red **"No thanks"** button. "No thanks" opens a
+  small panel ("No problem, we won't contact you again. Mind telling us why?") with optional
+  reason chips + a feedback box → `POST /api/decline` → auto-sets the lead to **Not interested
+  (via mockup)** and shows a thank-you. See the Lead-statuses table below.
 - **WhatsApp + SMS** click-to-send (manual, mobiles only). Each send tags the link with the
   channel (`?c=w/s/e`).
 - **Editable templates** (per device): first message + follow-up, placeholders `{name}`
@@ -101,9 +106,12 @@ application form). The whole interface is hidden behind it until signed in.
   a **↩ Follow-up** button that opens the channel they engaged on.
 
 ### 📊 Performance dashboard
-- Stat cards (mockups made / messaged / opened+rate / demo clicks+rate), avg time-to-open,
-  by-channel open rates, **opens-by-hour & opens-by-day** charts (UK time, peak highlighted),
-  recent-activity table.
+- Stat cards (mockups made / messaged / mockup-viewed+rate / demo clicks+rate / 🤑 sign-ups+rate
+  / 🙅 Not interested (mockup)+rate-of-viewed, with a hover breakdown of *why* they declined),
+  avg time-to-open, by-channel open rates, **opens-by-hour & opens-by-day** charts (UK time, peak
+  highlighted), recent-activity table.
+- **Funnel:** Messaged → Viewed → Demo → Sign-up, each % converting from the stage above, with a
+  caption noting how many marked themselves not interested via the mockup.
 - **Insights split**: "📊 Based on your data" (computed) vs "💡 General tips" (static).
 - **Date range** (7 / 30 / all), **CSV export**, refresh.
 
@@ -187,11 +195,26 @@ application form). The whole interface is hidden behind it until signed in.
   mockups): contact details + one-tap Call / WhatsApp / Maps / View, engagement chips, Prowl
   status (view dossier or Prowl now), Pounce status (open site or build), Block, and the CRM
   block below. Uses `peek` on Prowl/Pounce so it never spends a credit just to check status.
-- **CRM status + notes:** a Status dropdown (New / Contacted / Doesn't answer / Interested /
-  Call back / Not interested / Invalid phone / Won / Lost) and a **timestamped notes log**
-  (server-side in `notes/<slug>.json`, so it persists and is shared across devices, unlike the
-  per-device messaged/blocked flags). Status shows as a colour chip in the Leads table, the
-  dashboard activity table, and Hot Lead cards (which dim for not-interested/lost/invalid-phone).
+- **CRM status + notes:** a Status dropdown and a **timestamped notes log** (server-side in
+  `notes/<slug>.json`, so it persists and is shared across devices, unlike the per-device
+  messaged/blocked flags). Status shows as a colour chip in the Leads table, the dashboard
+  activity table, and Hot Lead cards (which dim for not-interested / not-interested-via-mockup /
+  lost / invalid-phone). A lightweight `notes/_index.json` maps slug→status for cheap lookups.
+- **Lead statuses (what each means):**
+  | Value (internal) | Label shown | Meaning |
+  |---|---|---|
+  | `` (empty) | New | Not actioned yet. |
+  | `contacted` | Contacted | You've messaged them (manual). |
+  | `no-answer` | Doesn't answer | Tried to reach them, no reply. |
+  | `interested` | Interested | They've shown interest. |
+  | `callback` | Call back | Asked to be called back later. |
+  | `not-interested` | Not interested | **You** marked them not interested (manual, by Ajay). |
+  | `declined` | Not interested (via mockup) | **Auto-set** when the prospect clicks "No thanks" on their mockup preview. Kept as a separate value so Performance can split mockup-triggered from manual, but the label reads the same ("Not interested") for consistency. Icon 🙅 (not 🚫, which is Blocked). Their reason/feedback is saved to the notes. |
+  | `invalid-phone` | Invalid phone | Number doesn't work. |
+  | `won` | Won, customer | Converted to a paying customer. |
+  | `lost` | Lost | Was a prospect, didn't convert. |
+  > **Blocked** is *not* a status — it's a separate per-device flag (🚫) that hides a business and removes its outreach buttons. A lead can be both (e.g. blocked + not-interested).
+  > The decline flow is public (`POST /api/decline`, no auth, since the prospect isn't logged in): it records a `decline` event for Performance **and** sets the `declined` status with the reason. The authed `/api/note` whitelist also includes `declined`.
 - **👤 Leads view:** searchable, filterable table of every business worked (All / Prowled /
   Website built / Messaged / Not messaged / Opened / Blocked + a status dropdown). Each row opens
   the Lead Profile.
@@ -256,6 +279,7 @@ db.js       Neon Postgres pool+queries pounce.js    builds 1-page site → sites
 | `GET /api/view?slug=` |, | Preview page (`/v/:slug` rewrite) + tracking beacon. |
 | `GET /api/img?slug=` |, | Branded image proxy (`/i/:slug.png`; `?download=1` to save). Immutable-cached. |
 | `GET /api/track?slug=&e=&c=` |, | Records `view`/`cta`/`sent` + channel to Postgres. Bot-filtered. |
+| `POST /api/decline` |, | **Public** (no auth). Prospect clicked "No thanks" on their mockup: records a `decline` event + sets the lead's status to `declined` (Not interested via mockup) with their reason/feedback in the notes. |
 | `GET /api/mockups` | ✅ | All mockups + engagement stats + last-open channel. |
 | `GET /api/dashboard?days=` | ✅ | Aggregated stats + insights (date-range filtered). |
 | `GET /api/hotleads` | ✅ | Demo-clickers + contact details (from mockup metadata). |
@@ -293,7 +317,7 @@ was removed (legacy).
 
 ### Neon Postgres
 ```sql
-link_events (id BIGSERIAL, slug TEXT, event TEXT['view'|'cta'|'sent'],
+link_events (id BIGSERIAL, slug TEXT, event TEXT['view'|'cta'|'sent'|'signup'|'decline'],
              ts TIMESTAMPTZ, ua TEXT, platform TEXT['w'|'s'|'e'])   -- tracking
 applications (id, created, name, email, phone, jobtitle, business,
               website, role, volume, channels, why)                 -- founding applicants
