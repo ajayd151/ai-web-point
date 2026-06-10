@@ -422,6 +422,8 @@ tr.tr-blocked td { background: #fafafa; }
 .dash-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-align: center; box-shadow: var(--shadow); }
 .dash-card.signup { background: linear-gradient(120deg, #f0fdf4, #ecfdf5); border-color: #86efac; }
 .dash-card.signup .dc-num { color: #16a34a; }
+.dash-sub { font-size: 13px; margin: 2px 0 12px; }
+.st-area { font-size: 12px; margin-top: 2px; }
 .recent-table tr.tr-signup td { background: #f0fdf4; font-weight: 600; }
 /* numbers (left) + funnel (right) */
 .dash-top { display: flex; gap: 20px; align-items: stretch; margin-bottom: 18px; }

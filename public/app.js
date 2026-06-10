@@ -769,6 +769,7 @@ async function loadServerMockups() {
       lastOpen: m.lastOpen || null,
       ctaClicks: m.ctaClicks || 0,
       signups: m.signups || 0,
+      sent: m.sent || 0,
       platform: m.platform || '',
     }));
     renderRecent();
@@ -1549,6 +1550,32 @@ function dashBars(items, labelFn, valFn, highlightMax) {
     return `<div class="dash-barwrap" title="${esc(String(labelFn(it, true)))}: ${v}"><div class="dash-bar${hot}" style="height:${ht}px"></div><span class="dash-blabel">${esc(String(labelFn(it)))}</span></div>`;
   }).join('') + '</div>';
 }
+// "By search type": group every mockup by niche + area, show pipeline counts
+function bySearchTypeHTML() {
+  let list = [];
+  try { list = mergedRecent(); } catch (e) { list = []; }
+  if (!list.length) return '';
+  const groups = new Map();
+  list.forEach((r) => {
+    const niche = titleCaseIndustry(r.category || '') || '(unknown)';
+    const area = r.location || '';
+    const key = niche + '||' + area;
+    const g = groups.get(key) || { niche, area, made: 0, messaged: 0, opened: 0, demo: 0, signup: 0 };
+    g.made++;
+    if ((r.sent || 0) > 0 || recentSentVia(r)) g.messaged++;
+    if ((r.opens || 0) > 0) g.opened++;
+    if ((r.ctaClicks || 0) > 0) g.demo++;
+    if ((r.signups || 0) > 0) g.signup++;
+    groups.set(key, g);
+  });
+  const rows = Array.from(groups.values()).sort((a, b) => b.messaged - a.messaged || b.made - a.made);
+  const tr = rows.map((g) => {
+    const rate = g.messaged ? Math.round((g.opened / g.messaged) * 100) : 0;
+    return `<tr><td><b>${esc(g.niche)}</b>${g.area ? '<div class="muted st-area">📍 ' + esc(g.area) + '</div>' : ''}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${g.demo > 0 ? '🔥 ' + g.demo : g.demo}</td><td>${g.signup > 0 ? '🤑 ' + g.signup : g.signup}</td></tr>`;
+  }).join('');
+  return '<div class="dash-table-wrap"><h3>By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. Open % is of those you messaged. Sorted by most messaged.</p>' +
+    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Opened</th><th>Demo clicks</th><th>Sign-up clicks</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+}
 function renderDashboard(d) {
   const body = $('dash-body');
   if (!d || d.configured === false) {
@@ -1624,7 +1651,7 @@ function renderDashboard(d) {
     table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
       '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Demo click</th><th>Sign-up click</th><th>Status</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
-  body.innerHTML = insights + top + channelBlock + hourChart + dayChart + table + tips +
+  body.innerHTML = insights + top + bySearchTypeHTML() + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
   const rb = $('dash-refresh'); if (rb) rb.addEventListener('click', loadDashboard);
 }
