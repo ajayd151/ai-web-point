@@ -671,7 +671,7 @@ function unblockKey(key) {
 }
 function confirmBlock(b, after) {
   if (!b || !b.name) return;
-  if (!confirm('Block ' + b.name + '?\n\nThey will be hidden from searches and you will not be able to message them. You can unblock later from Messages, Blocked contacts.')) return;
+  if (!confirm('Block ' + b.name + '?\n\nThey will be hidden from searches and you will not be able to message them. You can unblock later from Templates, Blocked contacts.')) return;
   blockBiz(b);
   if (typeof after === 'function') after();
 }
