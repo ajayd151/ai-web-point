@@ -108,7 +108,7 @@ module.exports = async (req, res) => {
   <h1>A website preview for ${who ? '<span class="who">' + esc(who) + '</span> · ' : ''}${esc(name)}${loc ? ' · ' + esc(loc) : ''}</h1>
   <p class="sub">Here's a free home-page concept we designed for you.</p>
   <a href="${esc(demo)}" class="demo" target="_blank" rel="noopener"><img src="${esc(imgSrc)}" alt="Website mockup for ${esc(name)}"/></a>
-  <p class="cta-nudge">👇 Like your new website${who ? ', ' + esc(who) : ''}? Let's make it real:</p>
+  <p class="cta-nudge">👇 Like your free website mockup${who ? ', ' + esc(who) : ''}? I've gone ahead and built the full website for you. Can I show it to you? Click the YES button below.</p>
   <div class="cta-row">
     <a class="cta demo" href="${esc(demo)}" target="_blank" rel="noopener">📞 Yes, I'd like a demo for ${esc(name)} &rarr;</a>
     <button class="nothanks" id="nothanks" type="button">No thanks</button>
