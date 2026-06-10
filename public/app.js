@@ -244,7 +244,8 @@ function sortResults(list) {
   if (mode === 'default') return list;
   const arr = list.slice();
   const msgAt = (b) => { const mi = messagedInfo(b); return mi && mi.at ? new Date(mi.at).getTime() : null; };
-  if (mode === 'az') arr.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  if (mode === 'notmsg') arr.sort((a, b) => (messagedInfo(a) ? 1 : 0) - (messagedInfo(b) ? 1 : 0)); // un-messaged first (stable)
+  else if (mode === 'az') arr.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
   else if (mode === 'za') arr.sort((a, b) => String(b.name || '').localeCompare(String(a.name || '')));
   else if (mode === 'msg-asc' || mode === 'msg-desc') {
     arr.sort((a, b) => { const x = msgAt(a); const y = msgAt(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return mode === 'msg-asc' ? x - y : y - x; });
