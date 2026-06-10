@@ -1560,20 +1560,26 @@ function bySearchTypeHTML() {
     const niche = titleCaseIndustry(r.category || '') || '(unknown)';
     const area = r.location || '';
     const key = niche + '||' + area;
-    const g = groups.get(key) || { niche, area, made: 0, messaged: 0, opened: 0, demo: 0, signup: 0 };
+    const g = groups.get(key) || { niche, area, made: 0, messaged: 0, opened: 0, demo: 0, signup: 0, demoNames: [], signupNames: [] };
     g.made++;
     if ((r.sent || 0) > 0 || recentSentVia(r)) g.messaged++;
     if ((r.opens || 0) > 0) g.opened++;
-    if ((r.ctaClicks || 0) > 0) g.demo++;
-    if ((r.signups || 0) > 0) g.signup++;
+    if ((r.ctaClicks || 0) > 0) { g.demo++; if (r.name) g.demoNames.push(r.name); }
+    if ((r.signups || 0) > 0) { g.signup++; if (r.name) g.signupNames.push(r.name); }
     groups.set(key, g);
   });
   const rows = Array.from(groups.values()).sort((a, b) => b.messaged - a.messaged || b.made - a.made);
   const tr = rows.map((g) => {
     const rate = g.messaged ? Math.round((g.opened / g.messaged) * 100) : 0;
-    return `<tr><td><b>${esc(g.niche)}</b>${g.area ? '<div class="muted st-area">📍 ' + esc(g.area) + '</div>' : ''}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${g.demo > 0 ? '🔥 ' + g.demo : g.demo}</td><td>${g.signup > 0 ? '🤑 ' + g.signup : g.signup}</td></tr>`;
+    const demoCell = g.demo > 0
+      ? `<span class="hovname" title="Clicked Request a demo: ${esc(g.demoNames.join(', '))}">🔥 ${g.demo}</span>`
+      : g.demo;
+    const signupCell = g.signup > 0
+      ? `<span class="hovname" title="Clicked Sign me up: ${esc(g.signupNames.join(', '))}">🤑 ${g.signup}</span>`
+      : g.signup;
+    return `<tr><td><b>${esc(g.niche)}</b>${g.area ? '<div class="muted st-area">📍 ' + esc(g.area) + '</div>' : ''}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${demoCell}</td><td>${signupCell}</td></tr>`;
   }).join('');
-  return '<div class="dash-table-wrap"><h3>By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. Open % is of those you messaged. Sorted by most messaged.</p>' +
+  return '<div class="dash-table-wrap"><h3>🔎 By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. Open % is of those you messaged. Sorted by most messaged.</p>' +
     '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Viewed</th><th>Demo clicks</th><th>Sign-up clicks</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
 function renderDashboard(d) {
@@ -1606,7 +1612,7 @@ function renderDashboard(d) {
     { label: 'Signup clicks', n: t.signups || 0, color: '#16a34a' },
   ];
   const FW = [100, 80, 62, 46, 32]; // visual widths so it always tapers like a funnel
-  const funnel = '<div class="dash-funnel"><h3>Funnel</h3><div class="funnel">' +
+  const funnel = '<div class="dash-funnel"><h3>🪜 Funnel</h3><div class="funnel">' +
     F.map((s, i) => {
       const wt = i === 0 ? FW[0] : FW[i - 1];
       const wb = FW[i];
@@ -1621,16 +1627,16 @@ function renderDashboard(d) {
   const tips = '<div class="dash-tips"><h3>💡 General tips <span class="muted">(best practice, not your data)</span></h3><ul>' +
     GENERIC_TIPS.map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
   const channelBlock = (ch.w.sent || ch.s.sent)
-    ? '<div class="dash-chan"><h3>By channel</h3>' +
+    ? '<div class="dash-chan"><h3>📨 By channel</h3>' +
       `<div class="dash-chrow"><span>📱 WhatsApp</span><span>${ch.w.opened}/${ch.w.sent} opened · <b>${ch.w.rate}%</b></span></div>` +
       `<div class="dash-chrow"><span>💬 SMS</span><span>${ch.s.opened}/${ch.s.sent} opened · <b>${ch.s.rate}%</b></span></div></div>`
     : '';
   const hourChart = t.opened > 0
-    ? '<div class="dash-chart"><h3>Opens by hour <span class="muted">(UK time)</span></h3>' +
+    ? '<div class="dash-chart"><h3>⏰ Opens by hour <span class="muted">(UK time)</span></h3>' +
       dashBars(d.opensByHour, (it, full) => (full || it.h % 4 === 0 ? fmtHourClient(it.h) : ''), (it) => it.n, true) + '</div>'
     : '';
   const dayChart = t.opened > 0
-    ? '<div class="dash-chart"><h3>Opens by day</h3>' +
+    ? '<div class="dash-chart"><h3>📅 Opens by day</h3>' +
       dashBars(d.opensByDow, (it) => dowName(it.d), (it) => it.n, true) + '</div>'
     : '';
   let table = '';
@@ -1649,7 +1655,7 @@ function renderDashboard(d) {
       const statusCell = blocked ? '<span class="lchip blk">🚫 Blocked</span>' : (stKey ? `<span class="lchip ${statusClass(stKey)}">${esc(statusLabel(stKey))}</span>` : '<span class="muted">·</span>');
       return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td><button class="lead-name" data-slug="${esc(r.slug)}" data-name="${esc(r.name)}">${esc(r.name)}</button></td><td>${esc(via || '·')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td><td>${statusCell}</td></tr>`;
     }).join('');
-    table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
+    table = '<div class="dash-table-wrap"><h3>🕒 Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
       '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Viewed</th><th>Demo click</th><th>Sign-up click</th><th>Status</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
   body.innerHTML = insights + top + bySearchTypeHTML() + channelBlock + hourChart + dayChart + table + tips +
