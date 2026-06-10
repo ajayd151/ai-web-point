@@ -5,7 +5,7 @@ _Last updated: 2026-06-10_
 Site Pounce is a lead-generation, outreach **and sales-intelligence** platform for a
 web-design agency. It finds local businesses with **no website**, generates a
 professional **AI mockup** of their homepage, lets you **send & track** it, surfaces
-**hot leads**, and builds a **sales-intelligence dossier** (and, coming, a full live
+**warm leads**, and builds a **sales-intelligence dossier** (and, coming, a full live
 website) for each prospect.
 
 - **Product brand (the tool):** **Site Pounce**, `sitepounce.com`
@@ -35,12 +35,12 @@ with four views (`#view-*` divs toggled by `showView()` in `app.js`):
 | Nav | What it is |
 |---|---|
 | **🔍 Search** | Find leads → results → generate mockups → recent searches/mockups |
-| **💬 Messages** | Edit the first-message / follow-up / CTA wording (saved per device) |
+| **💬 Templates** | Edit the first-message / follow-up / CTA wording (saved per device) + Blocked contacts |
 | **📊 Performance** | Dashboard: stats, insights, charts, CSV, date-range (lazy-loads) |
-| **🔥 Hot Leads** | Prospects who requested a demo, with a live count badge + actions |
-| **👤 Leads** | Every business worked: searchable/filterable table (Prowled / Website built / Messaged / Blocked); each row opens the Lead Profile |
+| **🌡️ Warm Leads** | Prospects who requested a demo, with a live count badge + actions |
+| **👤 All Leads** | Every business worked: searchable/filterable table (Prowled / Website built / Messaged / Blocked); each row opens the Lead Profile |
 
-**Lead Profile popup:** click any business name (Leads, Hot Leads, dashboard activity, Recent
+**Lead Profile popup:** click any business name (Leads, Warm Leads, dashboard activity, Recent
 mockups) to open a profile with contact details + one-tap **Call / WhatsApp / Maps / View
 preview**, engagement chips, **Prowl** status (view dossier or Prowl now), **Pounce** status
 (open website or build), and Block/Unblock. Uses `peek` mode on `/api/prowl` + `/api/pounce`
@@ -92,11 +92,11 @@ application form). The whole interface is hidden behind it until signed in.
 - **Messaged tracking** (per device, by Google place id): cards show "✓ You messaged them
   via WhatsApp (date·time) & SMS (…)", accumulates channels with timestamps. The
   "Already messaged" filter excludes them from new searches so you dig for fresh leads.
-- **🚫 Block (do-not-contact):** a Block button on search-result cards, Hot Lead cards and
+- **🚫 Block (do-not-contact):** a Block button on search-result cards, Warm Lead cards and
   Recent mockups rows (e.g. someone replied "No"). Blocked businesses **never appear in search
   results** (server `excludeIds` by place id + client filter by name+location) and their
-  **outreach buttons are removed** (Blocked state + Unblock shown in Hot Leads / Recent).
-  Managed in **Messages → 🚫 Blocked contacts** (list + Unblock). Per device (`aiwp_blocked`).
+  **outreach buttons are removed** (Blocked state + Unblock shown in Warm Leads / Recent).
+  Managed in **Templates → 🚫 Blocked contacts** (list + Unblock). Per device (`aiwp_blocked`).
 
 ### Engagement tracking
 - A JS beacon on the preview page logs **opens (`view`)** and **demo-CTA clicks (`cta`)** to
@@ -115,11 +115,11 @@ application form). The whole interface is hidden behind it until signed in.
 - **Insights split**: "📊 Based on your data" (computed) vs "💡 General tips" (static).
 - **Date range** (7 / 30 / all), **CSV export**, refresh.
 
-### 🔥 Hot Leads
+### 🌡️ Warm Leads
 - Prospects who clicked the demo CTA, enriched with phone/name/location.
 - Per card: **📱 WhatsApp / 📞 Call / 📍 Maps / View ↗ / 🐾 Prowl / 🐆 Pounce**.
 - **Nav count badge** + **animated tab-title alert**, `Site Pounce (N)` when looking,
-  **flashes** "🔥 (N) hot leads!" when you're on another tab; 3-min poll keeps it fresh.
+  **flashes** "🌡️ (N) warm leads!" when you're on another tab; 3-min poll keeps it fresh.
 
 ### 🐾 Prowl, lead-intelligence dossier
 - On-demand sales recon per lead. Sources: **Google Places** (live reviews/score, top-3
@@ -131,7 +131,7 @@ application form). The whole interface is hidden behind it until signed in.
 - Rate-limited (`LIMIT_PROWL`, default 20/12h).
 
 ### 🐆 Pounce, one-click website builder (LIVE)
-- **Available from anywhere a business appears:** Hot Lead cards, the **Recent mockups** table
+- **Available from anywhere a business appears:** Warm Lead cards, the **Recent mockups** table
   (per-row 🐾 Prowl / 🐆 Pounce / Open / Regenerate), **search-result cards once a mockup
   exists**, and a CTA inside the Prowl dossier. Hot-lead status is **not** required.
 - Clicking 🐆 Pounce opens an **optional pre-build questions** step (skippable): accent colour,
@@ -156,7 +156,7 @@ application form). The whole interface is hidden behind it until signed in.
 - **Preview "Yes, sign me up" bar:** a sticky, AWP-branded sales bar shown **only in preview
   mode** (vanishes when `mode:'published'`) linking to `SUBSCRIBE_URL` (default
   `aiwebpoint.com/subscribe`) `+ ?source=<slug>`. The click fires a **`signup`** tracking event
-  (the hottest signal) which is surfaced in Hot Leads (pinned, green badge, tab-title alert) and
+  (the hottest signal) which is surfaced in Warm Leads (pinned, green badge, tab-title alert) and
   the Performance dashboard (🤑 Sign-ups stat + conversion rate + CSV).
 - **Photo intelligence (don't regress):** GMB photos are often poor (logos, receipts, plain
   storefronts). `rankPhotos()` runs **gpt-4o-mini vision** over every Google photo (512px,
@@ -190,15 +190,15 @@ application form). The whole interface is hidden behind it until signed in.
   selectable templates, SEO-tier dropdown, AI-prompt editor for revisions, the publish flow
   (flip `mode`→`published`, custom domain) + GHL handoff (review system/CRM) at conversion.
 
-### 👤 Leads, CRM status & CSV exports
-- **Lead Profile popup** (click any business name in Leads / Hot Leads / dashboard / Recent
+### 👤 All Leads, CRM status & CSV exports
+- **Lead Profile popup** (click any business name in Leads / Warm Leads / dashboard / Recent
   mockups): contact details + one-tap Call / WhatsApp / Maps / View, engagement chips, Prowl
   status (view dossier or Prowl now), Pounce status (open site or build), Block, and the CRM
   block below. Uses `peek` on Prowl/Pounce so it never spends a credit just to check status.
 - **CRM status + notes:** a Status dropdown and a **timestamped notes log** (server-side in
   `notes/<slug>.json`, so it persists and is shared across devices, unlike the per-device
   messaged/blocked flags). Status shows as a colour chip in the Leads table, the dashboard
-  activity table, and Hot Lead cards (which dim for not-interested / not-interested-via-mockup /
+  activity table, and Warm Lead cards (which dim for not-interested / not-interested-via-mockup /
   lost / invalid-phone). A lightweight `notes/_index.json` maps slug→status for cheap lookups.
 - **Lead statuses (what each means):**
   | Value (internal) | Label shown | Meaning |
@@ -215,7 +215,7 @@ application form). The whole interface is hidden behind it until signed in.
   | `lost` | Lost | Was a prospect, didn't convert. |
   > **Blocked** is *not* a status — it's a separate per-device flag (🚫) that hides a business and removes its outreach buttons. A lead can be both (e.g. blocked + not-interested).
   > The decline flow is public (`POST /api/decline`, no auth, since the prospect isn't logged in): it records a `decline` event for Performance **and** sets the `declined` status with the reason. The authed `/api/note` whitelist also includes `declined`.
-- **👤 Leads view:** searchable, filterable table of every business worked (All / Prowled /
+- **👤 All Leads view:** searchable, filterable table of every business worked (All / Prowled /
   Website built / Messaged / Not messaged / Opened / Blocked + a status dropdown). Each row opens
   the Lead Profile.
 - **CSV export** on the Leads tab and the Search results, both rich: Search adds website Yes/No,
@@ -398,11 +398,11 @@ per-account setting (`LINK_DOMAIN`).
 ## 11. Roadmap
 
 - **✅ Done:** lead finder, AI mockups, WhatsApp+SMS send, branded links, messaged-tracking,
-  engagement tracking, **Performance dashboard** (incl. 🤑 Sign-ups stat), **Hot Leads** + tab
+  engagement tracking, **Performance dashboard** (incl. 🤑 Sign-ups stat), **Warm Leads** + tab
   alert + signup-clicker surfacing, **🐾 Prowl**, **🐆 Pounce** (full 1-page website builder, live,
   pre-build questions, accreditations, FAQ, service-area map, Google rating widget, sticky mobile
   bar, preview-only "Yes, sign me up" bar + `signup` tracking, auto-runs Prowl, noindex previews +
-  tidy-up registry). Prowl/Pounce reachable from Hot Leads, Recent mockups, and search results.
+  tidy-up registry). Prowl/Pounce reachable from Warm Leads, Recent mockups, and search results.
 - **🔜 Pounce v2, client photo upload (top item):** let the business send their own photos
   (incl. **before / after** shots) to use in the gallery, the honest way to do real before/after
   rather than faking with stock. Then: 3 selectable templates, SEO-tier dropdown, AI-prompt
@@ -411,7 +411,7 @@ per-account setting (`LINK_DOMAIN`).
 - **🔜 Payments:** subscribe/checkout page built in **Lovable** at `aiwebpoint.com/subscribe`
   (3 tiers, each = Stripe Payment Link combining one-off **setup** + **monthly**; `?source=<slug>`
   → `client_reference_id` for attribution; Stripe promotion codes for discounts). Bar already
-  points there. Optional later: Stripe webhook → flag a lead as "paying customer" in Hot Leads.
+  points there. Optional later: Stripe webhook → flag a lead as "paying customer" in Warm Leads.
 - **🔜 Companies House**, add the free key to enrich Prowl (established/director/type).
 - **🔮 Later:** Prowl Phase B (Trustpilot/Facebook/competitor-gap web search),
   tidy-up admin UI (bulk-delete stale previews), per-keyword dashboard breakdowns,
@@ -447,7 +447,7 @@ that produce user-facing text are instructed accordingly.
 ```
 /public
   index.html   gate/landing + top-nav views + modals
-  app.js       all UI logic (search, generate, send, tracking, dashboard, hot leads, prowl, pounce)
+  app.js       all UI logic (search, generate, send, tracking, dashboard, warm leads, prowl, pounce)
   styles.css   all styles
   data.js      client BizData helpers (isUkMobile, phone chips)
   favicon.svg  SP gradient icon

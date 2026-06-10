@@ -618,7 +618,7 @@ function recordSendServer(channel) {
 // record the send channel + mark the business as messaged when you click a send button
 $('wa-send').addEventListener('click', () => { recordSentVia(currentSlug, 'w'); markMessaged(currentBusiness, 'w'); recordSendServer('w'); });
 $('sms-send').addEventListener('click', () => { recordSentVia(currentSlug, 's'); markMessaged(currentBusiness, 's'); recordSendServer('s'); });
-// record a send from ANY surface (hot leads, lead profile, follow-up) so the
+// record a send from ANY surface (warm leads, lead profile, follow-up) so the
 // "messaged" stat is accurate, not just the original preview button
 function trackSentServer(slug, channel) {
   if (!slug) return;
@@ -653,7 +653,7 @@ function markMessaged(b, channel) {
 }
 
 // ---- block list (do-not-contact, per device) -----------------------------
-// Keyed by name+location (stable across search results, hot leads & mockups),
+// Keyed by name+location (stable across search results, warm leads & mockups),
 // storing the Google place id too so the server can exclude blocked leads.
 function loadBlocked() { try { return JSON.parse(localStorage.getItem('aiwp_blocked') || '{}'); } catch (e) { return {}; } }
 function blockKey(b) { return 'nm:' + String((b && b.name) || '').toLowerCase().trim() + '|' + String((b && b.location) || '').toLowerCase().trim(); }
@@ -1029,7 +1029,7 @@ function exportDashboardCsv(rows) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
-// ---- hot leads (its own page) ----
+// ---- warm leads (its own page) ----
 let lastHotLeads = [];
 // exact stored Google Maps URL if we have it, else a name+location search link
 function mapsLink(l) {
@@ -1074,7 +1074,7 @@ function renderHotLeads(list) {
   signupCount = lastHotLeads.filter((l) => l.signupAt).length;
   updateTabTitle();
   const body = $('hot-body');
-  if (!n) { body.innerHTML = '<div class="empty">No hot leads yet. When a prospect opens their preview and clicks "Request a demo", or "Yes, sign me up", they\'ll appear here with their contact details, ready to follow up.</div>'; return; }
+  if (!n) { body.innerHTML = '<div class="empty">No warm leads yet. When a prospect opens their preview and clicks "Request a demo", or "Yes, sign me up", they\'ll appear here with their contact details, ready to follow up.</div>'; return; }
   const intro = signupCount
     ? `<p class="muted view-sub"><b>🤑 ${signupCount} ${signupCount === 1 ? 'prospect' : 'prospects'} clicked “Sign me up”</b>, call these first. Below them, prospects who clicked "Request a demo".</p>`
     : '<p class="muted view-sub">These prospects opened their preview and clicked "Request a demo", your warmest leads. Follow up fast.</p>';
@@ -1520,7 +1520,7 @@ async function exportSearchCsv() {
   downloadCsv('search-results.csv', header, rows);
 }
 
-// ---- tab-title alert: flashes when you have hot leads + are on another tab ----
+// ---- tab-title alert: flashes when you have warm leads + are on another tab ----
 let titleTimer = null;
 const BASE_TITLE = document.title;
 function updateTabTitle() {
@@ -1529,7 +1529,7 @@ function updateTabTitle() {
   const settled = `Site Pounce (${hotCount})`;
   const alertMsg = signupCount > 0
     ? `🤑 (${signupCount}) want to sign up!`
-    : `🔥 (${hotCount}) hot ${hotCount === 1 ? 'lead' : 'leads'}!`;
+    : `🌡️ (${hotCount}) warm ${hotCount === 1 ? 'lead' : 'leads'}!`;
   if (document.hidden) {
     let on = false;
     document.title = alertMsg;
