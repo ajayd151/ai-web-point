@@ -145,99 +145,125 @@ async function refreshFeedback(btn, action) {
 }
 $('refresh-results').addEventListener('click', (e) => refreshFeedback(e.currentTarget, () => renderResults(lastSearchResults)));
 $('export-results').addEventListener('click', exportSearchCsv);
+$('loadmore-btn').addEventListener('click', loadMoreResults);
+$('sort-order').addEventListener('change', () => renderResults(lastSearchResults));
 ['industry', 'location'].forEach((id) =>
   $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); })
 );
 
+let lastSearchParams = null; // {industry, location, filters} so Load more can repeat it
+let lastBatchFull = false;   // was the last batch a full page (more may exist)?
+function currentSearchFilters() {
+  const starBuckets = Array.from(document.querySelectorAll('.f-star:checked')).map((c) => Number(c.value));
+  const num = (id) => ($(id).value === '' ? null : Number($(id).value));
+  return { website: $('f-website').value, phone: $('f-phone').value, email: $('f-email').value, ratingsFrom: num('f-ratingsFrom'), ratingsTo: num('f-ratingsTo'), starBuckets };
+}
+function searchExcludeIds() {
+  const messagedMode = $('f-messaged').value;
+  let ids = [];
+  if (messagedMode && messagedMode !== 'any') {
+    const m = loadMessaged();
+    const cutoff = messagedMode === '3m' ? (Date.now() - 90 * 24 * 3600 * 1000) : 0;
+    ids = Object.keys(m).filter((k) => k.indexOf('id:') === 0 && new Date(m[k].at).getTime() >= cutoff).map((k) => k.slice(3));
+  }
+  const blockedIds = Object.values(loadBlocked()).map((r) => r.placeId).filter(Boolean);
+  return Array.from(new Set(ids.concat(blockedIds)));
+}
 async function runSearch() {
   const industry = $('industry').value.trim();
   const location = $('location').value.trim();
   if (!industry || !location) { alert('Please enter both an industry and a location.'); return; }
-  const starBuckets = Array.from(document.querySelectorAll('.f-star:checked')).map((c) => Number(c.value));
-  const num = (id) => ($(id).value === '' ? null : Number($(id).value));
-  const filters = {
-    website: $('f-website').value,
-    phone: $('f-phone').value,
-    email: $('f-email').value,
-    ratingsFrom: num('f-ratingsFrom'),
-    ratingsTo: num('f-ratingsTo'),
-    starBuckets,
-  };
-  // exclude businesses you've already messaged (so the server digs for fresh ones)
-  const messagedMode = $('f-messaged').value;
-  let excludeIds = [];
-  if (messagedMode && messagedMode !== 'any') {
-    const m = loadMessaged();
-    const cutoff = messagedMode === '3m' ? (Date.now() - 90 * 24 * 3600 * 1000) : 0;
-    excludeIds = Object.keys(m)
-      .filter((k) => k.indexOf('id:') === 0 && new Date(m[k].at).getTime() >= cutoff)
-      .map((k) => k.slice(3));
+  lastSearchParams = { industry, location, filters: currentSearchFilters() };
+  await doSearch(false);
+}
+async function loadMoreResults() { if (lastSearchParams) await doSearch(true); }
+async function doSearch(append) {
+  if (!lastSearchParams) return;
+  const { industry, location, filters } = lastSearchParams;
+  const limit = Number($('f-limit').value || 20);
+  let excludeIds = searchExcludeIds();
+  if (append) {
+    // exclude the ones already shown so Google digs deeper / into nearby areas
+    const shown = lastSearchResults.map((b) => b.id).filter(Boolean);
+    excludeIds = Array.from(new Set(excludeIds.concat(shown)));
   }
-  // always exclude blocked businesses (do-not-contact) from the server query
-  const blockedIds = Object.values(loadBlocked()).map((r) => r.placeId).filter(Boolean);
-  excludeIds = Array.from(new Set(excludeIds.concat(blockedIds)));
-
-  const btn = $('searchBtn');
+  const btn = append ? $('loadmore-btn') : $('searchBtn');
   btn.disabled = true;
-  btn.textContent = 'Searching…';
-  $('summary').classList.remove('hidden');
-  $('summary').textContent = `Searching Google for ${industry} in ${location}…`;
-  $('results').innerHTML = '';
-
+  btn.textContent = append ? 'Loading…' : 'Searching…';
+  if (!append) {
+    $('summary').classList.remove('hidden');
+    $('summary').textContent = `Searching Google for ${industry} in ${location}…`;
+    $('results').innerHTML = '';
+    lastSearchResults = [];
+  }
   try {
-    const resp = await fetch('/api/search', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ industry, location, limit: Number($('f-limit').value || 20), filters, excludeIds }),
-    });
+    const resp = await fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ industry, location, limit, filters, excludeIds }) });
     const data = await resp.json();
     if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
     if (!resp.ok) throw new Error(data.error || 'Search failed');
     const results = data.results || [];
-    const scanned = data.scanned || results.length;
-    const primaryLoc = data.primaryLocation || location;
-    const expanded = data.expandedLocations || [];
-    const areaWord = expanded.length === 1 ? 'area' : 'areas';
-    let summary;
-    if (results.length === 0) {
-      const areasNote = expanded.length ? `, plus ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}),` : '';
-      summary = `No ${industry} in ${primaryLoc}${areasNote} matched your filters, I scanned ${scanned} Google listings. Try loosening them: set Phone to "Has phone" (not "Mobile only"), or Website to "Any". Well-established businesses (solicitors, accountants, etc.) nearly all have a website, so "No website" + "Mobile only" together often returns nothing.`;
-    } else if (expanded.length) {
-      const primaryCount = data.primaryCount != null ? data.primaryCount : 0;
-      summary = `🚀 Deep search complete! ${primaryLoc} only had ${primaryCount}, so I didn't stop there, I expanded the hunt across ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}) and combed through ${scanned} listings to bring you ${results.length} ready-to-contact leads. 🔥`;
+    lastBatchFull = results.length >= limit;
+    if (append) {
+      const have = new Set(lastSearchResults.map((b) => b.id));
+      const fresh = results.filter((b) => !have.has(b.id));
+      lastSearchResults = lastSearchResults.concat(fresh);
+      if (!fresh.length) lastBatchFull = false;
     } else {
-      summary = `✅ Nailed it, ${results.length} ${industry} in ${primaryLoc} matched your filters. I combed through ${scanned} Google listings to find them.`;
+      lastSearchResults = results;
+      const scanned = data.scanned || results.length;
+      const primaryLoc = data.primaryLocation || location;
+      const expanded = data.expandedLocations || [];
+      const areaWord = expanded.length === 1 ? 'area' : 'areas';
+      let summary;
+      if (results.length === 0) {
+        const areasNote = expanded.length ? `, plus ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}),` : '';
+        summary = `No ${industry} in ${primaryLoc}${areasNote} matched your filters, I scanned ${scanned} Google listings. Try loosening them: set Phone to "Has phone" (not "Mobile only"), or Website to "Any". Well-established businesses (solicitors, accountants, etc.) nearly all have a website, so "No website" + "Mobile only" together often returns nothing.`;
+      } else if (expanded.length) {
+        const primaryCount = data.primaryCount != null ? data.primaryCount : 0;
+        summary = `🚀 Deep search complete! ${primaryLoc} only had ${primaryCount}, so I didn't stop there, I expanded the hunt across ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}) and combed through ${scanned} listings to bring you ${results.length} ready-to-contact leads. 🔥`;
+      } else {
+        summary = `✅ Nailed it, ${results.length} ${industry} in ${primaryLoc} matched your filters. I combed through ${scanned} Google listings to find them.`;
+      }
+      $('summary').textContent = summary;
+      saveRecentSearch({ date: new Date().toISOString(), industry, location, filters, matched: data.matched != null ? data.matched : results.length, limit });
+      renderRecentSearches();
     }
-    $('summary').textContent = summary;
-    renderResults(results);
-    saveRecentSearch({
-      date: new Date().toISOString(),
-      industry: industry,
-      location: location,
-      filters: filters,
-      matched: data.matched != null ? data.matched : results.length,
-      limit: Number($('f-limit').value || 20),
-    });
-    renderRecentSearches();
+    renderResults(lastSearchResults);
+    if (append && !lastBatchFull) { $('summary').textContent = $('summary').textContent + ' (That is everything Google has for this search.)'; }
   } catch (err) {
-    $('summary').textContent = '';
-    $('results').innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`;
+    if (append) { alert(err.message || 'Could not load more.'); }
+    else { $('summary').textContent = ''; $('results').innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`; }
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Search businesses';
+    btn.textContent = append ? '⬇ Load more results' : 'Search businesses';
   }
 }
 
+function sortResults(list) {
+  const mode = $('sort-order') ? $('sort-order').value : 'default';
+  if (mode === 'default') return list;
+  const arr = list.slice();
+  const msgAt = (b) => { const mi = messagedInfo(b); return mi && mi.at ? new Date(mi.at).getTime() : null; };
+  if (mode === 'az') arr.sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+  else if (mode === 'za') arr.sort((a, b) => String(b.name || '').localeCompare(String(a.name || '')));
+  else if (mode === 'msg-asc' || mode === 'msg-desc') {
+    arr.sort((a, b) => { const x = msgAt(a); const y = msgAt(b); if (x == null && y == null) return 0; if (x == null) return 1; if (y == null) return -1; return mode === 'msg-asc' ? x - y : y - x; });
+  }
+  return arr;
+}
 function renderResults(list) {
   lastSearchResults = list || [];
-  $('refresh-results').classList.toggle('hidden', !(list && list.length));
-  $('export-results').classList.toggle('hidden', !(list && list.length));
+  const has = lastSearchResults.length > 0;
+  $('refresh-results').classList.toggle('hidden', !has);
+  $('export-results').classList.toggle('hidden', !has);
+  $('sort-order').classList.toggle('hidden', !has);
+  $('loadmore-wrap').classList.toggle('hidden', !(has && lastBatchFull));
   // index generated mockups so each result can show its status
   try { recentIndex = new Map(mergedRecent().map((r) => [normKey(r.name, r.location), r])); } catch (e) { recentIndex = new Map(); }
   const root = $('results');
   root.innerHTML = '';
-  if (!list.length) { root.innerHTML = '<div class="empty">No businesses match these filters. Try loosening them.</div>'; return; }
-  const shown = list.filter((b) => !isBlocked(b)); // hide do-not-contact businesses
+  if (!has) { root.innerHTML = '<div class="empty">No businesses match these filters. Try loosening them.</div>'; return; }
+  const shown = sortResults(lastSearchResults.filter((b) => !isBlocked(b))); // hide do-not-contact, then sort
   if (!shown.length) { root.innerHTML = '<div class="empty">Every match here is on your blocked list. Try a different search.</div>'; return; }
   shown.forEach((b) => root.appendChild(card(b)));
 }
@@ -289,6 +315,23 @@ function card(b) {
   btn.textContent = rec ? 'Regenerate mockup' : 'Generate website mockup';
   btn.addEventListener('click', () => openGenerateModal(b));
   el.appendChild(btn);
+
+  // follow-up button: only once you've messaged them, and only after 24h
+  if (mi) {
+    const at = mi.at ? new Date(mi.at).getTime() : 0;
+    const ready = at && (Date.now() - at) >= 24 * 3600 * 1000;
+    const fb = document.createElement('button');
+    fb.className = 'card-followup';
+    if (ready && rec) {
+      fb.textContent = '↩ Send follow-up message';
+      fb.title = 'Opens WhatsApp/SMS with your follow-up message pre-filled, you press send';
+      fb.addEventListener('click', () => doFollowUp(rec));
+    } else {
+      fb.disabled = true;
+      fb.textContent = ready ? '↩ Follow-up: open the mockup to send' : '↩ Follow-up unlocks 24h after your first message';
+    }
+    el.appendChild(fb);
+  }
 
   // once a mockup exists, you can Prowl + Pounce this business straight from here
   if (rec) {

@@ -239,10 +239,20 @@
 
     <div class="results-bar">
       <section id="summary" class="summary hidden"></section>
+      <select id="sort-order" class="sort-order hidden" title="Sort the results">
+        <option value="default">Sort: default (best match)</option>
+        <option value="az">Company A to Z</option>
+        <option value="za">Company Z to A</option>
+        <option value="msg-asc">Messaged: oldest first</option>
+        <option value="msg-desc">Messaged: newest first</option>
+      </select>
       <button id="export-results" class="refresh-btn hidden" title="Download all these results as a CSV (company, website, phones, email, ratings, address)">⬇ Export CSV</button>
       <button id="refresh-results" class="refresh-btn hidden" title="Refresh the list, re-checks who you've messaged. No new search, no cost.">↻ Refresh</button>
     </div>
     <section id="results" class="results"></section>
+    <div id="loadmore-wrap" class="loadmore-wrap hidden">
+      <button id="loadmore-btn" class="primary loadmore-btn">⬇ Load more results</button>
+    </div>
 
     <section id="recent-searches" class="panel recent hidden">
       <div class="recent-head">

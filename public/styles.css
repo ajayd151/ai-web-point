@@ -296,6 +296,12 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .sent-yes { font-size: 12.5px; font-weight: 700; color: #15803d; }
 .sent-no { font-size: 12.5px; color: var(--muted); }
 /* Block / do-not-contact */
+.sort-order { margin-top: 18px; padding: 8px 11px; border: 1px solid var(--line); border-radius: 10px; font: inherit; font-weight: 600; font-size: 13px; background: #fff; cursor: pointer; }
+.loadmore-wrap { display: flex; justify-content: center; margin: 18px 0 4px; }
+.loadmore-btn { padding: 12px 28px; }
+.card-followup { margin-top: 8px; width: 100%; background: #eef3fb; border: 1px solid var(--line); color: var(--blue); font-weight: 700; font-size: 13px; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
+.card-followup:hover:not(:disabled) { background: #e2ebf8; }
+.card-followup:disabled { background: #f6f8fc; color: var(--muted); cursor: not-allowed; font-weight: 600; }
 .card-block { margin-top: 8px; width: 100%; background: #fff; border: 1px solid var(--line); color: #b91c1c; font-weight: 600; font-size: 13px; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
 .card-block:hover { background: #fef2f2; }
 .hl-card.hl-blocked { background: #fafafa; border-style: dashed; opacity: .85; }
