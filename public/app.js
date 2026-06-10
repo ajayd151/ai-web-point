@@ -1653,10 +1653,14 @@ function renderDashboard(d) {
     (d.insights || []).map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
   const tips = '<div class="dash-tips"><h3>💡 General tips <span class="muted">(best practice, not your data)</span></h3><ul>' +
     GENERIC_TIPS.map((s) => `<li>${esc(s)}</li>`).join('') + '</ul></div>';
+  const chanRow = (icon, name, c) =>
+    `<div class="dash-chrow"><span>${icon} ${name}</span>` +
+    `<span><b>${c.rate}%</b> viewed <span class="muted">(${c.opened} of ${c.sent} sent were viewed)</span></span></div>`;
   const channelBlock = (ch.w.sent || ch.s.sent)
     ? '<div class="dash-chan"><h3>📨 By channel</h3>' +
-      `<div class="dash-chrow"><span>📱 WhatsApp</span><span>${ch.w.opened}/${ch.w.sent} opened · <b>${ch.w.rate}%</b></span></div>` +
-      `<div class="dash-chrow"><span>💬 SMS</span><span>${ch.s.opened}/${ch.s.sent} opened · <b>${ch.s.rate}%</b></span></div></div>`
+      '<p class="muted dash-sub">Of the previews you sent on each channel, how many got viewed. Compare the % to see whether WhatsApp or SMS gets more people to open and look.</p>' +
+      chanRow('📱', 'WhatsApp', ch.w) +
+      chanRow('💬', 'SMS', ch.s) + '</div>'
     : '';
   const hourChart = t.opened > 0
     ? '<div class="dash-chart"><h3>⏰ Opens by hour <span class="muted">(UK time)</span></h3>' +
