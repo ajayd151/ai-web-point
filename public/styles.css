@@ -46,7 +46,8 @@ body {
 .navbtn:hover { background: #f1f4f9; }
 .navbtn.active { background: linear-gradient(90deg, var(--blue), var(--mauve)); color: #fff; border-color: transparent; }
 .navbadge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #ef4444; color: #fff; font-size: 12px; font-weight: 800; margin-left: 4px; }
-.view-title { margin: 0 0 2px; font-size: 19px; }
+.view-title { margin: 0 0 10px; font-size: 27px; font-weight: 800; letter-spacing: -.4px; color: var(--ink); }
+.view-title::after { content: ''; display: block; width: 60px; height: 4px; margin-top: 10px; border-radius: 3px; background: linear-gradient(90deg, var(--blue), var(--mauve)); }
 .view-sub { margin: 0 0 16px; }
 .dash-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
 .dash-range { display: flex; gap: 6px; }
@@ -238,7 +239,7 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 
 .recent { margin-top: 18px; }
 .recent-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.recent-title { margin: 0; font-size: 17px; }
+.recent-title { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.3px; color: var(--ink); }
 .recent-scroll { max-height: 360px; overflow: auto; margin-top: 8px; }
 .recent-table { width: 100%; border-collapse: collapse; font-size: 14px; }
 .recent-table thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: var(--muted); font-weight: 700; padding: 6px 10px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; }
@@ -263,11 +264,11 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 /* performance dashboard */
 .dash-body { padding-top: 12px; }
 .dash-insights { background: linear-gradient(120deg, rgba(67,117,237,.08), rgba(196,133,177,.08)); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
-.dash-insights h3 { margin: 0 0 8px; font-size: 15px; }
+.dash-insights h3 { margin: 0 0 10px; font-size: 18px; font-weight: 800; color: var(--blue); }
 .dash-insights ul { margin: 0; padding-left: 18px; }
 .dash-insights li { font-size: 14px; line-height: 1.75; color: var(--ink); }
 .dash-hot { background: linear-gradient(120deg, #fff4ec, #ffeef4); border: 1px solid #fcd9c2; border-radius: 12px; padding: 14px 16px; margin-bottom: 18px; }
-.dash-hot h3 { margin: 0 0 10px; font-size: 15px; color: #c2410c; }
+.dash-hot h3 { margin: 0 0 10px; font-size: 18px; font-weight: 800; color: #c2410c; }
 .hl-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; border: 1px solid #fcd9c2; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; flex-wrap: wrap; }
 .hl-card:last-child { margin-bottom: 0; }
 .hl-card.hl-signup { border: 2px solid #16a34a; background: linear-gradient(120deg, #f0fdf4, #ecfdf5); box-shadow: 0 6px 18px rgba(22,163,74,.14); }
@@ -416,7 +417,7 @@ tr.tr-blocked td { background: #fafafa; }
 .dos-open p { margin: 0; font-size: 14px; line-height: 1.6; }
 .dos-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; }
 .dash-tips { background: #f8fafc; border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; margin-bottom: 18px; }
-.dash-tips h3 { margin: 0 0 8px; font-size: 14px; }
+.dash-tips h3 { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: var(--ink); }
 .dash-tips ul { margin: 0; padding-left: 18px; }
 .dash-tips li { font-size: 13px; line-height: 1.7; color: var(--muted); }
 .dash-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
@@ -432,7 +433,7 @@ tr.tr-blocked td { background: #fafafa; }
 .dash-top { display: flex; gap: 20px; align-items: stretch; margin-bottom: 18px; }
 .dash-top .dash-cards { flex: 1; margin-bottom: 0; align-content: start; }
 .dash-funnel { flex: 0 0 300px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); }
-.dash-funnel h3 { margin: 0 0 14px; font-size: 15px; }
+.dash-funnel h3 { margin: 0 0 14px; font-size: 18px; font-weight: 800; color: var(--ink); }
 .funnel { display: flex; flex-direction: column; align-items: stretch; }
 .fn-seg { height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; line-height: 1.12; text-align: center; }
 .fn-seg + .fn-seg { margin-top: -1px; }
@@ -454,8 +455,11 @@ tr.tr-blocked td { background: #fafafa; }
 .dc-num { font-size: 30px; font-weight: 800; color: var(--blue); line-height: 1; }
 .dc-lab { font-size: 12.5px; color: var(--muted); margin-top: 6px; font-weight: 700; }
 .dc-sub { display: block; font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; }
-.dash-chan, .dash-chart, .dash-table-wrap { margin-bottom: 18px; }
-.dash-chan h3, .dash-chart h3, .dash-table-wrap h3 { font-size: 14px; margin: 0 0 10px; }
+.dash-chan, .dash-chart, .dash-table-wrap { margin-bottom: 18px; margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--line); }
+.dash-chan h3, .dash-chart h3, .dash-table-wrap h3 { font-size: 20px; font-weight: 800; letter-spacing: -.3px; color: var(--ink); margin: 0 0 4px; padding-left: 14px; position: relative; }
+.dash-chan h3::before, .dash-chart h3::before, .dash-table-wrap h3::before { content: ''; position: absolute; left: 0; top: 2px; bottom: 2px; width: 5px; border-radius: 3px; background: linear-gradient(180deg, var(--blue), var(--mauve)); }
+.dash-chan h3 .muted, .dash-chart h3 .muted, .dash-table-wrap h3 .muted { font-size: 14px; font-weight: 600; }
+.dash-table-wrap .dash-sub { padding-left: 14px; }
 .dash-chrow { display: flex; justify-content: space-between; padding: 7px 2px; border-bottom: 1px solid var(--line); font-size: 14px; }
 .dash-chrow:last-child { border-bottom: none; }
 .dash-bars { display: flex; align-items: flex-end; gap: 3px; height: 100px; }
