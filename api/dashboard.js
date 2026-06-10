@@ -30,11 +30,19 @@ module.exports = async (req, res) => {
 
   // CRM statuses (slug -> status) from the notes index
   let statuses = {};
+  const declineReasonCount = {};
   try {
     const { blobs } = await list({ prefix: 'notes/_index.json' });
     const b = blobs.find((x) => x.pathname === 'notes/_index.json');
-    if (b) { const idx = await (await fetch(b.url + '?t=' + Date.now())).json(); for (const k in idx) { if (idx[k] && idx[k].status) statuses[k] = idx[k].status; } }
+    if (b) {
+      const idx = await (await fetch(b.url + '?t=' + Date.now())).json();
+      for (const k in idx) {
+        if (idx[k] && idx[k].status) statuses[k] = idx[k].status;
+        if (idx[k] && idx[k].status === 'declined' && idx[k].declineReason) declineReasonCount[idx[k].declineReason] = (declineReasonCount[idx[k].declineReason] || 0) + 1;
+      }
+    }
   } catch (e) { /* ignore */ }
+  const declineReasons = Object.keys(declineReasonCount).map((r) => ({ reason: r, n: declineReasonCount[r] })).sort((a, b) => b.n - a.n);
 
   const d = await dashboardData(since);
   if (!d) { res.status(200).json({ configured: false, generated, statuses }); return; }
@@ -45,8 +53,10 @@ module.exports = async (req, res) => {
   const opened = (counts.view && counts.view.slugs) || 0;
   const demoClicks = (counts.cta && counts.cta.slugs) || 0;
   const signups = (counts.signup && counts.signup.slugs) || 0;
+  const declined = (counts.decline && counts.decline.slugs) || 0;
   const openRate = sent ? Math.round((opened / sent) * 100) : 0;
   const demoRate = sent ? Math.round((demoClicks / sent) * 100) : 0;
+  const declineRate = opened ? Math.round((declined / opened) * 100) : 0;
   const signupRate = sent ? Math.round((signups / sent) * 100) : 0;
 
   const ch = { w: { sent: 0, opened: 0, rate: 0 }, s: { sent: 0, opened: 0, rate: 0 } };
@@ -106,14 +116,19 @@ module.exports = async (req, res) => {
     if (signups > 0) {
       insights.push(`🤑 ${signups} ${signups === 1 ? 'prospect' : 'prospects'} clicked "Yes, sign me up" on a preview, your hottest signal. Call them before anything else.`);
     }
+    if (declined > 0) {
+      const top = declineReasons[0];
+      insights.push(`🚫 ${declined} ${declined === 1 ? 'prospect' : 'prospects'} clicked "No thanks" on the preview${top ? ` (top reason: "${top.reason}")` : ''}. They are auto-marked Declined, so you will not chase them.`);
+    }
   }
 
   res.status(200).json({
     configured: true,
     generated,
     statuses,
-    totals: { generated, sent, opened, demoClicks, signups },
-    rates: { openRate, demoRate, signupRate },
+    declineReasons,
+    totals: { generated, sent, opened, demoClicks, signups, declined },
+    rates: { openRate, demoRate, signupRate, declineRate },
     avgTtoMin: avgTto,
     byChannel: ch,
     opensByHour: hours,

@@ -352,6 +352,7 @@ tr.tr-blocked td { background: #fafafa; }
 .lchip.st-callback { background: #fffbeb; color: #b45309; border-color: #fde68a; }
 .lchip.st-no-answer { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
 .lchip.st-not-interested { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+.lchip.st-declined { background: #fdf2f8; color: #9d174d; border-color: #fbcfe8; }
 .lchip.st-invalid-phone { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
 .lchip.st-won { background: #16a34a; color: #fff; border-color: transparent; }
 .lchip.st-lost { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
@@ -422,6 +423,8 @@ tr.tr-blocked td { background: #fafafa; }
 .dash-card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-align: center; box-shadow: var(--shadow); }
 .dash-card.signup { background: linear-gradient(120deg, #f0fdf4, #ecfdf5); border-color: #86efac; }
 .dash-card.signup .dc-num { color: #16a34a; }
+.dash-card.declined { background: linear-gradient(120deg, #fdf2f8, #fef2f2); border-color: #fbcfe8; }
+.dash-card.declined .dc-num { color: #be185d; }
 .dash-sub { font-size: 13px; margin: 2px 0 12px; }
 .st-area { font-size: 12px; margin-top: 2px; }
 .recent-table tr.tr-signup td { background: #f0fdf4; font-weight: 600; }
