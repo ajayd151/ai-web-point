@@ -308,7 +308,7 @@ was removed (legacy).
 
 ### Vercel Blob
 - `mockups/<slug>.png`, final mockup image.
-- `mockups/<slug>.json`, `{ name, loc, who, cta, img, phone, category }`.
+- `mockups/<slug>.json`, `{ name, loc, searchLoc, who, cta, img, phone, category }` (`searchLoc` = the core location you typed; `loc` may be an auto-expanded nearby town).
 - `dossiers/<slug>.json`, cached Prowl dossier.
 - `sites/<slug>.json`, generated Pounce site content + `mode` (`preview`/`published`) +
   `createdAt`. **This prefix is the preview registry** (`GET /api/sites` lists it).

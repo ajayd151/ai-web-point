@@ -28,6 +28,7 @@ module.exports = async (req, res) => {
             date: b.uploadedAt,
             name: m.name || '',
             loc: m.loc || '',
+            searchLoc: m.searchLoc || '',
             who: m.who || '',
             category: m.category || '',
             phone: m.phone || '',

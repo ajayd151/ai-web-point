@@ -437,6 +437,7 @@ async function runGeneration(business, requirements, personName) {
       name: business.name,
       category: business.category,
       location: business.location,
+      searchLoc: business.searchLoc || '',
       phones: business.phones || [],
       personName: personName,
       imageUrl: data.imageUrl,
@@ -761,6 +762,7 @@ async function loadServerMockups() {
       name: m.name,
       category: m.category || '',
       location: m.loc || '',
+      searchLoc: m.searchLoc || '',
       phones: m.phone ? [m.phone] : [],
       personName: m.who || '',
       imageUrl: m.img,
@@ -1560,7 +1562,8 @@ function bySearchTypeHTML() {
     const niche = titleCaseIndustry(r.category || '') || '(unknown)';
     const area = r.location || '';
     const key = niche + '||' + area;
-    const g = groups.get(key) || { niche, area, made: 0, messaged: 0, opened: 0, demo: 0, signup: 0, demoNames: [], signupNames: [] };
+    const g = groups.get(key) || { niche, area, made: 0, messaged: 0, opened: 0, demo: 0, signup: 0, demoNames: [], signupNames: [], searchLocs: new Set() };
+    if (r.searchLoc) g.searchLocs.add(r.searchLoc);
     g.made++;
     if ((r.sent || 0) > 0 || recentSentVia(r)) g.messaged++;
     if ((r.opens || 0) > 0) g.opened++;
@@ -1577,9 +1580,18 @@ function bySearchTypeHTML() {
     const signupCell = g.signup > 0
       ? `<span class="hovname" title="Clicked Sign me up: ${esc(g.signupNames.join(', '))}">🤑 ${g.signup}</span>`
       : g.signup;
-    return `<tr><td><b>${esc(g.niche)}</b>${g.area ? '<div class="muted st-area">📍 ' + esc(g.area) + '</div>' : ''}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${demoCell}</td><td>${signupCell}</td></tr>`;
+    // show the core location you searched, with the lead's actual town in brackets
+    // (the area may be an auto-expanded nearby town, e.g. you searched Wolverhampton, lead is in Dudley)
+    const core = Array.from(g.searchLocs).find((c) => c && c.toLowerCase() !== (g.area || '').toLowerCase());
+    let locHtml = '';
+    if (g.area) {
+      locHtml = core
+        ? '<div class="muted st-area">📍 ' + esc(core) + ' <span class="st-exp">(' + esc(g.area) + ')</span></div>'
+        : '<div class="muted st-area">📍 ' + esc(g.area) + '</div>';
+    }
+    return `<tr><td><b>${esc(g.niche)}</b>${locHtml}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${demoCell}</td><td>${signupCell}</td></tr>`;
   }).join('');
-  return '<div class="dash-table-wrap"><h3>🔎 By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. Open % is of those you messaged. Sorted by most messaged.</p>' +
+  return '<div class="dash-table-wrap"><h3>🔎 By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. The location is what you searched, with the lead\'s actual town in brackets if it differs (auto-expanded nearby). Mockup viewed % is of those you messaged. Sorted by most messaged.</p>' +
     '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Mockup viewed</th><th>Demo clicks</th><th>Sign-up clicks</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
 function renderDashboard(d) {

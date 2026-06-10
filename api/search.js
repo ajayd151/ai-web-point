@@ -164,6 +164,7 @@ module.exports = async (req, res) => {
           category,
           industry,
           location: area,
+          searchLoc: location, // the core location you typed (area may be an auto-expanded nearby town)
           address: p.formattedAddress || area,
           phones: phone ? [phone] : [],
           email: null, // Google does not expose email
