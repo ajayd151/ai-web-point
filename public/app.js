@@ -778,10 +778,10 @@ async function loadServerMockups() {
 function engagementBadge(r) {
   if ((r.ctaClicks || 0) > 0) return '<span class="eng hot">🔥 Demo clicked</span>';
   if ((r.opens || 0) > 0) {
-    return `<span class="eng seen">✓ Opened${r.opens > 1 ? ' ×' + r.opens : ''}</span>` +
+    return `<span class="eng seen">👁 Viewed${r.opens > 1 ? ' ×' + r.opens : ''}</span>` +
       (r.lastOpen ? `<div class="eng-when">${esc(fmtDate(r.lastOpen))}</div>` : '');
   }
-  return '<span class="eng none">Not opened yet</span>';
+  return '<span class="eng none">Not viewed yet</span>';
 }
 function renderRecent() {
   const list = mergedRecent();
@@ -1011,7 +1011,7 @@ async function loadDashboard(days) {
 function csvCell(v) { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
 function exportDashboardCsv(rows) {
   if (!rows || !rows.length) { alert('No activity to export yet.'); return; }
-  const head = ['Business', 'Sent via', 'Sent (UK)', 'Opened (UK)', 'Opens', 'Demo click', 'Sign-up click', 'Status'];
+  const head = ['Business', 'Sent via', 'Sent (UK)', 'Viewed (UK)', 'Opens', 'Demo click', 'Sign-up click', 'Status'];
   const lines = [head.map(csvCell).join(',')];
   const statuses = (lastDashboard && lastDashboard.statuses) || {};
   const recMap = new Map(); try { mergedRecent().forEach((x) => recMap.set(x.id, x)); } catch (e) { /* ignore */ }
@@ -1322,7 +1322,7 @@ function renderLeadShell(l) {
   const eng = [];
   if (l.signupAt) eng.push('🤑 Clicked Sign Up');
   if ((l.ctaClicks || 0) > 0 || l.demoAt) eng.push('🔥 Requested a demo');
-  if ((l.opens || 0) > 0) eng.push('✓ Opened' + (l.opens > 1 ? ' ×' + l.opens : ''));
+  if ((l.opens || 0) > 0) eng.push('👁 Viewed' + (l.opens > 1 ? ' ×' + l.opens : '') + (l.lastOpen ? ' · ' + fmtDate(l.lastOpen) : ''));
   const engHtml = eng.length ? `<div class="lead-eng">${eng.map((e) => `<span class="lead-chip">${esc(e)}</span>`).join('')}</div>` : '';
   return `<div class="lead-sub">${l.category ? esc(titleCaseIndustry(l.category)) + ' · ' : ''}${esc(l.location || '')}${phone ? '' : ' · <span class="muted">no phone on file</span>'}</div>` +
     (blocked ? '<div class="lead-blocked">🚫 This contact is blocked (do not contact).</div>' : '') +
@@ -1442,7 +1442,7 @@ function renderLeads() {
     if (st) chips.push(`<span class="lchip ${statusClass(st)}">${esc(statusLabel(st))}</span>`);
     if (recentSentVia(r)) chips.push('<span class="lchip ok">✓ Messaged</span>');
     if ((r.ctaClicks || 0) > 0) chips.push('<span class="lchip hot">🔥 Demo</span>');
-    else if ((r.opens || 0) > 0) chips.push('<span class="lchip">✓ Opened</span>');
+    else if ((r.opens || 0) > 0) chips.push('<span class="lchip">👁 Viewed</span>');
     if (pro.has(r.id)) chips.push('<span class="lchip prowl">🐾 Prowled</span>');
     if (pou.has(r.id)) chips.push('<span class="lchip pounce">🐆 Site</span>');
     if (isBlocked(r)) chips.push('<span class="lchip blk">🚫 Blocked</span>');
@@ -1476,7 +1476,7 @@ function exportLeadsCsv() {
   const pro = leadsData ? leadsData.prowled : new Set();
   const pou = leadsData ? leadsData.pounced : new Set();
   const statuses = (leadsData && leadsData.statuses) || {};
-  const header = ['Business', 'Person name', 'Location', 'Category', 'Phone', 'Google Maps', 'Status', 'Messaged via', 'Opened', 'Last opened', 'Demo click', 'Sign-up click', 'Prowled', 'Website built', 'Blocked', 'Preview URL'];
+  const header = ['Business', 'Person name', 'Location', 'Category', 'Phone', 'Google Maps', 'Status', 'Messaged via', 'Viewed', 'Last viewed', 'Demo click', 'Sign-up click', 'Prowled', 'Website built', 'Blocked', 'Preview URL'];
   const rows = filteredLeads().map((r) => [
     r.name || '', r.personName || '', r.location || '', r.category || '', (r.phones && r.phones[0]) || '', r.mapsUrl || '',
     statuses[r.id] ? statusLabel(statuses[r.id]) : '',
@@ -1494,7 +1494,7 @@ async function exportSearchCsv() {
   if (!leadsData) { try { const r = await fetch('/api/leads'); const d = await r.json(); leadsData = { prowled: new Set(d.prowled || []), pounced: new Set(d.pounced || []), statuses: d.statuses || {} }; } catch (e) { leadsData = { prowled: new Set(), pounced: new Set(), statuses: {} }; } }
   const pro = leadsData.prowled; const pou = leadsData.pounced; const statuses = leadsData.statuses || {};
   const recMap = new Map(); try { mergedRecent().forEach((x) => recMap.set(normKey(x.name, x.location), x)); } catch (e) { /* ignore */ }
-  const header = ['Company', 'Category', 'Location', 'Address', 'Has website', 'Website', 'Phone(s)', 'Mobile?', 'Email', 'Star rating', 'Number of ratings', 'Google Maps', 'Status', 'Mockup made', 'Messaged via', 'Opened', 'Demo click', 'Sign-up click', 'Prowled', 'Website built'];
+  const header = ['Company', 'Category', 'Location', 'Address', 'Has website', 'Website', 'Phone(s)', 'Mobile?', 'Email', 'Star rating', 'Number of ratings', 'Google Maps', 'Status', 'Mockup made', 'Messaged via', 'Viewed', 'Demo click', 'Sign-up click', 'Prowled', 'Website built'];
   const rows = list.map((b) => {
     const phones = (b.phones || []);
     const anyMobile = phones.some((p) => window.BizData.isUkMobile(p));
@@ -1574,7 +1574,7 @@ function bySearchTypeHTML() {
     return `<tr><td><b>${esc(g.niche)}</b>${g.area ? '<div class="muted st-area">📍 ' + esc(g.area) + '</div>' : ''}</td><td>${g.made}</td><td>${g.messaged}</td><td>${g.opened}${g.messaged ? ' <span class="muted">(' + rate + '%)</span>' : ''}</td><td>${g.demo > 0 ? '🔥 ' + g.demo : g.demo}</td><td>${g.signup > 0 ? '🤑 ' + g.signup : g.signup}</td></tr>`;
   }).join('');
   return '<div class="dash-table-wrap"><h3>By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. Open % is of those you messaged. Sorted by most messaged.</p>' +
-    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Opened</th><th>Demo clicks</th><th>Sign-up clicks</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Viewed</th><th>Demo clicks</th><th>Sign-up clicks</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
 function renderDashboard(d) {
   const body = $('dash-body');
@@ -1592,7 +1592,7 @@ function renderDashboard(d) {
     '<div class="dash-cards">' +
     `<div class="dash-card pop-host"><div class="dc-num">${t.generated}</div><div class="dc-lab">Mockups made</div>${pop('mockups', 'Website mockups you have generated.', mockNames)}</div>` +
     `<div class="dash-card pop-host"><div class="dc-num">${t.sent}</div><div class="dc-lab">Businesses messaged</div>${pop('messaged', 'Businesses you have sent a preview to (WhatsApp, SMS or email).', namesOf((r) => r.sentAt))}</div>` +
-    `<div class="dash-card pop-host"><div class="dc-num">${t.opened}</div><div class="dc-lab">Opened<span class="dc-sub">${rates.openRate}% open rate</span></div>${pop('opened', 'They opened their preview link at least once.', namesOf((r) => r.openedAt))}</div>` +
+    `<div class="dash-card pop-host"><div class="dc-num">${t.opened}</div><div class="dc-lab">Mockup viewed<span class="dc-sub">${rates.openRate}% view rate</span></div>${pop('mockup views', 'They clicked the link in your message and viewed their mockup (tracked with date/time).', namesOf((r) => r.openedAt))}</div>` +
     `<div class="dash-card pop-host"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div>${pop('demo clicks', 'Clicked "Request a demo" on their preview, which opens your booking page. A click showing interest, not a confirmed booking.', namesOf((r) => (r.demoClicks || 0) > 0))}</div>` +
     `<div class="dash-card signup pop-host"><div class="dc-num">🤑 ${t.signups || 0}</div><div class="dc-lab">Sign-up clicks<span class="dc-sub">${rates.signupRate || 0}% of sent</span></div>${pop('sign-up clicks', 'Clicked "Yes, sign me up" on their preview, which opens your subscribe page. A strong intent click, not a payment yet.', namesOf((r) => r.signedUp))}</div>` +
     '</div>';
@@ -1600,7 +1600,7 @@ function renderDashboard(d) {
   const F = [
     { label: 'Mockups', n: t.generated, color: '#6366f1' },
     { label: 'Messaged', n: t.sent, color: '#3b82f6' },
-    { label: 'Opened', n: t.opened, color: '#0ea5e9' },
+    { label: 'Viewed', n: t.opened, color: '#0ea5e9' },
     { label: 'Demos', n: t.demoClicks, color: '#f59e0b' },
     { label: 'Signup clicks', n: t.signups || 0, color: '#16a34a' },
   ];
@@ -1649,7 +1649,7 @@ function renderDashboard(d) {
       return `<tr${r.signedUp ? ' class="tr-signup"' : ''}><td><button class="lead-name" data-slug="${esc(r.slug)}" data-name="${esc(r.name)}">${esc(r.name)}</button></td><td>${esc(via || '·')}</td><td>${esc(sent)}</td><td>${opened}</td><td>${demo}</td><td>${signed}</td><td>${statusCell}</td></tr>`;
     }).join('');
     table = '<div class="dash-table-wrap"><h3>Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
-      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Opened</th><th>Demo click</th><th>Sign-up click</th><th>Status</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+      '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Viewed</th><th>Demo click</th><th>Sign-up click</th><th>Status</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
   body.innerHTML = insights + top + bySearchTypeHTML() + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';

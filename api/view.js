@@ -81,9 +81,11 @@ module.exports = async (req, res) => {
   h1{font-size:23px;font-weight:700;margin:10px 0 4px}
   p.sub{color:#9fb0c7;margin:0 0 22px}
   img{width:100%;height:auto;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.5);display:block}
-  .cta{display:inline-block;margin-top:28px;padding:17px 34px;border-radius:999px;color:#fff;font-weight:700;
-       text-decoration:none;background:linear-gradient(90deg,${BRAND_BLUE},${BRAND_MAUVE});font-size:18px}
-  .cta:hover{filter:brightness(1.06)}
+  .cta-nudge{margin:32px 0 0;color:#cdd8ec;font-size:17px;font-weight:600}
+  .cta{display:inline-flex;align-items:center;gap:10px;margin-top:12px;padding:20px 44px;border-radius:14px;color:#06230f;font-weight:800;
+       text-decoration:none;background:linear-gradient(135deg,#34d399,#16a34a);font-size:20px;box-shadow:0 14px 34px rgba(22,163,74,.5);animation:ctapulse 2s infinite}
+  .cta:hover{transform:translateY(-2px);filter:brightness(1.05)}
+  @keyframes ctapulse{0%,100%{box-shadow:0 14px 34px rgba(22,163,74,.4)}50%{box-shadow:0 14px 44px rgba(22,163,74,.78)}}
   .foot{margin-top:30px;color:#7e8ca3;font-size:13px;line-height:1.6}
   .logo{display:inline-flex;align-items:center;gap:10px;font-weight:700;margin-bottom:12px;font-size:18px}
   .badge{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,${BRAND_BLUE},${BRAND_MAUVE});
@@ -95,7 +97,8 @@ module.exports = async (req, res) => {
   <h1>A website preview for ${who ? '<span class="who">' + esc(who) + '</span> · ' : ''}${esc(name)}${loc ? ' · ' + esc(loc) : ''}</h1>
   <p class="sub">Here's a free home-page concept we designed for you.</p>
   <a href="${esc(demo)}" class="demo" target="_blank" rel="noopener"><img src="${esc(imgSrc)}" alt="Website mockup for ${esc(name)}"/></a>
-  <div><a class="cta demo" href="${esc(demo)}" target="_blank" rel="noopener">${esc(cta)} &rarr;</a></div>
+  <p class="cta-nudge">👇 Like it? Let's make it real:</p>
+  <div><a class="cta demo" href="${esc(demo)}" target="_blank" rel="noopener">📞 ${esc(cta)} &rarr;</a></div>
   <p class="foot">Designed by <a href="${agencyUrl}" target="_blank" rel="noopener">${AGENCY}</a>. Prefer to talk? We'll walk you through the full website over a quick call.</p>
 </div>${slug ? `<script>
 (function(){var s=${JSON.stringify(slug)};

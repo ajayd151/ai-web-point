@@ -80,7 +80,7 @@ module.exports = async (req, res) => {
   if (sent === 0) {
     insights.push('No sends logged yet, message a few businesses (WhatsApp/SMS) and your stats will start building here automatically.');
   } else {
-    insights.push(`You've messaged ${sent} ${sent === 1 ? 'business' : 'businesses'}; ${opened} opened the preview, a ${openRate}% open rate.`);
+    insights.push(`You've messaged ${sent} ${sent === 1 ? 'business' : 'businesses'}; ${opened} viewed their mockup, a ${openRate}% view rate.`);
     if (avgTto != null) {
       insights.push(avgTto < 90
         ? `People typically open within about ${avgTto} minute${avgTto === 1 ? '' : 's'} of you sending.`
@@ -96,7 +96,7 @@ module.exports = async (req, res) => {
     }
     if (ch.w.sent >= 3 && ch.s.sent >= 3) {
       const better = ch.w.rate >= ch.s.rate ? 'WhatsApp' : 'SMS';
-      insights.push(`${better} is converting better so far, WhatsApp ${ch.w.rate}% vs SMS ${ch.s.rate}% open rate.`);
+      insights.push(`${better} is converting better so far, WhatsApp ${ch.w.rate}% vs SMS ${ch.s.rate}% view rate.`);
     }
     if (demoClicks > 0) {
       insights.push(`${demoClicks} ${demoClicks === 1 ? 'prospect' : 'prospects'} clicked "Request a demo", chase those first, they're warmest.`);
