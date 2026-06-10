@@ -1357,7 +1357,7 @@ function renderLeadStatus(l, dossier, pounce) {
   const bk = q('.lead-block'); if (bk) bk.addEventListener('click', () => confirmBlock(l, () => { $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); }));
   const ub = q('.lead-unblock'); if (ub) ub.addEventListener('click', () => { unblockKey(blockKey(l)); $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); });
 }
-const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"], ['interested', 'Interested'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['declined', 'Declined via preview'], ['invalid-phone', 'Invalid phone'], ['won', 'Won, customer'], ['lost', 'Lost']];
+const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"], ['interested', 'Interested'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'], ['invalid-phone', 'Invalid phone'], ['won', 'Won, customer'], ['lost', 'Lost']];
 function statusLabel(s) { const f = LEAD_STATUSES.find((x) => x[0] === (s || '')); return f ? f[1] : 'New'; }
 function statusClass(s) { return 'st-' + (s || 'new'); }
 function renderLeadNotes(l, note) {
@@ -1595,7 +1595,7 @@ function renderDashboard(d) {
     `<div class="dash-card pop-host"><div class="dc-num">${t.opened}</div><div class="dc-lab">Mockup viewed<span class="dc-sub">${rates.openRate}% view rate</span></div>${pop('mockup views', 'They clicked the link in your message and viewed their mockup (tracked with date/time).', namesOf((r) => r.openedAt))}</div>` +
     `<div class="dash-card pop-host"><div class="dc-num">${t.demoClicks}</div><div class="dc-lab">Demo clicks<span class="dc-sub">${rates.demoRate}% of sent</span></div>${pop('demo clicks', 'Clicked "Request a demo" on their preview, which opens your booking page. A click showing interest, not a confirmed booking.', namesOf((r) => (r.demoClicks || 0) > 0))}</div>` +
     `<div class="dash-card signup pop-host"><div class="dc-num">🤑 ${t.signups || 0}</div><div class="dc-lab">Sign-up clicks<span class="dc-sub">${rates.signupRate || 0}% of sent</span></div>${pop('sign-up clicks', 'Clicked "Yes, sign me up" on their preview, which opens your subscribe page. A strong intent click, not a payment yet.', namesOf((r) => r.signedUp))}</div>` +
-    `<div class="dash-card declined pop-host"><div class="dc-num">🚫 ${t.declined || 0}</div><div class="dc-lab">Declined<span class="dc-sub">${rates.declineRate || 0}% of viewed</span></div><div class="stat-pop"><p class="sp-def">Clicked "No thanks" on their preview. Auto-marked "Declined via preview" so you do not chase them.</p>${(d.declineReasons && d.declineReasons.length) ? '<b>Why</b><ul>' + d.declineReasons.map((x) => '<li>' + esc(x.reason) + ' (' + x.n + ')</li>').join('') + '</ul>' : '<span class="sp-none">No reasons given yet.</span>'}</div></div>` +
+    `<div class="dash-card declined pop-host"><div class="dc-num">🙅 ${t.declined || 0}</div><div class="dc-lab">Not interested (mockup)<span class="dc-sub">${rates.declineRate || 0}% of viewed</span></div><div class="stat-pop"><p class="sp-def">Clicked "No thanks" on their mockup. Auto-marked "Not interested (via mockup)" so you do not chase them. This is separate from the leads you mark not interested yourself.</p>${(d.declineReasons && d.declineReasons.length) ? '<b>Why</b><ul>' + d.declineReasons.map((x) => '<li>' + esc(x.reason) + ' (' + x.n + ')</li>').join('') + '</ul>' : '<span class="sp-none">No reasons given yet.</span>'}</div></div>` +
     '</div>';
   // colourful funnel: continuous trapezoids tapering top-to-bottom (a real funnel)
   const F = [
@@ -1613,7 +1613,7 @@ function renderDashboard(d) {
       const clip = `polygon(${50 - wt / 2}% 0, ${50 + wt / 2}% 0, ${50 + wb / 2}% 100%, ${50 - wb / 2}% 100%)`;
       const pct = i > 0 && F[i - 1].n ? Math.round((s.n / F[i - 1].n) * 100) : null;
       return `<div class="fn-seg" style="background:${s.color};-webkit-clip-path:${clip};clip-path:${clip}"><b>${s.n}</b><span>${esc(s.label)}${pct != null ? ' · ' + pct + '%' : ''}</span></div>`;
-    }).join('') + '</div><p class="fn-note">Each % is conversion from the stage above.' + (t.declined ? ' 🚫 ' + t.declined + ' declined via the preview.' : '') + '</p></div>';
+    }).join('') + '</div><p class="fn-note">Each % is conversion from the stage above.' + (t.declined ? ' 🙅 ' + t.declined + ' marked not interested via the mockup.' : '') + '</p></div>';
   const defnote = '<p class="dash-defnote">ⓘ <b>Demo clicks</b> = clicked "Request a demo" on their preview (opens your booking page). <b>Sign-up clicks</b> = clicked "Yes, sign me up" on their preview (opens your subscribe page). Both are interest clicks, <b>not</b> a confirmed booking or a payment. Hover any number to see who.</p>';
   const top = '<div class="dash-top">' + cards + funnel + '</div>' + defnote;
   const insights = '<div class="dash-insights"><h3>📊 Based on your data</h3><ul>' +

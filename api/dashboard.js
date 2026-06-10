@@ -118,7 +118,7 @@ module.exports = async (req, res) => {
     }
     if (declined > 0) {
       const top = declineReasons[0];
-      insights.push(`🚫 ${declined} ${declined === 1 ? 'prospect' : 'prospects'} clicked "No thanks" on the preview${top ? ` (top reason: "${top.reason}")` : ''}. They are auto-marked Declined, so you will not chase them.`);
+      insights.push(`🙅 ${declined} ${declined === 1 ? 'prospect' : 'prospects'} clicked "No thanks" on the mockup${top ? ` (top reason: "${top.reason}")` : ''}. They are auto-marked "Not interested (via mockup)", separate from the leads you mark not interested yourself, so you will not chase them.`);
     }
   }
 

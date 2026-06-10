@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
     data.status = 'declined';
     data.statusAt = now;
     data.comments = data.comments || [];
-    data.comments.push({ text: 'Declined via preview' + (reason ? ': ' + reason : '') + (feedback ? ', ' + feedback : ''), at: now });
+    data.comments.push({ text: 'Not interested (via mockup)' + (reason ? ': ' + reason : '') + (feedback ? ', ' + feedback : ''), at: now });
     data.declineReason = reason || '';
     await put(path, JSON.stringify(data), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
     const idxPath = 'notes/_index.json';
