@@ -116,7 +116,7 @@ module.exports = async (req, res) => {
   // 12-hour usage cap
   const rl = await checkAndRecord('search', Date.now());
   if (!rl.ok) {
-    res.status(429).json({ error: `Search limit reached (${rl.limit} searches per 12 hours). Try again in ~${rl.retryHours}h.` });
+    res.status(429).json({ error: `Search limit reached (${rl.limit} searches per ${rl.windowHours} hours). Try again in ~${rl.retryHours}h.` });
     return;
   }
 

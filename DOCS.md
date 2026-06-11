@@ -139,7 +139,7 @@ application form). The whole interface is hidden behind it until signed in.
   **Companies House** (established/director/type, when its key is set; degrades gracefully).
 - Output: competitor comparison table (you vs rivals: website / reviews / score), what-they-do
   chips, ammunition, opener. **Cached** as `dossiers/<slug>.json` (↩ Re-run to refresh).
-- Rate-limited (`LIMIT_PROWL`, default 20/12h).
+- Rate-limited (`LIMIT_PROWL`, default 30 per 20h).
 
 ### 🐆 Pounce, one-click website builder (LIVE)
 - **Available from anywhere a business appears:** Warm Lead cards, the **Recent mockups** table
@@ -189,7 +189,7 @@ application form). The whole interface is hidden behind it until signed in.
 - **Preview registry / tidy-up:** every build writes `sites/<slug>.json` with `mode:'preview'`
   + `createdAt`. **`GET /api/sites`** (login-gated) lists them all (slug, name, mode, createdAt,
   url) so old previews can be reviewed/cleaned in a later tidy-up session.
-- Rate-limited (`LIMIT_POUNCE`, default 30/12h). Footer: "Powered by
+- Rate-limited (`LIMIT_POUNCE`, default 30 per 20h). Footer: "Powered by
   aiwebpoint.com?source=<slug>".
 - **Prototype reference:** `/prototype-solihull.html`; **built-in demo** at
   `/s/sample-pap-electrical` (renders through the real `render()`, stock photos, for design review).
@@ -241,9 +241,12 @@ application form). The whole interface is hidden behind it until signed in.
 
 ### Security & cost protection
 - Full-screen **login gate** + server-side auth on every paid endpoint.
-- **Usage caps** (`lib/ratelimit.js`): 30 searches / 30 generations / 30 prowls / 30 pounces per **20h**
-  window (env `LIMIT_*` + `RATE_WINDOW_HOURS`). Caps generation/search COST, not WhatsApp sending.
-  (env-overridable `LIMIT_*`).
+- **Usage caps** (`lib/ratelimit.js`): 30 searches / **50** generations / 30 prowls / 30 pounces per
+  **20h** rolling window (env `LIMIT_*` + `RATE_WINDOW_HOURS`). Caps generation/search COST, not
+  WhatsApp sending. **Generation records a usage slot only AFTER it succeeds** (`check()` up front,
+  `record()` on success) so a failed/retried mockup never burns quota; `checkAndRecord()` (record on
+  attempt) is still used by search/prowl/pounce. Counted via one tiny blob per event under `usage/`,
+  pruned once older than the window.
 - **Error alerts** email you via SendGrid + an on-screen Retry button (45s countdown).
 
 ---
@@ -263,7 +266,7 @@ prototype-solihull.html (Pounce ref)   track.js     open/click/sent beacon → P
 Shared libs (/lib)                     apply.js     founding-member form → SendGrid + Postgres
 ─────────────────                      report.js    error-alert email (SendGrid)
 auth.js     HMAC signed cookie         dashboard.js analytics aggregation + insights
-ratelimit.js 12h usage caps            hotleads.js  demo-clickers + contact details
+ratelimit.js 20h usage caps            hotleads.js  demo-clickers + contact details
 filters.js  server-side lead filtering prowl.js     lead-intelligence dossier (cached)
 db.js       Neon Postgres pool+queries pounce.js    builds 1-page site → sites/<slug>.json
                                        site.js      renders /s/<slug> (noindex preview)
@@ -323,7 +326,7 @@ was removed (legacy).
 - `dossiers/<slug>.json`, cached Prowl dossier.
 - `sites/<slug>.json`, generated Pounce site content + `mode` (`preview`/`published`) +
   `createdAt`. **This prefix is the preview registry** (`GET /api/sites` lists it).
-- `usage/...`, rate-limit counters (pruned after 12h).
+- `usage/...`, rate-limit counters (pruned after the 20h window).
 - `<slug>` = `<business-name-slug>-<8charid>`.
 
 ### Neon Postgres
@@ -350,7 +353,7 @@ Created lazily (`CREATE TABLE IF NOT EXISTS`). To inspect: Vercel → Storage �
 | Companies House | `COMPANIES_HOUSE_API_KEY` (**PENDING**) | Free; unlocks the established/director/type part of Prowl. Auth = HTTP Basic `base64(key:)`. |
 | Auth | `APP_USERNAME`, `APP_PASSWORD` | Login; cookie HMAC keyed by the password. |
 | Branding/links | `AGENCY_NAME?`, `DEMO_URL`, `LINK_DOMAIN` | `DEMO_URL`=booking; `LINK_DOMAIN`=`preview.aiwebpoint.com`. |
-| Limits | `LIMIT_SEARCH`/`LIMIT_GENERATE`/`LIMIT_PROWL` (default 20) | Per 12h. |
+| Limits | `LIMIT_SEARCH`/`LIMIT_GENERATE`/`LIMIT_PROWL` (default 30, generate 50) | Per 20h (RATE_WINDOW_HOURS). Generation counts only on success. |
 
 ---
 

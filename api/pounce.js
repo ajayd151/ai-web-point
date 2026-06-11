@@ -200,7 +200,7 @@ module.exports = async (req, res) => {
 
   if (!GKEY()) { res.status(503).json({ error: 'Google Places key not set.' }); return; }
   const rl = await checkAndRecord('pounce', Date.now());
-  if (!rl.ok) { res.status(429).json({ error: `Pounce limit reached (${rl.limit} per 12 hours).` }); return; }
+  if (!rl.ok) { res.status(429).json({ error: `Pounce limit reached (${rl.limit} per ${rl.windowHours} hours). Try again in ~${rl.retryHours}h.` }); return; }
 
   // Kick off the Prowl intel gather NOW so it runs in parallel with the photo
   // work below (cuts ~30s off the build). Reuse a cached dossier if present.

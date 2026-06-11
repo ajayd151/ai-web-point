@@ -32,7 +32,7 @@ module.exports = async (req, res) => {
 
   if (!process.env.GOOGLE_PLACES_API_KEY) { res.status(503).json({ error: 'Google Places key is not set.' }); return; }
   const rl = await checkAndRecord('prowl', Date.now());
-  if (!rl.ok) { res.status(429).json({ error: `Prowl limit reached (${rl.limit} per 12 hours). Try again in ~${rl.retryHours}h.` }); return; }
+  if (!rl.ok) { res.status(429).json({ error: `Prowl limit reached (${rl.limit} per ${rl.windowHours} hours). Try again in ~${rl.retryHours}h.` }); return; }
 
   try {
     const dossier = await gatherDossier({ slug, name, location, category, phone: body.phone || '' });
