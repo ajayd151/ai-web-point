@@ -84,11 +84,17 @@ module.exports = async (req, res) => {
   p.sub{color:#9fb0c7;margin:0 0 22px}
   img{width:100%;height:auto;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.5);display:block}
   .cta-nudge{margin:32px 0 0;color:#cdd8ec;font-size:17px;font-weight:600}
+  .free{display:inline-block;background:#ffd166;color:#1a1206;padding:1px 9px;border-radius:7px;font-weight:900;letter-spacing:.3px;
+        box-shadow:0 2px 10px rgba(255,209,102,.45);animation:freepulse 1.8s ease-in-out infinite}
+  @keyframes freepulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
   .cta-row{display:flex;gap:14px;justify-content:center;align-items:center;flex-wrap:wrap;margin-top:12px}
-  .cta{display:inline-flex;align-items:center;gap:10px;padding:20px 40px;border-radius:14px;color:#fff;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.3);
-       text-decoration:none;background:linear-gradient(135deg,#22c55e,#15994a);font-size:20px;box-shadow:0 14px 34px rgba(34,197,94,.45);animation:ctapulse 2s infinite}
-  .cta:hover{transform:translateY(-2px);filter:brightness(1.06)}
-  @keyframes ctapulse{0%,100%{box-shadow:0 14px 34px rgba(34,197,94,.4)}50%{box-shadow:0 14px 46px rgba(34,197,94,.75)}}
+  .cta{display:flex;flex-direction:column;align-items:center;gap:3px;padding:17px 34px;border-radius:16px;color:#fff;text-decoration:none;max-width:600px;
+       background:linear-gradient(135deg,#22c55e,#12b257,#15994a);box-shadow:0 14px 34px rgba(34,197,94,.45);animation:ctapulse 2.2s ease-in-out infinite}
+  .cta-main{font-weight:800;font-size:19px;line-height:1.3;text-shadow:0 1px 2px rgba(0,0,0,.32)}
+  .cta-sub{font-weight:700;font-size:14px;opacity:.92;text-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .freeb{display:inline-block;background:#ffd166;color:#15301a;padding:0 7px;border-radius:6px;font-weight:900}
+  .cta:hover{filter:brightness(1.07)}
+  @keyframes ctapulse{0%,100%{box-shadow:0 12px 30px rgba(34,197,94,.45);transform:translateY(0)}50%{box-shadow:0 20px 52px rgba(34,197,94,.85);transform:translateY(-3px)}}
   .nothanks{padding:18px 26px;border-radius:14px;border:1.5px solid #5b3a44;background:#2a1620;color:#ff9b9b;font-weight:700;font-size:16px;cursor:pointer}
   .nothanks:hover{background:#3a1d28}
   .decline-panel{display:none;max-width:520px;margin:18px auto 0;background:#111b2e;border:1px solid #25324a;border-radius:14px;padding:18px 20px;text-align:left}
@@ -110,9 +116,12 @@ module.exports = async (req, res) => {
   <h1>A website preview for ${who ? '<span class="who">' + esc(who) + '</span> · ' : ''}${esc(name)}${loc ? ' · ' + esc(loc) : ''}</h1>
   <p class="sub">Here's a free home-page concept we designed for you.</p>
   <a href="${esc(demo)}" class="demo" target="_blank" rel="noopener"><img src="${esc(imgSrc)}" alt="Website mockup for ${esc(name)}"/></a>
-  <p class="cta-nudge">👇 Like your free website mockup${who ? ', ' + esc(who) : ''}? I've gone ahead and built the full website for you. Can I show it to you? Click the YES button below.</p>
+  <p class="cta-nudge">👇 Like your <span class="free">FREE</span> website mockup${who ? ', ' + esc(who) : ''}? I've gone ahead and built the full website for you, completely <span class="free">FREE</span>. Can I show it to you? Click the green button below.</p>
   <div class="cta-row">
-    <a class="cta demo" href="${esc(demo)}" target="_blank" rel="noopener">📞 Yes, I'd like a demo for ${esc(name)} &rarr;</a>
+    <a class="cta demo" href="${esc(demo)}" target="_blank" rel="noopener">
+      <span class="cta-main">✅ Yes, show me the <span class="freeb">FREE</span> demo website you made for me &rarr;</span>
+      <span class="cta-sub">${esc(name)}</span>
+    </a>
     <button class="nothanks" id="nothanks" type="button">No thanks</button>
   </div>
   <div class="decline-panel" id="declinePanel">
