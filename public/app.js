@@ -555,11 +555,25 @@ function titleCaseIndustry(s) {
 function titleCaseLocation(s) {
   return String(s || '').trim().split(/\s+/).map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(' ');
 }
+// Make a keyword-stuffed business name sound natural in a sentence, but ONLY
+// when it's clearly overlong. "Bob's Plumbing" stays as-is; "JJG Home Car Wash,
+// Mobile Valeting & Alloy Wheel Refurbishment" -> "JJG Home Car Wash & Mobile
+// Valeting". Splits on the separators people use to stuff services (commas, &,
+// /, +, "and") and keeps the first one or two phrases.
+function humaniseBusinessName(name) {
+  const raw = String(name || '').trim();
+  if (raw.length <= 34) return raw; // short enough to read naturally, leave alone
+  const segments = raw.split(/\s*(?:,|&|\/|\+|\band\b)\s*/i).map((s) => s.trim()).filter(Boolean);
+  if (segments.length < 2) return raw; // long but a single phrase (a real name), keep it
+  let out = segments[0];
+  if ((out + ' & ' + segments[1]).length <= 40) out += ' & ' + segments[1]; // add the 2nd phrase if it still reads short
+  return out;
+}
 function fillWaMessage(tpl, business, link, personName) {
   const greet = String(personName || '').trim();
   let out = String(tpl || '')
     .replace(/\{name\}/g, greet) // empty when no name → cleaned up below
-    .replace(/\{business\}/g, business.name || 'there')
+    .replace(/\{business\}/g, humaniseBusinessName(business.name) || 'there')
     .replace(/\{category\}/g, titleCaseIndustry(business.category || business.industry || 'businesses'))
     .replace(/\{location\}/g, titleCaseLocation(business.location) || 'your area')
     .replace(/\{link\}/g, link || '');
