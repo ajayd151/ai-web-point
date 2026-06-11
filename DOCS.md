@@ -89,6 +89,12 @@ application form). The whole interface is hidden behind it until signed in.
 - **Editable templates** (per device): first message + follow-up, placeholders `{name}`
   `{business}` `{category}` `{location}` `{link}`. Empty `{name}` collapses to "Hi,".
   `{category}` is title-cased with acronyms (Dog Groomers / MOT).
+- **`{business}` is humanised in the message** (`humaniseBusinessName` in `app.js`): a
+  keyword-stuffed name reads as fake in "I came across <name>", so an *overlong* name
+  (>34 chars with `,`/`&`/`/`/`+`/"and" separators) is trimmed to its first one or two
+  phrases, e.g. "JJG Home Car Wash, Mobile Valeting & Alloy Wheel Refurbishment" →
+  "JJG Home Car Wash & Mobile Valeting". Short/normal names are left untouched. Only the
+  message text is affected, the mockup image and preview page keep the full real name.
 - **Messaged tracking** (per device, by Google place id): cards show "✓ You messaged them
   via WhatsApp (date·time) & SMS (…)", accumulates channels with timestamps. The
   "Already messaged" filter excludes them from new searches so you dig for fresh leads.
