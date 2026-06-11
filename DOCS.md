@@ -458,6 +458,32 @@ per-account setting (`LINK_DOMAIN`).
   - **Build vs buy:** an agent like **Manus** fed the lead list is likely less work than rebuilding
     multi-source scraping in-app (sites change and fight scrapers); in-app gives more control but a
     real maintenance burden. Recommend hybrid: cheap deterministic checks in-app, agent/API fallback.
+- **🔮 Future phase, Publish / host / edit live websites (Pounce go-live):** turn a Pounce
+  `/s/<slug>` preview into a real live site a paying client can use. Three parts:
+  - **Publish toggle (mostly built):** `api/site.js` already renders `mode:'published'` (drops the
+    noindex + the "Yes, sign me up" preview bar). Just needs a gated `POST /api/publish` that flips
+    `sites/<slug>.json` `mode` and a Publish/Unpublish button. Because the page renders from the
+    JSON on every request, this is instant, no redeploy.
+  - **Domain options (low→high effort):** (a) **subpath now**, `sitepounce.com/s/<slug>` (free,
+    instant) or a tidier `aiwebpoint.com/s/<slug>`; (b) **per-client subdomain**
+    `client.aiwebpoint.com` via a wildcard domain + host→slug routing; (c) **client's own custom
+    domain** (`theirbiz.co.uk`), the real "live website", needs: client owns/buys the domain → add
+    it to the Vercel project (dashboard or Vercel Domains API) → DNS A/CNAME at their registrar →
+    a `host → slug` map (store `customDomain` on the site JSON or a `domains/<host>.json`) resolved
+    by `middleware.js`/`api/site.js` from the Host header. SSL is automatic. Per-domain DNS/add is
+    manual ops (scriptable via Vercel API at scale).
+  - **Websites list (data already exists):** `GET /api/sites` already returns every site
+    (slug, name, mode, createdAt, `/s/` url). Missing only an in-app **🌐 Websites** screen: a
+    table with Status (Preview/Published), clickable URL, Created, and Open / Publish / Edit /
+    Rebuild / Set-domain actions. This is the parked "tidy-up admin UI".
+  - **Edit a live site (client change requests):** the whole page is structured JSON
+    (`sites/<slug>.json`: hero, services, about, reviews, faq, accreditations, areas, phone…), so
+    **any edit to the JSON is live immediately**. v1 = a **field editor** (form that loads the JSON,
+    edits headline/services/about/phone/offer/FAQ etc., saves via a gated `POST` that writes the
+    JSON back). Later = an **AI "tell me what to change"** patcher (targeted, unlike the blunt
+    **Rebuild** which regenerates from scratch and loses manual tweaks). Photos tie into the planned
+    client-photo-upload. Caveat: only Pounce `/s/` sites are editable; a `/v/` mockup is an image
+    (regenerate, don't edit), so a lead needs a Pounce build first.
 - **🔮 Later:** Prowl Phase B (Trustpilot/Facebook/competitor-gap web search),
   tidy-up admin UI (bulk-delete stale previews), per-keyword dashboard breakdowns,
   multi-user accounts + billing (SaaS), Pounce FAQ/Book-a-Demo/"Not sure yet?" sections on the
