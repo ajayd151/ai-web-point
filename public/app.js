@@ -561,7 +561,13 @@ function titleCaseLocation(s) {
 // Valeting". Splits on the separators people use to stuff services (commas, &,
 // /, +, "and") and keeps the first one or two phrases.
 function humaniseBusinessName(name) {
-  const raw = String(name || '').trim();
+  let raw = String(name || '').trim();
+  if (!raw) return raw;
+  // 1) run-together names like "PerformanceCarValeting" -> "Performance Car Valeting"
+  //    (split on camelCase boundaries; harmless on names that already have spaces)
+  raw = raw.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+    .replace(/\s{2,}/g, ' ').trim();
+  // 2) trim keyword-stuffed overlong names to the first one or two phrases
   if (raw.length <= 34) return raw; // short enough to read naturally, leave alone
   const segments = raw.split(/\s*(?:,|&|\/|\+|\band\b)\s*/i).map((s) => s.trim()).filter(Boolean);
   if (segments.length < 2) return raw; // long but a single phrase (a real name), keep it
