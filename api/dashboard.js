@@ -32,12 +32,18 @@ module.exports = async (req, res) => {
 
   // total mockups generated (blob metadata files), respecting the date range
   let generated = 0;
-  const mockupsByDay = {}; // London-date string -> count, for the daily table
+  const mockupsByDay = {}; // London-date string -> count
+  const mockupNamesByDay = {}; // London-date string -> [names], for hover validation
   try {
     const { blobs } = await list({ prefix: 'mockups/', limit: 1000 });
     const jsons = blobs.filter((b) => b.pathname.endsWith('.json'));
     generated = jsons.filter((b) => (!since || new Date(b.uploadedAt).toISOString() >= since)).length;
-    jsons.forEach((b) => { const d = londonDate(new Date(b.uploadedAt)); mockupsByDay[d] = (mockupsByDay[d] || 0) + 1; });
+    jsons.forEach((b) => {
+      const d = londonDate(new Date(b.uploadedAt));
+      mockupsByDay[d] = (mockupsByDay[d] || 0) + 1;
+      const slug = b.pathname.replace(/^mockups\//, '').replace(/\.json$/, '');
+      (mockupNamesByDay[d] = mockupNamesByDay[d] || []).push(nameFromSlug(slug));
+    });
   } catch (e) { /* ignore */ }
 
   // CRM statuses (slug -> status) from the notes index
@@ -87,24 +93,26 @@ module.exports = async (req, res) => {
   const avgTto = d.avgTtoMin != null ? Math.round(d.avgTtoMin) : null;
 
   // ---- daily activity table (last 30 days, UK time), so you can track targets ----
-  const byDayMap = {}; // day -> { sent, view, cta, signup, decline }
+  const byDayMap = {}; // day -> { sent:{n,names}, view:{...}, ... }
   (d.byDay || []).forEach((r) => {
-    (byDayMap[r.day] = byDayMap[r.day] || {})[r.event] = r.n;
+    (byDayMap[r.day] = byDayMap[r.day] || {})[r.event] = { n: r.n, names: (r.slugs || []).map(nameFromSlug).slice(0, 80) };
   });
   const daily = [];
   let cursor = new Date(londonDate(new Date()) + 'T12:00:00Z');
   for (let i = 0; i < 30; i++) {
     const ds = londonDate(cursor);
     const ev = byDayMap[ds] || {};
+    const get = (k) => ev[k] || { n: 0, names: [] };
     daily.push({
       date: ds,
       label: dayLabel(ds, i),
       mockups: mockupsByDay[ds] || 0,
-      messaged: ev.sent || 0,
-      viewed: ev.view || 0,
-      demo: ev.cta || 0,
-      signup: ev.signup || 0,
-      declined: ev.decline || 0,
+      mockupNames: (mockupNamesByDay[ds] || []).slice(0, 80),
+      messaged: get('sent').n, messagedNames: get('sent').names,
+      viewed: get('view').n, viewedNames: get('view').names,
+      demo: get('cta').n, demoNames: get('cta').names,
+      signup: get('signup').n, signupNames: get('signup').names,
+      declined: get('decline').n, declinedNames: get('decline').names,
     });
     cursor = new Date(cursor.getTime() - 86400000);
   }

@@ -1581,12 +1581,25 @@ function dailyTableHTML(d) {
   let lastActive = 0;
   days.forEach((r, i) => { if (r.mockups || r.messaged || r.viewed || r.demo || r.signup || r.declined) lastActive = i; });
   const show = days.slice(0, Math.max(7, lastActive + 1)); // always show the last week, plus older active days
-  const cell = (n, bold) => (n > 0 ? (bold ? '<b>' + n + '</b>' : String(n)) : '<span class="muted">·</span>');
+  const pct = (num, den) => (den > 0 && num > 0 ? ' <span class="muted">(' + Math.round((num / den) * 100) + '%)</span>' : '');
+  const cell = (n, names, pctStr, bold) => {
+    if (n <= 0) return '<span class="muted">·</span>';
+    const inner = bold ? '<b>' + n + '</b>' : String(n);
+    const num = (names && names.length) ? `<span class="hovname" title="${esc(names.join(', '))}">${inner}</span>` : inner;
+    return num + (pctStr || '');
+  };
   const tr = show.map((r) => {
     const cls = r.label === 'Today' ? ' class="dt-today"' : '';
-    return `<tr${cls}><td><b>${esc(r.label)}</b></td><td>${cell(r.mockups)}</td><td>${cell(r.messaged, true)}</td><td>${cell(r.viewed)}</td><td>${cell(r.demo)}</td><td>${cell(r.signup)}</td><td>${cell(r.declined)}</td></tr>`;
+    return `<tr${cls}><td><b>${esc(r.label)}</b></td>` +
+      `<td>${cell(r.mockups, r.mockupNames)}</td>` +
+      `<td>${cell(r.messaged, r.messagedNames, pct(r.messaged, r.mockups), true)}</td>` +
+      `<td>${cell(r.viewed, r.viewedNames, pct(r.viewed, r.messaged))}</td>` +
+      `<td>${cell(r.demo, r.demoNames, pct(r.demo, r.messaged))}</td>` +
+      `<td>${cell(r.signup, r.signupNames, pct(r.signup, r.messaged))}</td>` +
+      `<td>${cell(r.declined, r.declinedNames, pct(r.declined, r.messaged))}</td></tr>`;
   }).join('');
-  return '<div class="dash-table-wrap"><h3>🎯 Daily activity</h3><p class="muted dash-sub">What you did each day (UK time), newest first, so you can keep on top of your daily targets. Last 30 days tracked.</p>' +
+  return '<div class="dash-table-wrap"><h3>🎯 Daily activity</h3>' +
+    '<p class="muted dash-sub">What you did each day (UK time), newest first. <b>Hover any number to see the businesses.</b> % is the share of that day\'s Messaged (Messaged is the share of Mockups). Heads up: "Messaged" is counted when you <b>open</b> a WhatsApp/SMS send for a business, the app can\'t tell whether you then pressed send inside WhatsApp.</p>' +
     '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Day</th><th>Mockups</th><th>Messaged</th><th>Mockup viewed</th><th>Demo clicks</th><th>Sign-up clicks</th><th>Not interested</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
 function bySearchTypeHTML() {
