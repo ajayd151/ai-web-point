@@ -1004,11 +1004,12 @@ const GENERIC_TIPS = [
 let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
-  ['search', 'messages', 'performance', 'hotleads', 'leads'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
+  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'messages') renderBlocked();
   if (name === 'leads') loadLeads();
+  if (name === 'websites') loadWebsites();
 }
 document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 document.querySelectorAll('.dash-rbtn').forEach((b) => b.addEventListener('click', () => {
@@ -1481,6 +1482,64 @@ $('leads-search').addEventListener('input', renderLeads);
 $('leads-status-filter').addEventListener('change', renderLeads);
 $('leads-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadLeads));
 $('leads-export').addEventListener('click', exportLeadsCsv);
+
+// ---- 🌐 Websites: mockups (/v/) + Pounce sites (/s/, preview or live) ----
+let websitesData = null;
+let websitesFilter = 'all';
+async function loadWebsites() {
+  const tb = $('websites-rows'); if (tb) tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">Loading…</td></tr>';
+  if (!authed) return;
+  const items = [];
+  try {
+    const d = await (await fetch('/api/mockups')).json();
+    (d.mockups || []).forEach((m) => {
+      const slug = m.slug || m.img;
+      items.push({ type: 'mockup', name: humaniseBusinessName(m.name) || m.name || prettySlug(slug), url: m.viewUrl || m.img, date: m.date, slug });
+    });
+  } catch (e) { /* ignore */ }
+  try {
+    const d = await (await fetch('/api/sites')).json();
+    (d.sites || []).forEach((s) => {
+      items.push({ type: s.mode === 'published' ? 'live' : 'preview', name: humaniseBusinessName(s.name) || s.name, url: s.url, date: s.createdAt, slug: s.slug });
+    });
+  } catch (e) { /* ignore */ }
+  websitesData = { items };
+  renderWebsites();
+}
+function renderWebsites() {
+  const tb = $('websites-rows'); if (!tb) return;
+  const items = (websitesData && websitesData.items) || [];
+  const counts = { all: items.length, mockup: 0, preview: 0, live: 0 };
+  items.forEach((it) => { counts[it.type] = (counts[it.type] || 0) + 1; });
+  document.querySelectorAll('#websites-filters .leadf-btn').forEach((b) => {
+    const base = b.textContent.replace(/\s*\(\d+\)\s*$/, '');
+    b.textContent = base + ' (' + (counts[b.dataset.f] || 0) + ')';
+  });
+  const q = ($('websites-search') ? $('websites-search').value : '').toLowerCase().trim();
+  let list = items.slice();
+  if (websitesFilter !== 'all') list = list.filter((it) => it.type === websitesFilter);
+  if (q) list = list.filter((it) => String(it.name || '').toLowerCase().indexOf(q) >= 0);
+  list.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">Nothing here yet.</td></tr>'; return; }
+  const badge = {
+    mockup: '<span class="lchip wt-mock">🖼️ Mockup</span>',
+    preview: '<span class="lchip wt-prev">🛠️ Preview site</span>',
+    live: '<span class="lchip wt-live">🟢 Live site</span>',
+  };
+  tb.innerHTML = list.map((it) => {
+    const short = String(it.url || '').replace(/^https?:\/\//, '');
+    return `<tr><td><b>${esc(it.name || '')}</b></td><td>${badge[it.type] || ''}</td>` +
+      `<td><a href="${esc(it.url)}" target="_blank" rel="noopener" class="w-link">${esc(short)}</a></td>` +
+      `<td>${it.date ? esc(fmtDate(it.date)) : '<span class="muted">·</span>'}</td>` +
+      `<td><a class="ghost sm" href="${esc(it.url)}" target="_blank" rel="noopener">Open ↗</a></td></tr>`;
+  }).join('');
+}
+document.querySelectorAll('#websites-filters .leadf-btn').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('#websites-filters .leadf-btn').forEach((x) => x.classList.toggle('active', x === b));
+  websitesFilter = b.dataset.f; renderWebsites();
+}));
+$('websites-search').addEventListener('input', renderWebsites);
+$('websites-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadWebsites));
 document.querySelectorAll('.leadf-btn').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.leadf-btn').forEach((x) => x.classList.toggle('active', x === b));
   leadsFilter = b.dataset.f; renderLeads();

@@ -6,6 +6,8 @@ const { verify, parseCookie } = require('../lib/auth');
 
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const linkBase = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
   try {
     const { blobs } = await list({ prefix: 'sites/' });
     const sites = [];
@@ -19,7 +21,7 @@ module.exports = async (req, res) => {
         mode = j.mode || 'preview';
         createdAt = j.createdAt || createdAt;
       } catch (e) { /* keep defaults */ }
-      sites.push({ slug, name, mode, createdAt, url: '/s/' + slug });
+      sites.push({ slug, name, mode, createdAt, url: `${linkBase}/s/${slug}` });
     }
     sites.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     res.setHeader('Cache-Control', 'no-store');

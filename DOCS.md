@@ -30,7 +30,7 @@ website) for each prospect.
 ## 2. The app, a top-nav SPA
 
 After signing in (full-screen Site Pounce login gate), the app has a **top navigation**
-with four views (`#view-*` divs toggled by `showView()` in `app.js`):
+(`#view-*` divs toggled by `showView()` in `app.js`):
 
 | Nav | What it is |
 |---|---|
@@ -39,6 +39,7 @@ with four views (`#view-*` divs toggled by `showView()` in `app.js`):
 | **📊 Performance** | Dashboard: stats, insights, charts, CSV, date-range (lazy-loads) |
 | **🌡️ Warm Leads** | Prospects who requested a demo, with a live count badge + actions |
 | **👤 All Leads** | Every business worked: searchable/filterable table (Prowled / Website built / Messaged / Blocked); each row opens the Lead Profile |
+| **🌐 Websites** | Every mockup (`/v/`) + Pounce site (`/s/`) in one table, filterable by Mockup / Preview site / Live site, with the link + Open. (Make Live / AI editor are the next phases.) |
 
 **Lead Profile popup:** click any business name (Leads, Warm Leads, dashboard activity, Recent
 mockups) to open a profile with contact details + one-tap **Call / WhatsApp / Maps / View
