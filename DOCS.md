@@ -478,12 +478,23 @@ per-account setting (`LINK_DOMAIN`).
     Rebuild / Set-domain actions. This is the parked "tidy-up admin UI".
   - **Edit a live site (client change requests):** the whole page is structured JSON
     (`sites/<slug>.json`: hero, services, about, reviews, faq, accreditations, areas, phone…), so
-    **any edit to the JSON is live immediately**. v1 = a **field editor** (form that loads the JSON,
-    edits headline/services/about/phone/offer/FAQ etc., saves via a gated `POST` that writes the
-    JSON back). Later = an **AI "tell me what to change"** patcher (targeted, unlike the blunt
-    **Rebuild** which regenerates from scratch and loses manual tweaks). Photos tie into the planned
-    client-photo-upload. Caveat: only Pounce `/s/` sites are editable; a `/v/` mockup is an image
-    (regenerate, don't edit), so a lead needs a Pounce build first.
+    **any edit to the JSON is live immediately**. **User decision (2026-06-11): an AI edit box, not a
+    field editor.** Flow that enforces "only change what was asked": (1) AI gets the current JSON +
+    the instruction (+ optional uploaded files) and returns a **minimal patch** (only changed
+    fields), never a full rebuild; (2) **show a diff and require Apply/confirm** before writing,
+    never auto-apply; (3) **back up the previous JSON** each edit (one-click revert for live client
+    sites); (4) the fixed template is a built-in guardrail, the AI can only touch content fields, not
+    layout. **File upload:** 1+ images → Blob → added to `gallery`/hero in the same preview step
+    (doubles as the planned client-photo-upload). The blunt existing **Rebuild** regenerates from
+    scratch (loses tweaks) so it's not the edit path. Caveat: only Pounce `/s/` sites are editable;
+    a `/v/` mockup is an image (regenerate, don't edit), so a lead needs a Pounce build first.
+  - **UI (user decision 2026-06-11): a 🌐 Websites tab** with a **Mockups (`/v/`)** list and a
+    **Websites (`/s/`)** list. Each site row has **Make Live** → choose a **subdomain**
+    (`name.aiwebpoint.com`, easy/self-serve, the recommended first path) **or Add your own domain**
+    (shows the DNS records + must add the domain to Vercel via the Domains API + a verification poll).
+  - **Build order (agreed):** (1) Websites tab + lists; (2) Make Live via subdomain (publish flag +
+    wildcard `*.aiwebpoint.com` + subdomain→slug map + middleware); (3) AI edit box + file upload
+    (patch → diff → confirm → backup); (4) custom domains (Vercel API + DNS + verification, most ops).
 - **🔮 Later:** Prowl Phase B (Trustpilot/Facebook/competitor-gap web search),
   tidy-up admin UI (bulk-delete stale previews), per-keyword dashboard breakdowns,
   multi-user accounts + billing (SaaS), Pounce FAQ/Book-a-Demo/"Not sure yet?" sections on the
