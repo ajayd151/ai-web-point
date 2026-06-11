@@ -89,14 +89,17 @@ application form). The whole interface is hidden behind it until signed in.
 - **Editable templates** (per device): first message + follow-up, placeholders `{name}`
   `{business}` `{category}` `{location}` `{link}`. Empty `{name}` collapses to "Hi,".
   `{category}` is title-cased with acronyms (Dog Groomers / MOT).
-- **`{business}` is humanised in the message** (`humaniseBusinessName` in `app.js`), two passes:
+- **Business names are humanised for display** by `humaniseBusinessName` (shared as
+  `lib/names.js` on the server + a matching copy in `public/app.js`), two passes:
   (1) **run-together names** are split on camelCase, e.g. "PerformanceCarValeting" →
   "Performance Car Valeting", "JJGHomeCarWash" → "JJG Home Car Wash" (acronyms like MOT and
   already-spaced names stay intact); (2) **keyword-stuffed overlong names** (>34 chars with
   `,`/`&`/`/`/`+`/"and" separators) are trimmed to their first one or two phrases, e.g.
   "JJG Home Car Wash, Mobile Valeting & Alloy Wheel Refurbishment" → "JJG Home Car Wash &
-  Mobile Valeting". Short/normal names are left untouched. Message text only, the mockup
-  image and preview page keep the full real name.
+  Mobile Valeting". Short/normal names are left untouched. Applied to the **sent message**
+  `{business}`, the **mockup image** (logo initials, wordmark, headline) and the **preview
+  page** heading/CTA. NOT applied to the **slug** or the **stored `name`** (those stay raw so
+  tracking + name/location matching for messaged/blocked keep working).
 - **Messaged tracking** (per device, by Google place id): cards show "✓ You messaged them
   via WhatsApp (date·time) & SMS (…)", accumulates channels with timestamps. The
   "Already messaged" filter excludes them from new searches so you dig for fresh leads.

@@ -2,6 +2,7 @@
 // Short form: /v/<slug>  (rewritten to ?slug=<slug>), looks up stored metadata.
 // Legacy form: ?img=&name=&loc=&cta=  still supported.
 const { list } = require('@vercel/blob');
+const { humaniseBusinessName } = require('../lib/names');
 
 const BRAND_BLUE = '#4375ED';
 const BRAND_MAUVE = '#C485B1';
@@ -54,6 +55,7 @@ module.exports = async (req, res) => {
   }
 
   cta = String(cta).slice(0, 60);
+  name = humaniseBusinessName(name) || name; // display only; slug stays raw
   if (!img) { res.status(400).send('Missing image.'); return; }
 
   // serve the image via our own /i/<slug>.png so the blob host is never exposed

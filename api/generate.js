@@ -10,6 +10,7 @@ const { createCanvas, GlobalFonts } = require('@napi-rs/canvas');
 const sharp = require('sharp');
 const { put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
+const { humaniseBusinessName } = require('../lib/names');
 const { checkAndRecord } = require('../lib/ratelimit');
 
 // ---- brand ---------------------------------------------------------------
@@ -263,11 +264,16 @@ async function composeMockup(heroBuffer, business, opts) {
 
   const X = 56;
 
+  // displayed name reads naturally ("PerformanceCarValeting" -> "Performance Car
+  // Valeting"); the stored name + slug stay raw (computed by the handler) for matching
+  const displayName = humaniseBusinessName(business.name) || business.name;
+  const bizDisplay = Object.assign({}, business, { name: displayName });
+
   // top-left: the BUSINESS's own logo (so the mockup reads as their website)
-  drawBusinessLogo(ctx, X, 28, business);
+  drawBusinessLogo(ctx, X, 28, bizDisplay);
 
   // headline (business name)
-  const fit = fitHeadline(ctx, business.name, 780, 72, 34, 2, 'Montserrat ExtraBold');
+  const fit = fitHeadline(ctx, displayName, 780, 72, 34, 2, 'Montserrat ExtraBold');
   const lh = fit.size * 1.04;
   let y = fit.lines.length > 1 ? 250 : 285;
   ctx.fillStyle = '#ffffff';
