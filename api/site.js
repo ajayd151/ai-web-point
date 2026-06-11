@@ -259,8 +259,24 @@ ${mobileBar}
 </body></html>`;
 }
 
+async function slugForSub(sub) {
+  try {
+    const path = 'domains/_index.json';
+    const { blobs } = await list({ prefix: path });
+    const b = blobs.find((x) => x.pathname === path);
+    if (b) { const idx = await (await fetch(b.url + '?t=' + Date.now())).json(); return (idx && idx[sub]) || ''; }
+  } catch (e) { /* none */ }
+  return '';
+}
+
 module.exports = async (req, res) => {
-  const slug = String((req.query && req.query.slug) || '').replace(/[^a-z0-9-]/gi, '');
+  let slug = String((req.query && req.query.slug) || '').replace(/[^a-z0-9-]/gi, '');
+  // served via a client subdomain (middleware rewrite): resolve <sub> -> slug
+  const sub = String((req.query && req.query.sub) || '').replace(/[^a-z0-9-]/gi, '').toLowerCase();
+  if (!slug && sub) {
+    slug = await slugForSub(sub);
+    if (!slug) { res.setHeader('Content-Type', 'text/html'); res.status(404).send('<h1>Site not found</h1>'); return; }
+  }
   if (!slug) { res.status(400).send('Missing site.'); return; }
   // built-in demo sites (no login / no paid build needed), same renderer
   if (SAMPLES[slug]) {

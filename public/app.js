@@ -1536,18 +1536,26 @@ function renderWebsites() {
       `<td class="w-acts">${actions}</td></tr>`;
   }).join('');
 }
+function subFromName(n) { return String(n || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
 $('websites-rows').addEventListener('click', async (e) => {
   const btn = e.target.closest && e.target.closest('.w-publish'); if (!btn) return;
   const slug = btn.dataset.slug; const publish = btn.dataset.pub === '1'; const name = btn.dataset.name || 'this site';
-  const msg = publish
-    ? 'Make the website for ' + name + ' LIVE?\n\nIt becomes public and search-engine visible, and the "Yes, sign me up" preview bar is removed.'
-    : 'Unpublish the website for ' + name + '?\n\nIt goes back to a private draft (noindex + preview bar return).';
-  if (!confirm(msg)) return;
+  let payload;
+  if (publish) {
+    const def = subFromName(name);
+    const sub = prompt('Make "' + name + '" LIVE.\n\nChoose its web address (just the part before .aiwebpoint.com).\nLeave blank to publish on the plain /s/ link instead.', def);
+    if (sub === null) return; // cancelled
+    payload = { slug, publish: true, subdomain: sub.trim() };
+  } else {
+    if (!confirm('Unpublish "' + name + '"?\n\nIt goes back to a private draft and its subdomain (if any) is freed.')) return;
+    payload = { slug, publish: false };
+  }
   btn.disabled = true; const old = btn.textContent; btn.textContent = '…';
   try {
-    const r = await fetch('/api/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, publish }) });
+    const r = await fetch('/api/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Failed');
+    if (publish && d.host) alert('✅ Live!\n\nhttps://' + d.host + '\n\n(The HTTPS certificate can take a minute or two to activate on a brand-new subdomain.)');
     await loadWebsites();
   } catch (x) { alert('Could not update: ' + (x.message || x)); btn.disabled = false; btn.textContent = old; }
 });

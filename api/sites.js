@@ -14,14 +14,16 @@ module.exports = async (req, res) => {
     for (const b of blobs) {
       if (!/\.json$/.test(b.pathname)) continue;
       const slug = b.pathname.replace(/^sites\//, '').replace(/\.json$/, '');
-      let name = slug, mode = 'preview', createdAt = b.uploadedAt || '';
+      let name = slug, mode = 'preview', createdAt = b.uploadedAt || '', subdomain = '';
       try {
         const j = await (await fetch(b.url)).json();
         name = (j.business && j.business.name) || slug;
         mode = j.mode || 'preview';
         createdAt = j.createdAt || createdAt;
+        subdomain = j.subdomain || '';
       } catch (e) { /* keep defaults */ }
-      sites.push({ slug, name, mode, createdAt, url: `${linkBase}/s/${slug}` });
+      const liveUrl = (mode === 'published' && subdomain) ? `https://${subdomain}.aiwebpoint.com` : `${linkBase}/s/${slug}`;
+      sites.push({ slug, name, mode, createdAt, subdomain, url: liveUrl });
     }
     sites.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     res.setHeader('Cache-Control', 'no-store');
