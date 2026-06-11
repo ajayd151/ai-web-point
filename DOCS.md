@@ -491,9 +491,16 @@ per-account setting (`LINK_DOMAIN`).
     to the `ai-web-point` project (DONE 2026-06-11). **(2) Cloudflare** → aiwebpoint.com → DNS → add
     **CNAME, Name `*`, Target `7f856d7d334ceb4c.vercel-dns-017.com`** (the same target preview/
     sitepounce already use, to match proven records; `cname.vercel-dns.com` also works), **DNS only
-    (grey cloud, proxy OFF, critical else SSL loops)** (PENDING). Then a subdomain test (e.g.
-    `https://test.aiwebpoint.com`) should return a Vercel 404 with valid SSL.
-    Existing records (apex, www, preview, MX/email) are safe, specific records win over the wildcard.
+    (grey cloud, proxy OFF)** (DONE). DNS now resolves. **BUT** `https://test.aiwebpoint.com` fails
+    the TLS handshake: **Vercel does not auto-issue a `*` wildcard certificate on third-party
+    nameservers (Cloudflare)** — wildcard certs need Vercel's own nameservers. Vercel DOES issue
+    certs for *specific* subdomains (HTTP-01), which is why `preview` works. **So the resolved plan:**
+    keep the wildcard CNAME (it provides DNS for every subdomain, no per-client Cloudflare edit), and
+    **add each going-live client subdomain to the Vercel project individually** (gets its HTTPS),
+    automated via the **Vercel REST API** + an API token when the user picks a subdomain in Make
+    Live; `middleware.js` then maps host→slug. Moving nameservers to Vercel is rejected (apex on
+    Lovable + email TXTs in Cloudflare). Existing records (apex, www, preview, MX) are safe, specific
+    records beat the wildcard.
   - **Websites list (data already exists):** `GET /api/sites` already returns every site
     (slug, name, mode, createdAt, `/s/` url). Missing only an in-app **🌐 Websites** screen: a
     table with Status (Preview/Published), clickable URL, Created, and Open / Publish / Edit /
