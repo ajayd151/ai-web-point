@@ -39,7 +39,7 @@ After signing in (full-screen Site Pounce login gate), the app has a **top navig
 | **📊 Performance** | Dashboard: stats, insights, charts, CSV, date-range (lazy-loads) |
 | **🌡️ Warm Leads** | Prospects who requested a demo, with a live count badge + actions |
 | **👤 All Leads** | Every business worked: searchable/filterable table (Prowled / Website built / Messaged / Blocked); each row opens the Lead Profile |
-| **🌐 Websites** | Every mockup (`/v/`) + Pounce site (`/s/`) in one table, filterable by Mockup / Preview site / Live site, with the link + Open. (Make Live / AI editor are the next phases.) |
+| **🌐 Websites** | Every mockup (`/v/`) + Pounce site (`/s/`) in one table, filterable by Mockup / Draft site / Live site, with the link + Open. Terminology: **Mockup** = image preview (`/v/`); **Draft site** = built but unpublished (`/s/`, `mode:preview`); **Live site** = published (`/s/`, `mode:published`). Draft and Live share the same `/s/<slug>` URL, "live" is just the `mode` flag, not a different path. (Make Live / AI editor are the next phases.) |
 
 **Lead Profile popup:** click any business name (Leads, Warm Leads, dashboard activity, Recent
 mockups) to open a profile with contact details + one-tap **Call / WhatsApp / Maps / View

@@ -1500,7 +1500,7 @@ async function loadWebsites() {
   try {
     const d = await (await fetch('/api/sites')).json();
     (d.sites || []).forEach((s) => {
-      items.push({ type: s.mode === 'published' ? 'live' : 'preview', name: humaniseBusinessName(s.name) || s.name, url: s.url, date: s.createdAt, slug: s.slug });
+      items.push({ type: s.mode === 'published' ? 'live' : 'draft', name: humaniseBusinessName(s.name) || s.name, url: s.url, date: s.createdAt, slug: s.slug });
     });
   } catch (e) { /* ignore */ }
   websitesData = { items };
@@ -1509,7 +1509,7 @@ async function loadWebsites() {
 function renderWebsites() {
   const tb = $('websites-rows'); if (!tb) return;
   const items = (websitesData && websitesData.items) || [];
-  const counts = { all: items.length, mockup: 0, preview: 0, live: 0 };
+  const counts = { all: items.length, mockup: 0, draft: 0, live: 0 };
   items.forEach((it) => { counts[it.type] = (counts[it.type] || 0) + 1; });
   document.querySelectorAll('#websites-filters .leadf-btn').forEach((b) => {
     const base = b.textContent.replace(/\s*\(\d+\)\s*$/, '');
@@ -1523,7 +1523,7 @@ function renderWebsites() {
   if (!list.length) { tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">Nothing here yet.</td></tr>'; return; }
   const badge = {
     mockup: '<span class="lchip wt-mock">🖼️ Mockup</span>',
-    preview: '<span class="lchip wt-prev">🛠️ Preview site</span>',
+    draft: '<span class="lchip wt-draft">🛠️ Draft site</span>',
     live: '<span class="lchip wt-live">🟢 Live site</span>',
   };
   tb.innerHTML = list.map((it) => {
