@@ -1537,6 +1537,21 @@ function renderWebsites() {
   }).join('');
 }
 function subFromName(n) { return String(n || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); }
+function showLiveDialog(host) {
+  const url = 'https://' + host;
+  const wrap = document.createElement('div');
+  wrap.className = 'live-modal';
+  wrap.innerHTML = '<div class="live-card"><div class="live-h">🎉 It\'s live!</div>' +
+    '<p class="live-url">' + esc(url) + '</p>' +
+    '<p class="live-note">The HTTPS padlock can take a minute or two to activate on a brand-new address.</p>' +
+    '<div class="live-acts"><a class="primary btn live-go" href="' + esc(url) + '" target="_blank" rel="noopener">🌐 Go to website →</a>' +
+    '<button class="ghost btn live-close" type="button">Done</button></div></div>';
+  document.body.appendChild(wrap);
+  const close = () => wrap.remove();
+  wrap.querySelector('.live-close').addEventListener('click', close);
+  wrap.querySelector('.live-go').addEventListener('click', close);
+  wrap.addEventListener('click', (ev) => { if (ev.target === wrap) close(); });
+}
 $('websites-rows').addEventListener('click', async (e) => {
   const btn = e.target.closest && e.target.closest('.w-publish'); if (!btn) return;
   const slug = btn.dataset.slug; const publish = btn.dataset.pub === '1'; const name = btn.dataset.name || 'this site';
@@ -1555,7 +1570,7 @@ $('websites-rows').addEventListener('click', async (e) => {
     const r = await fetch('/api/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Failed');
-    if (publish && d.host) alert('✅ Live!\n\nhttps://' + d.host + '\n\n(The HTTPS certificate can take a minute or two to activate on a brand-new subdomain.)');
+    if (publish && d.host) showLiveDialog(d.host);
     await loadWebsites();
   } catch (x) { alert('Could not update: ' + (x.message || x)); btn.disabled = false; btn.textContent = old; }
 });

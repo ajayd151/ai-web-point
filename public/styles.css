@@ -369,6 +369,12 @@ tr.tr-blocked td { background: #fafafa; }
 .w-acts { white-space: nowrap; }
 .w-acts > * { vertical-align: middle; }
 .w-acts a.ghost { color: var(--blue); font-weight: 600; }
+.live-modal { position: fixed; inset: 0; background: rgba(8,14,28,.55); display: flex; align-items: center; justify-content: center; z-index: 9999; padding: 20px; }
+.live-card { background: #fff; border-radius: 16px; padding: 28px; max-width: 440px; width: 100%; box-shadow: 0 30px 70px rgba(0,0,0,.35); text-align: center; }
+.live-h { font-size: 23px; font-weight: 800; color: #16a34a; margin-bottom: 12px; }
+.live-url { font-weight: 700; color: var(--ink); word-break: break-all; margin-bottom: 8px; font-size: 16px; }
+.live-note { color: var(--muted); font-size: 13.5px; margin-bottom: 20px; line-height: 1.5; }
+.live-acts { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 .lchip.st-invalid-phone { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
 .lchip.st-won { background: #16a34a; color: #fff; border-color: transparent; }
 .lchip.st-lost { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
