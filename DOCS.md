@@ -431,6 +431,33 @@ per-account setting (`LINK_DOMAIN`).
   → `client_reference_id` for attribution; Stripe promotion codes for discounts). Bar already
   points there. Optional later: Stripe webhook → flag a lead as "paying customer" in Warm Leads.
 - **🔜 Companies House**, add the free key to enrich Prowl (established/director/type).
+- **🔮 Future phase, Email enrichment ("Find email"):** find an email for a lead so email becomes
+  a fallback channel alongside WhatsApp/SMS. Google Places never returns email, and the hard part
+  is that our core targets (**no-website micro-businesses**) defeat most email-finder tools, which
+  are **domain-centric** (Hunter/Snov/Apollo/Clearbit/RocketReach) and skewed to larger firms.
+  - **Sources, ranked by yield for website-less UK sole traders:** (1) **Facebook / Instagram page**
+    "About"/contact, the best source, since these businesses usually have a FB page instead of a
+    site; (2) **directories** (Yell, FreeIndex, Cylex, Scoot, Thomson Local, Bark, Checkatrade,
+    Trustpilot), patchy + often a contact form not a raw email; (3) **Companies House** (Ltd only,
+    gives director name not email, but sharpens the FB/LinkedIn search); (4) **web-search + read
+    pass** (agent-style, e.g. Manus, reads top results); (5) **paid B2B enrichment APIs**, low yield
+    for this segment; (6) **website scrape + WHOIS** when a site exists.
+  - **Spec, v1:** a per-lead **"Find email"** action (and a batch enrich), mirroring Prowl. Server
+    pipeline, **cheapest-first** so expensive steps only run on misses: (a) if website exists →
+    scrape `mailto:`/contact; (b) Facebook page lookup by name+location → read About; (c) a couple
+    of directories; (d) fallback to an **agent (Manus) or paid API**; (e) **verify** every hit
+    (MX + SMTP, or NeverBounce/ZeroBounce) before it's usable, to protect sender reputation; (f)
+    cache in Blob (like dossiers), rate-limit + cost-cap like generate/prowl. Surface the found +
+    verified email on the lead card/profile, CSV, and an email send template.
+  - **Caveats to decide on first:** **deliverability**, send cold email from a **separate, warmed
+    domain**, verify addresses, keep volume low (same discipline as the WhatsApp-ban risk).
+    **UK compliance (not legal advice)**, PECR + UK GDPR: cold B2B email to a **limited company**
+    with clear opt-out + identification is lower-risk, but **sole traders/partnerships are treated
+    like individuals** (riskier), and scraping some sources breaches their ToS. Email is likely a
+    **secondary** channel, phone/WhatsApp probably still out-converts cold email for this segment.
+  - **Build vs buy:** an agent like **Manus** fed the lead list is likely less work than rebuilding
+    multi-source scraping in-app (sites change and fight scrapers); in-app gives more control but a
+    real maintenance burden. Recommend hybrid: cheap deterministic checks in-app, agent/API fallback.
 - **🔮 Later:** Prowl Phase B (Trustpilot/Facebook/competitor-gap web search),
   tidy-up admin UI (bulk-delete stale previews), per-keyword dashboard breakdowns,
   multi-user accounts + billing (SaaS), Pounce FAQ/Book-a-Demo/"Not sure yet?" sections on the
