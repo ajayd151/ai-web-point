@@ -469,10 +469,11 @@ per-account setting (`LINK_DOMAIN`).
     real maintenance burden. Recommend hybrid: cheap deterministic checks in-app, agent/API fallback.
 - **🔮 Future phase, Publish / host / edit live websites (Pounce go-live):** turn a Pounce
   `/s/<slug>` preview into a real live site a paying client can use. Three parts:
-  - **Publish toggle (mostly built):** `api/site.js` already renders `mode:'published'` (drops the
-    noindex + the "Yes, sign me up" preview bar). Just needs a gated `POST /api/publish` that flips
-    `sites/<slug>.json` `mode` and a Publish/Unpublish button. Because the page renders from the
-    JSON on every request, this is instant, no redeploy.
+  - **✅ Publish toggle (BUILT 2026-06-11):** gated `POST /api/publish {slug, publish}` flips
+    `sites/<slug>.json` `mode` to `published`/`preview` (+ `publishedAt`); the Websites tab has a
+    **🚀 Make live / Unpublish** button per draft/live row (with a confirm). Instant, no redeploy
+    (the page renders from the JSON each request). Live site is at `/s/<slug>` on the current
+    LINK_DOMAIN until subdomains are wired.
   - **Domain options (low→high effort):** (a) **subpath now**, `sitepounce.com/s/<slug>` (free,
     instant) or a tidier `aiwebpoint.com/s/<slug>`; (b) **per-client subdomain**
     `client.aiwebpoint.com` via a wildcard domain + host→slug routing; (c) **client's own custom
@@ -516,6 +517,9 @@ per-account setting (`LINK_DOMAIN`).
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-11**
+- **🚀 Make live / Unpublish (new):** `POST /api/publish` flips a Pounce site `mode` between
+  published/preview; button on the Websites tab. Publishing drops noindex + the preview bar so the
+  `/s/<slug>` page is a clean public site (Phase 2a; subdomains still pending the wildcard setup).
 - **🌐 Websites tab (new):** lists every mockup (`/v/`) + Pounce site (`/s/`) in one table,
   filter chips with counts (All / 🖼️ Mockups / 🛠️ Draft sites / 🟢 Live sites) + name search.
   Terminology fixed: Mockup / **Draft site** (built, unpublished) / **Live site** (published);

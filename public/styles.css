@@ -366,6 +366,9 @@ tr.tr-blocked td { background: #fafafa; }
 .lchip.wt-mock { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; }
 .lchip.wt-draft { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
 .lchip.wt-live { background: #ecfdf5; color: #047857; border-color: #a7f3d0; }
+.w-acts { white-space: nowrap; }
+.w-acts > * { vertical-align: middle; }
+.w-acts a.ghost { color: var(--blue); font-weight: 600; }
 .lchip.st-invalid-phone { background: #fff7ed; color: #9a3412; border-color: #fed7aa; }
 .lchip.st-won { background: #16a34a; color: #fff; border-color: transparent; }
 .lchip.st-lost { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }

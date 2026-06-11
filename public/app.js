@@ -1527,11 +1527,30 @@ function renderWebsites() {
     live: '<span class="lchip wt-live">🟢 Live site</span>',
   };
   tb.innerHTML = list.map((it) => {
+    let actions = '';
+    if (it.type === 'draft') actions += `<button class="primary btn sm w-publish" data-slug="${esc(it.slug)}" data-name="${esc(it.name || '')}" data-pub="1">🚀 Make live</button> `;
+    else if (it.type === 'live') actions += `<button class="ghost sm w-publish" data-slug="${esc(it.slug)}" data-name="${esc(it.name || '')}" data-pub="0">Unpublish</button> `;
+    actions += `<a class="ghost sm" href="${esc(it.url)}" target="_blank" rel="noopener">Open ↗</a>`;
     return `<tr><td><b>${esc(it.name || '')}</b></td><td>${badge[it.type] || ''}</td>` +
       `<td>${it.date ? esc(fmtDate(it.date)) : '<span class="muted">·</span>'}</td>` +
-      `<td><a class="ghost sm" href="${esc(it.url)}" target="_blank" rel="noopener">Open ↗</a></td></tr>`;
+      `<td class="w-acts">${actions}</td></tr>`;
   }).join('');
 }
+$('websites-rows').addEventListener('click', async (e) => {
+  const btn = e.target.closest && e.target.closest('.w-publish'); if (!btn) return;
+  const slug = btn.dataset.slug; const publish = btn.dataset.pub === '1'; const name = btn.dataset.name || 'this site';
+  const msg = publish
+    ? 'Make the website for ' + name + ' LIVE?\n\nIt becomes public and search-engine visible, and the "Yes, sign me up" preview bar is removed.'
+    : 'Unpublish the website for ' + name + '?\n\nIt goes back to a private draft (noindex + preview bar return).';
+  if (!confirm(msg)) return;
+  btn.disabled = true; const old = btn.textContent; btn.textContent = '…';
+  try {
+    const r = await fetch('/api/publish', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, publish }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Failed');
+    await loadWebsites();
+  } catch (x) { alert('Could not update: ' + (x.message || x)); btn.disabled = false; btn.textContent = old; }
+});
 document.querySelectorAll('#websites-filters .leadf-btn').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('#websites-filters .leadf-btn').forEach((x) => x.classList.toggle('active', x === b));
   websitesFilter = b.dataset.f; renderWebsites();
