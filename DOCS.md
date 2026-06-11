@@ -536,6 +536,11 @@ per-account setting (`LINK_DOMAIN`).
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-11**
+- **Make live on a subdomain (Phase 2b, new):** one-click publish to
+  `<sub>.aiwebpoint.com`. `middleware.js` routes the subdomain root to the site renderer,
+  `api/publish.js` registers the domain on Vercel via the API (`lib/vercel.js`, auto SSL) and maps
+  `domains/_index.json` (sub→slug). Needs env `VERCEL_TOKEN`/`VERCEL_PROJECT_ID`/`VERCEL_TEAM_ID`.
+  Wildcard `*.aiwebpoint.com` provides the DNS; per-subdomain add to Vercel provides the cert.
 - **🚀 Make live / Unpublish (new):** `POST /api/publish` flips a Pounce site `mode` between
   published/preview; button on the Websites tab. Publishing drops noindex + the preview bar so the
   `/s/<slug>` page is a clean public site (Phase 2a; subdomains still pending the wildcard setup).
