@@ -458,6 +458,24 @@ per-account setting (`LINK_DOMAIN`).
 
 ## 11. Roadmap
 
+### ⏸️ Parked / on hold (quick reference, as of 2026-06-11)
+Things we deliberately deferred, newest first. Details in the bullets below + the change log.
+1. **Mockup IMAGE revamp** (the picture itself, via `generate.js`): brighter/positive hero photo,
+   fake nav menu (Home / About / Contact), bigger/bolder service chips, and remove or sentence-ify
+   the composited blue "Let me show you the full website over a call" button. (The preview *page*
+   around the image, nudge + green CTA, is already polished; only the baked-in image is pending.)
+2. **Phase 3, AI edit box + file upload** for live sites (the next build): type a change in plain
+   English (+ upload photos) → AI returns a minimal patch → shows a diff → apply on confirm only →
+   backs up the previous version. Needs no new setup (uses the existing OpenAI key).
+3. **Phase 4, custom domains** (a client's own `theirbiz.co.uk` instead of a subdomain): Vercel
+   Domains API + DNS records + a verification poll. Most ops, saved for last.
+4. **Email enrichment ("Find email")** so email can be a fallback channel (Facebook/directories
+   first, verify before send). Full spec below.
+5. **Earlier parked:** Pounce v2 client photo upload (before/after), **Payments** (Stripe links),
+   **Companies House** key for Prowl, **Prowl Phase B** (Trustpilot/Facebook web search),
+   **WhatsApp image-vs-link** A/B test.
+
+
 - **✅ Done:** lead finder, AI mockups, WhatsApp+SMS send, branded links, messaged-tracking,
   engagement tracking, **Performance dashboard** (incl. 🤑 Sign-ups stat), **Warm Leads** + tab
   alert + signup-clicker surfacing, **🐾 Prowl**, **🐆 Pounce** (full 1-page website builder, live,
