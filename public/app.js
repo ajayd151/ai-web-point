@@ -1487,7 +1487,7 @@ $('leads-export').addEventListener('click', exportLeadsCsv);
 let websitesData = null;
 let websitesFilter = 'all';
 async function loadWebsites() {
-  const tb = $('websites-rows'); if (tb) tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">Loading…</td></tr>';
+  const tb = $('websites-rows'); if (tb) tb.innerHTML = '<tr><td colspan="4" class="muted" style="padding:14px">Loading…</td></tr>';
   if (!authed) return;
   const items = [];
   try {
@@ -1520,16 +1520,14 @@ function renderWebsites() {
   if (websitesFilter !== 'all') list = list.filter((it) => it.type === websitesFilter);
   if (q) list = list.filter((it) => String(it.name || '').toLowerCase().indexOf(q) >= 0);
   list.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
-  if (!list.length) { tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">Nothing here yet.</td></tr>'; return; }
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="4" class="muted" style="padding:14px">Nothing here yet.</td></tr>'; return; }
   const badge = {
     mockup: '<span class="lchip wt-mock">🖼️ Mockup</span>',
     draft: '<span class="lchip wt-draft">🛠️ Draft site</span>',
     live: '<span class="lchip wt-live">🟢 Live site</span>',
   };
   tb.innerHTML = list.map((it) => {
-    const short = String(it.url || '').replace(/^https?:\/\//, '');
     return `<tr><td><b>${esc(it.name || '')}</b></td><td>${badge[it.type] || ''}</td>` +
-      `<td><a href="${esc(it.url)}" target="_blank" rel="noopener" class="w-link">${esc(short)}</a></td>` +
       `<td>${it.date ? esc(fmtDate(it.date)) : '<span class="muted">·</span>'}</td>` +
       `<td><a class="ghost sm" href="${esc(it.url)}" target="_blank" rel="noopener">Open ↗</a></td></tr>`;
   }).join('');
