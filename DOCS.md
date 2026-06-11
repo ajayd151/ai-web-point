@@ -1,6 +1,6 @@
 # Site Pounce, Technical & Product Documentation
 
-_Last updated: 2026-06-10_
+_Last updated: 2026-06-11_
 
 Site Pounce is a lead-generation, outreach **and sales-intelligence** platform for a
 web-design agency. It finds local businesses with **no website**, generates a
@@ -124,10 +124,18 @@ application form). The whole interface is hidden behind it until signed in.
   highlighted), recent-activity table.
 - **Funnel:** Messaged → Viewed → Demo → Sign-up, each % converting from the stage above, with a
   caption noting how many marked themselves not interested via the mockup.
+- **🔎 By Search Type table:** every mockup grouped by **niche + area**, then **grouped by niche**
+  (busiest niche first, separator line between niches). Columns = Mockups / Messaged / Mockup viewed
+  (% of messaged) / Demo clicks / Sign-up clicks / Not interested. The 🔥/🤑/🙅 counts **hover to show
+  the business names**. Location shows the **core town you searched** with the lead's actual
+  (auto-expanded) town in brackets, e.g. "Wolverhampton (Dudley)", from the stored `searchLoc`.
 - **🎯 Daily activity table:** one row per day (UK time, newest first, last 30 days), columns =
-  Mockups / Messaged / Mockup viewed / Demo clicks / Sign-up clicks / Not interested, with Today
-  highlighted, so you can track daily targets. Built from a per-day `byDay` query (`lib/db.js`,
-  distinct businesses per event) + mockups bucketed by blob date; independent of the 7/30/all range.
+  Mockups / Messaged / Mockup viewed / Demo clicks / Sign-up clicks / Not interested, **Today
+  highlighted**. **Every number hovers to show the businesses behind it** (validation), and shows a
+  **percentage** (Messaged vs that day's Mockups; the rest vs that day's Messaged). NB "Messaged" is
+  counted when the WhatsApp/SMS **send flow is opened** (the app can't see if Send was actually
+  pressed in WhatsApp). Built from a per-day `byDay` query (`lib/db.js`, distinct businesses per
+  event, with slug→name) + mockups bucketed by blob date; independent of the 7/30/all range.
 - **Insights split**: "📊 Based on your data" (computed) vs "💡 General tips" (static).
 - **Date range** (7 / 30 / all), **CSV export**, refresh.
 
@@ -500,6 +508,40 @@ per-account setting (`LINK_DOMAIN`).
   tidy-up admin UI (bulk-delete stale previews), per-keyword dashboard breakdowns,
   multi-user accounts + billing (SaaS), Pounce FAQ/Book-a-Demo/"Not sure yet?" sections on the
   subscribe page.
+
+---
+
+## 11b. Change log (recent sessions)
+
+Newest first. Reference sections above are the source of truth; this is a quick history.
+
+**2026-06-11**
+- **🌐 Websites tab (new):** lists every mockup (`/v/`) + Pounce site (`/s/`) in one table,
+  filter chips with counts (All / 🖼️ Mockups / 🛠️ Draft sites / 🟢 Live sites) + name search.
+  Terminology fixed: Mockup / **Draft site** (built, unpublished) / **Live site** (published);
+  draft & live share the same `/s/<slug>` URL (live = the `mode` flag, not a new path). The raw
+  URL column was removed (Open button only) so prospects can't read the link off-screen.
+  `/api/sites` now returns an absolute branded URL. (Phase 1 of the live-websites plan.)
+- **🎯 Daily activity table (new)** on Performance, with hover-names + per-day percentages (see §3).
+- **By Search Type:** grouped by niche, hover-names on 🔥/🤑/🙅, core-search town shown with the
+  auto-expanded town in brackets via the new `searchLoc` field, "Not interested" column added.
+- **Mockup limit bug fixed:** generation recorded a usage slot *before* the OpenAI call, so failed/
+  retried mockups burned quota (hit the cap after ~6 real ones). Now `check()` up front +
+  `record()` only on success; generate cap bumped 30→50; stale "12 hours" 429 text fixed everywhere.
+- **Business-name humanising** extended to the mockup image + preview page (shared `lib/names.js`),
+  and run-together names (`PerformanceCarValeting` → `Performance Car Valeting`) now split too.
+- **Email enrichment** + **Publish/host/edit live websites** captured as future phases (see §11).
+
+**2026-06-10**
+- **"No thanks" decline flow** + **Not interested (via mockup)** status + Performance card/funnel.
+- **Tab renames:** Messages→**Templates**, Hot Leads→**🌡️ Warm Leads**, Leads→**👤 All Leads**.
+- **DOCS.docx** Word export added (generated from DOCS.md by `scripts/md_to_docx.py`, no deps).
+- "Opened" renamed **"Mockup viewed"** everywhere; By-channel rows reworded to "% viewed (x of y)".
+
+**2026-06-09**
+- Search **Load more** + **sort order** + **follow-up** button; results-bar layout fix.
+- Usage caps moved to **20h** window, generate/search **30**; markSent records sends from all surfaces.
+- Deploy lessons (gentle verification; `vercel.json` rewrite+functions gotcha), see standing rules.
 
 ---
 
