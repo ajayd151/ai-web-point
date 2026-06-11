@@ -482,6 +482,18 @@ per-account setting (`LINK_DOMAIN`).
     a `host → slug` map (store `customDomain` on the site JSON or a `domains/<host>.json`) resolved
     by `middleware.js`/`api/site.js` from the Host header. SSL is automatic. Per-domain DNS/add is
     manual ops (scriptable via Vercel API at scale).
+  - **Wildcard subdomain setup (the actual infra, recorded 2026-06-11):** DNS for `aiwebpoint.com`
+    is on **Cloudflare** (nameservers `aida`/`amit.ns.cloudflare.com`, "Third Party" in Vercel — do
+    NOT enable Vercel DNS or change nameservers). The apex `aiwebpoint.com` is on a different host
+    (the agency's main site); leave it. `preview.aiwebpoint.com` is the existing model: a CNAME to
+    Vercel, **DNS only / grey cloud** (Vercel auto-issued its cert). To enable `*.aiwebpoint.com`:
+    **(1) Vercel** → domain `aiwebpoint.com` → Connected Projects → **Connect** `*.aiwebpoint.com`
+    to the `ai-web-point` project (DONE 2026-06-11). **(2) Cloudflare** → aiwebpoint.com → DNS → add
+    **CNAME, Name `*`, Target `7f856d7d334ceb4c.vercel-dns-017.com`** (the same target preview/
+    sitepounce already use, to match proven records; `cname.vercel-dns.com` also works), **DNS only
+    (grey cloud, proxy OFF, critical else SSL loops)** (PENDING). Then a subdomain test (e.g.
+    `https://test.aiwebpoint.com`) should return a Vercel 404 with valid SSL.
+    Existing records (apex, www, preview, MX/email) are safe, specific records win over the wildcard.
   - **Websites list (data already exists):** `GET /api/sites` already returns every site
     (slug, name, mode, createdAt, `/s/` url). Missing only an in-app **🌐 Websites** screen: a
     table with Status (Preview/Published), clickable URL, Created, and Open / Publish / Edit /
