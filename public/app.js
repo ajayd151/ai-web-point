@@ -1574,6 +1574,21 @@ function dashBars(items, labelFn, valFn, highlightMax) {
   }).join('') + '</div>';
 }
 // "By search type": group every mockup by niche + area, show pipeline counts
+// "Daily activity": one row per day (newest first) so you can track daily targets
+function dailyTableHTML(d) {
+  const days = d.daily || [];
+  if (!days.length) return '';
+  let lastActive = 0;
+  days.forEach((r, i) => { if (r.mockups || r.messaged || r.viewed || r.demo || r.signup || r.declined) lastActive = i; });
+  const show = days.slice(0, Math.max(7, lastActive + 1)); // always show the last week, plus older active days
+  const cell = (n, bold) => (n > 0 ? (bold ? '<b>' + n + '</b>' : String(n)) : '<span class="muted">·</span>');
+  const tr = show.map((r) => {
+    const cls = r.label === 'Today' ? ' class="dt-today"' : '';
+    return `<tr${cls}><td><b>${esc(r.label)}</b></td><td>${cell(r.mockups)}</td><td>${cell(r.messaged, true)}</td><td>${cell(r.viewed)}</td><td>${cell(r.demo)}</td><td>${cell(r.signup)}</td><td>${cell(r.declined)}</td></tr>`;
+  }).join('');
+  return '<div class="dash-table-wrap"><h3>🎯 Daily activity</h3><p class="muted dash-sub">What you did each day (UK time), newest first, so you can keep on top of your daily targets. Last 30 days tracked.</p>' +
+    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Day</th><th>Mockups</th><th>Messaged</th><th>Mockup viewed</th><th>Demo clicks</th><th>Sign-up clicks</th><th>Not interested</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+}
 function bySearchTypeHTML() {
   let list = [];
   try { list = mergedRecent(); } catch (e) { list = []; }
@@ -1709,7 +1724,7 @@ function renderDashboard(d) {
     table = '<div class="dash-table-wrap"><h3>🕒 Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
       '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Mockup viewed</th><th>Demo click</th><th>Sign-up click</th><th>Status</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
-  body.innerHTML = insights + top + bySearchTypeHTML() + channelBlock + hourChart + dayChart + table + tips +
+  body.innerHTML = insights + top + dailyTableHTML(d) + bySearchTypeHTML() + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
   const rb = $('dash-refresh'); if (rb) rb.addEventListener('click', loadDashboard);
 }

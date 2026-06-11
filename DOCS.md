@@ -123,6 +123,10 @@ application form). The whole interface is hidden behind it until signed in.
   highlighted), recent-activity table.
 - **Funnel:** Messaged → Viewed → Demo → Sign-up, each % converting from the stage above, with a
   caption noting how many marked themselves not interested via the mockup.
+- **🎯 Daily activity table:** one row per day (UK time, newest first, last 30 days), columns =
+  Mockups / Messaged / Mockup viewed / Demo clicks / Sign-up clicks / Not interested, with Today
+  highlighted, so you can track daily targets. Built from a per-day `byDay` query (`lib/db.js`,
+  distinct businesses per event) + mockups bucketed by blob date; independent of the 7/30/all range.
 - **Insights split**: "📊 Based on your data" (computed) vs "💡 General tips" (static).
 - **Date range** (7 / 30 / all), **CSV export**, refresh.
 

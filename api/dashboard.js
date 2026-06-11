@@ -10,6 +10,15 @@ function fmtHour(h) {
   const hr = h % 12 === 0 ? 12 : h % 12;
   return hr + ampm;
 }
+function londonDate(d) { // -> 'YYYY-MM-DD' in UK time
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(d);
+}
+function dayLabel(ds, i) {
+  if (i === 0) return 'Today';
+  if (i === 1) return 'Yesterday';
+  const d = new Date(ds + 'T12:00:00Z');
+  return new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'short', day: 'numeric', month: 'short' }).format(d);
+}
 function nameFromSlug(slug) {
   return String(slug || '').replace(/-[0-9a-f]{8}$/i, '').split('-')
     .map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : '')).join(' ').trim() || slug;
@@ -23,9 +32,12 @@ module.exports = async (req, res) => {
 
   // total mockups generated (blob metadata files), respecting the date range
   let generated = 0;
+  const mockupsByDay = {}; // London-date string -> count, for the daily table
   try {
     const { blobs } = await list({ prefix: 'mockups/', limit: 1000 });
-    generated = blobs.filter((b) => b.pathname.endsWith('.json') && (!since || new Date(b.uploadedAt).toISOString() >= since)).length;
+    const jsons = blobs.filter((b) => b.pathname.endsWith('.json'));
+    generated = jsons.filter((b) => (!since || new Date(b.uploadedAt).toISOString() >= since)).length;
+    jsons.forEach((b) => { const d = londonDate(new Date(b.uploadedAt)); mockupsByDay[d] = (mockupsByDay[d] || 0) + 1; });
   } catch (e) { /* ignore */ }
 
   // CRM statuses (slug -> status) from the notes index
@@ -73,6 +85,29 @@ module.exports = async (req, res) => {
   d.byDow.forEach((r) => { if (dows[r.d]) dows[r.d].n = r.n; });
 
   const avgTto = d.avgTtoMin != null ? Math.round(d.avgTtoMin) : null;
+
+  // ---- daily activity table (last 30 days, UK time), so you can track targets ----
+  const byDayMap = {}; // day -> { sent, view, cta, signup, decline }
+  (d.byDay || []).forEach((r) => {
+    (byDayMap[r.day] = byDayMap[r.day] || {})[r.event] = r.n;
+  });
+  const daily = [];
+  let cursor = new Date(londonDate(new Date()) + 'T12:00:00Z');
+  for (let i = 0; i < 30; i++) {
+    const ds = londonDate(cursor);
+    const ev = byDayMap[ds] || {};
+    daily.push({
+      date: ds,
+      label: dayLabel(ds, i),
+      mockups: mockupsByDay[ds] || 0,
+      messaged: ev.sent || 0,
+      viewed: ev.view || 0,
+      demo: ev.cta || 0,
+      signup: ev.signup || 0,
+      declined: ev.decline || 0,
+    });
+    cursor = new Date(cursor.getTime() - 86400000);
+  }
 
   const rows = d.rows.map((r) => ({
     slug: r.slug,
@@ -133,6 +168,7 @@ module.exports = async (req, res) => {
     byChannel: ch,
     opensByHour: hours,
     opensByDow: dows,
+    daily,
     rows,
     insights,
   });
