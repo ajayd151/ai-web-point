@@ -549,7 +549,21 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
    Domains API + DNS records + a verification poll. Most ops, saved for last.
 4. **Email enrichment ("Find email")** so email can be a fallback channel (Facebook/directories
    first, verify before send). Full spec below.
-5. **Earlier parked:** Pounce v2 client photo upload (before/after), **Payments** (Stripe links),
+5. **Multi-user SaaS with membership tiers (planned 2026-06-12, future):** admin adds users, 3
+   tiers gate features/limits. Build order: (1) real accounts + roles (users table in Postgres,
+   hashed passwords, sessions, an Admin area: invite user, set tier, suspend, usage view); (2)
+   **data separation per user** (owner on every mockup/site/dossier/note/call entry, per-user blob
+   prefixes, user_id on link_events; move shared indexes to Postgres, also kills the blob races);
+   (3) tier enforcement (per-user tier-driven rate limits + "Upgrade to unlock" UI); (4) Stripe
+   subscriptions ↔ tiers via webhook (launch can set tiers manually in admin). Suggested tiers:
+   **🐾 Scout** (~£29/mo: 5 searches/day, 15 mockups/mo, Call List + CRM, basic dashboard, no
+   Prowl/Pounce), **🐆 Hunter** (~£79/mo: 30/day, 60 mockups/mo, Prowl 30/mo, Pounce 10/mo, 1 live
+   site, full dashboard), **🦁 Apex** (~£149-199/mo: fair-use unlimited searches/Prowl, 200
+   mockups/mo, 50 Pounce, 25 live sites, custom domains, **white-label branding**, 3 team logins).
+   WhatsApp guardrails always on for every tier. ⚠️ White-label makes the agency brand
+   (AGENCY_NAME, LINK_DOMAIN, "Designed by" signature) per-account settings, avoid hard-wiring the
+   brand deeper meanwhile. The biggest single build so far (~everything-Pounce-sized).
+6. **Earlier parked:** Pounce v2 client photo upload (before/after), **Payments** (Stripe links),
    **Companies House** key for Prowl, **Prowl Phase B** (Trustpilot/Facebook web search),
    **WhatsApp image-vs-link** A/B test.
 
