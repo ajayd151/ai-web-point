@@ -1739,7 +1739,19 @@ $('websites-refresh').addEventListener('click', (e) => refreshFeedback(e.current
 // same key), so Call List / All Leads / Lead Profile show ONE status.
 let callsData = null;
 let callsFilter = 'tocall';
-let callKeys = new Set();
+let callKeys = new Set();        // server entry keys
+let callNameKeys = new Set();    // normKey(name|location) of entries, reliable membership check
+// serialize every write: /api/calls does read-modify-write on one blob, so two
+// overlapping adds would silently lose one (last write wins). A promise chain
+// guarantees one in flight at a time.
+let callsPostChain = Promise.resolve();
+function callsPost(payload) {
+  const run = () => fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    .then(async (r) => { if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Failed'); } return r.json(); });
+  const p = callsPostChain.then(run, run);
+  callsPostChain = p.catch(() => {});
+  return p;
+}
 const CALL_FILTERS = {
   tocall: ['', 'no-answer'],
   callback: ['callback'],
@@ -1753,6 +1765,7 @@ function callKeyFor(a) {
   return String((a.name || '') + '-' + (a.location || '')).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100) || 'lead';
 }
 function isOnCallList(b, rec) {
+  if (callNameKeys.has(normKey(b.name, b.location))) return true; // matches however the entry was keyed
   return callKeys.has(callKeyFor({ slug: rec ? rec.id : '', name: b.name, location: b.location })) ||
     callKeys.has(callKeyFor({ name: b.name, location: b.location }));
 }
@@ -1766,8 +1779,11 @@ async function loadCallList() {
     callsData = { calls: cd.calls || [], statuses: (ld && ld.statuses) || {}, prowled: new Set((ld && ld.prowled) || []), prowledAt: (ld && ld.prowledAt) || {} };
   } catch (e) { callsData = { calls: [], statuses: {}, prowled: new Set(), prowledAt: {} }; }
   callKeys = new Set(callsData.calls.map((c) => c.key));
+  callNameKeys = new Set(callsData.calls.map((c) => normKey(c.name, c.location)));
   renderCallList();
   updateCallBadge();
+  // search results on screen? re-render so the ✓ On-call-list states reflect the server truth
+  try { if (lastSearchResults && lastSearchResults.length && $('view-search') && !$('view-search').classList.contains('hidden')) renderResults(lastSearchResults); } catch (e) { /* cosmetic */ }
 }
 function callStatusOf(c) { return (callsData && callsData.statuses && callsData.statuses[c.key]) || ''; }
 function updateCallBadge() {
@@ -1817,9 +1833,10 @@ function renderCallList() {
     tr.querySelector('.call-remove').addEventListener('click', async () => {
       if (!confirm('Remove ' + c.name + ' from the call list? (Their status and notes are kept.)')) return;
       try {
-        await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remove: c.key }) });
+        await callsPost({ remove: c.key }); // serialized with any pending adds
         callsData.calls = callsData.calls.filter((x) => x.key !== c.key);
         callKeys.delete(c.key);
+        callNameKeys.delete(normKey(c.name, c.location));
         renderCallList(); updateCallBadge();
       } catch (e) { alert('Could not remove.'); }
     });
@@ -1858,11 +1875,11 @@ async function addToCallList(b, rec, btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
   const add = { name: b.name, location: b.location || '', category: b.category || '', phone: (b.phones && b.phones[0]) || b.phone || '', placeId: b.id || b.placeId || '', slug: rec ? rec.id : (b.slug || ''), mapsUrl: b.mapsUrl || '' };
   try {
-    const r = await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ add }) });
-    if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+    await callsPost({ add }); // serialized, so rapid adds can't overwrite each other
     callKeys.add(callKeyFor(add));
-    if (callsData) { loadCallList(); } // refresh cache + badge in the background
+    callNameKeys.add(normKey(add.name, add.location));
     if (btn) { btn.textContent = '✓ On call list'; btn.classList.add('added'); }
+    loadCallList(); // refresh cache + badge from the server in the background
   } catch (e) {
     alert('Could not add to the call list: ' + (e.message || e));
     if (btn) { btn.disabled = false; btn.textContent = '📞 Add to call list'; }
@@ -2183,4 +2200,4 @@ function restoreLastSearch() {
   if (rb) rb.addEventListener('click', () => runRecentSearch({ industry: c.params.industry, location: c.params.location, filters: c.params.filters }));
   renderResults(lastSearchResults);
 }
-restoreLastSearch();
+try { restoreLastSearch(); } catch (e) { /* a restore problem must never break the app */ }
