@@ -1762,8 +1762,8 @@ async function loadCallList() {
     const [cr, lr] = await Promise.all([fetch('/api/calls'), fetch('/api/leads')]);
     const cd = await cr.json();
     const ld = await lr.json().catch(() => ({}));
-    callsData = { calls: cd.calls || [], statuses: (ld && ld.statuses) || {}, prowled: new Set((ld && ld.prowled) || []) };
-  } catch (e) { callsData = { calls: [], statuses: {}, prowled: new Set() }; }
+    callsData = { calls: cd.calls || [], statuses: (ld && ld.statuses) || {}, prowled: new Set((ld && ld.prowled) || []), prowledAt: (ld && ld.prowledAt) || {} };
+  } catch (e) { callsData = { calls: [], statuses: {}, prowled: new Set(), prowledAt: {} }; }
   callKeys = new Set(callsData.calls.map((c) => c.key));
   renderCallList();
   updateCallBadge();
@@ -1800,7 +1800,8 @@ function renderCallList() {
       `<td><button class="ghost sm call-notes">📝 Notes</button></td>` +
       `<td class="w-acts">${(callsData.prowled && callsData.prowled.has(c.key))
         ? '<button class="ghost sm call-prowl intel-ready" title="The intelligence dossier is ready, open it">🐾 View intel ✓</button>'
-        : '<button class="mini rc-prowl call-prowl" title="Gather intelligence on this business before you dial (takes ~30s)">🐾 Prowl</button>'} <button class="ghost sm call-remove" title="Remove from the call list">✕</button></td>`;
+        : '<button class="mini rc-prowl call-prowl" title="Gather intelligence on this business before you dial (takes ~30s)">🐾 Prowl</button>'} <button class="ghost sm call-remove" title="Remove from the call list">✕</button>` +
+      ((callsData.prowled && callsData.prowled.has(c.key) && callsData.prowledAt[c.key]) ? `<div class="intel-when muted">Prowled ${esc(fmtDateShort(callsData.prowledAt[c.key]))}</div>` : '') + '</td>';
     const lead = { slug: c.key, name: c.name, location: c.location || '', category: c.category || '', phone: c.phone || '', mapsUrl: c.mapsUrl || '' };
     tr.querySelector('.lead-name').addEventListener('click', () => openLead(lead));
     tr.querySelector('.call-prowl').addEventListener('click', () => openProwl(lead));

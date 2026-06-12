@@ -396,6 +396,7 @@ tr.tr-blocked td { background: #fafafa; }
 button.call-add { background: linear-gradient(90deg, #16a34a, #15994a); color: #fff; }
 button.call-add.added { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; opacity: 1; }
 .call-prowl.intel-ready { background: #ecfdf5; color: #047857; border-color: #a7f3d0; white-space: nowrap; }
+.intel-when { font-size: 11px; margin-top: 4px; }
 .call-tel { color: var(--blue); font-weight: 700; text-decoration: none; white-space: nowrap; }
 .call-tel:hover { text-decoration: underline; }
 .call-notes-row td { background: var(--bg); }
