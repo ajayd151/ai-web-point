@@ -1741,6 +1741,8 @@ let callsData = null;
 let callsFilter = 'tocall';
 let callKeys = new Set();        // server entry keys
 let callNameKeys = new Set();    // normKey(name|location) of entries, reliable membership check
+let callOptimistic = new Set();  // adds made THIS session: blob reads can lag a put by a moment,
+                                 // so a refresh must never flip a just-added ✓ back to the button
 // serialize every write: /api/calls does read-modify-write on one blob, so two
 // overlapping adds would silently lose one (last write wins). A promise chain
 // guarantees one in flight at a time.
@@ -1765,6 +1767,7 @@ function callKeyFor(a) {
   return String((a.name || '') + '-' + (a.location || '')).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100) || 'lead';
 }
 function isOnCallList(b, rec) {
+  if (callOptimistic.has(normKey(b.name, b.location))) return true; // just added, even if the server read lags
   if (callNameKeys.has(normKey(b.name, b.location))) return true; // matches however the entry was keyed
   return callKeys.has(callKeyFor({ slug: rec ? rec.id : '', name: b.name, location: b.location })) ||
     callKeys.has(callKeyFor({ name: b.name, location: b.location }));
@@ -1837,6 +1840,7 @@ function renderCallList() {
         callsData.calls = callsData.calls.filter((x) => x.key !== c.key);
         callKeys.delete(c.key);
         callNameKeys.delete(normKey(c.name, c.location));
+        callOptimistic.delete(normKey(c.name, c.location));
         renderCallList(); updateCallBadge();
       } catch (e) { alert('Could not remove.'); }
     });
@@ -1878,6 +1882,7 @@ async function addToCallList(b, rec, btn) {
     await callsPost({ add }); // serialized, so rapid adds can't overwrite each other
     callKeys.add(callKeyFor(add));
     callNameKeys.add(normKey(add.name, add.location));
+    callOptimistic.add(normKey(add.name, add.location));
     if (btn) { btn.textContent = '✓ On call list'; btn.classList.add('added'); }
     loadCallList(); // refresh cache + badge from the server in the background
   } catch (e) {
