@@ -38,6 +38,7 @@ After signing in (full-screen Site Pounce login gate), the app has a **top navig
 | **💬 Templates** | Edit the first-message / follow-up / CTA wording (saved per device) + Blocked contacts |
 | **📊 Performance** | Dashboard: stats, insights, charts, CSV, date-range (lazy-loads) |
 | **🌡️ Warm Leads** | Prospects who requested a demo, with a live count badge + actions |
+| **📞 Call List** | Businesses queued for a phone call (the safe first touch): tap-to-dial, Prowl, unified CRM status + timestamped notes, filter chips, badge = leads waiting for a call |
 | **👤 All Leads** | Every business worked: searchable/filterable table (Prowled / Website built / Messaged / Blocked); each row opens the Lead Profile |
 | **🌐 Websites** | Every mockup (`/v/`) + Pounce site (`/s/`) in one table, filterable by Mockup / Draft site / Live site, with an Open button (the raw URL is intentionally not shown). Terminology: **Mockup** = image preview (`/v/`); **Draft site** = built but unpublished (`/s/`, `mode:preview`); **Live site** = published (`/s/`, `mode:published`). Draft and Live share the same `/s/<slug>` URL, "live" is just the `mode` flag, not a different path. (Make Live / AI editor are the next phases.) |
 
@@ -117,6 +118,26 @@ application form). The whole interface is hidden behind it until signed in.
   results** (server `excludeIds` by place id + client filter by name+location) and their
   **outreach buttons are removed** (Blocked state + Unblock shown in Warm Leads / Recent).
   Managed in **Templates → 🚫 Blocked contacts** (list + Unblock). Per device (`aiwp_blocked`).
+
+### 📞 Call List & WhatsApp guardrails (added after the 2026-06-12 WhatsApp restriction)
+- **⚠️ The hard lesson:** cold WhatsApp to people who never opted in violates WhatsApp policy and
+  gets numbers restricted at volume, **manual sending or not** (it only avoids the automation
+  signal). The user's number was restricted on 2026-06-12. WhatsApp is now positioned as a
+  **follow-up channel** for people who replied/clicked; **first touch = phone call** (or SMS/email).
+- **WhatsApp guardrails:** ALL wa.me clicks in the app pass one capture-phase guard
+  (`waGuardAllow` in app.js, plus the follow-up `window.open` path): a once-a-day risk confirm on
+  the first send, then a **hard daily cap** (default **10**, per device, resets at midnight, counter
+  `aiwp_wa_log`). Cap is adjustable in **Templates → ⚠️ WhatsApp safety** (warns above 10), which
+  also shows "Sends today: X of Y" and the policy explanation.
+- **📞 Call List:** "📞 Add to call list" is the **primary** button on search-result cards (above
+  Generate mockup) + in the Lead Profile. The Call List tab shows rows with tap-to-call phone
+  (`tel:`), 🐾 Prowl per row, a **status dropdown** (the same unified CRM statuses, change here =
+  changes everywhere), **expandable timestamped notes** (same `/api/note` CRM), filter chips
+  (To call / Call back / Contacted / Interested / Not interested / All, with counts) and a nav
+  badge counting leads still waiting for a call. Stored server-side (`calls/_list.json`) so the
+  list built on desktop is on the phone when out calling. Status/notes key = the lead's mockup
+  slug when one exists, else a `name-location` slug (note: if a mockup is generated later the two
+  keys can diverge; edge case, accepted).
 
 ### Engagement tracking
 - A JS beacon on the preview page logs **opens (`view`)** and **demo-CTA clicks (`cta`)** to
@@ -353,6 +374,7 @@ middleware.js (root)  routes <sub>.aiwebpoint.com → /api/site?sub=
 | `GET /api/img?slug=` |, | Branded image proxy (`/i/:slug.png`; `?download=1` to save). Immutable-cached. |
 | `GET /api/track?slug=&e=&c=` |, | Records `view`/`cta`/`sent` + channel to Postgres. Bot-filtered. |
 | `POST /api/decline` |, | **Public** (no auth). Prospect clicked "No thanks" on their mockup: records a `decline` event + sets the lead's status to `declined` (Not interested via mockup) with their reason/feedback in the notes. |
+| `GET\|POST /api/calls` | ✅ | Call List: list / add / remove queued businesses (`calls/_list.json`). Status + notes reuse `/api/note` keyed by the same key. |
 | `GET /api/mockups` | ✅ | All mockups + engagement stats + last-open channel. |
 | `GET /api/dashboard?days=` | ✅ | Aggregated stats + insights (date-range filtered). |
 | `GET /api/hotleads` | ✅ | Demo-clickers + contact details (from mockup metadata). |
@@ -382,6 +404,7 @@ was removed (legacy).
 ### Vercel Blob
 - `mockups/<slug>.png`, final mockup image.
 - `mockups/<slug>.json`, `{ name, loc, searchLoc, who, cta, img, phone, category }` (`searchLoc` = the core location you typed; `loc` may be an auto-expanded nearby town).
+- `calls/_list.json`, the 📞 Call List: map key → `{ key, name, location, category, phone, placeId, slug, mapsUrl, addedAt }` (status/notes live in the CRM under the same key).
 - `dossiers/<slug>.json`, cached Prowl dossier.
 - `sites/<slug>.json`, generated Pounce site content + `mode` (`preview`/`published`) +
   `createdAt`. **This prefix is the preview registry** (`GET /api/sites` lists it).
@@ -634,6 +657,13 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-12**
+- **⚠️ WhatsApp restriction + response:** the user's WhatsApp number was restricted for cold-send
+  volume. Built guardrails: a capture-phase guard on every wa.me click, once-a-day risk warning,
+  **hard daily cap (default 10)** with a counter, a ⚠️ WhatsApp safety panel in Templates, and the
+  strategy shift to **phone-first** outreach.
+- **📞 Call List (new tab):** queue businesses for a call (primary button on search cards + Lead
+  Profile), tap-to-dial rows with Prowl, unified CRM status dropdown + timestamped notes, filter
+  chips with counts, nav badge, stored server-side so it syncs to the phone. `GET|POST /api/calls`.
 - **Search results banner:** the deep-search summary is now an animated stats hero (big count-up
   numbers for leads / listings combed / areas searched, + area chips) instead of one paragraph.
 - **humaniseBusinessName** upgraded: word-dictionary split for run-together names ("jjhomecarwash"

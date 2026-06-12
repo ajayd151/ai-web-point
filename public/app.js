@@ -18,6 +18,7 @@ const SETTINGS_DEFAULTS = {
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
   followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not, happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
+  waCap: 10, // hard daily WhatsApp send cap (ban protection)
 };
 function loadSettings() {
   let s = {};
@@ -31,6 +32,7 @@ function saveSettings() {
       ctaHero: $('set-cta-hero').value,
       ctaBottom: $('set-cta-bottom').value,
       followUp: $('set-followup').value,
+      waCap: Math.max(1, Math.min(50, parseInt($('set-wa-cap').value, 10) || 10)),
     }));
   } catch (e) {}
 }
@@ -40,7 +42,13 @@ function saveSettings() {
   $('set-cta-hero').value = s.ctaHero;
   $('set-cta-bottom').value = s.ctaBottom;
   $('set-followup').value = s.followUp;
-  ['set-wa-msg', 'set-cta-hero', 'set-cta-bottom', 'set-followup'].forEach((id) => $(id).addEventListener('input', saveSettings));
+  $('set-wa-cap').value = s.waCap;
+  ['set-wa-msg', 'set-cta-hero', 'set-cta-bottom', 'set-followup', 'set-wa-cap'].forEach((id) => $(id).addEventListener('input', saveSettings));
+  $('set-wa-cap').addEventListener('change', () => {
+    const v = parseInt($('set-wa-cap').value, 10) || 10;
+    if (v > 10) alert('⚠️ Heads up: more than 10 WhatsApp sends a day raises the risk of another ban, especially on a number that has already been restricted.');
+    updateWaToday();
+  });
 })();
 
 // ---- auth (protects the paid /api/generate endpoint) ---------------------
@@ -49,7 +57,7 @@ function setAuthUI(on) {
   $('gate').classList.toggle('hidden', on);          // full-screen gate hides the app until signed in
   $('logout-btn').classList.toggle('hidden', !on);
   if (!on) { setTimeout(() => { try { $('gate-user').focus(); } catch (e) {} }, 60); }
-  if (on) { loadServerMockups(); loadHotLeads(); }    // pull saved mockups + hot-lead count for the badge
+  if (on) { loadServerMockups(); loadHotLeads(); loadCallList(); } // saved mockups + warm-lead and call-list badges + card states
 }
 
 function showLoginMsg(text, kind) {
@@ -338,6 +346,16 @@ function card(b) {
     lab.innerHTML = messagedLabel(mi);
     el.appendChild(lab);
   }
+
+  // calls-first: the phone is the safe (and warmest) first touch
+  const onList = isOnCallList(b, rec);
+  const callBtn = document.createElement('button');
+  callBtn.className = 'gen call-add' + (onList ? ' added' : '');
+  callBtn.textContent = onList ? '✓ On call list' : '📞 Add to call list';
+  callBtn.title = 'Queue this business for a phone call (the safest first contact)';
+  if (onList) callBtn.disabled = true;
+  else callBtn.addEventListener('click', () => addToCallList(b, rec, callBtn));
+  el.appendChild(callBtn);
 
   const btn = document.createElement('button');
   btn.className = 'gen';
@@ -700,6 +718,36 @@ function recordSendServer(channel) {
     if (navigator.sendBeacon) navigator.sendBeacon(u); else fetch(u, { keepalive: true }).catch(() => {});
   } catch (e) {}
 }
+// ---- WhatsApp ban protection: hard daily cap + once-a-day warning ----------
+// Cold WhatsApp violates WhatsApp policy and gets numbers restricted at volume,
+// manual or not (it happened, 2026-06-12). Every wa.me click in the app goes
+// through this guard: a confirm on the first send of the day, then a HARD block
+// at the daily cap (default 10, set in Templates). Counter is per device.
+function todayKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function waLog() { let l = {}; try { l = JSON.parse(localStorage.getItem('aiwp_wa_log') || '{}'); } catch (e) {} return l.date === todayKey() ? l : { date: todayKey(), count: 0 }; }
+function updateWaToday() { const el = $('wa-today'); if (el) el.textContent = waLog().count + ' of ' + loadSettings().waCap; }
+function waGuardAllow() {
+  const cap = loadSettings().waCap;
+  const log = waLog();
+  if (log.count >= cap) {
+    alert('🛑 WhatsApp send blocked.\n\nYou have hit today\'s hard cap (' + cap + '). Sending more risks another ban on your number.\n\nUse the 📞 Call List or SMS instead. The cap resets at midnight.');
+    return false;
+  }
+  if (log.count === 0) {
+    if (!confirm('⚠️ WhatsApp ban risk (shown once a day).\n\nCold WhatsApp messages to people who never opted in are against WhatsApp\'s rules and can get your number restricted, even when you press send yourself. Prefer the 📞 Call List or SMS for first contact, and keep WhatsApp for people who already replied.\n\nDaily hard cap: ' + cap + '. Carry on with send 1 of ' + cap + '?')) return false;
+  }
+  log.count += 1;
+  try { localStorage.setItem('aiwp_wa_log', JSON.stringify(log)); } catch (e) {}
+  updateWaToday();
+  return true;
+}
+// one capture-phase gate for EVERY wa.me link in the app (preview send, warm
+// leads, lead profile, dossier), nothing can bypass the cap
+document.addEventListener('click', function (ev) {
+  const a = ev.target && ev.target.closest ? ev.target.closest('a[href^="https://wa.me"]') : null;
+  if (!a) return;
+  if (!waGuardAllow()) { ev.preventDefault(); ev.stopImmediatePropagation(); ev.stopPropagation(); }
+}, true);
 // record the send channel + mark the business as messaged when you click a send button
 $('wa-send').addEventListener('click', () => { recordSentVia(currentSlug, 'w'); markMessaged(currentBusiness, 'w'); recordSendServer('w'); });
 $('sms-send').addEventListener('click', () => { recordSentVia(currentSlug, 's'); markMessaged(currentBusiness, 's'); recordSendServer('s'); });
@@ -956,6 +1004,7 @@ function doFollowUp(r) {
   const business = { name: r.name, category: r.category, location: r.location, id: r.placeId };
   const link = tagLink(r.viewUrl || r.imageUrl, channel);
   const msg = fillWaMessage(loadSettings().followUp, business, link, r.personName);
+  if (channel === 'w' && !waGuardAllow()) return; // hard daily WhatsApp cap
   markSent(r.id, business, channel); // a follow-up is still a send, record it
   if (channel === 's') {
     window.location.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(msg);
@@ -1069,12 +1118,13 @@ const GENERIC_TIPS = [
 let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
-  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
+  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
-  if (name === 'messages') renderBlocked();
+  if (name === 'messages') { renderBlocked(); updateWaToday(); }
   if (name === 'leads') loadLeads();
   if (name === 'websites') loadWebsites();
+  if (name === 'calls') loadCallList();
 }
 document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 document.querySelectorAll('.dash-rbtn').forEach((b) => b.addEventListener('click', () => {
@@ -1434,12 +1484,14 @@ function renderLeadStatus(l, dossier, pounce) {
   } else {
     html += `<div class="lead-card"><div class="lead-card-h">🐆 Pounce</div><div class="muted">No website built yet.</div><div class="lead-card-acts"><button class="primary sm lead-dopounce">🐆 Build website</button></div></div>`;
   }
+  const onCallList = isOnCallList(l, { id: l.slug });
   html += isBlocked(l)
     ? '<div class="lead-foot"><button class="ghost sm lead-unblock">Unblock contact</button></div>'
-    : '<div class="lead-foot"><button class="ghost sm lead-block">🚫 Block (not interested)</button></div>';
+    : `<div class="lead-foot"><button class="ghost sm lead-addcall"${onCallList ? ' disabled' : ''}>${onCallList ? '✓ On call list' : '📞 Add to call list'}</button> <button class="ghost sm lead-block">🚫 Block (not interested)</button></div>`;
   el.className = 'lead-cards';
   el.innerHTML = html;
   const q = (s) => el.querySelector(s);
+  const ac = q('.lead-addcall'); if (ac && !onCallList) ac.addEventListener('click', () => addToCallList({ name: l.name, location: l.location, category: l.category, phone: l.phone, placeId: l.placeId || '', slug: l.slug, mapsUrl: l.mapsUrl || '' }, { id: l.slug }, ac));
   const vp = q('.lead-viewprowl'); if (vp) vp.addEventListener('click', () => openProwl(l));
   const dp = q('.lead-doprowl'); if (dp) dp.addEventListener('click', () => openProwl(l));
   const po = q('.lead-dopounce'); if (po) po.addEventListener('click', () => openPounce(l));
@@ -1645,6 +1697,145 @@ document.querySelectorAll('#websites-filters .leadf-btn').forEach((b) => b.addEv
 }));
 $('websites-search').addEventListener('input', renderWebsites);
 $('websites-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadWebsites));
+
+// ---- 📞 Call List: phone-first outreach (the safe first touch) -------------
+// Stored server-side (calls/_list.json) so the list built on desktop is on your
+// phone when out calling. Status + notes reuse the CRM (/api/note keyed by the
+// same key), so Call List / All Leads / Lead Profile show ONE status.
+let callsData = null;
+let callsFilter = 'tocall';
+let callKeys = new Set();
+const CALL_FILTERS = {
+  tocall: ['', 'no-answer'],
+  callback: ['callback'],
+  contacted: ['contacted'],
+  interested: ['interested', 'won'],
+  notint: ['not-interested', 'declined', 'invalid-phone', 'lost'],
+};
+function callKeyFor(a) {
+  const slug = String(a.slug || '').replace(/[^a-z0-9-]/gi, '');
+  if (slug) return slug;
+  return String((a.name || '') + '-' + (a.location || '')).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 100) || 'lead';
+}
+function isOnCallList(b, rec) {
+  return callKeys.has(callKeyFor({ slug: rec ? rec.id : '', name: b.name, location: b.location })) ||
+    callKeys.has(callKeyFor({ name: b.name, location: b.location }));
+}
+async function loadCallList() {
+  const tb = $('calls-rows'); if (tb) tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">Loading…</td></tr>';
+  if (!authed) return;
+  try {
+    const [cr, lr] = await Promise.all([fetch('/api/calls'), fetch('/api/leads')]);
+    const cd = await cr.json();
+    const ld = await lr.json().catch(() => ({}));
+    callsData = { calls: cd.calls || [], statuses: (ld && ld.statuses) || {} };
+  } catch (e) { callsData = { calls: [], statuses: {} }; }
+  callKeys = new Set(callsData.calls.map((c) => c.key));
+  renderCallList();
+  updateCallBadge();
+}
+function callStatusOf(c) { return (callsData && callsData.statuses && callsData.statuses[c.key]) || ''; }
+function updateCallBadge() {
+  const el = $('call-count'); if (!el) return;
+  if (!callsData) { el.classList.add('hidden'); return; }
+  const need = callsData.calls.filter((c) => { const st = callStatusOf(c); return st === '' || st === 'no-answer' || st === 'callback'; }).length;
+  el.textContent = need;
+  el.classList.toggle('hidden', need <= 0);
+}
+function renderCallList() {
+  const tb = $('calls-rows'); if (!tb || !callsData) return;
+  const counts = { all: callsData.calls.length };
+  Object.keys(CALL_FILTERS).forEach((f) => { counts[f] = callsData.calls.filter((c) => CALL_FILTERS[f].indexOf(callStatusOf(c)) >= 0).length; });
+  document.querySelectorAll('#calls-filters .leadf-btn').forEach((b) => {
+    const base = b.textContent.replace(/\s*\(\d+\)\s*$/, '');
+    b.textContent = base + ' (' + (counts[b.dataset.f] || 0) + ')';
+  });
+  const q = ($('calls-search') ? $('calls-search').value : '').toLowerCase().trim();
+  let list = callsData.calls.slice();
+  if (callsFilter !== 'all') list = list.filter((c) => CALL_FILTERS[callsFilter].indexOf(callStatusOf(c)) >= 0);
+  if (q) list = list.filter((c) => ((c.name || '') + ' ' + (c.location || '')).toLowerCase().indexOf(q) >= 0);
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">Nothing here. Add businesses from the search results with "📞 Add to call list".</td></tr>'; return; }
+  tb.innerHTML = '';
+  list.forEach((c) => {
+    const st = callStatusOf(c);
+    const tr = document.createElement('tr');
+    const opts = LEAD_STATUSES.map(([v, l]) => `<option value="${esc(v)}"${v === st ? ' selected' : ''}>${esc(l)}</option>`).join('');
+    tr.innerHTML = `<td><button class="lead-name">${esc(humaniseBusinessName(c.name) || c.name)}</button><div class="muted st-area">📍 ${esc(c.location || '')}${c.category ? ' · ' + esc(c.category) : ''}</div></td>` +
+      `<td>${c.phone ? `<a class="call-tel" href="tel:${esc(String(c.phone).replace(/[^\d+]/g, ''))}">📞 ${esc(c.phone)}</a>` : '<span class="muted">No phone</span>'}</td>` +
+      `<td><select class="call-status leads-statusf">${opts}</select></td>` +
+      `<td><button class="ghost sm call-notes">📝 Notes</button></td>` +
+      `<td class="w-acts"><button class="mini rc-prowl call-prowl" title="Gather intelligence before you dial">🐾</button> <button class="ghost sm call-remove" title="Remove from the call list">✕</button></td>`;
+    const lead = { slug: c.key, name: c.name, location: c.location || '', category: c.category || '', phone: c.phone || '', mapsUrl: c.mapsUrl || '' };
+    tr.querySelector('.lead-name').addEventListener('click', () => openLead(lead));
+    tr.querySelector('.call-prowl').addEventListener('click', () => openProwl(lead));
+    tr.querySelector('.call-status').addEventListener('change', async (ev) => {
+      const v = ev.target.value;
+      try {
+        await fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: c.key, status: v }) });
+        callsData.statuses[c.key] = v;
+        renderCallList(); updateCallBadge();
+      } catch (e) { alert('Could not save the status.'); }
+    });
+    tr.querySelector('.call-remove').addEventListener('click', async () => {
+      if (!confirm('Remove ' + c.name + ' from the call list? (Their status and notes are kept.)')) return;
+      try {
+        await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ remove: c.key }) });
+        callsData.calls = callsData.calls.filter((x) => x.key !== c.key);
+        callKeys.delete(c.key);
+        renderCallList(); updateCallBadge();
+      } catch (e) { alert('Could not remove.'); }
+    });
+    tb.appendChild(tr);
+    // expandable notes row (timestamped, shared with the Lead Profile CRM)
+    const nr = document.createElement('tr');
+    nr.className = 'call-notes-row hidden';
+    nr.innerHTML = `<td colspan="5"><div class="call-notes-box"><div class="call-notes-list muted">Loading notes…</div><div class="call-notes-add"><textarea rows="2" placeholder="e.g. Spoke to Dave, send the mockup link and ring back Friday…"></textarea><button class="primary btn sm">Save note</button></div></div></td>`;
+    tb.appendChild(nr);
+    tr.querySelector('.call-notes').addEventListener('click', async () => {
+      const open = !nr.classList.contains('hidden');
+      nr.classList.toggle('hidden', open);
+      if (open) return;
+      const listEl = nr.querySelector('.call-notes-list');
+      try {
+        const d = await (await fetch('/api/note?slug=' + encodeURIComponent(c.key))).json();
+        const com = (d.note && d.note.comments) || [];
+        listEl.innerHTML = com.length
+          ? com.slice().reverse().map((x) => `<div class="call-note"><span class="muted">${esc(fmtDate(x.at))}</span> ${esc(x.text)}</div>`).join('')
+          : '<span class="muted">No notes yet.</span>';
+      } catch (e) { listEl.textContent = 'Could not load notes.'; }
+    });
+    nr.querySelector('button').addEventListener('click', async () => {
+      const ta = nr.querySelector('textarea');
+      const text = ta.value.trim(); if (!text) return;
+      try {
+        await fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: c.key, comment: text }) });
+        ta.value = '';
+        const listEl = nr.querySelector('.call-notes-list');
+        listEl.innerHTML = `<div class="call-note"><span class="muted">just now</span> ${esc(text)}</div>` + listEl.innerHTML.replace('No notes yet.', '');
+      } catch (e) { alert('Could not save the note.'); }
+    });
+  });
+}
+async function addToCallList(b, rec, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+  const add = { name: b.name, location: b.location || '', category: b.category || '', phone: (b.phones && b.phones[0]) || b.phone || '', placeId: b.id || b.placeId || '', slug: rec ? rec.id : (b.slug || ''), mapsUrl: b.mapsUrl || '' };
+  try {
+    const r = await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ add }) });
+    if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Failed'); }
+    callKeys.add(callKeyFor(add));
+    if (callsData) { loadCallList(); } // refresh cache + badge in the background
+    if (btn) { btn.textContent = '✓ On call list'; btn.classList.add('added'); }
+  } catch (e) {
+    alert('Could not add to the call list: ' + (e.message || e));
+    if (btn) { btn.disabled = false; btn.textContent = '📞 Add to call list'; }
+  }
+}
+document.querySelectorAll('#calls-filters .leadf-btn').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('#calls-filters .leadf-btn').forEach((x) => x.classList.toggle('active', x === b));
+  callsFilter = b.dataset.f; renderCallList();
+}));
+$('calls-search').addEventListener('input', renderCallList);
+$('calls-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadCallList));
 document.querySelectorAll('.leadf-btn').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.leadf-btn').forEach((x) => x.classList.toggle('active', x === b));
   leadsFilter = b.dataset.f; renderLeads();
