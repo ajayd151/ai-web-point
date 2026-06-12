@@ -134,7 +134,10 @@ application form). The whole interface is hidden behind it until signed in.
   (`tel:`), 🐾 Prowl per row, a **status dropdown** (the same unified CRM statuses, change here =
   changes everywhere), **expandable timestamped notes** (same `/api/note` CRM), filter chips
   (To call / Call back / Contacted / Interested / Not interested / All, with counts) and a nav
-  badge counting leads still waiting for a call. Stored server-side (`calls/_list.json`) so the
+  badge counting leads still waiting for a call. The row's Prowl button shows its state: "🐾 Prowl"
+  before gathering, a green "🐾 View intel ✓" once the dossier exists (list refreshes when the
+  popup closes). The **Prowl popup itself has a "📝 Status & call notes" block** (same unified CRM)
+  so you can read the intel and take date/time-stamped notes mid-call. Stored server-side (`calls/_list.json`) so the
   list built on desktop is on the phone when out calling. Status/notes key = the lead's mockup
   slug when one exists, else a `name-location` slug (note: if a mockup is generated later the two
   keys can diverge; edge case, accepted).
