@@ -266,6 +266,41 @@ application form). The whole interface is hidden behind it until signed in.
 
 ## 4. Architecture
 
+### 4a. Technical architecture, data flows at a glance
+
+The app is a thin front-end + Vercel serverless back-end. The back-end **calls out** to a few
+external services, **stores** in two databases, and **produces** outputs that reach the prospect.
+
+```
+                 EXTERNAL SERVICES  (the back-end calls these)
+  Google Places       OpenAI          SendGrid      Vercel + Cloudflare
+  businesses/reviews   image + copy    emails        host / domains / DNS
+        |                  |              |                  |
+        +---------+--------+------+-------+---------+--------+
+                              v  (pulls data / sends email)
+  YOU   ----->  FRONT-END  ----->  BACK-END  ----->  OUTPUTS  ----->  PROSPECT
+  agency        browser app        Vercel /api       mockup, site,    local business
+                                                      dashboard
+                              |                                          |
+                  writes/reads v                          views/clicks   v  (tracked)
+                     +---------+------------------------------+----------+
+                     v                                        v
+               VERCEL BLOB                               NEON POSTGRES
+               mockups, sites, Prowl dossiers,           every send / view /
+               CRM notes, subdomain map, usage           click / decline event
+```
+
+**The main flow:** you **search** (Google Places) → **generate** a mockup (OpenAI image + copy,
+composited and stored in Blob) → **send** the preview link by WhatsApp/SMS (manual) → the prospect
+**views/clicks**, which the tracking beacon writes to Postgres → the **Performance** dashboard reads
+those events. Alongside: **Prowl** builds an intelligence dossier (Google + OpenAI → Blob),
+**Pounce** builds a 1-page website (Google Place Details + OpenAI → Blob, served at `/s/<slug>`), and
+**Make live** publishes it to a subdomain (Vercel Domains API + a `domains/_index.json` map, routed
+by `middleware.js`). CRM status + notes live in Blob; per-device flags (messaged, blocked) live in
+the browser's `localStorage`.
+
+### 4b. Code map
+
 ```
 Frontend (static, /public)            Backend (/api, Vercel serverless)
 ─────────────────────────             ────────────────────────────────
@@ -282,9 +317,12 @@ auth.js     HMAC signed cookie         dashboard.js analytics aggregation + insi
 ratelimit.js 20h usage caps            hotleads.js  demo-clickers + contact details
 filters.js  server-side lead filtering prowl.js     lead-intelligence dossier (cached)
 db.js       Neon Postgres pool+queries pounce.js    builds 1-page site → sites/<slug>.json
-                                       site.js      renders /s/<slug> (noindex preview)
-                                       photo.js     Google-photo proxy (hides API key)
-                                       sites.js     lists preview sites (tidy-up registry)
+names.js    humaniseBusinessName       site.js      renders /s/<slug> (+ ?sub= subdomain lookup)
+vercel.js   add/remove project domain   photo.js     Google-photo proxy (hides API key)
+                                       sites.js     lists every Pounce site (Websites tab)
+                                       decline.js   "No thanks" → decline event + status
+                                       publish.js   Make live/unpublish + subdomain (Vercel API)
+middleware.js (root)  routes <sub>.aiwebpoint.com → /api/site?sub=
 ```
 
 - **Frontend:** plain static HTML/CSS/JS, no framework/build step. State persists in
