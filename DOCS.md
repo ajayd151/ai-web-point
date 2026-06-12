@@ -143,7 +143,9 @@ application form). The whole interface is hidden behind it until signed in.
   badge counting leads still waiting for a call. The row's Prowl button shows its state: "🐾 Prowl"
   before gathering, a green "🐾 View intel ✓" once the dossier exists (list refreshes when the
   popup closes). The **Prowl popup itself has a "📝 Status & call notes" block** (same unified CRM)
-  so you can read the intel and take date/time-stamped notes mid-call. Stored server-side (`calls/_list.json`) so the
+  so you can read the intel and take date/time-stamped notes mid-call. **⬇ Export CSV** exports the
+  visible rows (active filter + search) as a call sheet: business/location/category/phone/status/
+  added/prowled (+date)/notes count/latest note/Maps link (notes fetched from the CRM at export time). Stored server-side (`calls/_list.json`) so the
   list built on desktop is on the phone when out calling. Status/notes key = the lead's mockup
   slug when one exists, else a `name-location` slug (note: if a mockup is generated later the two
   keys can diverge; edge case, accepted).

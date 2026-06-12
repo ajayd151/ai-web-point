@@ -1789,6 +1789,15 @@ async function loadCallList() {
   try { if (lastSearchResults && lastSearchResults.length && $('view-search') && !$('view-search').classList.contains('hidden')) renderResults(lastSearchResults); } catch (e) { /* cosmetic */ }
 }
 function callStatusOf(c) { return (callsData && callsData.statuses && callsData.statuses[c.key]) || ''; }
+// the rows currently visible (active filter chip + search box), used by the table AND the export
+function filteredCalls() {
+  if (!callsData) return [];
+  const q = ($('calls-search') ? $('calls-search').value : '').toLowerCase().trim();
+  let list = callsData.calls.slice();
+  if (callsFilter !== 'all') list = list.filter((c) => CALL_FILTERS[callsFilter].indexOf(callStatusOf(c)) >= 0);
+  if (q) list = list.filter((c) => ((c.name || '') + ' ' + (c.location || '')).toLowerCase().indexOf(q) >= 0);
+  return list;
+}
 function updateCallBadge() {
   const el = $('call-count'); if (!el) return;
   if (!callsData) { el.classList.add('hidden'); return; }
@@ -1804,10 +1813,7 @@ function renderCallList() {
     const base = b.textContent.replace(/\s*\(\d+\)\s*$/, '');
     b.textContent = base + ' (' + (counts[b.dataset.f] || 0) + ')';
   });
-  const q = ($('calls-search') ? $('calls-search').value : '').toLowerCase().trim();
-  let list = callsData.calls.slice();
-  if (callsFilter !== 'all') list = list.filter((c) => CALL_FILTERS[callsFilter].indexOf(callStatusOf(c)) >= 0);
-  if (q) list = list.filter((c) => ((c.name || '') + ' ' + (c.location || '')).toLowerCase().indexOf(q) >= 0);
+  const list = filteredCalls();
   if (!list.length) { tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">Nothing here. Add businesses from the search results with "📞 Add to call list".</td></tr>'; return; }
   tb.innerHTML = '';
   list.forEach((c) => {
@@ -1896,6 +1902,36 @@ document.querySelectorAll('#calls-filters .leadf-btn').forEach((b) => b.addEvent
 }));
 $('calls-search').addEventListener('input', renderCallList);
 $('calls-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadCallList));
+// Export the visible rows (active filter + search) as a CSV call sheet, incl.
+// each lead's notes count + latest note (fetched from the CRM at export time).
+async function exportCallsCsv() {
+  const list = filteredCalls();
+  if (!list.length) { alert('Nothing to export in this filter yet.'); return; }
+  const btn = $('calls-export');
+  if (btn) { btn.disabled = true; btn.textContent = 'Exporting…'; }
+  let notes = [];
+  try {
+    notes = await Promise.all(list.map((c) => fetch('/api/note?slug=' + encodeURIComponent(c.key)).then((r) => r.json()).catch(() => ({}))));
+  } catch (e) { notes = []; }
+  const header = ['Business', 'Location', 'Category', 'Phone', 'Status', 'Added', 'Prowled', 'Prowled on', 'Notes count', 'Latest note', 'Google Maps'];
+  const rows = list.map((c, i) => {
+    const com = (notes[i] && notes[i].note && notes[i].note.comments) || [];
+    const last = com.length ? com[com.length - 1] : null;
+    return [
+      c.name || '', c.location || '', c.category || '', c.phone || '',
+      statusLabel(callStatusOf(c)),
+      c.addedAt ? fmtDate(c.addedAt) : '',
+      (callsData.prowled && callsData.prowled.has(c.key)) ? 'Yes' : 'No',
+      callsData.prowledAt && callsData.prowledAt[c.key] ? fmtDateShort(callsData.prowledAt[c.key]) : '',
+      com.length,
+      last ? (fmtDate(last.at) + ': ' + last.text) : '',
+      c.mapsUrl || '',
+    ];
+  });
+  downloadCsv('call-list.csv', header, rows);
+  if (btn) { btn.disabled = false; btn.textContent = '⬇ Export CSV'; }
+}
+$('calls-export').addEventListener('click', exportCallsCsv);
 document.querySelectorAll('.leadf-btn').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.leadf-btn').forEach((x) => x.classList.toggle('active', x === b));
   leadsFilter = b.dataset.f; renderLeads();
