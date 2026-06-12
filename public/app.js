@@ -1243,7 +1243,11 @@ $('hot-body').addEventListener('click', (e) => {
   const wa = e.target.closest('.hl-act.wa');
   if (wa) { const card = wa.closest('.hl-card'); const slug = card && card.querySelector('.lead-name') && card.querySelector('.lead-name').dataset.slug; const lead = lastHotLeads.find((l) => l.slug === slug); if (lead) markSent(slug, lead, 'w'); } // let the link still open WhatsApp
 });
-$('prowl-close').addEventListener('click', () => $('prowl-modal').classList.add('hidden'));
+$('prowl-close').addEventListener('click', () => {
+  $('prowl-modal').classList.add('hidden');
+  // back on the Call List? refresh so "Prowl" flips to "View intel ✓" and any status change shows
+  if ($('view-calls') && !$('view-calls').classList.contains('hidden')) loadCallList();
+});
 function startProwlProgress() {
   const steps = ['Checking Companies House', 'Pulling Google reviews & score', 'Scouting nearby competitors', 'Reading recent reviews', 'Writing your sales briefing'];
   $('prowl-body').innerHTML = '<div class="genprog"><div>' +
@@ -1294,11 +1298,41 @@ function renderDossier(d, lead) {
     `<div class="dos-snap">${snapshot}</div>` +
     `<div class="dos-rep">⭐ Google: <b>${g.reviews}</b> reviews at <b>${g.rating}★</b>${g.mapsUrl ? ' · <a href="' + esc(g.mapsUrl) + '" target="_blank" rel="noopener">📍 Maps</a>' : ''}${g.website ? '' : ' · <b>no website</b>'}${d.reputationSummary ? ', ' + esc(d.reputationSummary) : ''}</div>` +
     compTable + services + ammo + opener +
-    `<div class="dos-foot"><span class="muted">Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-pounce" class="primary sm">🐆 Pounce, build their website</button> <button id="prowl-rerun" class="ghost">↻ Re-run</button></div>`;
+    `<div class="dos-foot"><span class="muted">Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-pounce" class="primary sm">🐆 Pounce, build their website</button> <button id="prowl-rerun" class="ghost">↻ Re-run</button></div>` +
+    '<div id="prowl-notes"></div>';
   const rr = $('prowl-rerun');
   if (rr) rr.addEventListener('click', () => { startProwlProgress(); prowlFetch(lead, true).then(({ j }) => renderDossier(j.dossier || {}, lead)).catch(() => {}); });
   const pb = $('prowl-pounce');
   if (pb) pb.addEventListener('click', () => { $('prowl-modal').classList.add('hidden'); openPounce(lead); });
+  renderProwlNotes(lead); // status + timestamped notes right in the dossier (take notes while you call)
+}
+// CRM block inside the Prowl popup: same /api/note store as the Lead Profile and
+// Call List, so a status or note made mid-call shows everywhere. Own ids (pn-*)
+// because the Lead Profile modal can be open underneath.
+function renderProwlNotes(lead) {
+  const el = $('prowl-notes'); if (!el || !lead || !lead.slug) return;
+  fetch('/api/note?slug=' + encodeURIComponent(lead.slug)).then((r) => r.json()).catch(() => ({})).then((d) => {
+    const note = (d && d.note) || {};
+    const cur = note.status || '';
+    const comments = (note.comments || []).slice().reverse();
+    el.innerHTML = '<div class="lead-notes-inner"><h3 class="ln-h">📝 Status & call notes</h3>' +
+      '<div class="ln-row"><label>Status</label>' +
+      `<select id="pn-status">${LEAD_STATUSES.map((o) => `<option value="${o[0]}"${o[0] === cur ? ' selected' : ''}>${o[1]}</option>`).join('')}</select>` +
+      '<span class="ln-saved" id="pn-saved"></span></div>' +
+      '<div class="ln-add"><textarea id="pn-comment" rows="2" placeholder="Take notes while you talk, each one is saved with the date + time…"></textarea><button id="pn-add-btn" class="primary sm">Add note</button></div>' +
+      `<div class="ln-log">${comments.length ? comments.map((c) => `<div class="ln-item"><div class="ln-when">${esc(fmtDate(c.at))}</div><div class="ln-text">${esc(c.text)}</div></div>`).join('') : '<div class="muted">No notes yet.</div>'}</div></div>`;
+    const save = (payload) => {
+      const sv = $('pn-saved'); if (sv) sv.textContent = 'Saving…';
+      fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: lead.slug }, payload)) })
+        .then(() => {
+          if (callsData && payload.status !== undefined) callsData.statuses[lead.slug] = payload.status;
+          renderProwlNotes(lead);
+        })
+        .catch(() => { const s3 = $('pn-saved'); if (s3) s3.textContent = '⚠️ Failed'; });
+    };
+    const st = $('pn-status'); if (st) st.addEventListener('change', (e) => save({ status: e.target.value }));
+    const ab = $('pn-add-btn'); if (ab) ab.addEventListener('click', () => { const t = ($('pn-comment').value || '').trim(); if (t) save({ comment: t }); });
+  });
 }
 
 // ---- 🐆 Pounce: build a real 1-page website for the lead ----
@@ -1728,8 +1762,8 @@ async function loadCallList() {
     const [cr, lr] = await Promise.all([fetch('/api/calls'), fetch('/api/leads')]);
     const cd = await cr.json();
     const ld = await lr.json().catch(() => ({}));
-    callsData = { calls: cd.calls || [], statuses: (ld && ld.statuses) || {} };
-  } catch (e) { callsData = { calls: [], statuses: {} }; }
+    callsData = { calls: cd.calls || [], statuses: (ld && ld.statuses) || {}, prowled: new Set((ld && ld.prowled) || []) };
+  } catch (e) { callsData = { calls: [], statuses: {}, prowled: new Set() }; }
   callKeys = new Set(callsData.calls.map((c) => c.key));
   renderCallList();
   updateCallBadge();
@@ -1764,7 +1798,9 @@ function renderCallList() {
       `<td>${c.phone ? `<a class="call-tel" href="tel:${esc(String(c.phone).replace(/[^\d+]/g, ''))}">📞 ${esc(c.phone)}</a>` : '<span class="muted">No phone</span>'}</td>` +
       `<td><select class="call-status leads-statusf">${opts}</select></td>` +
       `<td><button class="ghost sm call-notes">📝 Notes</button></td>` +
-      `<td class="w-acts"><button class="mini rc-prowl call-prowl" title="Gather intelligence before you dial">🐾</button> <button class="ghost sm call-remove" title="Remove from the call list">✕</button></td>`;
+      `<td class="w-acts">${(callsData.prowled && callsData.prowled.has(c.key))
+        ? '<button class="ghost sm call-prowl intel-ready" title="The intelligence dossier is ready, open it">🐾 View intel ✓</button>'
+        : '<button class="mini rc-prowl call-prowl" title="Gather intelligence on this business before you dial (takes ~30s)">🐾 Prowl</button>'} <button class="ghost sm call-remove" title="Remove from the call list">✕</button></td>`;
     const lead = { slug: c.key, name: c.name, location: c.location || '', category: c.category || '', phone: c.phone || '', mapsUrl: c.mapsUrl || '' };
     tr.querySelector('.lead-name').addEventListener('click', () => openLead(lead));
     tr.querySelector('.call-prowl').addEventListener('click', () => openProwl(lead));
