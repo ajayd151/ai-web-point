@@ -1,6 +1,6 @@
 # Site Pounce, Technical & Product Documentation
 
-_Last updated: 2026-06-11_
+_Last updated: 2026-06-12_
 
 Site Pounce is a lead-generation, outreach **and sales-intelligence** platform for a
 web-design agency. It finds local businesses with **no website**, generates a
