@@ -182,14 +182,15 @@ function heroHTML(head, leads, scanned, areas, primaryLoc, primaryCount) {
   const multi = areas.length > 1;
   const chips = areas.map((a) => `<span>📍 ${esc(a)}</span>`).join('');
   const areasTile = multi ? `<div class="sh-stat"><b class="sh-num" data-to="${areas.length}">0</b><span>areas searched</span></div>` : '';
-  const sub = multi
-    ? `${esc(primaryLoc)} alone only had ${primaryCount}, so I dug into ${areas.length - 1} nearby ${areas.length - 1 === 1 ? 'area' : 'areas'} to find you more.`
-    : `All found right in ${esc(primaryLoc)}.`;
+  const n = areas.length - 1;
+  const subBlock = multi
+    ? `<div class="sh-sub">${esc(primaryLoc)} alone only had ${primaryCount}.</div>` +
+      `<div class="sh-dug">So I dug into ${n} nearby ${n === 1 ? 'area' : 'areas'} to find you more 🔥</div>`
+    : `<div class="sh-sub">All found right in ${esc(primaryLoc)}.</div>`;
   return '<div class="search-hero"><div class="sh-head">' + head + '</div><div class="sh-stats">' +
     `<div class="sh-stat sh-lead"><b class="sh-num" data-to="${leads}">0</b><span>leads ready to contact</span></div>` +
     `<div class="sh-stat"><b class="sh-num" data-to="${scanned}">0</b><span>listings combed</span></div>` +
-    areasTile + '</div>' + (multi ? `<div class="sh-areas">${chips}</div>` : '') +
-    `<div class="sh-sub">${sub}</div></div>`;
+    areasTile + '</div>' + (multi ? `<div class="sh-areas">${chips}</div>` : '') + subBlock + '</div>';
 }
 function animateCounts(root) {
   root.querySelectorAll('.sh-num').forEach(function (n) {
