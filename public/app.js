@@ -580,6 +580,20 @@ function hbnSplit(tok) {
   if (out.length >= 2 && (nd.length === 0 || (nd.length === 1 && nd[0] === 0 && out[0].length <= 10))) return out.join(' ');
   return tok;
 }
+var HBN_LEGAL = new Set('ltd limited llp plc llc inc incorporated co company cic cio'.split(' '));
+var HBN_FLUFF = new Set('independent professional certified registered qualified experienced reliable trusted established genuine approved accredited insured dependable'.split(' '));
+var HBN_CONNECT = new Set(['and', 'of', 'the']);
+function hbnNorm(w) { return w.toLowerCase().replace(/[^a-z]/g, ''); }
+function hbnStripFiller(raw) {
+  var toks = raw.split(' ');
+  var kept = toks.filter(function (w) { return !HBN_LEGAL.has(hbnNorm(w)); }); // legal suffixes (Ltd...) always go
+  if (kept.some(function (w) { var n = hbnNorm(w); return n && !HBN_CONNECT.has(n); })) toks = kept;
+  var kept2 = toks.filter(function (w) { return !HBN_FLUFF.has(hbnNorm(w)); }); // fluff (Independent...) only if 2+ real words remain
+  var meaningful = kept2.filter(function (w) { var n = hbnNorm(w); return n && !HBN_CONNECT.has(n); });
+  if (meaningful.length >= 2) toks = kept2;
+  var s = toks.join(' ').replace(/\s*([&/+])\s*([&/+])\s*/g, ' $1 ').replace(/^\s*[&/+]\s*/, '').replace(/\s*[&/+]\s*$/, '').replace(/\s+\band\b\s*$/i, '');
+  return s.replace(/\s{2,}/g, ' ').trim();
+}
 function humaniseBusinessName(name) {
   let raw = String(name == null ? '' : name).trim();
   if (!raw) return raw;
@@ -587,6 +601,7 @@ function humaniseBusinessName(name) {
   raw = raw.replace(/\s*&\s*/g, ' & ').replace(/\s*\/\s*/g, ' / ').replace(/\s*\+\s*/g, ' + ').replace(/\s*\band\b\s*/gi, ' and ');
   raw = raw.split(' ').map(function (t) { return (/^[a-z0-9]+$/.test(t) && t.length >= 6) ? hbnSplit(t) : t; }).join(' ');
   raw = raw.replace(/\s{2,}/g, ' ').trim();
+  raw = hbnStripFiller(raw); // drop legal suffixes (Ltd) + fluff (Independent) so it reads casually
   if (!/[A-Z]/.test(raw)) {
     raw = raw.split(' ').map(function (w) { return (w === '&' || w === '/' || w === '+' || w === 'and' || w === 'of') ? w : hbnTc(w); }).join(' ');
   }

@@ -98,7 +98,11 @@ application form). The whole interface is hidden behind it until signed in.
   with an optional short brand), e.g. "jjhomecarwash" → "JJ Home Car Wash", "m1plumbing" →
   "M1 Plumbing", "mobiledoggrooming" → "Mobile Dog Grooming"; (4) **Title-Case an all-lowercase
   name only** (MOT / Marks & Spencer left; a short all-consonant brand like "jj" upper-cases to
-  "JJ"); (5) **trim a keyword-stuffed overlong name** (>34 chars). Safe by design: only splits when
+  "JJ"); (5) **strip filler words** (`stripFiller`): legal suffixes (Ltd/Limited/Co...) always,
+  and fluff adjectives (Independent/Professional...) only if 2+ real words remain, e.g. "Turner's
+  Independent Plumbing & Heating" → "Turner's Plumbing & Heating", "KWS Heating & Plumbing LTD" →
+  "KWS Heating & Plumbing" (but "Reliable Roofing" stays); (6) **trim a keyword-stuffed overlong
+  name** (>34 chars). Safe by design: only splits when
   the result is clean, else leaves the name as-is ("specialist" stays "Specialist"). So
   "m1plumbing&heating" → "M1 Plumbing & Heating", and
   "JJG Home Car Wash, Mobile Valeting & Alloy Wheel Refurbishment" → "JJG Home Car Wash &
