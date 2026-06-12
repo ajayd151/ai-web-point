@@ -666,6 +666,10 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-12**
+- **Fix: one click adds to the call list.** Blob reads can lag a put by a moment, so the post-add
+  refresh sometimes got a stale list and flipped the just-added ✓ back to the button (looked like
+  the click failed, invited 2-3 clicks). A session-local optimistic set (`callOptimistic`) now keeps
+  a just-added business ticked regardless of read lag.
 - **Fix: call-list adds raced each other.** /api/calls is read-modify-write on one blob, so rapid
   adds overwrote each other (6 ticked, 4 saved). All call-list writes are now serialized through a
   client promise chain, membership is verified against server entries by name+location, and search
