@@ -555,24 +555,28 @@ function titleCaseIndustry(s) {
 function titleCaseLocation(s) {
   return String(s || '').trim().split(/\s+/).map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(' ');
 }
-// Make a keyword-stuffed business name sound natural in a sentence, but ONLY
-// when it's clearly overlong. "Bob's Plumbing" stays as-is; "JJG Home Car Wash,
-// Mobile Valeting & Alloy Wheel Refurbishment" -> "JJG Home Car Wash & Mobile
-// Valeting". Splits on the separators people use to stuff services (commas, &,
-// /, +, "and") and keeps the first one or two phrases.
+// Make a business name read naturally. KEEP IN SYNC with lib/names.js (server).
+// Handles: camelCase ("PerformanceCarValeting" -> "Performance Car Valeting"),
+// run-together lowercase with a trade word ("m1plumbing&heating" -> "M1 Plumbing
+// & Heating"), spacing around &/and/+//, Title Case for all-lowercase names, and
+// trimming a keyword-stuffed overlong name to its first one or two phrases.
+// Names that already have proper capitals/acronyms (MOT, Marks & Spencer) are left.
+var HBN_SERVICE = ['plumbing','plumber','plumbers','heating','electrical','electrician','electricians','electrics','roofing','roofer','roofers','cleaning','cleaners','gardening','gardeners','gardens','garden','landscaping','landscapes','building','builder','builders','joinery','plastering','plasterer','painting','painters','decorating','decorators','flooring','tiling','tilers','carpentry','carpenter','carpenters','fencing','paving','driveways','removals','valeting','detailing','grooming','services','solutions','maintenance','repairs','installations','windows','glazing','locksmith','locksmiths','bathrooms','kitchens','tyres','autos','motors','mechanics','mechanical','catering','barbers','scaffolding','guttering','rendering','brickwork','groundworks','handyman','properties','lettings','carpets','conservatories'];
 function humaniseBusinessName(name) {
-  let raw = String(name || '').trim();
+  let raw = String(name == null ? '' : name).trim();
   if (!raw) return raw;
-  // 1) run-together names like "PerformanceCarValeting" -> "Performance Car Valeting"
-  //    (split on camelCase boundaries; harmless on names that already have spaces)
-  raw = raw.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
-    .replace(/\s{2,}/g, ' ').trim();
-  // 2) trim keyword-stuffed overlong names to the first one or two phrases
-  if (raw.length <= 34) return raw; // short enough to read naturally, leave alone
+  raw = raw.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+  raw = raw.replace(/\s*&\s*/g, ' & ').replace(/\s*\/\s*/g, ' / ').replace(/\s*\+\s*/g, ' + ').replace(/\s*\band\b\s*/gi, ' and ');
+  for (var i = 0; i < HBN_SERVICE.length; i++) { raw = raw.replace(new RegExp('([a-z0-9])(' + HBN_SERVICE[i] + ')', 'gi'), '$1 $2'); }
+  raw = raw.replace(/\s{2,}/g, ' ').trim();
+  if (!/[A-Z]/.test(raw)) {
+    raw = raw.split(' ').map(function (w) { return (w === '&' || w === '/' || w === '+' || w === 'and') ? w : (w ? w.charAt(0).toUpperCase() + w.slice(1) : w); }).join(' ');
+  }
+  if (raw.length <= 34) return raw;
   const segments = raw.split(/\s*(?:,|&|\/|\+|\band\b)\s*/i).map((s) => s.trim()).filter(Boolean);
-  if (segments.length < 2) return raw; // long but a single phrase (a real name), keep it
+  if (segments.length < 2) return raw;
   let out = segments[0];
-  if ((out + ' & ' + segments[1]).length <= 40) out += ' & ' + segments[1]; // add the 2nd phrase if it still reads short
+  if ((out + ' & ' + segments[1]).length <= 40) out += ' & ' + segments[1];
   return out;
 }
 function fillWaMessage(tpl, business, link, personName) {

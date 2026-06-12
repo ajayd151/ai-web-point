@@ -91,16 +91,17 @@ application form). The whole interface is hidden behind it until signed in.
   `{business}` `{category}` `{location}` `{link}`. Empty `{name}` collapses to "Hi,".
   `{category}` is title-cased with acronyms (Dog Groomers / MOT).
 - **Business names are humanised for display** by `humaniseBusinessName` (shared as
-  `lib/names.js` on the server + a matching copy in `public/app.js`), two passes:
-  (1) **run-together names** are split on camelCase, e.g. "PerformanceCarValeting" →
-  "Performance Car Valeting", "JJGHomeCarWash" → "JJG Home Car Wash" (acronyms like MOT and
-  already-spaced names stay intact); (2) **keyword-stuffed overlong names** (>34 chars with
-  `,`/`&`/`/`/`+`/"and" separators) are trimmed to their first one or two phrases, e.g.
+  `lib/names.js` on the server + a matching copy in `public/app.js`, keep in sync incl. the
+  trade-word list), in order: (1) **camelCase split** ("PerformanceCarValeting" → "Performance
+  Car Valeting"); (2) **space out** `&` `/` `+` "and"; (3) **split a known trade word** off a
+  run-together token via `SERVICE_WORDS` ("m1plumbing" → "m1 plumbing", "ashgardens" → "ash
+  gardens"); (4) **Title-Case an all-lowercase name only** (so MOT / Marks & Spencer / already
+  capitalised names are left); (5) **trim a keyword-stuffed overlong name** (>34 chars) to its
+  first one or two phrases. So "m1plumbing&heating" → "M1 Plumbing & Heating", and
   "JJG Home Car Wash, Mobile Valeting & Alloy Wheel Refurbishment" → "JJG Home Car Wash &
-  Mobile Valeting". Short/normal names are left untouched. Applied to the **sent message**
-  `{business}`, the **mockup image** (logo initials, wordmark, headline) and the **preview
-  page** heading/CTA. NOT applied to the **slug** or the **stored `name`** (those stay raw so
-  tracking + name/location matching for messaged/blocked keep working).
+  Mobile Valeting". Applied to the **sent message** `{business}`, the **mockup image** and the
+  **preview page**. NOT applied to the **slug** or the **stored `name`** (those stay raw so
+  tracking + name/location matching keep working).
 - **Messaged tracking** (per device, by Google place id): cards show "✓ You messaged them
   via WhatsApp (date·time) & SMS (…)", accumulates channels with timestamps. The
   "Already messaged" filter excludes them from new searches so you dig for fresh leads.
