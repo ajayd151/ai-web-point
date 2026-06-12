@@ -177,6 +177,29 @@ async function runSearch() {
   await doSearch(false);
 }
 async function loadMoreResults() { if (lastSearchParams) await doSearch(true); }
+// big animated "results banner" so a powerful search doesn't get lost in a paragraph
+function heroHTML(head, leads, scanned, areas, primaryLoc, primaryCount) {
+  const multi = areas.length > 1;
+  const chips = areas.map((a) => `<span>📍 ${esc(a)}</span>`).join('');
+  const areasTile = multi ? `<div class="sh-stat"><b class="sh-num" data-to="${areas.length}">0</b><span>areas searched</span></div>` : '';
+  const sub = multi
+    ? `${esc(primaryLoc)} alone only had ${primaryCount}, so I dug into ${areas.length - 1} nearby ${areas.length - 1 === 1 ? 'area' : 'areas'} to find you more.`
+    : `All found right in ${esc(primaryLoc)}.`;
+  return '<div class="search-hero"><div class="sh-head">' + head + '</div><div class="sh-stats">' +
+    `<div class="sh-stat sh-lead"><b class="sh-num" data-to="${leads}">0</b><span>leads ready to contact</span></div>` +
+    `<div class="sh-stat"><b class="sh-num" data-to="${scanned}">0</b><span>listings combed</span></div>` +
+    areasTile + '</div>' + (multi ? `<div class="sh-areas">${chips}</div>` : '') +
+    `<div class="sh-sub">${sub}</div></div>`;
+}
+function animateCounts(root) {
+  root.querySelectorAll('.sh-num').forEach(function (n) {
+    const to = parseInt(n.getAttribute('data-to'), 10) || 0;
+    if (to <= 0) { n.textContent = '0'; return; }
+    const dur = 850; let s = null;
+    function step(ts) { if (s === null) s = ts; const p = Math.min((ts - s) / dur, 1); n.textContent = Math.round((1 - Math.pow(1 - p, 3)) * to); if (p < 1) requestAnimationFrame(step); }
+    requestAnimationFrame(step);
+  });
+}
 async function doSearch(append) {
   if (!lastSearchParams) return;
   const { industry, location, filters } = lastSearchParams;
@@ -214,22 +237,26 @@ async function doSearch(append) {
       const primaryLoc = data.primaryLocation || location;
       const expanded = data.expandedLocations || [];
       const areaWord = expanded.length === 1 ? 'area' : 'areas';
-      let summary;
+      let html;
       if (results.length === 0) {
-        const areasNote = expanded.length ? `, plus ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}),` : '';
-        summary = `No ${industry} in ${primaryLoc}${areasNote} matched your filters, I scanned ${scanned} Google listings. Try loosening them: set Phone to "Has phone" (not "Mobile only"), or Website to "Any". Well-established businesses (solicitors, accountants, etc.) nearly all have a website, so "No website" + "Mobile only" together often returns nothing.`;
+        const areasNote = expanded.length ? `, plus ${expanded.length} nearby ${areaWord} (${esc(expanded.join(', '))}),` : '';
+        html = `<div class="search-hero sh-empty"><b>⚠️ No matches.</b> No ${esc(industry)} in ${esc(primaryLoc)}${areasNote} matched your filters (I scanned ${scanned} listings). Try loosening them: set Phone to "Has phone" (not "Mobile only"), or Website to "Any". Well-established businesses (solicitors, accountants, etc.) nearly all have a website, so "No website" + "Mobile only" together often returns nothing.</div>`;
       } else if (expanded.length) {
         const primaryCount = data.primaryCount != null ? data.primaryCount : 0;
-        summary = `🚀 Deep search complete! ${primaryLoc} only had ${primaryCount}, so I didn't stop there, I expanded the hunt across ${expanded.length} nearby ${areaWord} (${expanded.join(', ')}) and combed through ${scanned} listings to bring you ${results.length} ready-to-contact leads. 🔥`;
+        html = heroHTML('🚀 Deep search complete!', results.length, scanned, [primaryLoc].concat(expanded), primaryLoc, primaryCount);
       } else {
-        summary = `✅ Nailed it, ${results.length} ${industry} in ${primaryLoc} matched your filters. I combed through ${scanned} Google listings to find them.`;
+        html = heroHTML('✅ Nailed it!', results.length, scanned, [primaryLoc], primaryLoc, results.length);
       }
-      $('summary').textContent = summary;
+      $('summary').innerHTML = html;
+      animateCounts($('summary'));
       saveRecentSearch({ date: new Date().toISOString(), industry, location, filters, matched: data.matched != null ? data.matched : results.length, limit });
       renderRecentSearches();
     }
     renderResults(lastSearchResults);
-    if (append && !lastBatchFull) { $('summary').textContent = $('summary').textContent + ' (That is everything Google has for this search.)'; }
+    if (append && !lastBatchFull) {
+      const hero = $('summary').querySelector('.search-hero');
+      if (hero && !hero.querySelector('.sh-note')) { const nn = document.createElement('div'); nn.className = 'sh-note'; nn.textContent = "That's everything Google has for this search."; hero.appendChild(nn); }
+    }
   } catch (err) {
     if (append) { alert(err.message || 'Could not load more.'); }
     else { $('summary').textContent = ''; $('results').innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`; }

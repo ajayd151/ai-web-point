@@ -633,6 +633,13 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
+**2026-06-12**
+- **Search results banner:** the deep-search summary is now an animated stats hero (big count-up
+  numbers for leads / listings combed / areas searched, + area chips) instead of one paragraph.
+- **humaniseBusinessName** upgraded: word-dictionary split for run-together names ("jjhomecarwash"
+  → "JJ Home Car Wash"), and `stripFiller` drops legal suffixes (Ltd) + fluff adjectives so names
+  read casually. Fixed the all-lowercase case ("m1plumbing&heating" → "M1 Plumbing & Heating").
+
 **2026-06-11**
 - **Make live on a subdomain (Phase 2b, ✅ DONE + verified live):** one-click publish to
   `<sub>.aiwebpoint.com`. First live site confirmed: `https://ashgardens.aiwebpoint.com` (HTTPS, 200).
