@@ -266,6 +266,7 @@ async function doSearch(append) {
       const hero = $('summary').querySelector('.search-hero');
       if (hero && !hero.querySelector('.sh-note')) { const nn = document.createElement('div'); nn.className = 'sh-note'; nn.textContent = "That's everything Google has for this search."; hero.appendChild(nn); }
     }
+    saveLastResults(); // survive a page reload (free restore, no credit)
   } catch (err) {
     if (append) { alert(err.message || 'Could not load more.'); }
     else { $('summary').textContent = ''; $('results').innerHTML = `<div class="empty">⚠️ ${esc(err.message)}</div>`; }
@@ -2145,3 +2146,41 @@ function phoneChip(b) {
     ? '<span class="chip phone">📱 Mobile</span>'
     : '<span class="chip phone">☎ Landline</span>';
 }
+
+// ---- restore the last search after a page reload (free, no credit) ---------
+// Results only lived in memory, so any reload (refresh, phone tab reclaim,
+// reopening the app) lost them and a "Run again" cost another search credit.
+// Now each search is cached locally and restored with a banner; "Search again"
+// re-runs the exact criteria (incl. filters) only when YOU choose to.
+function saveLastResults() {
+  try {
+    localStorage.setItem('aiwp_last_results', JSON.stringify({
+      at: new Date().toISOString(),
+      params: lastSearchParams,
+      results: lastSearchResults,
+      batchFull: lastBatchFull,
+      summaryHTML: $('summary') ? $('summary').innerHTML : '',
+    }));
+  } catch (e) { /* storage full: not fatal, just no restore */ }
+}
+function restoreLastSearch() {
+  let c = null;
+  try { c = JSON.parse(localStorage.getItem('aiwp_last_results') || 'null'); } catch (e) {}
+  if (!c || !c.params || !c.results || !c.results.length) return;
+  if (Date.now() - new Date(c.at).getTime() > 48 * 3600 * 1000) return; // too stale, nudge a fresh search instead
+  lastSearchParams = c.params;
+  lastSearchResults = c.results;
+  lastBatchFull = !!c.batchFull;
+  $('industry').value = c.params.industry || '';
+  $('location').value = c.params.location || '';
+  $('summary').classList.remove('hidden');
+  $('summary').innerHTML =
+    `<div class="restored-bar">💾 Restored your last search, <b>${esc(c.params.industry)} in ${esc(c.params.location)}</b> (${esc(fmtDate(c.at))}), no credit used. <button class="linkbtn" id="restored-rerun" type="button">↻ Search again for fresh results</button></div>` +
+    (c.summaryHTML || '');
+  // restored banner shows the final numbers straight away (no count-up replay)
+  $('summary').querySelectorAll('.sh-num').forEach((n) => { const to = n.getAttribute('data-to'); if (to) n.textContent = to; });
+  const rb = $('restored-rerun');
+  if (rb) rb.addEventListener('click', () => runRecentSearch({ industry: c.params.industry, location: c.params.location, filters: c.params.filters }));
+  renderResults(lastSearchResults);
+}
+restoreLastSearch();

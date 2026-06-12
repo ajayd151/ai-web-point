@@ -63,6 +63,12 @@ application form). The whole interface is hidden behind it until signed in.
 - **Auto-expand to nearby areas**, if a town is thin, an AI call (gpt-4o-mini) names the
   nearest towns/suburbs and searches those too, so "Birmingham had 1" → "21 across nearby areas".
 - **Recent searches** table, one-click **Run again** + per-row delete.
+- **Results survive a reload (free restore):** each search is cached locally
+  (`aiwp_last_results`: criteria + results + the stats banner + load-more state) and restored on
+  page load for up to **48h**, with an amber banner ("Restored your last search… no credit used")
+  and a "↻ Search again" button that re-runs the exact criteria incl. filters
+  (`runRecentSearch`). Messaged/blocked/mockup chips recompute at render, so they stay current
+  even on restored results. Older than 48h = not restored (nudges a fresh search).
 - A **↻ Refresh** (no cost) re-checks messaged labels.
 
 ### Mockup generation
@@ -660,6 +666,10 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-12**
+- **Search results survive reloads:** cached locally + auto-restored for 48h with a banner and a
+  "Search again" re-run, so a refresh no longer wipes results or burns a credit.
+- **Call List polish:** Prowl button states ("🐾 Prowl" → green "🐾 View intel ✓" + a "Prowled
+  12 Jun 2026" date stamp), and a "📝 Status & call notes" block inside the Prowl popup.
 - **⚠️ WhatsApp restriction + response:** the user's WhatsApp number was restricted for cold-send
   volume. Built guardrails: a capture-phase guard on every wa.me click, once-a-day risk warning,
   **hard daily cap (default 10)** with a counter, a ⚠️ WhatsApp safety panel in Templates, and the
