@@ -666,6 +666,11 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-12**
+- **Fix: call-list adds raced each other.** /api/calls is read-modify-write on one blob, so rapid
+  adds overwrote each other (6 ticked, 4 saved). All call-list writes are now serialized through a
+  client promise chain, membership is verified against server entries by name+location, and search
+  results re-render after the list loads so stale ticks self-correct. (Blob has no transactions,
+  same pattern applies to any shared-json writer.)
 - **Search results survive reloads:** cached locally + auto-restored for 48h with a banner and a
   "Search again" re-run, so a refresh no longer wipes results or burns a credit.
 - **Call List polish:** Prowl button states ("🐾 Prowl" → green "🐾 View intel ✓" + a "Prowled
