@@ -555,7 +555,25 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
    **data separation per user** (owner on every mockup/site/dossier/note/call entry, per-user blob
    prefixes, user_id on link_events; move shared indexes to Postgres, also kills the blob races);
    (3) tier enforcement (per-user tier-driven rate limits + "Upgrade to unlock" UI); (4) Stripe
-   subscriptions ↔ tiers via webhook (launch can set tiers manually in admin). Suggested tiers (PRICING UNDER REVIEW 2026-06-12: user + Claude agree £29 entry is too cheap; revised thinking = Scout £49-59 or replace with a 14-day trial / one-off starter pack, Hunter ~£99, Apex ~£199-249; founding-member discount-for-life covers the early-proof gap):
+   subscriptions ↔ tiers via webhook (launch can set tiers manually in admin).
+   **Pricing model (decided direction 2026-06-12): founding-member structure.** Standard list
+   prices: Scout £49-59 / Hunter £99 / Apex £199-249. The **first 20 founding members** get ~40%
+   off **locked for life**: Scout £29 / Hunter £59 / Apex £119. Rules: (a) the exchange is
+   explicit, founding members agree to be case studies/testimonials (in the founding terms);
+   (b) "for life" = for the life of a CONTINUOUS subscription (cancel + return = standard rates);
+   (c) the PRICE is locked, not the future feature set (later add-ons can be chargeable);
+   (d) the founding discount follows the MEMBER across tiers (upgrades stay at founding rates).
+   Number them publicly ("Founding member #7 of 20") + a remaining counter on the landing page
+   (the `/api/apply` funnel already exists).
+   **Admin area requirements (user spec 2026-06-12):** Admin → Members table, one row per
+   customer: account (name/email, tier + founding # + locked price, signup, last active,
+   trial/active/suspended, MRR), **usage vs caps** (searches/mockups/Prowls/Pounces/live
+   sites/WhatsApp sends against tier limits), **their funnel** (messaged → viewed → demo →
+   sign-ups), **outcomes** (aggregated CRM statuses, esp. clients WON → case-study candidates;
+   lost/interested), alerts (inactive 14d = churn risk, at 100% caps = upsell, WhatsApp-risky
+   behaviour), platform totals (active members, MRR, mockups, est. API spend per member). ⚠️
+   GDPR: admin visibility of customers' lead/CRM data must be stated in ToS/privacy policy.
+   Suggested tiers:
    **🐾 Scout** (~£29/mo: 5 searches/day, 15 mockups/mo, Call List + CRM, basic dashboard, no
    Prowl/Pounce), **🐆 Hunter** (~£79/mo: 30/day, 60 mockups/mo, Prowl 30/mo, Pounce 10/mo, 1 live
    site, full dashboard), **🦁 Apex** (~£149-199/mo: fair-use unlimited searches/Prowl, 200
