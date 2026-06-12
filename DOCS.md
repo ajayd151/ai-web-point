@@ -92,12 +92,15 @@ application form). The whole interface is hidden behind it until signed in.
   `{category}` is title-cased with acronyms (Dog Groomers / MOT).
 - **Business names are humanised for display** by `humaniseBusinessName` (shared as
   `lib/names.js` on the server + a matching copy in `public/app.js`, keep in sync incl. the
-  trade-word list), in order: (1) **camelCase split** ("PerformanceCarValeting" → "Performance
-  Car Valeting"); (2) **space out** `&` `/` `+` "and"; (3) **split a known trade word** off a
-  run-together token via `SERVICE_WORDS` ("m1plumbing" → "m1 plumbing", "ashgardens" → "ash
-  gardens"); (4) **Title-Case an all-lowercase name only** (so MOT / Marks & Spencer / already
-  capitalised names are left); (5) **trim a keyword-stuffed overlong name** (>34 chars) to its
-  first one or two phrases. So "m1plumbing&heating" → "M1 Plumbing & Heating", and
+  WORDS dictionary), in order: (1) **camelCase split** ("PerformanceCarValeting" → "Performance
+  Car Valeting"); (2) **space out** `&` `/` `+` "and"; (3) **word-segment** an all-lowercase
+  run-together token against a dictionary of common business words (`WORDS`, greedy longest-match
+  with an optional short brand), e.g. "jjhomecarwash" → "JJ Home Car Wash", "m1plumbing" →
+  "M1 Plumbing", "mobiledoggrooming" → "Mobile Dog Grooming"; (4) **Title-Case an all-lowercase
+  name only** (MOT / Marks & Spencer left; a short all-consonant brand like "jj" upper-cases to
+  "JJ"); (5) **trim a keyword-stuffed overlong name** (>34 chars). Safe by design: only splits when
+  the result is clean, else leaves the name as-is ("specialist" stays "Specialist"). So
+  "m1plumbing&heating" → "M1 Plumbing & Heating", and
   "JJG Home Car Wash, Mobile Valeting & Alloy Wheel Refurbishment" → "JJG Home Car Wash &
   Mobile Valeting". Applied to the **sent message** `{business}`, the **mockup image** and the
   **preview page**. NOT applied to the **slug** or the **stored `name`** (those stay raw so

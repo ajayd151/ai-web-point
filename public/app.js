@@ -555,22 +555,40 @@ function titleCaseIndustry(s) {
 function titleCaseLocation(s) {
   return String(s || '').trim().split(/\s+/).map((w) => (w ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(' ');
 }
-// Make a business name read naturally. KEEP IN SYNC with lib/names.js (server).
-// Handles: camelCase ("PerformanceCarValeting" -> "Performance Car Valeting"),
-// run-together lowercase with a trade word ("m1plumbing&heating" -> "M1 Plumbing
-// & Heating"), spacing around &/and/+//, Title Case for all-lowercase names, and
-// trimming a keyword-stuffed overlong name to its first one or two phrases.
-// Names that already have proper capitals/acronyms (MOT, Marks & Spencer) are left.
-var HBN_SERVICE = ['plumbing','plumber','plumbers','heating','electrical','electrician','electricians','electrics','roofing','roofer','roofers','cleaning','cleaners','gardening','gardeners','gardens','garden','landscaping','landscapes','building','builder','builders','joinery','plastering','plasterer','painting','painters','decorating','decorators','flooring','tiling','tilers','carpentry','carpenter','carpenters','fencing','paving','driveways','removals','valeting','detailing','grooming','services','solutions','maintenance','repairs','installations','windows','glazing','locksmith','locksmiths','bathrooms','kitchens','tyres','autos','motors','mechanics','mechanical','catering','barbers','scaffolding','guttering','rendering','brickwork','groundworks','handyman','properties','lettings','carpets','conservatories'];
+// Make a business name read naturally. KEEP IN SYNC with lib/names.js (server),
+// including the HBN_WORDS list. Splits run-together names by recognising common
+// business words ("jjhomecarwash" -> "JJ Home Car Wash", "m1plumbing&heating" ->
+// "M1 Plumbing & Heating"), camelCase ("PerformanceCarValeting"), spaces &/and/+//,
+// Title-Cases all-lowercase names (leaves MOT / Marks & Spencer), and trims a
+// keyword-stuffed overlong name. SAFE: if a split isn't confident, the name is
+// left unchanged rather than mangled.
+var HBN_WORDS = new Set(('home homes house houses mobile local pro professional expert experts master masters quick fast best premier prime quality reliable friendly family the all total complete perfect super smart easy direct first prestige elite classic modern fresh clean bright shine sparkle gleam ' +
+  'car cars auto autos van vans dog dogs pet pets garden gardens window windows door doors roof roofs drive driveway driveways kitchen kitchens bathroom bathrooms floor floors wall walls gutter gutters fence fences gate gates oven ovens carpet carpets blind blinds tyre tyres wheel wheels brick brickwork hair nails beauty ' +
+  'wash washing valet valeting clean cleaning care repair repairs fitting fitters installation installations removal removals service services solution solutions maintenance grooming detailing polishing painting decorating plumbing plumber plumbers heating electrical electrician roofing gardening landscaping building builders plastering tiling flooring fencing paving glazing rendering scaffolding catering refurbishment alloy recovery transport haulage skip skips waste rubbish ' +
+  'and of').split(' '));
+function hbnTc(w) { if (!w) return w; if (w.length <= 3 && !/[aeiou]/.test(w) && /^[a-z]+$/.test(w)) return w.toUpperCase(); return w.charAt(0).toUpperCase() + w.slice(1); }
+function hbnSplit(tok) {
+  if (tok.length < 6) return tok;
+  var out = [], brand = '', i = 0;
+  while (i < tok.length) {
+    var m = '';
+    for (var L = Math.min(15, tok.length - i); L > 2; L--) { var c = tok.slice(i, i + L); if (HBN_WORDS.has(c)) { m = c; break; } }
+    if (m) { if (brand) { out.push(brand); brand = ''; } out.push(m); i += m.length; } else { brand += tok.charAt(i); i++; }
+  }
+  if (brand) out.push(brand);
+  var nd = []; for (var k = 0; k < out.length; k++) { if (!HBN_WORDS.has(out[k])) nd.push(k); }
+  if (out.length >= 2 && (nd.length === 0 || (nd.length === 1 && nd[0] === 0 && out[0].length <= 10))) return out.join(' ');
+  return tok;
+}
 function humaniseBusinessName(name) {
   let raw = String(name == null ? '' : name).trim();
   if (!raw) return raw;
   raw = raw.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
   raw = raw.replace(/\s*&\s*/g, ' & ').replace(/\s*\/\s*/g, ' / ').replace(/\s*\+\s*/g, ' + ').replace(/\s*\band\b\s*/gi, ' and ');
-  for (var i = 0; i < HBN_SERVICE.length; i++) { raw = raw.replace(new RegExp('([a-z0-9])(' + HBN_SERVICE[i] + ')', 'gi'), '$1 $2'); }
+  raw = raw.split(' ').map(function (t) { return (/^[a-z0-9]+$/.test(t) && t.length >= 6) ? hbnSplit(t) : t; }).join(' ');
   raw = raw.replace(/\s{2,}/g, ' ').trim();
   if (!/[A-Z]/.test(raw)) {
-    raw = raw.split(' ').map(function (w) { return (w === '&' || w === '/' || w === '+' || w === 'and') ? w : (w ? w.charAt(0).toUpperCase() + w.slice(1) : w); }).join(' ');
+    raw = raw.split(' ').map(function (w) { return (w === '&' || w === '/' || w === '+' || w === 'and' || w === 'of') ? w : hbnTc(w); }).join(' ');
   }
   if (raw.length <= 34) return raw;
   const segments = raw.split(/\s*(?:,|&|\/|\+|\band\b)\s*/i).map((s) => s.trim()).filter(Boolean);
