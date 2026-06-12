@@ -555,7 +555,7 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
    **data separation per user** (owner on every mockup/site/dossier/note/call entry, per-user blob
    prefixes, user_id on link_events; move shared indexes to Postgres, also kills the blob races);
    (3) tier enforcement (per-user tier-driven rate limits + "Upgrade to unlock" UI); (4) Stripe
-   subscriptions ↔ tiers via webhook (launch can set tiers manually in admin). Suggested tiers:
+   subscriptions ↔ tiers via webhook (launch can set tiers manually in admin). Suggested tiers (PRICING UNDER REVIEW 2026-06-12: user + Claude agree £29 entry is too cheap; revised thinking = Scout £49-59 or replace with a 14-day trial / one-off starter pack, Hunter ~£99, Apex ~£199-249; founding-member discount-for-life covers the early-proof gap):
    **🐾 Scout** (~£29/mo: 5 searches/day, 15 mockups/mo, Call List + CRM, basic dashboard, no
    Prowl/Pounce), **🐆 Hunter** (~£79/mo: 30/day, 60 mockups/mo, Prowl 30/mo, Pounce 10/mo, 1 live
    site, full dashboard), **🦁 Apex** (~£149-199/mo: fair-use unlimited searches/Prowl, 200
