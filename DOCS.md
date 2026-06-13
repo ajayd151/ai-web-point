@@ -706,6 +706,11 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-13**
+- **Pounce sites, personalised quote form:** the form heading reads "Get a free quote from
+  <business>" and a "What do you need help with?" dropdown is built from that business's own
+  services (+ "Something else"). Renders from the stored site JSON, so existing live sites get it
+  instantly (no rebuild). (Form is still front-end-only, submissions show a thank-you, not yet
+  emailed, see Known limitations.)
 - **🐾 Prowl is now a "call screen":** the AI synthesis also returns `strengths` (acknowledge first),
   severity-tagged `weaknesses` (colour-coded red/amber "where they're losing out") and `objections`
   (likely brush-offs + rebuttals). Dossier popup re-ordered for a live call: contact → Google rep →
