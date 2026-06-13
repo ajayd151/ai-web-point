@@ -82,11 +82,17 @@ function render(s) {
   const hours = ((s.contact && s.contact.hours) || []).length
     ? `<div class="ci"><div class="cic">🕒</div><div><b>Opening hours</b><span>${(s.contact.hours || []).map(esc).join('<br>')}</span></div></div>` : '';
   const cta = phone ? `<a class="btn btn-amber" href="${telHref(phone)}">📞 Call ${esc(phone)}</a>` : `<a class="btn btn-amber" href="#contact">Get a Free Quote</a>`;
+  // personalised field: a "which service?" dropdown built from THIS business's real services
+  const svcTitles = (s.services || []).map((sv) => sv && sv.title).filter(Boolean).slice(0, 8);
+  const serviceField = svcTitles.length
+    ? `<div class="fld"><label>What do you need help with?</label><select required><option value="" disabled selected>Choose a service…</option>${svcTitles.map((t) => `<option>${esc(t)}</option>`).join('')}<option>Something else</option></select></div>`
+    : '';
   const quoteForm = (id) => `<form id="${id}" onsubmit="event.preventDefault();this.querySelector('.form-ok').style.display='block';this.reset();">
       <div class="form-ok">✓ Thanks! We've got your details and will be in touch shortly.</div>
       <div class="row"><div class="fld"><label>Your name</label><input type="text" required placeholder="Jane Smith" /></div><div class="fld"><label>Phone</label><input type="tel" required placeholder="07…" /></div></div>
       <div class="fld"><label>Email</label><input type="email" placeholder="you@email.com" /></div>
-      <div class="fld"><label>How can we help?</label><textarea rows="3" placeholder="Tell us what you need…"></textarea></div>
+      ${serviceField}
+      <div class="fld"><label>Tell us a bit more</label><textarea rows="3" placeholder="A few details about what you need…"></textarea></div>
       <button class="btn btn-amber" type="submit" style="width:100%;justify-content:center">Send my enquiry →</button>
     </form>`;
   // About visual: real photo if we have one, otherwise a branded highlight card (never blank)
@@ -177,8 +183,8 @@ section{padding:76px 0}.sec-head{text-align:center;max-width:640px;margin:0 auto
 .ci{display:flex;gap:14px;margin-bottom:18px}.ci .cic{width:44px;height:44px;border-radius:11px;background:#eef3fb;display:grid;place-items:center;font-size:19px;flex:0 0 44px}.ci b{display:block;color:var(--navy);font-size:15px}.ci span{color:var(--muted);font-size:14.5px}
 form{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px;box-shadow:0 18px 44px rgba(16,42,82,.08)}
 form label{display:block;font-weight:600;font-size:13.5px;margin:0 0 6px}.fld{margin-bottom:15px}
-form input,form textarea{width:100%;font:inherit;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fbfcfe}
-form input:focus,form textarea:focus{outline:none;border-color:var(--amber-d);background:#fff}
+form input,form textarea,form select{width:100%;font:inherit;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fbfcfe;color:var(--ink)}
+form input:focus,form textarea:focus,form select:focus{outline:none;border-color:var(--amber-d);background:#fff}
 form .row{display:flex;gap:14px}form .row .fld{flex:1}
 .form-ok{display:none;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;border-radius:10px;padding:12px;font-weight:600;font-size:14px;margin-bottom:14px}
 @media(max-width:820px){.contact-grid{grid-template-columns:1fr}form .row{flex-direction:column;gap:0}}
@@ -228,7 +234,7 @@ ${offerBar}
       ${trust ? `<div class="trust-row">${trust}</div>` : ''}
     </div>
     <div class="hero-card">
-      <h3>Get a free quote</h3><div class="hc-sub">No obligation, we'll reply fast.</div>
+      <h3>Get a free quote from ${esc(b.name)}</h3><div class="hc-sub">No obligation, we'll reply fast.</div>
       ${quoteForm('hero-form')}
     </div>
   </div>
@@ -240,7 +246,7 @@ ${accred}
   ${aboutVisual}
 </div></section>
 ${gallery}${reviews}${googleBand}${areaSec}${faqSec}
-<section id="contact"><div class="wrap"><div class="sec-head"><div class="kicker">Get in touch</div><h2>Get your free quote</h2></div>
+<section id="contact"><div class="wrap"><div class="sec-head"><div class="kicker">Get in touch</div><h2>Get your free quote from ${esc(b.name)}</h2></div>
   <div class="contact-grid">
     <div>
       ${phone ? `<div class="ci"><div class="cic">📞</div><div><b>Call us</b><span><a href="${telHref(phone)}">${esc(phone)}</a></span></div></div>` : ''}
