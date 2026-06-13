@@ -571,7 +571,7 @@ per-account setting (`LINK_DOMAIN`).
 
 ## 11. Roadmap
 
-### ⏸️ Parked / on hold (quick reference, as of 2026-06-11)
+### ⏸️ Parked / on hold (quick reference, as of 2026-06-13)
 Things we deliberately deferred, newest first. Details in the bullets below + the change log.
 1. **Mockup IMAGE revamp** (the picture itself, via `generate.js`): brighter/positive hero photo,
    fake nav menu (Home / About / Contact), bigger/bolder service chips, and remove or sentence-ify
@@ -619,6 +619,13 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 6. **Earlier parked:** Pounce v2 client photo upload (before/after), **Payments** (Stripe links),
    **Companies House** key for Prowl, **Prowl Phase B** (Trustpilot/Facebook web search),
    **WhatsApp image-vs-link** A/B test.
+7. **SendGrid domain authentication (SPF/DKIM)** for the enquiry emails (`api/contact.js`).
+   **What:** in SendGrid → Settings → Sender Authentication → Authenticate Your Domain, then add the
+   CNAME records it gives you at the DNS host for the sending domain. **Why:** mail currently sends
+   and arrives, but authenticating the domain improves long-term inbox placement (less spam-foldering)
+   and lets the "from" be a proper branded address on the agency's own domain. **Effort:** one-time,
+   a few DNS records + a verify click; no code change. Not urgent (delivery already works); a quality
+   step. Flagged to the user 2026-06-13.
 
 
 - **✅ Done:** lead finder, AI mockups, WhatsApp+SMS send, branded links, messaged-tracking,
