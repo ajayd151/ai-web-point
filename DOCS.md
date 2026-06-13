@@ -319,10 +319,11 @@ external services, **stores** in two databases, and **produces** outputs that re
 
 ```
                  EXTERNAL SERVICES  (the back-end calls these)
-  Google Places       OpenAI          SendGrid      Vercel + Cloudflare
-  businesses/reviews   image + copy    emails        host / domains / DNS
-        |                  |              |                  |
-        +---------+--------+------+-------+---------+--------+
+  Google Places       OpenAI          SendGrid              Vercel + Cloudflare
+  businesses/reviews   image + copy    emails (alerts,       host / domains / DNS
+                                       applications, ENQUIRIES)
+        |                  |              |                          |
+        +---------+--------+------+-------+--------------+-----------+
                               v  (pulls data / sends email)
   YOU   ----->  FRONT-END  ----->  BACK-END  ----->  OUTPUTS  ----->  PROSPECT
   agency        browser app        Vercel /api       mockup, site,    local business
@@ -332,8 +333,19 @@ external services, **stores** in two databases, and **produces** outputs that re
                      +---------+------------------------------+----------+
                      v                                        v
                VERCEL BLOB                               NEON POSTGRES
-               mockups, sites, Prowl dossiers,           every send / view /
+               mockups, sites, Prowl dossiers, LEADS,    every send / view /
                CRM notes, subdomain map, usage           click / decline event
+
+
+  THE ENQUIRY LOOP  (a Pounce website earning its keep)
+  ─────────────────────────────────────────────────────
+  CUSTOMER  --fills quote form-->  /api/contact  --1-->  VERCEL BLOB  leads/<slug>/  (store-first)
+  (visitor)                              |
+                                         +--2a-->  SendGrid  -->  BUSINESS OWNER  (reply-to = customer)
+                                         |                         + BCC you / LEAD_BCC_ALWAYS
+                                         +--2b-->  SendGrid  -->  CUSTOMER  ("Thanks for contacting ...")
+                                         |
+  YOU  <--reads leads/ via /api/enquiries--+   the 📨 Enquiries inbox tab
 ```
 
 **The main flow:** you **search** (Google Places) → **generate** a mockup (OpenAI image + copy,
@@ -344,6 +356,15 @@ those events. Alongside: **Prowl** builds an intelligence dossier (Google + Open
 **Make live** publishes it to a subdomain (Vercel Domains API + a `domains/_index.json` map, routed
 by `middleware.js`). CRM status + notes live in Blob; per-device flags (messaged, blocked) live in
 the browser's `localStorage`.
+
+**The enquiry loop:** once a Pounce site is live, a visitor's **quote form** posts to `/api/contact`,
+which is **store-first** (the lead is written to Blob under `leads/<slug>/` so it is never lost and
+costs nothing) and then sends two best-effort SendGrid emails: a **notification to the business owner**
+(the email/name captured at build time, reply-to set to the customer so a reply reaches them, BCC to
+you and to any `LEAD_BCC_ALWAYS` address) and a **confirmation back to the customer** styled as if from
+the business. The **📨 Enquiries** tab reads every stored lead back via `/api/enquiries`, so nothing is
+lost even if an email bounces. Anti-spam is a hidden **honeypot** field plus a check that the slug maps
+to a real site.
 
 ### 4b. Code map
 
@@ -368,6 +389,9 @@ vercel.js   add/remove project domain   photo.js     Google-photo proxy (hides A
                                        sites.js     lists every Pounce site (Websites tab)
                                        decline.js   "No thanks" → decline event + status
                                        publish.js   Make live/unpublish + subdomain (Vercel API)
+                                       contact.js   PUBLIC quote-form intake: store lead + email
+                                                    owner (BCC you) + confirm to customer (honeypot)
+                                       enquiries.js Enquiries inbox: reads leads/ back for the app
 middleware.js (root)  routes <sub>.aiwebpoint.com → /api/site?sub=
 ```
 
@@ -451,9 +475,10 @@ Created lazily (`CREATE TABLE IF NOT EXISTS`). To inspect: Vercel → Storage �
 | Vercel Blob | `BLOB_READ_WRITE_TOKEN` (+ auto) | PNGs, metadata, dossiers. |
 | Neon Postgres | `POSTGRES_DATABASE_URL` (+ POSTGRES_* set) | **No plain `POSTGRES_URL`**, `lib/db.js` falls back through the names. |
 | SendGrid | `SENDGRID_API_KEY`, `ERROR_EMAIL_FROM`, `ERROR_EMAIL_TO`, `APPLY_EMAIL_TO?` | Error alerts + founding applications. `FROM` must be a verified sender. |
+| Pounce enquiries | `LEAD_EMAIL_TO?`, `LEAD_BCC_ALWAYS?` | Quote-form intake (`api/contact.js`). `LEAD_EMAIL_TO` = where enquiries go when a site has no owner email set, and the BCC when it does (falls back to `APPLY_EMAIL_TO`/`ERROR_EMAIL_TO`). `LEAD_BCC_ALWAYS` = optional address copied on every enquiry (testing/oversight). |
 | Companies House | `COMPANIES_HOUSE_API_KEY` (**PENDING**) | Free; unlocks the established/director/type part of Prowl. Auth = HTTP Basic `base64(key:)`. |
 | Auth | `APP_USERNAME`, `APP_PASSWORD` | Login; cookie HMAC keyed by the password. |
-| Branding/links | `AGENCY_NAME?`, `DEMO_URL`, `LINK_DOMAIN` | `DEMO_URL`=booking; `LINK_DOMAIN`=`preview.aiwebpoint.com`. |
+| Branding/links | `AGENCY_NAME?`, `AGENCY_URL?`, `DEMO_URL`, `LINK_DOMAIN` | `AGENCY_NAME`/`AGENCY_URL` = the "Powered by Ai Web Point" email signature (defaulted if unset); `DEMO_URL`=booking; `LINK_DOMAIN`=`preview.aiwebpoint.com`. |
 | Limits | `LIMIT_SEARCH`/`LIMIT_GENERATE`/`LIMIT_PROWL` (default 30, generate 50) | Per 20h (RATE_WINDOW_HOURS). Generation counts only on success. |
 | Client subdomains | `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | Let "Make live" register `<sub>.<domain>` on the Vercel project (auto SSL). `PROJECT_ID` = project name or `prj_…`; `TEAM_ID` = team slug or `team_…`. See §7b. |
 
@@ -712,10 +737,18 @@ Newest first. Reference sections above are the source of truth; this is a quick 
   free quote from <business>" and a "What do you need help with?" dropdown is built from that
   business's own services (+ "Something else"). It now submits for real via **`POST /api/contact`**,
   which **stores every lead in Blob first** (`leads/<slug>/…`, durable + free) then sends a
-  best-effort **SendGrid** notification (existing integration; recipient `LEAD_EMAIL_TO` ||
-  `APPLY_EMAIL_TO` || `ERROR_EMAIL_TO`). Anti-spam: a hidden honeypot + the slug must map to a real
-  site. Renders from stored JSON, so live sites get it with no rebuild. (Next: an in-app enquiries
-  inbox + routing the email to the client's own address once accounts exist.)
+  best-effort **SendGrid** notification. Anti-spam: a hidden honeypot + the slug must map to a real
+  site. Renders from stored JSON, so live sites get it with no rebuild.
+- **Enquiry delivery, signature + customer confirmation (new):** the Pounce build modal now captures
+  **who enquiries go to** (the owner's email + contact name), stored on the site JSON and preserved
+  on rebuild (a blank field never wipes an existing recipient). `api/contact.js` routes the
+  notification **to the business owner** with **reply-to set to the customer** and a **BCC to you**
+  (the `LEAD_EMAIL_TO` operator, plus an optional `LEAD_BCC_ALWAYS` address for testing/oversight),
+  signs it **"Powered by Ai Web Point"** (`AGENCY_NAME`/`AGENCY_URL`, defaulted), and sends a separate
+  **confirmation email to the customer** styled as if from the business. If no owner email is set the
+  notification just comes to you.
+- **📨 Enquiries inbox (new tab + `GET /api/enquiries`):** every stored form submission, newest first,
+  searchable, with tap-to-call/tap-to-email. Store-first means leads show here even if an email fails.
 - **🐾 Prowl is now a "call screen":** the AI synthesis also returns `strengths` (acknowledge first),
   severity-tagged `weaknesses` (colour-coded red/amber "where they're losing out") and `objections`
   (likely brush-offs + rebuttals). Dossier popup re-ordered for a live call: contact → Google rep →
