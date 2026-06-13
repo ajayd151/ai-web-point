@@ -106,14 +106,25 @@ module.exports = async (req, res) => {
   try { await put('leads/' + slug + '/' + nowMs + '.json', JSON.stringify(entry), { access: 'public', contentType: 'application/json', addRandomSuffix: true }); }
   catch (e) { /* storage hiccup, still try to email below */ }
 
-  // 2) best-effort notifications via SendGrid (free tier covers normal volume).
-  // The lead is already stored above, so any email failure is non-fatal.
+  // 2) best-effort notifications via SendGrid. The lead is already stored above, so
+  // any email failure is non-fatal.
   const key = process.env.SENDGRID_API_KEY;
   const from = process.env.ERROR_EMAIL_FROM;             // a verified SendGrid sender
   const operator = process.env.LEAD_EMAIL_TO || process.env.APPLY_EMAIL_TO || process.env.ERROR_EMAIL_TO; // you
   const agency = process.env.AGENCY_NAME || 'Ai Web Point';
   const agencyUrl = process.env.AGENCY_URL || 'https://aiwebpoint.com';
-  const signature = '\n\n- - -\nPowered by ' + agency + '\n' + agencyUrl + '\n';
+
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const br = (s) => esc(s).replace(/\n/g, '<br>');
+  // The plain-text signature carries NO raw URL (a bare link reads as spammy); the
+  // HTML version turns "Powered by Ai Web Point" into a tidy clickable link instead.
+  const sigText = '\n\nPowered by ' + agency;
+  const sigHtml = '<p style="margin:22px 0 0;color:#9097a3;font-size:13px">Powered by ' +
+    '<a href="' + agencyUrl + '" style="color:#9097a3">' + esc(agency) + '</a></p>';
+  const htmlWrap = (inner) => '<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#222;line-height:1.6">' + inner + sigHtml + '</div>';
+  // Transactional mail: turn OFF SendGrid click + open tracking so links are never
+  // rewritten to ct.sendgrid.net (which looks like phishing) and no pixel is added.
+  const trackingOff = { click_tracking: { enable: false, enable_text: false }, open_tracking: { enable: false } };
 
   // Who should receive the enquiry: the business owner if one was set at build time,
   // otherwise you. When it goes to the owner, you get a silent BCC for visibility.
@@ -142,40 +153,49 @@ module.exports = async (req, res) => {
     const alwaysBcc = (process.env.LEAD_BCC_ALWAYS || '').trim(); // optional: a copy of EVERY enquiry (testing / oversight)
     if (alwaysBcc && alwaysBcc.toLowerCase() !== String(notifyTo).toLowerCase()) bcc.add(alwaysBcc);
     if (bcc.size) personal.bcc = [...bcc].map((email) => ({ email }));
+    const ownerText = 'You have a new website enquiry' + (ownerName ? ', ' + ownerName : '') + '.\n\n' +
+      'Name: ' + lead.name + '\nPhone: ' + (lead.phone || '(none)') + '\nEmail: ' + (lead.email || '(none)') + '\n' +
+      'Service: ' + (lead.service || '(not specified)') + '\n\nMessage:\n' + (lead.message || '(none)') + '\n\n' +
+      'Reply to this email to respond to ' + lead.name + ' directly.\nReceived: ' + now + sigText;
+    const ownerHtml = htmlWrap(
+      '<p>You have a new website enquiry' + (ownerName ? ', ' + esc(ownerName) : '') + '.</p>' +
+      '<p><b>Name:</b> ' + esc(lead.name) + '<br><b>Phone:</b> ' + esc(lead.phone || '(none)') +
+      '<br><b>Email:</b> ' + esc(lead.email || '(none)') + '<br><b>Service:</b> ' + esc(lead.service || '(not specified)') + '</p>' +
+      '<p><b>Message:</b><br>' + br(lead.message || '(none)') + '</p>' +
+      '<p>Reply to this email to respond to ' + esc(lead.name) + ' directly.</p>' +
+      '<p style="color:#9097a3;font-size:13px">Received ' + esc(now) + '</p>');
     try {
       await send('owner', {
         personalizations: [personal],
         from: { email: from, name: bizName + ' website' },
         reply_to: lead.email ? { email: lead.email, name: lead.name } : undefined,
         subject: 'New enquiry from ' + bizName + "'s website",
-        content: [{
-          type: 'text/plain',
-          value: 'You have a new website enquiry' + (ownerName ? ', ' + ownerName : '') + '.\n\n' +
-            'Name: ' + lead.name + '\nPhone: ' + (lead.phone || '(none)') + '\nEmail: ' + (lead.email || '(none)') + '\n' +
-            'Service: ' + (lead.service || '(not specified)') + '\n\nMessage:\n' + (lead.message || '(none)') + '\n\n' +
-            'Reply to this email to respond to ' + lead.name + ' directly.\n' +
-            'Received: ' + now + signature,
-        }],
+        tracking_settings: trackingOff,
+        content: [{ type: 'text/plain', value: ownerText }, { type: 'text/html', value: ownerHtml }],
       });
     } catch (e) { /* best-effort */ }
 
     // b) confirmation back to the customer, styled as if from the business
     if (lead.email) {
+      const custText = 'Hi ' + lead.name + ',\n\n' +
+        'Thanks for getting in touch with ' + bizName + '. We have received your enquiry' +
+        (lead.service ? ' about ' + lead.service : '') + ' and will get back to you as soon as we can.\n\n' +
+        (lead.message ? 'For your records, here is what you sent:\n' + lead.message + '\n\n' : '') +
+        'Speak soon,\n' + bizName + sigText;
+      const custHtml = htmlWrap(
+        '<p>Hi ' + esc(lead.name) + ',</p>' +
+        '<p>Thanks for getting in touch with ' + esc(bizName) + '. We have received your enquiry' +
+        (lead.service ? ' about ' + esc(lead.service) : '') + ' and will get back to you as soon as we can.</p>' +
+        (lead.message ? '<p style="color:#555"><b>For your records, here is what you sent:</b><br>' + br(lead.message) + '</p>' : '') +
+        '<p>Speak soon,<br>' + esc(bizName) + '</p>');
       try {
         await send('customer', {
           personalizations: [{ to: [{ email: lead.email, name: lead.name }] }],
           from: { email: from, name: bizName },
           reply_to: { email: ownerEmail || operator, name: bizName },
           subject: 'Thanks for contacting ' + bizName,
-          content: [{
-            type: 'text/plain',
-            value: 'Hi ' + lead.name + ',\n\n' +
-              'Thanks for getting in touch with ' + bizName + '. We have received your enquiry' +
-              (lead.service ? ' about ' + lead.service : '') + ' and will get back to you as soon as we can.\n\n' +
-              'For your records, here is what you sent:\n' +
-              (lead.message ? lead.message + '\n\n' : '') +
-              'Speak soon,\n' + bizName + signature,
-          }],
+          tracking_settings: trackingOff,
+          content: [{ type: 'text/plain', value: custText }, { type: 'text/html', value: custHtml }],
         });
       } catch (e) { /* best-effort */ }
     }
