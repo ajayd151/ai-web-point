@@ -475,7 +475,7 @@ Created lazily (`CREATE TABLE IF NOT EXISTS`). To inspect: Vercel → Storage �
 | Vercel Blob | `BLOB_READ_WRITE_TOKEN` (+ auto) | PNGs, metadata, dossiers. |
 | Neon Postgres | `POSTGRES_DATABASE_URL` (+ POSTGRES_* set) | **No plain `POSTGRES_URL`**, `lib/db.js` falls back through the names. |
 | SendGrid | `SENDGRID_API_KEY`, `ERROR_EMAIL_FROM`, `ERROR_EMAIL_TO`, `APPLY_EMAIL_TO?` | Error alerts + founding applications. `FROM` must be a verified sender. |
-| Pounce enquiries | `LEAD_EMAIL_TO?`, `LEAD_BCC_ALWAYS?` | Quote-form intake (`api/contact.js`). `LEAD_EMAIL_TO` = where enquiries go when a site has no owner email set, and the BCC when it does (falls back to `APPLY_EMAIL_TO`/`ERROR_EMAIL_TO`). `LEAD_BCC_ALWAYS` = optional address copied on every enquiry (testing/oversight). |
+| Pounce enquiries | `LEAD_EMAIL_TO?`, `LEAD_BCC_ALWAYS?`, `CONTACT_IP_HOURLY?`, `CONTACT_SITE_DAILY?` | Quote-form intake (`api/contact.js`). `LEAD_EMAIL_TO` = where enquiries go when a site has no owner email set, and the BCC when it does (falls back to `APPLY_EMAIL_TO`/`ERROR_EMAIL_TO`). `LEAD_BCC_ALWAYS` = optional address copied on every enquiry (testing/oversight). `CONTACT_IP_HOURLY` (default 5) = per-IP submissions/hour before silent drop. `CONTACT_SITE_DAILY` (default 50) = per-site email-sending enquiries/day before leads are stored-only. |
 | Companies House | `COMPANIES_HOUSE_API_KEY` (**PENDING**) | Free; unlocks the established/director/type part of Prowl. Auth = HTTP Basic `base64(key:)`. |
 | Auth | `APP_USERNAME`, `APP_PASSWORD` | Login; cookie HMAC keyed by the password. |
 | Branding/links | `AGENCY_NAME?`, `AGENCY_URL?`, `DEMO_URL`, `LINK_DOMAIN` | `AGENCY_NAME`/`AGENCY_URL` = the "Powered by Ai Web Point" email signature (defaulted if unset); `DEMO_URL`=booking; `LINK_DOMAIN`=`preview.aiwebpoint.com`. |
@@ -749,6 +749,14 @@ Newest first. Reference sections above are the source of truth; this is a quick 
   notification just comes to you.
 - **📨 Enquiries inbox (new tab + `GET /api/enquiries`):** every stored form submission, newest first,
   searchable, with tap-to-call/tap-to-email. Store-first means leads show here even if an email fails.
+- **Enquiry-form abuse caps (new):** `api/contact.js` now has a **per-IP throttle** (default 5/hour,
+  `CONTACT_IP_HOURLY`) that silently drops bot floods, and a **per-site daily cap** (default 50/day,
+  `CONTACT_SITE_DAILY`) on email-sending enquiries. Over the per-site cap the lead is **still stored**
+  (shows in the inbox) but no email is sent, so no single site can run away with the SendGrid quota or
+  the sender reputation. Both use the race-safe append-and-count blob pattern (one tiny event blob under
+  `clrl/`, counted via `list()`, pruned at 24h); the visitor IP is sha256-hashed (no raw IP stored).
+  Rationale captured for the user: transactional email is ~£0.0004 each (Free 100/day, Essentials 50K
+  ~£20/mo), so cost was never the risk; abuse + sender reputation is, hence the caps.
 - **🐾 Prowl is now a "call screen":** the AI synthesis also returns `strengths` (acknowledge first),
   severity-tagged `weaknesses` (colour-coded red/amber "where they're losing out") and `objections`
   (likely brush-offs + rebuttals). Dossier popup re-ordered for a live call: contact → Google rep →
