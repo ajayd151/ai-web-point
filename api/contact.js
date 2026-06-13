@@ -47,30 +47,70 @@ module.exports = async (req, res) => {
   try { await put('leads/' + slug + '/' + Date.now() + '.json', JSON.stringify(entry), { access: 'public', contentType: 'application/json', addRandomSuffix: true }); }
   catch (e) { /* storage hiccup, still try to email below */ }
 
-  // 2) best-effort notification via existing SendGrid (free tier covers normal volume)
+  // 2) best-effort notifications via SendGrid (free tier covers normal volume).
+  // The lead is already stored above, so any email failure is non-fatal.
   const key = process.env.SENDGRID_API_KEY;
-  const to = process.env.LEAD_EMAIL_TO || process.env.APPLY_EMAIL_TO || process.env.ERROR_EMAIL_TO;
-  const from = process.env.ERROR_EMAIL_FROM;
-  if (key && to && from) {
+  const from = process.env.ERROR_EMAIL_FROM;             // a verified SendGrid sender
+  const operator = process.env.LEAD_EMAIL_TO || process.env.APPLY_EMAIL_TO || process.env.ERROR_EMAIL_TO; // you
+  const agency = process.env.AGENCY_NAME || 'Ai Web Point';
+  const agencyUrl = process.env.AGENCY_URL || 'https://aiwebpoint.com';
+  const signature = '\n\n- - -\nPowered by ' + agency + '\n' + agencyUrl + '\n';
+
+  // Who should receive the enquiry: the business owner if one was set at build time,
+  // otherwise you. When it goes to the owner, you get a silent BCC for visibility.
+  const ownerEmail = (site.leadEmail || '').trim();
+  const ownerName = (site.leadName || '').trim();
+  const notifyTo = ownerEmail || operator;
+
+  const send = (payload) => fetch('https://api.sendgrid.com/v3/mail/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+    body: JSON.stringify(payload),
+  }).catch(() => {});
+
+  if (key && from && notifyTo) {
+    // a) notify the business (owner, or you) that a new enquiry came in
+    const personal = { to: [{ email: notifyTo, name: ownerName || undefined }] };
+    if (ownerEmail && operator && operator.toLowerCase() !== ownerEmail.toLowerCase()) {
+      personal.bcc = [{ email: operator }]; // keep your own copy when it routes to the client
+    }
     try {
-      await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: to }] }],
-          from: { email: from, name: 'Site Pounce leads' },
-          reply_to: lead.email ? { email: lead.email, name: lead.name } : undefined,
-          subject: 'New enquiry from ' + bizName + "'s website",
+      await send({
+        personalizations: [personal],
+        from: { email: from, name: bizName + ' website' },
+        reply_to: lead.email ? { email: lead.email, name: lead.name } : undefined,
+        subject: 'New enquiry from ' + bizName + "'s website",
+        content: [{
+          type: 'text/plain',
+          value: 'You have a new website enquiry' + (ownerName ? ', ' + ownerName : '') + '.\n\n' +
+            'Name: ' + lead.name + '\nPhone: ' + (lead.phone || '(none)') + '\nEmail: ' + (lead.email || '(none)') + '\n' +
+            'Service: ' + (lead.service || '(not specified)') + '\n\nMessage:\n' + (lead.message || '(none)') + '\n\n' +
+            'Reply to this email to respond to ' + lead.name + ' directly.\n' +
+            'Received: ' + now + signature,
+        }],
+      });
+    } catch (e) { /* best-effort */ }
+
+    // b) confirmation back to the customer, styled as if from the business
+    if (lead.email) {
+      try {
+        await send({
+          personalizations: [{ to: [{ email: lead.email, name: lead.name }] }],
+          from: { email: from, name: bizName },
+          reply_to: { email: ownerEmail || operator, name: bizName },
+          subject: 'Thanks for contacting ' + bizName,
           content: [{
             type: 'text/plain',
-            value: 'New website enquiry for ' + bizName + ':\n\n' +
-              'Name: ' + lead.name + '\nPhone: ' + lead.phone + '\nEmail: ' + (lead.email || '(none)') + '\n' +
-              'Service: ' + (lead.service || '(not specified)') + '\n\nMessage:\n' + (lead.message || '(none)') + '\n\n' +
-              'Site: /s/' + slug + '\nReceived: ' + now + '\n',
+            value: 'Hi ' + lead.name + ',\n\n' +
+              'Thanks for getting in touch with ' + bizName + '. We have received your enquiry' +
+              (lead.service ? ' about ' + lead.service : '') + ' and will get back to you as soon as we can.\n\n' +
+              'For your records, here is what you sent:\n' +
+              (lead.message ? lead.message + '\n\n' : '') +
+              'Speak soon,\n' + bizName + signature,
           }],
-        }),
-      });
-    } catch (e) { /* email is best-effort, the lead is already stored */ }
+        });
+      } catch (e) { /* best-effort */ }
+    }
   }
 
   res.status(200).json({ ok: true });

@@ -260,8 +260,21 @@ module.exports = async (req, res) => {
 
   const initials = (String(name).replace(/[^a-zA-Z0-9 ]/g, '').trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2) || 'SP').toUpperCase();
 
+  // On a rebuild the build form is blank, so a blank email here should NOT wipe a
+  // recipient set on an earlier build. Carry the old one forward when none was given.
+  let prevSite = null;
+  if (!String(body.leadEmail || '').trim() || !String(body.leadName || '').trim()) {
+    try {
+      const { blobs } = await list({ prefix: path });
+      const hit = blobs.find((x) => x.pathname === path);
+      if (hit) prevSite = await (await fetch(hit.url + '?t=' + Date.now())).json().catch(() => null);
+    } catch (e) { /* no previous site */ }
+  }
+
   const site = {
     slug, mode: 'preview', v: SITE_VERSION, createdAt: new Date().toISOString(),
+    leadEmail: String(body.leadEmail || '').trim().slice(0, 160) || (prevSite && prevSite.leadEmail) || '', // where enquiries go (blank = operator)
+    leadName: String(body.leadName || '').trim().slice(0, 80) || (prevSite && prevSite.leadName) || '',
     business: { name, location, category, phone: realPhone, address, mapsUrl: place ? 'https://www.google.com/maps/place/?q=place_id:' + place.id : '' },
     initials, accent: opts.accent || null, offer: opts.offer || '',
     accreditations: opts.accreditations || [],

@@ -1119,13 +1119,14 @@ const GENERIC_TIPS = [
 let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
-  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
+  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'messages') { renderBlocked(); updateWaToday(); }
   if (name === 'leads') loadLeads();
   if (name === 'websites') loadWebsites();
   if (name === 'calls') loadCallList();
+  if (name === 'enquiries') loadEnquiries();
 }
 document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 document.querySelectorAll('.dash-rbtn').forEach((b) => b.addEventListener('click', () => {
@@ -1423,6 +1424,8 @@ function pounceQuestionsHTML(lead) {
       <div class="pq-fld wide"><label>Special offer banner <span class="muted">(optional)</span></label><input id="pq-offer" type="text" placeholder="e.g. £50 off your first job this month"></div>
       <div class="pq-fld wide"><label>Accreditations they actually hold <span class="muted">(tick only real ones)</span></label>
         <div class="pq-accred">${suggestAccreditations(lead && lead.category).map((a) => `<label class="pq-chip"><input type="checkbox" class="pq-acc" value="${esc(a)}"> ${esc(a)}</label>`).join('')}</div></div>
+      <div class="pq-fld"><label>📥 Send enquiries to <span class="muted">(business owner's email, blank = you)</span></label><input id="pq-leademail" type="email" placeholder="owner@theirbusiness.co.uk"></div>
+      <div class="pq-fld"><label>Their contact name <span class="muted">(optional)</span></label><input id="pq-leadname" type="text" placeholder="e.g. Dave"></div>
       <div class="pq-fld wide"><label>Anything to emphasise in the wording? <span class="muted">(shapes the copy only)</span></label><textarea id="pq-notes" rows="2" placeholder="e.g. family run since 2005, eco-friendly products, free callouts"></textarea></div>
     </div>
     <p class="muted pq-photonote">📸 Photos are pulled from their Google profile (we pick the best ones), or AI-generated if those are weak. Using the business's own photos, or before / after shots, needs them to send the images first (coming soon). The notes box steers the wording, not the photos or sections.</p>
@@ -1432,7 +1435,7 @@ function pounceQuestionsHTML(lead) {
 function collectPounceOpts() {
   const v = (id) => { const el = $(id); return el ? (el.type === 'checkbox' ? el.checked : el.value.trim()) : ''; };
   const accreditations = Array.prototype.slice.call(document.querySelectorAll('.pq-acc:checked')).map((el) => el.value);
-  return { accent: v('pq-accent'), faq: v('pq-faq'), highlightServices: v('pq-highlight'), usp: v('pq-usp'), offer: v('pq-offer'), notes: v('pq-notes'), accreditations };
+  return { accent: v('pq-accent'), faq: v('pq-faq'), highlightServices: v('pq-highlight'), usp: v('pq-usp'), offer: v('pq-offer'), notes: v('pq-notes'), accreditations, leadEmail: v('pq-leademail'), leadName: v('pq-leadname') };
 }
 function buildPounce(lead, opts, refresh) {
   lastPounceOpts = opts || {};
@@ -1739,6 +1742,41 @@ document.querySelectorAll('#websites-filters .leadf-btn').forEach((b) => b.addEv
 }));
 $('websites-search').addEventListener('input', renderWebsites);
 $('websites-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadWebsites));
+
+// 📨 Enquiries inbox: form submissions from Pounce sites (stored by /api/contact)
+let enquiriesData = null;
+async function loadEnquiries() {
+  const tb = $('enq-rows'); if (tb) tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">Loading…</td></tr>';
+  if (!authed) return;
+  try {
+    const d = await (await fetch('/api/enquiries')).json();
+    enquiriesData = { items: d.enquiries || [] };
+  } catch (e) { enquiriesData = { items: [] }; }
+  renderEnquiries();
+}
+function renderEnquiries() {
+  const tb = $('enq-rows'); if (!tb) return;
+  const items = (enquiriesData && enquiriesData.items) || [];
+  const q = ($('enq-search') ? $('enq-search').value : '').toLowerCase().trim();
+  let list = items.slice();
+  if (q) list = list.filter((it) => (String(it.name) + ' ' + it.business + ' ' + it.message + ' ' + it.email + ' ' + it.service).toLowerCase().indexOf(q) >= 0);
+  if (!list.length) { tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">No enquiries yet. They appear here the moment a visitor submits a quote form on one of your sites.</td></tr>'; return; }
+  tb.innerHTML = list.map((it) => {
+    const contact = [];
+    if (it.phone) contact.push('<a href="tel:' + esc(it.phone.replace(/[^+0-9]/g, '')) + '">📞 ' + esc(it.phone) + '</a>');
+    if (it.email) contact.push('<a href="mailto:' + esc(it.email) + '">✉️ ' + esc(it.email) + '</a>');
+    const enquiry = (it.service ? '<b>' + esc(it.service) + '</b>' : '') +
+      (it.message ? (it.service ? '<br>' : '') + '<span class="muted">' + esc(it.message) + '</span>' : (it.service ? '' : '<span class="muted">·</span>'));
+    return '<tr>' +
+      '<td>' + (it.receivedAt ? esc(fmtDate(it.receivedAt)) : '<span class="muted">·</span>') + '</td>' +
+      '<td><b>' + esc(humaniseBusinessName(it.business) || it.business) + '</b></td>' +
+      '<td>' + esc(it.name || '·') + '</td>' +
+      '<td class="enq-contact">' + (contact.join('<br>') || '<span class="muted">·</span>') + '</td>' +
+      '<td class="enq-msg">' + enquiry + '</td></tr>';
+  }).join('');
+}
+$('enq-search').addEventListener('input', renderEnquiries);
+$('enq-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadEnquiries));
 
 // ---- 📞 Call List: phone-first outreach (the safe first touch) -------------
 // Stored server-side (calls/_list.json) so the list built on desktop is on your
