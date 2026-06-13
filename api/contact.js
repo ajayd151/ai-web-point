@@ -62,11 +62,18 @@ module.exports = async (req, res) => {
   const ownerName = (site.leadName || '').trim();
   const notifyTo = ownerEmail || operator;
 
-  const send = (payload) => fetch('https://api.sendgrid.com/v3/mail/send', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-    body: JSON.stringify(payload),
-  }).catch(() => {});
+  const diag = {}; // temporary: surfaces what SendGrid did (no email addresses leaked)
+  const send = async (label, payload) => {
+    try {
+      const r = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        body: JSON.stringify(payload),
+      });
+      diag[label] = r.status;
+      if (r.status >= 400) diag[label + '_err'] = (await r.text().catch(() => '')).slice(0, 200);
+    } catch (e) { diag[label] = 'fetch_error'; diag[label + '_err'] = String(e && e.message || e).slice(0, 120); }
+  };
 
   if (key && from && notifyTo) {
     // a) notify the business (owner, or you) that a new enquiry came in
@@ -77,7 +84,7 @@ module.exports = async (req, res) => {
     if (alwaysBcc && alwaysBcc.toLowerCase() !== String(notifyTo).toLowerCase()) bcc.add(alwaysBcc);
     if (bcc.size) personal.bcc = [...bcc].map((email) => ({ email }));
     try {
-      await send({
+      await send('owner', {
         personalizations: [personal],
         from: { email: from, name: bizName + ' website' },
         reply_to: lead.email ? { email: lead.email, name: lead.name } : undefined,
@@ -96,7 +103,7 @@ module.exports = async (req, res) => {
     // b) confirmation back to the customer, styled as if from the business
     if (lead.email) {
       try {
-        await send({
+        await send('customer', {
           personalizations: [{ to: [{ email: lead.email, name: lead.name }] }],
           from: { email: from, name: bizName },
           reply_to: { email: ownerEmail || operator, name: bizName },
@@ -115,5 +122,14 @@ module.exports = async (req, res) => {
     }
   }
 
+  if (body._debug === 'aiwp') {
+    res.status(200).json({
+      ok: true,
+      env: { key: !!key, from: !!from, operator: !!operator },
+      routing: { ownerEmailSet: !!ownerEmail, customerEmailGiven: !!lead.email },
+      sendgrid: diag,
+    });
+    return;
+  }
   res.status(200).json({ ok: true });
 };
