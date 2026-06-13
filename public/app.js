@@ -1276,13 +1276,19 @@ function renderDossier(d, lead) {
     : `<span class="muted">${esc(ch.note || 'No Companies House record (likely a sole trader).')}</span>`;
   let compTable = '';
   if (comps.length) {
-    const youRow = `<tr class="dos-you"><td><b>${esc(d.business.name)} (you)</b></td><td>❌ No website</td><td>${g.reviews}</td><td>${g.rating}★</td></tr>`;
-    const rows = comps.map((c) => `<tr><td>${esc(c.name)}</td><td>✅ <a href="${esc(c.website)}" target="_blank" rel="noopener">${esc(c.website.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 28))}</a></td><td>${c.reviews}</td><td>${c.score}★</td></tr>`).join('');
-    compTable = `<h3>How they stack up against nearby competitors</h3><div class="recent-scroll"><table class="recent-table dos-table"><thead><tr><th>Business</th><th>Website</th><th>Google reviews</th><th>Score</th></tr></thead><tbody>${youRow}${rows}</tbody></table></div>`;
+    const maxRev = Math.max(1, g.reviews || 0, ...comps.map((c) => c.reviews || 0));
+    const rank = 1 + comps.filter((c) => (c.reviews || 0) > (g.reviews || 0)).length; // lead's rank by reviews
+    const bar = (n) => `<div class="rev-cell"><div class="rev-bar"><span style="width:${Math.round(((n || 0) / maxRev) * 100)}%"></span></div><span class="rev-n">${n || 0}</span></div>`;
+    const youRow = `<tr class="dos-you"><td><b>${esc(d.business.name)} (you)</b></td><td>❌ No website</td><td>${bar(g.reviews)}</td><td>${g.rating}★</td></tr>`;
+    const rows = comps.map((c) => `<tr><td>${esc(c.name)}</td><td>✅ <a href="${esc(c.website)}" target="_blank" rel="noopener">${esc(c.website.replace(/^https?:\/\//, '').replace(/\/$/, '').slice(0, 28))}</a></td><td>${bar(c.reviews)}</td><td>${c.score}★</td></tr>`).join('');
+    compTable = `<h3>How they stack up against nearby competitors</h3><div class="dos-rank">They rank <b>#${rank} of ${comps.length + 1}</b> on Google reviews in this area.</div><div class="recent-scroll"><table class="recent-table dos-table"><thead><tr><th>Business</th><th>Website</th><th>Google reviews</th><th>Score</th></tr></thead><tbody>${youRow}${rows}</tbody></table></div>`;
   }
   const services = (d.services && d.services.length) ? `<h3>What they do</h3><div class="chips">${d.services.map((s) => `<span class="chip site">${esc(s)}</span>`).join('')}</div>` : '';
-  const ammo = (d.ammunition && d.ammunition.length) ? `<div class="dos-ammo"><h3>🎯 Your ammunition</h3><ul>${d.ammunition.map((a) => `<li>${esc(a)}</li>`).join('')}</ul></div>` : '';
-  const opener = d.openingLine ? `<div class="dos-open"><h3>💬 Suggested opener</h3><p>${esc(d.openingLine)}</p></div>` : '';
+  const strengths = (d.strengths && d.strengths.length) ? `<div class="dos-block"><h3>✅ Acknowledge first (builds rapport)</h3><div class="cue-list">${d.strengths.map((s) => `<div class="cue sev-good">${esc(s)}</div>`).join('')}</div></div>` : '';
+  const weak = (d.weaknesses && d.weaknesses.length) ? `<div class="dos-block"><h3>🎯 Where they're losing out</h3><div class="cue-list">${d.weaknesses.map((w) => `<div class="cue sev-${w.severity === 'high' ? 'high' : 'med'}">${esc(w.label)}</div>`).join('')}</div></div>` : '';
+  const ammo = (d.ammunition && d.ammunition.length) ? `<div class="dos-ammo"><h3>💬 Personalised What to say</h3><ul class="say-list">${d.ammunition.map((a) => `<li>${esc(a)}</li>`).join('')}</ul></div>` : '';
+  const objections = (d.objections && d.objections.length) ? `<div class="dos-block dos-obj"><h3>🛡️ If they push back</h3>${d.objections.map((o) => `<div class="obj-item"><div class="obj-q">“${esc(o.objection)}”</div><div class="obj-a">${esc(o.response)}</div></div>`).join('')}</div>` : '';
+  const opener = d.openingLine ? `<div class="dos-open"><h3>☎️ Open with this</h3><p>${esc(d.openingLine)}</p></div>` : '';
   // contact details + quick actions (so you can act on the intel right here)
   const b = d.business || {};
   const phone = (lead && lead.phone) || b.phone || '';
@@ -1296,9 +1302,10 @@ function renderDossier(d, lead) {
   const contact = `<div class="dos-contact"><div class="dos-cline">${phone ? '📞 <b>' + esc(phone) + '</b>' : '<span class="muted">No phone on file</span>'}${loc ? ' · ' + esc(loc) : ''}</div><div class="dos-acts">${cActs}</div></div>`;
   $('prowl-body').innerHTML =
     contact +
-    `<div class="dos-snap">${snapshot}</div>` +
     `<div class="dos-rep">⭐ Google: <b>${g.reviews}</b> reviews at <b>${g.rating}★</b>${g.mapsUrl ? ' · <a href="' + esc(g.mapsUrl) + '" target="_blank" rel="noopener">📍 Maps</a>' : ''}${g.website ? '' : ' · <b>no website</b>'}${d.reputationSummary ? ', ' + esc(d.reputationSummary) : ''}</div>` +
-    compTable + services + ammo + opener +
+    opener + strengths + weak + ammo + objections +
+    compTable + services +
+    `<div class="dos-snap">${snapshot}</div>` +
     `<div class="dos-foot"><span class="muted">Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-pounce" class="primary sm">🐆 Pounce, build their website</button> <button id="prowl-rerun" class="ghost">↻ Re-run</button></div>` +
     '<div id="prowl-notes"></div>';
   const rr = $('prowl-rerun');
