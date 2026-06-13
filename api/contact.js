@@ -114,6 +114,12 @@ module.exports = async (req, res) => {
   const agency = process.env.AGENCY_NAME || 'Ai Web Point';
   const agencyUrl = process.env.AGENCY_URL || 'https://aiwebpoint.com';
 
+  // The business's own live address, built from TRUSTED server data (the subdomain we
+  // assigned at publish time), never from visitor input. Only set once the site is live.
+  const SUBDOMAIN_ROOT = process.env.SUBDOMAIN_ROOT || 'aiwebpoint.com';
+  const businessHost = site.subdomain ? site.subdomain + '.' + SUBDOMAIN_ROOT : '';
+  const businessUrl = businessHost ? 'https://' + businessHost : '';
+
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const br = (s) => esc(s).replace(/\n/g, '<br>');
   // The plain-text signature carries NO raw URL (a bare link reads as spammy); the
@@ -177,17 +183,19 @@ module.exports = async (req, res) => {
 
     // b) confirmation back to the customer, styled as if from the business
     if (lead.email) {
+      const bizLinkText = businessUrl ? '\n\nVisit us: ' + businessUrl : '';
+      const bizLinkHtml = businessUrl ? '<p style="margin:16px 0 0">Visit us at <a href="' + businessUrl + '">' + esc(businessHost) + '</a></p>' : '';
       const custText = 'Hi ' + lead.name + ',\n\n' +
         'Thanks for getting in touch with ' + bizName + '. We have received your enquiry' +
         (lead.service ? ' about ' + lead.service : '') + ' and will get back to you as soon as we can.\n\n' +
         (lead.message ? 'For your records, here is what you sent:\n' + lead.message + '\n\n' : '') +
-        'Speak soon,\n' + bizName + sigText;
+        'Speak soon,\n' + bizName + bizLinkText + sigText;
       const custHtml = htmlWrap(
         '<p>Hi ' + esc(lead.name) + ',</p>' +
         '<p>Thanks for getting in touch with ' + esc(bizName) + '. We have received your enquiry' +
         (lead.service ? ' about ' + esc(lead.service) : '') + ' and will get back to you as soon as we can.</p>' +
         (lead.message ? '<p style="color:#555"><b>For your records, here is what you sent:</b><br>' + br(lead.message) + '</p>' : '') +
-        '<p>Speak soon,<br>' + esc(bizName) + '</p>');
+        '<p>Speak soon,<br>' + esc(bizName) + '</p>' + bizLinkHtml);
       try {
         await send('customer', {
           personalizations: [{ to: [{ email: lead.email, name: lead.name }] }],
@@ -205,7 +213,7 @@ module.exports = async (req, res) => {
     res.status(200).json({
       ok: true,
       env: { key: !!key, from: !!from, operator: !!operator },
-      routing: { ownerEmailSet: !!ownerEmail, customerEmailGiven: !!lead.email },
+      routing: { ownerEmailSet: !!ownerEmail, customerEmailGiven: !!lead.email, businessUrl: businessUrl || '(none)' },
       caps: { ipCount: usage.ipCount, ipMax: IP_MAX, siteCount: usage.siteCount, siteMax: SITE_MAX, siteCapped, emailSkipped: siteCapped },
       sendgrid: diag,
     });
