@@ -1,9 +1,22 @@
 // PUBLIC: a visitor submitted the contact/quote form on a Pounce site (/s/<slug>
 // or a client subdomain). Store-first (the lead is saved to Blob so it's never
 // lost and costs nothing), then a best-effort SendGrid notification on top.
-// No auth (the visitor isn't logged in). Anti-spam: a honeypot field + the slug
-// must map to a real site.
-const { list, put } = require('@vercel/blob');
+// No auth (the visitor isn't logged in). Anti-spam / abuse caps:
+//   - a honeypot field + the slug must map to a real site,
+//   - a per-IP throttle (default 5/hour) drops bot floods silently, and
+//   - a per-site daily cap (default 50/day) on email-sending enquiries: over the
+//     cap the lead is STILL stored (shows in the inbox) but no email is sent, so
+//     no single site can run away with the SendGrid quota or the sender reputation.
+// Both caps use append-only event blobs counted via list() (race-safe: no
+// read-modify-write), and are env-overridable (CONTACT_IP_HOURLY / CONTACT_SITE_DAILY).
+const crypto = require('crypto');
+const { list, put, del } = require('@vercel/blob');
+
+const IP_WINDOW_MS = 60 * 60 * 1000;                            // per-IP throttle window: 1 hour
+const SITE_WINDOW_MS = 24 * 60 * 60 * 1000;                     // per-site cap window: 24 hours
+const IP_MAX = Number(process.env.CONTACT_IP_HOURLY || 5);     // max submissions per IP per hour
+const SITE_MAX = Number(process.env.CONTACT_SITE_DAILY || 50); // max email-sending enquiries per site per day
+const CLRL_RE = /^clrl\/(\d+)-([0-9a-f]+)-(.+)__[0-9a-f]+\.txt$/;
 
 async function readJson(path) {
   try {
@@ -12,6 +25,38 @@ async function readJson(path) {
     if (b) return await (await fetch(b.url + '?t=' + Date.now())).json();
   } catch (e) { /* none */ }
   return null;
+}
+
+function ipHash(req) {
+  const xff = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  const ip = xff || String(req.headers['x-real-ip'] || '') || 'unknown';
+  return crypto.createHash('sha256').update(ip).digest('hex').slice(0, 12); // hashed, no raw IP stored
+}
+
+// Count recent submissions per-IP (1h) and per-site (24h) from the append-only
+// event blobs, and prune events older than the 24h window. No read-modify-write.
+async function enquiryUsage(slug, iph, nowMs) {
+  let blobs;
+  try { blobs = (await list({ prefix: 'clrl/' })).blobs || []; }
+  catch (e) { return { degraded: true, ipCount: 0, siteCount: 0 }; } // storage hiccup, fail open
+  const events = blobs.map((b) => {
+    const m = b.pathname.match(CLRL_RE);
+    return m ? { t: Number(m[1]), iph: m[2], slug: m[3], url: b.url } : null;
+  }).filter(Boolean);
+  const expired = events.filter((e) => nowMs - e.t >= SITE_WINDOW_MS);
+  if (expired.length) { try { await del(expired.map((e) => e.url)); } catch (e) {} }
+  return {
+    ipCount: events.filter((e) => e.iph === iph && nowMs - e.t < IP_WINDOW_MS).length,
+    siteCount: events.filter((e) => e.slug === slug && nowMs - e.t < SITE_WINDOW_MS).length,
+  };
+}
+
+async function recordEnquiry(slug, iph, nowMs) {
+  try {
+    await put(`clrl/${nowMs}-${iph}-${slug}__${crypto.randomUUID().slice(0, 8)}.txt`, '1', {
+      access: 'public', addRandomSuffix: false, contentType: 'text/plain',
+    });
+  } catch (e) { /* best effort */ }
 }
 
 module.exports = async (req, res) => {
@@ -40,11 +85,25 @@ module.exports = async (req, res) => {
   if (!site) { res.status(404).json({ error: 'Unknown site.' }); return; }
   const bizName = (site.business && site.business.name) || slug;
 
+  // abuse caps (per-IP throttle + per-site daily email cap)
+  const nowMs = Date.now();
+  const iph = ipHash(req);
+  const usage = await enquiryUsage(slug, iph, nowMs);
+
+  // per-IP throttle: a real person never needs >5/hour. Over that = a bot; drop
+  // silently (no store, no email, no reveal) to protect the inbox + sender reputation.
+  if (usage.ipCount >= IP_MAX) {
+    if (body._debug === 'aiwp') { res.status(200).json({ ok: true, blocked: 'ip', ipCount: usage.ipCount, ipMax: IP_MAX }); return; }
+    res.status(200).json({ ok: true }); return;
+  }
+  const siteCapped = usage.siteCount >= SITE_MAX; // over the daily cap: store but don't email
+  if (!usage.degraded) await recordEnquiry(slug, iph, nowMs); // count this accepted submission
+
   const now = new Date().toISOString();
   const entry = Object.assign({ slug, business: bizName, receivedAt: now, ua: String(req.headers['user-agent'] || '').slice(0, 200) }, lead);
 
-  // 1) store-first: the durable record (free, never lost)
-  try { await put('leads/' + slug + '/' + Date.now() + '.json', JSON.stringify(entry), { access: 'public', contentType: 'application/json', addRandomSuffix: true }); }
+  // 1) store-first: the durable record (free, never lost) — happens even when capped
+  try { await put('leads/' + slug + '/' + nowMs + '.json', JSON.stringify(entry), { access: 'public', contentType: 'application/json', addRandomSuffix: true }); }
   catch (e) { /* storage hiccup, still try to email below */ }
 
   // 2) best-effort notifications via SendGrid (free tier covers normal volume).
@@ -75,7 +134,7 @@ module.exports = async (req, res) => {
     } catch (e) { diag[label] = 'fetch_error'; diag[label + '_err'] = String(e && e.message || e).slice(0, 120); }
   };
 
-  if (key && from && notifyTo) {
+  if (!siteCapped && key && from && notifyTo) {
     // a) notify the business (owner, or you) that a new enquiry came in
     const personal = { to: [{ email: notifyTo, name: ownerName || undefined }] };
     const bcc = new Set();
@@ -127,6 +186,7 @@ module.exports = async (req, res) => {
       ok: true,
       env: { key: !!key, from: !!from, operator: !!operator },
       routing: { ownerEmailSet: !!ownerEmail, customerEmailGiven: !!lead.email },
+      caps: { ipCount: usage.ipCount, ipMax: IP_MAX, siteCount: usage.siteCount, siteMax: SITE_MAX, siteCapped, emailSkipped: siteCapped },
       sendgrid: diag,
     });
     return;
