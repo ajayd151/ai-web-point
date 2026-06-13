@@ -391,6 +391,7 @@ middleware.js (root)  routes <sub>.aiwebpoint.com → /api/site?sub=
 | `GET /api/img?slug=` |, | Branded image proxy (`/i/:slug.png`; `?download=1` to save). Immutable-cached. |
 | `GET /api/track?slug=&e=&c=` |, | Records `view`/`cta`/`sent` + channel to Postgres. Bot-filtered. |
 | `POST /api/decline` |, | **Public** (no auth). Prospect clicked "No thanks" on their mockup: records a `decline` event + sets the lead's status to `declined` (Not interested via mockup) with their reason/feedback in the notes. |
+| `POST /api/contact` |, | **Public** (no auth). A Pounce site's quote form: stores the lead to `leads/<slug>/…` (store-first) + best-effort SendGrid notify. Honeypot + slug-must-exist anti-spam. |
 | `GET\|POST /api/calls` | ✅ | Call List: list / add / remove queued businesses (`calls/_list.json`). Status + notes reuse `/api/note` keyed by the same key. |
 | `GET /api/mockups` | ✅ | All mockups + engagement stats + last-open channel. |
 | `GET /api/dashboard?days=` | ✅ | Aggregated stats + insights (date-range filtered). |
@@ -422,6 +423,7 @@ was removed (legacy).
 - `mockups/<slug>.png`, final mockup image.
 - `mockups/<slug>.json`, `{ name, loc, searchLoc, who, cta, img, phone, category }` (`searchLoc` = the core location you typed; `loc` may be an auto-expanded nearby town).
 - `calls/_list.json`, the 📞 Call List: map key → `{ key, name, location, category, phone, placeId, slug, mapsUrl, addedAt }` (status/notes live in the CRM under the same key).
+- `leads/<slug>/<ts>.json`, a Pounce-site contact-form submission: `{ slug, business, name, phone, email, service, message, receivedAt, ua }`.
 - `dossiers/<slug>.json`, cached Prowl dossier.
 - `sites/<slug>.json`, generated Pounce site content + `mode` (`preview`/`published`) +
   `createdAt`. **This prefix is the preview registry** (`GET /api/sites` lists it).
@@ -706,11 +708,14 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-13**
-- **Pounce sites, personalised quote form:** the form heading reads "Get a free quote from
-  <business>" and a "What do you need help with?" dropdown is built from that business's own
-  services (+ "Something else"). Renders from the stored site JSON, so existing live sites get it
-  instantly (no rebuild). (Form is still front-end-only, submissions show a thank-you, not yet
-  emailed, see Known limitations.)
+- **Pounce sites, personalised quote form + it now DELIVERS leads:** the form heading reads "Get a
+  free quote from <business>" and a "What do you need help with?" dropdown is built from that
+  business's own services (+ "Something else"). It now submits for real via **`POST /api/contact`**,
+  which **stores every lead in Blob first** (`leads/<slug>/…`, durable + free) then sends a
+  best-effort **SendGrid** notification (existing integration; recipient `LEAD_EMAIL_TO` ||
+  `APPLY_EMAIL_TO` || `ERROR_EMAIL_TO`). Anti-spam: a hidden honeypot + the slug must map to a real
+  site. Renders from stored JSON, so live sites get it with no rebuild. (Next: an in-app enquiries
+  inbox + routing the email to the client's own address once accounts exist.)
 - **🐾 Prowl is now a "call screen":** the AI synthesis also returns `strengths` (acknowledge first),
   severity-tagged `weaknesses` (colour-coded red/amber "where they're losing out") and `objections`
   (likely brush-offs + rebuttals). Dossier popup re-ordered for a live call: contact → Google rep →
