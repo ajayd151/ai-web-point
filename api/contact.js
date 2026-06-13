@@ -92,10 +92,7 @@ module.exports = async (req, res) => {
 
   // per-IP throttle: a real person never needs >5/hour. Over that = a bot; drop
   // silently (no store, no email, no reveal) to protect the inbox + sender reputation.
-  if (usage.ipCount >= IP_MAX) {
-    if (body._debug === 'aiwp') { res.status(200).json({ ok: true, blocked: 'ip', ipCount: usage.ipCount, ipMax: IP_MAX }); return; }
-    res.status(200).json({ ok: true }); return;
-  }
+  if (usage.ipCount >= IP_MAX) { res.status(200).json({ ok: true }); return; }
   const siteCapped = usage.siteCount >= SITE_MAX; // over the daily cap: store but don't email
   if (!usage.degraded) await recordEnquiry(slug, iph, nowMs); // count this accepted submission
 
@@ -138,18 +135,11 @@ module.exports = async (req, res) => {
   const ownerName = (site.leadName || '').trim();
   const notifyTo = ownerEmail || operator;
 
-  const diag = {}; // temporary: surfaces what SendGrid did (no email addresses leaked)
-  const send = async (label, payload) => {
-    try {
-      const r = await fetch('https://api.sendgrid.com/v3/mail/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-        body: JSON.stringify(payload),
-      });
-      diag[label] = r.status;
-      if (r.status >= 400) diag[label + '_err'] = (await r.text().catch(() => '')).slice(0, 200);
-    } catch (e) { diag[label] = 'fetch_error'; diag[label + '_err'] = String(e && e.message || e).slice(0, 120); }
-  };
+  const send = (payload) => fetch('https://api.sendgrid.com/v3/mail/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+    body: JSON.stringify(payload),
+  }).catch(() => {}); // best-effort: the lead is already stored
 
   if (!siteCapped && key && from && notifyTo) {
     // a) notify the business (owner, or you) that a new enquiry came in
@@ -171,7 +161,7 @@ module.exports = async (req, res) => {
       '<p>Reply to this email to respond to ' + esc(lead.name) + ' directly.</p>' +
       '<p style="color:#9097a3;font-size:13px">Received ' + esc(now) + '</p>');
     try {
-      await send('owner', {
+      await send({
         personalizations: [personal],
         from: { email: from, name: bizName + ' website' },
         reply_to: lead.email ? { email: lead.email, name: lead.name } : undefined,
@@ -197,7 +187,7 @@ module.exports = async (req, res) => {
         (lead.message ? '<p style="color:#555"><b>For your records, here is what you sent:</b><br>' + br(lead.message) + '</p>' : '') +
         '<p>Speak soon,<br>' + esc(bizName) + '</p>' + bizLinkHtml);
       try {
-        await send('customer', {
+        await send({
           personalizations: [{ to: [{ email: lead.email, name: lead.name }] }],
           from: { email: from, name: bizName },
           reply_to: { email: ownerEmail || operator, name: bizName },
@@ -209,15 +199,5 @@ module.exports = async (req, res) => {
     }
   }
 
-  if (body._debug === 'aiwp') {
-    res.status(200).json({
-      ok: true,
-      env: { key: !!key, from: !!from, operator: !!operator },
-      routing: { ownerEmailSet: !!ownerEmail, customerEmailGiven: !!lead.email, businessUrl: businessUrl || '(none)' },
-      caps: { ipCount: usage.ipCount, ipMax: IP_MAX, siteCount: usage.siteCount, siteMax: SITE_MAX, siteCapped, emailSkipped: siteCapped },
-      sendgrid: diag,
-    });
-    return;
-  }
   res.status(200).json({ ok: true });
 };
