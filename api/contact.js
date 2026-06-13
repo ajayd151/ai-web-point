@@ -71,9 +71,11 @@ module.exports = async (req, res) => {
   if (key && from && notifyTo) {
     // a) notify the business (owner, or you) that a new enquiry came in
     const personal = { to: [{ email: notifyTo, name: ownerName || undefined }] };
-    if (ownerEmail && operator && operator.toLowerCase() !== ownerEmail.toLowerCase()) {
-      personal.bcc = [{ email: operator }]; // keep your own copy when it routes to the client
-    }
+    const bcc = new Set();
+    if (ownerEmail && operator && operator.toLowerCase() !== ownerEmail.toLowerCase()) bcc.add(operator); // keep your own copy when it routes to the client
+    const alwaysBcc = (process.env.LEAD_BCC_ALWAYS || '').trim(); // optional: a copy of EVERY enquiry (testing / oversight)
+    if (alwaysBcc && alwaysBcc.toLowerCase() !== String(notifyTo).toLowerCase()) bcc.add(alwaysBcc);
+    if (bcc.size) personal.bcc = [...bcc].map((email) => ({ email }));
     try {
       await send({
         personalizations: [personal],
