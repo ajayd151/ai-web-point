@@ -85,14 +85,15 @@ function render(s) {
   // personalised field: a "which service?" dropdown built from THIS business's real services
   const svcTitles = (s.services || []).map((sv) => sv && sv.title).filter(Boolean).slice(0, 8);
   const serviceField = svcTitles.length
-    ? `<div class="fld"><label>What do you need help with?</label><select required><option value="" disabled selected>Choose a service…</option>${svcTitles.map((t) => `<option>${esc(t)}</option>`).join('')}<option>Something else</option></select></div>`
+    ? `<div class="fld"><label>What do you need help with?</label><select name="service" required><option value="" disabled selected>Choose a service…</option>${svcTitles.map((t) => `<option>${esc(t)}</option>`).join('')}<option>Something else</option></select></div>`
     : '';
-  const quoteForm = (id) => `<form id="${id}" onsubmit="event.preventDefault();this.querySelector('.form-ok').style.display='block';this.reset();">
+  const quoteForm = (id) => `<form id="${id}" onsubmit="return spSubmit(this,event)">
       <div class="form-ok">✓ Thanks! We've got your details and will be in touch shortly.</div>
-      <div class="row"><div class="fld"><label>Your name</label><input type="text" required placeholder="Jane Smith" /></div><div class="fld"><label>Phone</label><input type="tel" required placeholder="07…" /></div></div>
-      <div class="fld"><label>Email</label><input type="email" placeholder="you@email.com" /></div>
+      <input type="text" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" />
+      <div class="row"><div class="fld"><label>Your name</label><input type="text" name="name" required placeholder="Jane Smith" /></div><div class="fld"><label>Phone</label><input type="tel" name="phone" required placeholder="07…" /></div></div>
+      <div class="fld"><label>Email</label><input type="email" name="email" placeholder="you@email.com" /></div>
       ${serviceField}
-      <div class="fld"><label>Tell us a bit more</label><textarea rows="3" placeholder="A few details about what you need…"></textarea></div>
+      <div class="fld"><label>Tell us a bit more</label><textarea name="message" rows="3" placeholder="A few details about what you need…"></textarea></div>
       <button class="btn btn-amber" type="submit" style="width:100%;justify-content:center">Send my enquiry →</button>
     </form>`;
   // About visual: real photo if we have one, otherwise a branded highlight card (never blank)
@@ -262,6 +263,7 @@ ${gallery}${reviews}${googleBand}${areaSec}${faqSec}
   <div class="foot-bot"><span>© 2026 ${esc(b.name)}. All rights reserved.</span><span>Powered by <a href="https://aiwebpoint.com/?source=${encodeURIComponent(s.slug || '')}" target="_blank" rel="noopener">aiwebpoint.com</a></span></div>
 </div></footer>
 ${mobileBar}
+<script>function spSubmit(f,e){e.preventDefault();var d={slug:${JSON.stringify(s.slug || '')}};f.querySelectorAll('[name]').forEach(function(el){d[el.name]=el.value;});var ok=f.querySelector('.form-ok');if(ok)ok.style.display='block';var b=f.querySelector('button[type=submit]');if(b){b.disabled=true;b.textContent='Sent \\u2713';}try{fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d),keepalive:true});}catch(x){}f.reset();return false;}</script>
 </body></html>`;
 }
 
