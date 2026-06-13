@@ -188,10 +188,16 @@ application form). The whole interface is hidden behind it until signed in.
 ### 🐾 Prowl, lead-intelligence dossier
 - On-demand sales recon per lead. Sources: **Google Places** (live reviews/score, top-3
   competitors *with* websites → comparison table, recent reviews) + **OpenAI** synthesis →
-  `services`, reputation, **🎯 ammunition** (specific lines to say), suggested opener +
-  **Companies House** (established/director/type, when its key is set; degrades gracefully).
-- Output: competitor comparison table (you vs rivals: website / reviews / score), what-they-do
-  chips, ammunition, opener. **Cached** as `dossiers/<slug>.json` (↩ Re-run to refresh).
+  `services`, reputation, `strengths`, severity-tagged `weaknesses`, `ammunition` (talking points),
+  `objections` (brush-off + rebuttal), opener + **Companies House** (established/director/type,
+  when its key is set; degrades gracefully).
+- **The dossier popup is a live "call screen"** (`renderDossier`), in this order: contact +
+  call/WhatsApp/Maps → Google rep → **☎️ Open with this** → **✅ Acknowledge first** (strengths) →
+  **🎯 Where they're losing out** (colour-coded red/amber weak spots) → **💬 Personalised What to
+  say** (talking points) → **🛡️ If they push back** (objection rebuttals) → competitor table
+  (website / **review-gap bar** / score, + a "they rank #N of M" line) → what-they-do chips →
+  Companies House → 📝 Status & call notes. **Cached** as `dossiers/<slug>.json` (↩ Re-run to
+  refresh; old dossiers lack strengths/weaknesses/objections until re-run).
 - Rate-limited (`LIMIT_PROWL`, default 30 per 20h).
 
 ### 🐆 Pounce, one-click website builder (LIVE)
@@ -698,6 +704,16 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 ## 11b. Change log (recent sessions)
 
 Newest first. Reference sections above are the source of truth; this is a quick history.
+
+**2026-06-13**
+- **🐾 Prowl is now a "call screen":** the AI synthesis also returns `strengths` (acknowledge first),
+  severity-tagged `weaknesses` (colour-coded red/amber "where they're losing out") and `objections`
+  (likely brush-offs + rebuttals). Dossier popup re-ordered for a live call: contact → Google rep →
+  **☎️ Open with this** → ✅ strengths → 🎯 weak spots → **💬 Personalised What to say** (was "Your
+  ammunition", bigger text) → 🛡️ If they push back → competitor table (now with **review-gap bars +
+  a rank line**) → services → Companies House. Old dossiers degrade gracefully (↻ Re-run to populate
+  the new blocks, 1 credit). All from a richer gpt-4o-mini prompt + CSS, no new Google cost.
+- **📞 Call List CSV export** (a call sheet incl. latest note per lead).
 
 **2026-06-12**
 - **Fix: one click adds to the call list.** Blob reads can lag a put by a moment, so the post-add
