@@ -753,9 +753,10 @@ Newest first. Reference sections above are the source of truth; this is a quick 
   plain-text fallback) so the signature is a clean clickable "Powered by Ai Web Point" link with no
   raw URL; SendGrid **click + open tracking is turned off** (`tracking_settings`) so links aren't
   rewritten to the phishing-looking `ct.sendgrid.net/ls/click...`; user fields are HTML-escaped; and
-  the **customer confirmation links to the business's own live site** ("Visit us at
-  `<sub>.aiwebpoint.com`"), built from the trusted `site.subdomain` (never from visitor input) and
-  shown only when the site is live. SendGrid was found maxed out (trial credits) and upgraded to
+  the **customer confirmation has a contact footer** with the business's **phone** (a clickable
+  `tel:` link) and its **own live site** ("Call us… / Visit us at `<sub>.aiwebpoint.com`"), both from
+  trusted server data (`site.business.phone`, `site.subdomain`) never from visitor input; the website
+  line shows only when the site is live. SendGrid was found maxed out (trial credits) and upgraded to
   Essentials 50K; delivery verified end to end. Optional next step: SendGrid domain authentication
   (SPF/DKIM) for best inbox placement.
 - **Enquiry-form abuse caps (new):** `api/contact.js` now has a **per-IP throttle** (default 5/hour,

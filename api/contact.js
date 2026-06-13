@@ -116,6 +116,7 @@ module.exports = async (req, res) => {
   const SUBDOMAIN_ROOT = process.env.SUBDOMAIN_ROOT || 'aiwebpoint.com';
   const businessHost = site.subdomain ? site.subdomain + '.' + SUBDOMAIN_ROOT : '';
   const businessUrl = businessHost ? 'https://' + businessHost : '';
+  const bizPhone = (site.business && site.business.phone ? String(site.business.phone) : '').trim();
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const br = (s) => esc(s).replace(/\n/g, '<br>');
@@ -173,8 +174,16 @@ module.exports = async (req, res) => {
 
     // b) confirmation back to the customer, styled as if from the business
     if (lead.email) {
-      const bizLinkText = businessUrl ? '\n\nVisit us: ' + businessUrl : '';
-      const bizLinkHtml = businessUrl ? '<p style="margin:16px 0 0">Visit us at <a href="' + businessUrl + '">' + esc(businessHost) + '</a></p>' : '';
+      // a small contact footer in the customer's email: phone + the business's own live site
+      const telHref = bizPhone.replace(/[^+0-9]/g, '');
+      const ctText = [];
+      if (bizPhone) ctText.push('Call us: ' + bizPhone);
+      if (businessUrl) ctText.push('Visit us: ' + businessUrl);
+      const bizLinkText = ctText.length ? '\n\n' + ctText.join('\n') : '';
+      const ctHtml = [];
+      if (bizPhone) ctHtml.push('Call us: <a href="tel:' + esc(telHref) + '">' + esc(bizPhone) + '</a>');
+      if (businessUrl) ctHtml.push('Visit us at <a href="' + businessUrl + '">' + esc(businessHost) + '</a>');
+      const bizLinkHtml = ctHtml.length ? '<p style="margin:16px 0 0">' + ctHtml.join('<br>') + '</p>' : '';
       const custText = 'Hi ' + lead.name + ',\n\n' +
         'Thanks for getting in touch with ' + bizName + '. We have received your enquiry' +
         (lead.service ? ' about ' + lead.service : '') + ' and will get back to you as soon as we can.\n\n' +
