@@ -47,10 +47,10 @@ module.exports = async (req, res) => {
           personalizations: [{ to: [{ email: to }] }],
           from: { email: from, name: 'Site Pounce' },
           reply_to: { email: a.email, name: a.name },
-          subject: 'Site Pounce, Founding Member Application: ' + a.name,
+          subject: 'New SitePounce Lead from ' + a.name,
           content: [{
             type: 'text/plain',
-            value: `New founding-member application:\n\n` +
+            value: `New SitePounce lead (founding-member application):\n\n` +
               `Name: ${a.name}\nJob title: ${a.jobtitle}\nEmail: ${a.email}\nPhone: ${a.phone}\n` +
               `Business: ${a.business}\nWebsite: ${a.website}\n` +
               `Role: ${a.role}\nSites/month: ${a.volume}\nWins clients via: ${a.channels}\n\n` +

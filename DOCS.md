@@ -740,6 +740,10 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-13**
+- **Founding-member application email:** subject changed to **"New SitePounce Lead from <Name>"** (was
+  "Site Pounce, Founding Member Application: <Name>"). Storage + operator email already existed
+  (`api/apply.js` → Postgres `applications` table + a single SendGrid email to you, no applicant
+  confirmation); only the subject/intro wording changed. Recipient = `APPLY_EMAIL_TO` || `ERROR_EMAIL_TO`.
 - **"AI" wording embedded as a selling point (operator + landing only, never prospect-facing):**
   ride the AI interest while it's genuinely true, but keep it off prospect-facing artifacts (mockups,
   outreach, live sites, emails) where the personal angle wins and "AI" can erode trust. Changes:
