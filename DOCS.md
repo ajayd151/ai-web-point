@@ -740,6 +740,15 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-13**
+- **"AI" wording embedded as a selling point (operator + landing only, never prospect-facing):**
+  ride the AI interest while it's genuinely true, but keep it off prospect-facing artifacts (mockups,
+  outreach, live sites, emails) where the personal angle wins and "AI" can erode trust. Changes:
+  Prowl dossier "💬 Personalised what to say" → **"💬 Personalised AI talking points"**, "☎️ Open with
+  this" → **"☎️ Your AI opener"**, progress "Gathering AI intel…"; search-card tooltips "AI lead
+  intelligence" / "Build them an AI website"; landing page subtitle "AI lead finder…", "uses AI to
+  build…", "AI-generate a professional homepage mockup", "AI builds them a finished homepage", and the
+  page title. All claims are true (OpenAI image + GPT copy/Prowl synthesis). Kept deliberately measured
+  to avoid AI fatigue.
 - **Pounce sites, personalised quote form + it now DELIVERS leads:** the form heading reads "Get a
   free quote from <business>" and a "What do you need help with?" dropdown is built from that
   business's own services (+ "Something else"). It now submits for real via **`POST /api/contact`**,

@@ -936,7 +936,7 @@ function renderRecent() {
       : `<div class="eng-cell">${engagementBadge(r)}<button class="followup" title="Send a follow-up message">↩ Follow up</button></div>`;
     const actsCell = blk
       ? `<div class="recent-acts"><button class="ghost recent-open">Open ↗</button><button class="ghost sm rc-unblock">Unblock</button></div>`
-      : `<div class="recent-acts"><button class="mini rc-prowl" title="Gather intelligence on this business">🐾 Prowl</button><button class="mini rc-pounce" title="Build them a website">🐆 Pounce</button><button class="ghost recent-open">Open ↗</button><button class="ghost recent-regen" title="Regenerate the mockup (add a tweak first)">🔄 Regenerate</button><button class="ghost sm rc-block" title="Mark not interested, hide & stop contacting">🚫 Block</button></div>`;
+      : `<div class="recent-acts"><button class="mini rc-prowl" title="AI lead intelligence on this business">🐾 Prowl</button><button class="mini rc-pounce" title="Build them an AI website">🐆 Pounce</button><button class="ghost recent-open">Open ↗</button><button class="ghost recent-regen" title="Regenerate the mockup (add a tweak first)">🔄 Regenerate</button><button class="ghost sm rc-block" title="Mark not interested, hide & stop contacting">🚫 Block</button></div>`;
     const tr = document.createElement('tr');
     if (blk) tr.className = 'tr-blocked';
     tr.innerHTML =
@@ -1254,7 +1254,7 @@ function startProwlProgress() {
   const steps = ['Checking Companies House', 'Pulling Google reviews & score', 'Scouting nearby competitors', 'Reading recent reviews', 'Writing your sales briefing'];
   $('prowl-body').innerHTML = '<div class="genprog"><div>' +
     steps.map((s) => `<div class="gp-row"><span class="gp-ic"><span class="spinner sm"></span></span><span class="gp-text">${esc(s)}…</span></div>`).join('') +
-    '</div><p class="genprog-foot"><small>Gathering public intel… ~10–20 seconds.</small></p></div>';
+    '</div><p class="genprog-foot"><small>Gathering AI intel… ~10–20 seconds.</small></p></div>';
 }
 function prowlFetch(lead, refresh) {
   return fetch('/api/prowl', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: lead.slug, name: lead.name, location: lead.location, category: lead.category || '', phone: lead.phone || '', refresh: !!refresh }) })
@@ -1287,9 +1287,9 @@ function renderDossier(d, lead) {
   const services = (d.services && d.services.length) ? `<h3>What they do</h3><div class="chips">${d.services.map((s) => `<span class="chip site">${esc(s)}</span>`).join('')}</div>` : '';
   const strengths = (d.strengths && d.strengths.length) ? `<div class="dos-block"><h3>✅ Acknowledge first (builds rapport)</h3><div class="cue-list">${d.strengths.map((s) => `<div class="cue sev-good">${esc(s)}</div>`).join('')}</div></div>` : '';
   const weak = (d.weaknesses && d.weaknesses.length) ? `<div class="dos-block"><h3>🎯 Where they're losing out</h3><div class="cue-list">${d.weaknesses.map((w) => `<div class="cue sev-${w.severity === 'high' ? 'high' : 'med'}">${esc(w.label)}</div>`).join('')}</div></div>` : '';
-  const ammo = (d.ammunition && d.ammunition.length) ? `<div class="dos-ammo"><h3>💬 Personalised What to say</h3><ul class="say-list">${d.ammunition.map((a) => `<li>${esc(a)}</li>`).join('')}</ul></div>` : '';
+  const ammo = (d.ammunition && d.ammunition.length) ? `<div class="dos-ammo"><h3>💬 Personalised AI talking points</h3><ul class="say-list">${d.ammunition.map((a) => `<li>${esc(a)}</li>`).join('')}</ul></div>` : '';
   const objections = (d.objections && d.objections.length) ? `<div class="dos-block dos-obj"><h3>🛡️ If they push back</h3>${d.objections.map((o) => `<div class="obj-item"><div class="obj-q">“${esc(o.objection)}”</div><div class="obj-a">${esc(o.response)}</div></div>`).join('')}</div>` : '';
-  const opener = d.openingLine ? `<div class="dos-open"><h3>☎️ Open with this</h3><p>${esc(d.openingLine)}</p></div>` : '';
+  const opener = d.openingLine ? `<div class="dos-open"><h3>☎️ Your AI opener</h3><p>${esc(d.openingLine)}</p></div>` : '';
   // contact details + quick actions (so you can act on the intel right here)
   const b = d.business || {};
   const phone = (lead && lead.phone) || b.phone || '';
