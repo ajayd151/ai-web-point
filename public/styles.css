@@ -277,6 +277,9 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .recent-table .recent-open { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
 .recent-table .rs-run { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
 .recent-table .rs-filters { color: var(--muted); font-size: 13px; }
+.gf-row { display: flex; align-items: flex-start; gap: 9px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: #f7f9ff; cursor: pointer; }
+.gf-row input[type="checkbox"] { margin-top: 3px; width: 17px; height: 17px; flex: 0 0 auto; cursor: pointer; }
+.gf-row small { display: block; margin-top: 3px; line-height: 1.45; }
 .enq-contact a { display: inline-block; white-space: nowrap; }
 .enq-msg { max-width: 360px; }
 .enq-msg .muted { display: block; white-space: pre-wrap; word-break: break-word; }

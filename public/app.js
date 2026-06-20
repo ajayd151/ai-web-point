@@ -19,6 +19,7 @@ const SETTINGS_DEFAULTS = {
   ctaBottom: 'Let me show you the full website over a call',
   followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not, happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
   waCap: 10, // hard daily WhatsApp send cap (ban protection)
+  grammarFix: true, // AI tidies the first message's grammar when sent (default on)
 };
 function loadSettings() {
   let s = {};
@@ -33,6 +34,7 @@ function saveSettings() {
       ctaBottom: $('set-cta-bottom').value,
       followUp: $('set-followup').value,
       waCap: Math.max(1, Math.min(50, parseInt($('set-wa-cap').value, 10) || 10)),
+      grammarFix: $('set-grammar-fix').checked,
     }));
   } catch (e) {}
 }
@@ -43,6 +45,8 @@ function saveSettings() {
   $('set-cta-bottom').value = s.ctaBottom;
   $('set-followup').value = s.followUp;
   $('set-wa-cap').value = s.waCap;
+  $('set-grammar-fix').checked = s.grammarFix !== false;
+  $('set-grammar-fix').addEventListener('change', saveSettings);
   ['set-wa-msg', 'set-cta-hero', 'set-cta-bottom', 'set-followup', 'set-wa-cap'].forEach((id) => $(id).addEventListener('input', saveSettings));
   $('set-wa-cap').addEventListener('change', () => {
     const v = parseInt($('set-wa-cap').value, 10) || 10;
@@ -674,6 +678,25 @@ function fillWaMessage(tpl, business, link, personName) {
 function smsNumber(phone) {
   return String(phone || '').replace(/[^\d+]/g, ''); // keep digits (+ kept if present)
 }
+// ---- ✨ AI Grammar Fix: tidy the first message so {category} reads naturally ----
+// Cheap gpt-4o-mini pass (api/grammar). URLs are masked so the AI can't touch the
+// tracking link. Cached per message for the session. Any failure returns the original.
+const gfCache = new Map();
+function grammarFixMessage(raw) {
+  const text = String(raw || '');
+  if (gfCache.has(text)) return Promise.resolve(gfCache.get(text));
+  const urls = [];
+  const masked = text.replace(/https?:\/\/\S+/g, (m) => { urls.push(m); return '[[U' + (urls.length - 1) + ']]'; });
+  return fetch('/api/grammar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: masked }) })
+    .then((r) => r.json())
+    .then((j) => {
+      let out = (j && j.text) || masked;
+      out = out.replace(/\[\[U(\d+)\]\]/g, (_, i) => (urls[Number(i)] != null ? urls[Number(i)] : ''));
+      gfCache.set(text, out);
+      return out;
+    })
+    .catch(() => text);
+}
 // add ?c=<channel> to the preview link so opens are attributed to how it was sent
 function tagLink(link, channel) {
   if (!link) return link;
@@ -710,6 +733,16 @@ function setupWhatsApp(business, link, personName) {
   sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(smsMsg);
   sms.classList.remove('hidden');
   note.textContent = 'Opens WhatsApp, or your Messages app for SMS, to ' + phone + ' with your message + link pre-filled, you review and press send.';
+  // ✨ AI Grammar Fix (default on): tidy the message, then update both hrefs in place.
+  // The raw hrefs above work instantly; this swaps in the cleaned version a moment later.
+  if (loadSettings().grammarFix !== false) {
+    grammarFixMessage(waMsg).then((fixed) => {
+      if (!fixed || fixed === waMsg) return;
+      wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(fixed);
+      const smsFixed = fixed.replace(tagLink(link, 'w'), tagLink(link, 's')); // same text, sms-tagged link
+      sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(smsFixed);
+    });
+  }
 }
 // log the send server-side (channel + exact time) for later send-time analysis
 function recordSendServer(channel) {

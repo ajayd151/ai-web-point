@@ -392,6 +392,7 @@ vercel.js   add/remove project domain   photo.js     Google-photo proxy (hides A
                                        contact.js   PUBLIC quote-form intake: store lead + email
                                                     owner (BCC you) + confirm to customer (honeypot)
                                        enquiries.js Enquiries inbox: reads leads/ back for the app
+                                       grammar.js   AI Grammar Fix for the first message (gpt-4o-mini)
 middleware.js (root)  routes <sub>.aiwebpoint.com → /api/site?sub=
 ```
 
@@ -479,7 +480,7 @@ Created lazily (`CREATE TABLE IF NOT EXISTS`). To inspect: Vercel → Storage �
 | Companies House | `COMPANIES_HOUSE_API_KEY` (**PENDING**) | Free; unlocks the established/director/type part of Prowl. Auth = HTTP Basic `base64(key:)`. |
 | Auth | `APP_USERNAME`, `APP_PASSWORD` | Login; cookie HMAC keyed by the password. |
 | Branding/links | `AGENCY_NAME?`, `AGENCY_URL?`, `DEMO_URL`, `LINK_DOMAIN` | `AGENCY_NAME`/`AGENCY_URL` = the "Powered by Ai Web Point" email signature (defaulted if unset); `DEMO_URL`=booking; `LINK_DOMAIN`=`preview.aiwebpoint.com`. |
-| Limits | `LIMIT_SEARCH`/`LIMIT_GENERATE`/`LIMIT_PROWL` (default 30, generate 50) | Per 20h (RATE_WINDOW_HOURS). Generation counts only on success. |
+| Limits | `LIMIT_SEARCH`/`LIMIT_GENERATE`/`LIMIT_PROWL`/`LIMIT_GRAMMAR` (default 30, generate 50, grammar 300) | Per 20h (RATE_WINDOW_HOURS). Generation counts only on success. `LIMIT_GRAMMAR` caps the AI Grammar Fix pass (`api/grammar.js`). |
 | Client subdomains | `VERCEL_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` | Let "Make live" register `<sub>.<domain>` on the Vercel project (auto SSL). `PROJECT_ID` = project name or `prj_…`; `TEAM_ID` = team slug or `team_…`. See §7b. |
 
 ---
@@ -738,6 +739,17 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 ## 11b. Change log (recent sessions)
 
 Newest first. Reference sections above are the source of truth; this is a quick history.
+
+**2026-06-20**
+- **✨ AI Grammar Fix (new, default ON):** a checkbox in Templates. When the **first message** is sent,
+  the filled text is passed through `POST /api/grammar` (gpt-4o-mini) which lightly fixes articles and
+  singular/plural so the `{category}` substitution reads naturally (e.g. "looking for Electrician" →
+  "looking for an electrician", "a Lawn Mowers" → "a lawn mower company"). Only grammar changes; meaning,
+  tone, links and sign-off are preserved (URLs are masked before the AI sees them, so the tracking link
+  is never altered). Applied in `setupWhatsApp` (the post-generate send row, the only surface using the
+  `{category}` first message; warm-leads/lead-profile/dossier use the follow-up template, no category).
+  Raw hrefs are set instantly and swapped for the cleaned version a moment later; cached per message; any
+  failure or an unticked box falls back to the original. Generous cap `LIMIT_GRAMMAR` (default 300/20h).
 
 **2026-06-13**
 - **Founding-member application email:** subject changed to **"New SitePounce Lead from <Name>"** (was
