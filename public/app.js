@@ -105,7 +105,7 @@ function saveEditingTemplate() {
   $('tpl-add').addEventListener('click', () => {
     const list = firstTemplates().slice();
     const id = newTemplateId();
-    list.push({ id, name: 'New template', body: DEFAULT_FIRST_MSG }); // start from the default text, never blank
+    list.push({ id, name: 'New template', body: '' }); // start empty; the textarea placeholder prompts them to write it
     patchSettings({ waTemplates: list });
     editingTplId = id;
     renderTemplateManager();
