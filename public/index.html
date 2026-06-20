@@ -294,15 +294,21 @@
         <p class="muted view-sub">Edit what gets sent and shown. Saved on this device.</p>
         <div class="settings-grid">
           <div class="block tpl-mgr">
-            <span>First message templates <span class="muted">(add as many as you like, pick one when you send)</span></span>
+            <span class="tpl-title">First message templates <span class="muted">(add as many as you like, pick one when you send)</span></span>
             <div class="tpl-bar">
               <select id="tpl-select" title="Choose a template to edit"></select>
               <button id="tpl-add" class="ghost sm" type="button">➕ New</button>
               <button id="tpl-del" class="ghost sm" type="button">🗑 Delete</button>
             </div>
-            <input id="tpl-name" type="text" maxlength="40" placeholder="Template name (e.g. Plumbers, Short version)" />
-            <span class="muted tpl-ph">Placeholders: <code>{name}</code> <code>{business}</code> <code>{category}</code> <code>{location}</code> <code>{link}</code></span>
-            <textarea id="set-wa-msg" rows="5"></textarea>
+            <label class="tpl-field">
+              <span class="tpl-lbl">Template name <span class="muted">(a short label, just for you, e.g. "Plumbers")</span></span>
+              <input id="tpl-name" type="text" maxlength="40" placeholder="e.g. Plumbers, Short version" />
+            </label>
+            <label class="tpl-field">
+              <span class="tpl-lbl">✍️ The message <span class="muted">this is what gets sent</span></span>
+              <span class="muted tpl-ph">Placeholders: <code>{name}</code> <code>{business}</code> <code>{category}</code> <code>{location}</code> <code>{link}</code></span>
+              <textarea id="set-wa-msg" rows="6"></textarea>
+            </label>
           </div>
           <label class="gf-row"><input type="checkbox" id="set-grammar-fix" /> <span><b>✨ AI Grammar Fix</b> <span class="muted">(recommended)</span><br><small class="muted">When the first message is sent, AI tidies the wording so the business type reads naturally. For example "looking for Electrician" becomes "looking for an electrician", and "a Lawn Mowers" becomes "a lawn mower company". Your meaning, links and sign-off are left untouched.</small></span></label>
           <label class="block">
