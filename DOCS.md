@@ -741,6 +741,14 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-20**
+- **Multiple first-message templates (new):** Templates now manages a LIST of first-message templates
+  (add ➕ / rename / 🗑 delete, each with a name), instead of one fixed message. When you send from the
+  post-generate row, a small picker lets you choose which template to send; it **defaults to the
+  last-used one** and is hidden when there's only one. Stored per device as `waTemplates` (array of
+  `{id,name,body}`) + `lastTemplateId`; the legacy single `waMsg` auto-migrates into a "Default"
+  template. Settings persistence moved to a merge-based `patchSettings` so template edits and field
+  edits don't clobber each other. Grammar Fix runs on whichever template is chosen. (Follow-up message
+  stays a single template.)
 - **✨ AI Grammar Fix (new, default ON):** a checkbox in Templates. When the **first message** is sent,
   the filled text is passed through `POST /api/grammar` (gpt-4o-mini) which lightly fixes articles and
   singular/plural so the `{category}` substitution reads naturally (e.g. "looking for Electrician" →

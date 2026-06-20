@@ -13,8 +13,10 @@ let authed = false;
 const $ = (id) => document.getElementById(id);
 
 // ---- editable settings (message + CTA wording, saved per device) ---------
+const DEFAULT_FIRST_MSG = "Hi {name},\n\nI came across {business} while looking through {category} in {location}.\n\nI noticed you don't currently have a website, so I put together a website preview for your business:\n\n{link}\n\nI thought it might help you see what your business could look like online.\n\nIf you'd like me to show you how the rest of the website could look, just let me know.\n\nIf it's not something you're interested in, simply reply \"No\" and I won't contact you again.\n\nThanks,\n\nAjay";
 const SETTINGS_DEFAULTS = {
-  waMsg: "Hi {name},\n\nI came across {business} while looking through {category} in {location}.\n\nI noticed you don't currently have a website, so I put together a website preview for your business:\n\n{link}\n\nI thought it might help you see what your business could look like online.\n\nIf you'd like me to show you how the rest of the website could look, just let me know.\n\nIf it's not something you're interested in, simply reply \"No\" and I won't contact you again.\n\nThanks,\n\nAjay",
+  waTemplates: [{ id: 'default', name: 'Default', body: DEFAULT_FIRST_MSG }], // multiple first-message templates
+  lastTemplateId: 'default', // which one is selected by default when sending
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
   followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not, happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
@@ -24,30 +26,103 @@ const SETTINGS_DEFAULTS = {
 function loadSettings() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem('aiwp_settings') || '{}'); } catch (e) {}
-  return Object.assign({}, SETTINGS_DEFAULTS, s);
+  const out = Object.assign({}, SETTINGS_DEFAULTS, s);
+  // first-message templates: use the stored list, else migrate the legacy single waMsg
+  let list = Array.isArray(s.waTemplates) ? s.waTemplates : null;
+  if (!list || !list.length) {
+    const body = (typeof s.waMsg === 'string' && s.waMsg) ? s.waMsg : DEFAULT_FIRST_MSG;
+    list = [{ id: 'default', name: 'Default', body }];
+  }
+  list = list.filter((t) => t && typeof t.body === 'string').map((t, i) => ({
+    id: String(t.id || ('t' + i)), name: String(t.name || 'Untitled').slice(0, 40), body: String(t.body),
+  }));
+  if (!list.length) list = [{ id: 'default', name: 'Default', body: DEFAULT_FIRST_MSG }];
+  out.waTemplates = list;
+  out.lastTemplateId = list.some((t) => t.id === s.lastTemplateId) ? s.lastTemplateId : list[0].id;
+  return out;
 }
+// merge-persist (so template edits and field edits don't clobber each other)
+function patchSettings(partial) {
+  let cur = {};
+  try { cur = JSON.parse(localStorage.getItem('aiwp_settings') || '{}'); } catch (e) {}
+  try { localStorage.setItem('aiwp_settings', JSON.stringify(Object.assign({}, cur, partial))); } catch (e) {}
+}
+function firstTemplates() { return loadSettings().waTemplates; }
+function activeFirstTemplate() { const s = loadSettings(); return s.waTemplates.find((t) => t.id === s.lastTemplateId) || s.waTemplates[0]; }
+function firstTemplateById(id) { const l = firstTemplates(); return l.find((t) => t.id === id) || l[0]; }
+function newTemplateId() { return 't' + Date.now().toString(36) + Math.floor(Math.random() * 1000); }
+// the non-template fields are merge-saved so they never overwrite the template list
 function saveSettings() {
-  try {
-    localStorage.setItem('aiwp_settings', JSON.stringify({
-      waMsg: $('set-wa-msg').value,
-      ctaHero: $('set-cta-hero').value,
-      ctaBottom: $('set-cta-bottom').value,
-      followUp: $('set-followup').value,
-      waCap: Math.max(1, Math.min(50, parseInt($('set-wa-cap').value, 10) || 10)),
-      grammarFix: $('set-grammar-fix').checked,
-    }));
-  } catch (e) {}
+  patchSettings({
+    ctaHero: $('set-cta-hero').value,
+    ctaBottom: $('set-cta-bottom').value,
+    followUp: $('set-followup').value,
+    waCap: Math.max(1, Math.min(50, parseInt($('set-wa-cap').value, 10) || 10)),
+    grammarFix: $('set-grammar-fix').checked,
+  });
+}
+// ---- first-message template manager (Templates panel) --------------------
+let editingTplId = null;
+function renderTemplateManager() {
+  const list = firstTemplates();
+  if (!editingTplId || !list.some((t) => t.id === editingTplId)) editingTplId = activeFirstTemplate().id;
+  $('tpl-select').innerHTML = list.map((t) => `<option value="${esc(t.id)}"${t.id === editingTplId ? ' selected' : ''}>${esc(t.name || 'Untitled')}</option>`).join('');
+  const cur = firstTemplateById(editingTplId);
+  $('tpl-name').value = cur.name;
+  $('set-wa-msg').value = cur.body;
+  $('tpl-del').disabled = list.length <= 1;
+}
+function saveEditingTemplate() {
+  const list = firstTemplates().map((t) => t.id === editingTplId
+    ? { id: t.id, name: ($('tpl-name').value || 'Untitled').slice(0, 40), body: $('set-wa-msg').value }
+    : t);
+  patchSettings({ waTemplates: list });
 }
 (function initSettings() {
   const s = loadSettings();
-  $('set-wa-msg').value = s.waMsg;
   $('set-cta-hero').value = s.ctaHero;
   $('set-cta-bottom').value = s.ctaBottom;
   $('set-followup').value = s.followUp;
   $('set-wa-cap').value = s.waCap;
   $('set-grammar-fix').checked = s.grammarFix !== false;
   $('set-grammar-fix').addEventListener('change', saveSettings);
-  ['set-wa-msg', 'set-cta-hero', 'set-cta-bottom', 'set-followup', 'set-wa-cap'].forEach((id) => $(id).addEventListener('input', saveSettings));
+  ['set-cta-hero', 'set-cta-bottom', 'set-followup', 'set-wa-cap'].forEach((id) => $(id).addEventListener('input', saveSettings));
+  // template manager wiring
+  renderTemplateManager();
+  $('set-wa-msg').addEventListener('input', saveEditingTemplate);
+  $('tpl-name').addEventListener('input', () => {
+    saveEditingTemplate();
+    const o = $('tpl-select').options[$('tpl-select').selectedIndex];
+    if (o) o.textContent = $('tpl-name').value || 'Untitled';
+  });
+  $('tpl-select').addEventListener('change', () => {
+    editingTplId = $('tpl-select').value;
+    const c = firstTemplateById(editingTplId);
+    $('tpl-name').value = c.name;
+    $('set-wa-msg').value = c.body;
+    $('tpl-del').disabled = firstTemplates().length <= 1;
+  });
+  $('tpl-add').addEventListener('click', () => {
+    const list = firstTemplates().slice();
+    const id = newTemplateId();
+    list.push({ id, name: 'New template', body: DEFAULT_FIRST_MSG }); // start from the default text, never blank
+    patchSettings({ waTemplates: list });
+    editingTplId = id;
+    renderTemplateManager();
+    $('tpl-name').focus(); $('tpl-name').select();
+  });
+  $('tpl-del').addEventListener('click', () => {
+    const list = firstTemplates();
+    if (list.length <= 1) { alert('You need at least one first-message template.'); return; }
+    const cur = firstTemplateById(editingTplId);
+    if (!confirm('Delete the template "' + (cur.name || 'Untitled') + '"?')) return;
+    const next = list.filter((t) => t.id !== editingTplId);
+    const patch = { waTemplates: next };
+    if (loadSettings().lastTemplateId === editingTplId) patch.lastTemplateId = next[0].id; // send default can't point at a deleted one
+    patchSettings(patch);
+    editingTplId = next[0].id;
+    renderTemplateManager();
+  });
   $('set-wa-cap').addEventListener('change', () => {
     const v = parseInt($('set-wa-cap').value, 10) || 10;
     if (v > 10) alert('⚠️ Heads up: more than 10 WhatsApp sends a day raises the risk of another ban, especially on a number that has already been restricted.');
@@ -710,37 +785,61 @@ function recordSentVia(slug, channel) {
   const r = list.find((x) => x.id === slug);
   if (r) { r.sentVia = channel; try { localStorage.setItem('aiwp_recent', JSON.stringify(list)); } catch (e) {} renderRecent(); }
 }
+let firstSendCtx = null; // business/link/person/phone for the current mockup send row
+let sendToken = 0;       // guards against a stale grammar-fix overwriting a newer render
 function setupWhatsApp(business, link, personName) {
   const wa = $('wa-send');
   const sms = $('sms-send');
   const note = $('wa-note');
+  const picker = $('wa-template');
   const phone = (business.phones && business.phones[0]) || '';
   const mobile = phone && window.BizData.isUkMobile(phone);
   note.classList.remove('hidden');
   if (!mobile) {
     wa.classList.add('hidden');
     sms.classList.add('hidden');
+    if (picker) picker.classList.add('hidden');
     note.textContent = phone
       ? `📱 WhatsApp/SMS hidden because ${phone} is a landline, not a mobile, they only work on mobiles. Use the image URL or view link in an email instead.`
       : '📱 WhatsApp/SMS hidden, no mobile number listed for this business. Use the image URL or view link instead.';
     return;
   }
-  const tpl = loadSettings().waMsg;
-  const waMsg = fillWaMessage(tpl, business, tagLink(link, 'w'), personName);
-  const smsMsg = fillWaMessage(tpl, business, tagLink(link, 's'), personName);
-  wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(waMsg);
+  firstSendCtx = { business, link, personName, phone };
+  // template picker: list all first-message templates, default to the last-used one.
+  // Hidden when there's only one (nothing to choose).
+  const list = firstTemplates();
+  if (picker) {
+    if (list.length > 1) {
+      const activeId = activeFirstTemplate().id;
+      picker.innerHTML = list.map((t) => `<option value="${esc(t.id)}"${t.id === activeId ? ' selected' : ''}>${esc(t.name || 'Untitled')}</option>`).join('');
+      picker.classList.remove('hidden');
+    } else {
+      picker.classList.add('hidden');
+    }
+  }
   wa.classList.remove('hidden');
-  sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(smsMsg);
   sms.classList.remove('hidden');
   note.textContent = 'Opens WhatsApp, or your Messages app for SMS, to ' + phone + ' with your message + link pre-filled, you review and press send.';
-  // ✨ AI Grammar Fix (default on): tidy the message, then update both hrefs in place.
-  // The raw hrefs above work instantly; this swaps in the cleaned version a moment later.
+  renderFirstSendLinks(activeFirstTemplate().body);
+}
+// build the wa/sms hrefs from a chosen template body (+ optional AI grammar fix)
+function renderFirstSendLinks(tplBody) {
+  if (!firstSendCtx) return;
+  const { business, link, personName, phone } = firstSendCtx;
+  const wa = $('wa-send');
+  const sms = $('sms-send');
+  const myToken = ++sendToken;
+  const waMsg = fillWaMessage(tplBody, business, tagLink(link, 'w'), personName);
+  const smsMsg = fillWaMessage(tplBody, business, tagLink(link, 's'), personName);
+  wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(waMsg);
+  sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(smsMsg);
+  // ✨ AI Grammar Fix (default on): the raw hrefs above work instantly; this swaps in
+  // the cleaned version a moment later, unless a newer render has superseded this one.
   if (loadSettings().grammarFix !== false) {
     grammarFixMessage(waMsg).then((fixed) => {
-      if (!fixed || fixed === waMsg) return;
+      if (myToken !== sendToken || !fixed || fixed === waMsg) return;
       wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(fixed);
-      const smsFixed = fixed.replace(tagLink(link, 'w'), tagLink(link, 's')); // same text, sms-tagged link
-      sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(smsFixed);
+      sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(fixed.replace(tagLink(link, 'w'), tagLink(link, 's')));
     });
   }
 }
@@ -785,6 +884,12 @@ document.addEventListener('click', function (ev) {
 // record the send channel + mark the business as messaged when you click a send button
 $('wa-send').addEventListener('click', () => { recordSentVia(currentSlug, 'w'); markMessaged(currentBusiness, 'w'); recordSendServer('w'); });
 $('sms-send').addEventListener('click', () => { recordSentVia(currentSlug, 's'); markMessaged(currentBusiness, 's'); recordSendServer('s'); });
+// send-time template picker: remember the choice as the new default + rebuild the links
+if ($('wa-template')) $('wa-template').addEventListener('change', () => {
+  const id = $('wa-template').value;
+  patchSettings({ lastTemplateId: id });
+  renderFirstSendLinks(firstTemplateById(id).body);
+});
 // record a send from ANY surface (warm leads, lead profile, follow-up) so the
 // "messaged" stat is accurate, not just the original preview button
 function trackSentServer(slug, channel) {

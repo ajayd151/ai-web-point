@@ -277,6 +277,12 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .recent-table .recent-open { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
 .recent-table .rs-run { padding: 7px 14px; font-size: 13px; white-space: nowrap; }
 .recent-table .rs-filters { color: var(--muted); font-size: 13px; }
+.tpl-mgr .tpl-bar { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+.tpl-mgr .tpl-bar select { flex: 1 1 auto; min-width: 0; }
+.tpl-mgr #tpl-name { width: 100%; margin: 2px 0 6px; }
+.tpl-mgr .tpl-ph { display: block; margin: 2px 0 4px; font-size: 12px; }
+.tpl-mgr #tpl-del[disabled] { opacity: 0.45; cursor: not-allowed; }
+.wa-tpl-pick { max-width: 190px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 13px; }
 .gf-row { display: flex; align-items: flex-start; gap: 9px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: #f7f9ff; cursor: pointer; }
 .gf-row input[type="checkbox"] { margin-top: 3px; width: 17px; height: 17px; flex: 0 0 auto; cursor: pointer; }
 .gf-row small { display: block; margin-top: 3px; line-height: 1.45; }

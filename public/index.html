@@ -293,10 +293,17 @@
         <h2 class="view-title">💬 Message &amp; CTA wording</h2>
         <p class="muted view-sub">Edit what gets sent and shown. Saved on this device.</p>
         <div class="settings-grid">
-          <label class="block">
-            <span>First message, placeholders: <code>{name}</code> <code>{business}</code> <code>{category}</code> <code>{location}</code> <code>{link}</code></span>
+          <div class="block tpl-mgr">
+            <span>First message templates <span class="muted">(add as many as you like, pick one when you send)</span></span>
+            <div class="tpl-bar">
+              <select id="tpl-select" title="Choose a template to edit"></select>
+              <button id="tpl-add" class="ghost sm" type="button">➕ New</button>
+              <button id="tpl-del" class="ghost sm" type="button">🗑 Delete</button>
+            </div>
+            <input id="tpl-name" type="text" maxlength="40" placeholder="Template name (e.g. Plumbers, Short version)" />
+            <span class="muted tpl-ph">Placeholders: <code>{name}</code> <code>{business}</code> <code>{category}</code> <code>{location}</code> <code>{link}</code></span>
             <textarea id="set-wa-msg" rows="5"></textarea>
-          </label>
+          </div>
           <label class="gf-row"><input type="checkbox" id="set-grammar-fix" /> <span><b>✨ AI Grammar Fix</b> <span class="muted">(recommended)</span><br><small class="muted">When the first message is sent, AI tidies the wording so the business type reads naturally. For example "looking for Electrician" becomes "looking for an electrician", and "a Lawn Mowers" becomes "a lawn mower company". Your meaning, links and sign-off are left untouched.</small></span></label>
           <label class="block">
             <span>Follow-up message <span class="muted">(used by the ↩ follow-up button)</span>, same placeholders</span>
@@ -523,6 +530,7 @@
           <div class="copyrow"><input id="img-url" type="text" readonly /><button id="copy-img" class="ghost">Copy</button></div>
         </label>
         <div class="modal-actions">
+          <select id="wa-template" class="wa-tpl-pick hidden" title="Choose which message template to send"></select>
           <a id="wa-send" class="wa btn hidden" target="_blank" rel="noopener">📱 Send on WhatsApp</a>
           <a id="sms-send" class="sms btn hidden" rel="noopener">💬 Send SMS</a>
           <button id="regen-btn" class="ghost btn" title="Creates a new version, uses 1 of your daily credits">🔄 Regenerate</button>
