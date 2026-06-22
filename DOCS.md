@@ -748,7 +748,12 @@ Newest first. Reference sections above are the source of truth; this is a quick 
   `{id,name,body}`) + `lastTemplateId`; the legacy single `waMsg` auto-migrates into a "Default"
   template. Settings persistence moved to a merge-based `patchSettings` so template edits and field
   edits don't clobber each other. Grammar Fix runs on whichever template is chosen. (Follow-up message
-  stays a single template.)
+  stays a single template.) New templates start **empty** (placeholder prompts the wording).
+  **Save & lock + Duplicate (for future per-template stats):** each template has a `locked` flag. A
+  draft is editable; **Save & lock** makes the MESSAGE read-only (greyed, 🔒 in the list) so its wording
+  is fixed and future performance stats stay attributable; you can still **rename** a locked template,
+  and **📋 Duplicate** makes a fresh editable copy to create a variation. Stable template `id`s are the
+  groundwork; recording which template each send used (for the actual stats) is the next step when wanted.
 - **✨ AI Grammar Fix (new, default ON):** a checkbox in Templates. When the **first message** is sent,
   the filled text is passed through `POST /api/grammar` (gpt-4o-mini) which lightly fixes articles and
   singular/plural so the `{category}` substitution reads naturally (e.g. "looking for Electrician" →

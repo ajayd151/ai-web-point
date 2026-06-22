@@ -298,10 +298,11 @@
             <div class="tpl-bar">
               <select id="tpl-select" title="Choose a template to edit"></select>
               <button id="tpl-add" class="ghost sm" type="button">➕ New</button>
+              <button id="tpl-dup" class="ghost sm" type="button" title="Make an editable copy of this template">📋 Duplicate</button>
               <button id="tpl-del" class="ghost sm" type="button">🗑 Delete</button>
             </div>
             <label class="tpl-field">
-              <span class="tpl-lbl">Template name <span class="muted">(a short label, just for you, e.g. "Plumbers")</span></span>
+              <span class="tpl-lbl">Template name <span class="muted">(a short label, just for you, e.g. "Plumbers"). You can rename any time.</span></span>
               <input id="tpl-name" type="text" maxlength="40" placeholder="e.g. Plumbers, Short version" />
             </label>
             <label class="tpl-field">
@@ -309,6 +310,10 @@
               <span class="muted tpl-ph">Placeholders: <code>{name}</code> <code>{business}</code> <code>{category}</code> <code>{location}</code> <code>{link}</code></span>
               <textarea id="set-wa-msg" rows="6" placeholder="Type your message here… e.g. Hi {name}, I came across {business} while looking through {category} in {location}. {link}"></textarea>
             </label>
+            <div class="tpl-state">
+              <span id="tpl-status" class="tpl-status"></span>
+              <button id="tpl-lock" class="primary sm" type="button">🔒 Save &amp; lock</button>
+            </div>
           </div>
           <label class="gf-row"><input type="checkbox" id="set-grammar-fix" /> <span><b>✨ AI Grammar Fix</b> <span class="muted">(recommended)</span><br><small class="muted">When the first message is sent, AI tidies the wording so the business type reads naturally. For example "looking for Electrician" becomes "looking for an electrician", and "a Lawn Mowers" becomes "a lawn mower company". Your meaning, links and sign-off are left untouched.</small></span></label>
           <label class="block">

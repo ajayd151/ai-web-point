@@ -285,6 +285,10 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .tpl-mgr #tpl-name { max-width: 340px; }
 .tpl-mgr .tpl-ph { display: block; margin: 0 0 5px; font-size: 12px; }
 .tpl-mgr #tpl-del[disabled] { opacity: 0.45; cursor: not-allowed; }
+.tpl-mgr textarea.locked { background: #f3f4f6; color: #555; cursor: not-allowed; }
+.tpl-state { display: flex; align-items: center; gap: 12px; margin-top: 9px; flex-wrap: wrap; }
+.tpl-status { font-size: 12.5px; color: var(--muted); }
+.tpl-status.is-locked { color: #0a7d3c; }
 .wa-tpl-pick { max-width: 190px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 13px; }
 .gf-row { display: flex; align-items: flex-start; gap: 9px; padding: 11px 13px; border: 1px solid var(--line); border-radius: 10px; background: #f7f9ff; cursor: pointer; }
 .gf-row input[type="checkbox"] { margin-top: 3px; width: 17px; height: 17px; flex: 0 0 auto; cursor: pointer; }

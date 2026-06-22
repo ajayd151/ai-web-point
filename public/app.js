@@ -34,7 +34,7 @@ function loadSettings() {
     list = [{ id: 'default', name: 'Default', body }];
   }
   list = list.filter((t) => t && typeof t.body === 'string').map((t, i) => ({
-    id: String(t.id || ('t' + i)), name: String(t.name || 'Untitled').slice(0, 40), body: String(t.body),
+    id: String(t.id || ('t' + i)), name: String(t.name || 'Untitled').slice(0, 40), body: String(t.body), locked: !!t.locked,
   }));
   if (!list.length) list = [{ id: 'default', name: 'Default', body: DEFAULT_FIRST_MSG }];
   out.waTemplates = list;
@@ -63,18 +63,33 @@ function saveSettings() {
 }
 // ---- first-message template manager (Templates panel) --------------------
 let editingTplId = null;
+function tplLabel(t) { return (t.name || 'Untitled') + (t.locked ? ' 🔒' : ''); }
 function renderTemplateManager() {
   const list = firstTemplates();
   if (!editingTplId || !list.some((t) => t.id === editingTplId)) editingTplId = activeFirstTemplate().id;
-  $('tpl-select').innerHTML = list.map((t) => `<option value="${esc(t.id)}"${t.id === editingTplId ? ' selected' : ''}>${esc(t.name || 'Untitled')}</option>`).join('');
+  $('tpl-select').innerHTML = list.map((t) => `<option value="${esc(t.id)}"${t.id === editingTplId ? ' selected' : ''}>${esc(tplLabel(t))}</option>`).join('');
   const cur = firstTemplateById(editingTplId);
   $('tpl-name').value = cur.name;
   $('set-wa-msg').value = cur.body;
   $('tpl-del').disabled = list.length <= 1;
+  applyTplLockUI(cur);
+}
+// reflect the locked/draft state: a locked template's MESSAGE is read-only (so its
+// stats stay tied to fixed wording), but it can still be renamed or duplicated.
+function applyTplLockUI(cur) {
+  const locked = !!cur.locked;
+  const ta = $('set-wa-msg');
+  ta.readOnly = locked;
+  ta.classList.toggle('locked', locked);
+  $('tpl-lock').classList.toggle('hidden', locked);
+  $('tpl-status').textContent = locked
+    ? '🔒 Saved & locked. Rename it any time, or Duplicate it to make a different version.'
+    : '✍️ Draft, editable. Save & lock it when you are happy, so its stats stay accurate.';
+  $('tpl-status').classList.toggle('is-locked', locked);
 }
 function saveEditingTemplate() {
   const list = firstTemplates().map((t) => t.id === editingTplId
-    ? { id: t.id, name: ($('tpl-name').value || 'Untitled').slice(0, 40), body: $('set-wa-msg').value }
+    ? { id: t.id, name: ($('tpl-name').value || 'Untitled').slice(0, 40), body: t.locked ? t.body : $('set-wa-msg').value, locked: !!t.locked }
     : t);
   patchSettings({ waTemplates: list });
 }
@@ -93,23 +108,39 @@ function saveEditingTemplate() {
   $('tpl-name').addEventListener('input', () => {
     saveEditingTemplate();
     const o = $('tpl-select').options[$('tpl-select').selectedIndex];
-    if (o) o.textContent = $('tpl-name').value || 'Untitled';
+    if (o) o.textContent = tplLabel({ name: $('tpl-name').value, locked: firstTemplateById(editingTplId).locked });
   });
   $('tpl-select').addEventListener('change', () => {
     editingTplId = $('tpl-select').value;
-    const c = firstTemplateById(editingTplId);
-    $('tpl-name').value = c.name;
-    $('set-wa-msg').value = c.body;
-    $('tpl-del').disabled = firstTemplates().length <= 1;
+    renderTemplateManager();
   });
   $('tpl-add').addEventListener('click', () => {
     const list = firstTemplates().slice();
     const id = newTemplateId();
-    list.push({ id, name: 'New template', body: '' }); // start empty; the textarea placeholder prompts them to write it
+    list.push({ id, name: 'New template', body: '', locked: false }); // start empty + editable; placeholder prompts the wording
     patchSettings({ waTemplates: list });
     editingTplId = id;
     renderTemplateManager();
     $('tpl-name').focus(); $('tpl-name').select();
+  });
+  $('tpl-dup').addEventListener('click', () => {
+    const cur = firstTemplateById(editingTplId);
+    const id = newTemplateId();
+    const list = firstTemplates().slice();
+    list.push({ id, name: (cur.name + ' (copy)').slice(0, 40), body: cur.body, locked: false }); // a fresh editable copy
+    patchSettings({ waTemplates: list });
+    editingTplId = id;
+    renderTemplateManager();
+    $('tpl-name').focus(); $('tpl-name').select();
+  });
+  $('tpl-lock').addEventListener('click', () => {
+    if (!$('set-wa-msg').value.trim()) { alert('Add a message before you save and lock this template.'); return; }
+    if (!confirm('Save & lock "' + ($('tpl-name').value || 'this template') + '"?\n\nThe message becomes read-only so its performance stats stay tied to fixed wording. You can still rename it, and you can Duplicate it to make a different version.')) return;
+    const list = firstTemplates().map((t) => t.id === editingTplId
+      ? { id: t.id, name: ($('tpl-name').value || 'Untitled').slice(0, 40), body: $('set-wa-msg').value, locked: true }
+      : t);
+    patchSettings({ waTemplates: list });
+    renderTemplateManager();
   });
   $('tpl-del').addEventListener('click', () => {
     const list = firstTemplates();
