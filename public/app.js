@@ -2360,7 +2360,11 @@ function bySearchTypeHTML() {
 // so we flag it and also split the totals into "with link" vs "no link" for comparison.
 function byTemplateHTML(d) {
   const rows = (d && d.byTemplate) || [];
-  if (!rows.length) return ''; // hidden until sends with a template start landing
+  const head = '<div class="dash-table-wrap"><h3>🧪 Message template statistics</h3>' +
+    '<p class="muted dash-sub">How each first-message template (version) performs. Viewed % and demo % are out of how many you sent with that template. A template without a <code>{link}</code> can\'t track opens or demo clicks (nothing to click), so compare those on replies instead. Lock a template to keep its wording (and these numbers) stable; duplicate it to test the next version.</p>';
+  if (!rows.length) {
+    return head + '<div class="empty">No template data yet. Send a first message (the WhatsApp/SMS row after you generate a mockup) and pick a template version, then once prospects open it, the per-version stats (sent, viewed %, demo %) appear here, split by whether the message had a link.</div></div>';
+  }
   const tplMap = {};
   firstTemplates().forEach((t) => { tplMap[t.id] = t; });
   const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) + '%' : '·');
@@ -2388,9 +2392,7 @@ function byTemplateHTML(d) {
       `<td>${r.viewed} <span class="muted">(${pct(r.viewed, r.sent)})</span></td>` +
       `<td>${r.demos} <span class="muted">(${pct(r.demos, r.sent)})</span></td><td>${r.signups || 0}</td></tr>`;
   }).join('');
-  return '<div class="dash-table-wrap"><h3>🧪 By message template</h3>' +
-    '<p class="muted dash-sub">How each first-message template performs. Viewed % and demo % are out of how many you sent with that template. A template without a <code>{link}</code> can\'t track opens or demo clicks (nothing to click), so compare those on replies instead. Lock a template to keep its wording (and these numbers) stable; duplicate it to test a variation.</p>' +
-    split +
+  return head + split +
     '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Template</th><th>Link?</th><th>Sent</th><th>Mockup viewed</th><th>Demo click</th><th>Sign-up</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
 function renderDashboard(d) {

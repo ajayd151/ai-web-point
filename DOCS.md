@@ -751,8 +751,9 @@ Newest first. Reference sections above are the source of truth; this is a quick 
   first-message template used. The preview link carries `&t=<templateId>` and the `sent` beacon includes
   it, so opens (`view`) and demo-clicks (`cta`) attribute back to the template (`link_events.tpl` column,
   added via `ALTER TABLE … IF NOT EXISTS`). `api/track.js` stores it, `dashboardData` aggregates a
-  `byTemplate` breakdown (distinct businesses per stage), and Performance shows a **🧪 By message
-  template** table (Template / **Link?** / Sent / Mockup viewed **%** / Demo **%** / Sign-up), resolving
+  `byTemplate` breakdown (distinct businesses per stage), and Performance has an always-visible
+  **🧪 Message template statistics** section (empty-state until data lands) with a table
+  (Template version / **Link?** / Sent / Mockup viewed **%** / Demo **%** / Sign-up), resolving
   template names locally from this device. A **Link?** column flags whether each template contains
   `{link}`: a template with no link can't track opens/demo-clicks (nothing to click), so the table also
   shows a **with-link vs no-link** split so those are compared fairly (no-link judged on replies). Only
