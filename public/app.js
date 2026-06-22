@@ -2328,22 +2328,43 @@ function bySearchTypeHTML() {
   return '<div class="dash-table-wrap"><h3>🔎 By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. The location is what you searched, with the lead\'s actual town in brackets if it differs (auto-expanded nearby). Mockup viewed % is of those you messaged. Grouped by niche, busiest first.</p>' +
     '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Mockup viewed</th><th>Demo clicks</th><th>Sign-up clicks</th><th>Not interested</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
-// per first-message template performance (names resolved locally from this device's templates)
+// per first-message template performance (names + link/no-link resolved locally from
+// this device's templates). A template without {link} can't track opens/demo clicks,
+// so we flag it and also split the totals into "with link" vs "no link" for comparison.
 function byTemplateHTML(d) {
   const rows = (d && d.byTemplate) || [];
   if (!rows.length) return ''; // hidden until sends with a template start landing
-  const names = {};
-  firstTemplates().forEach((t) => { names[t.id] = t.name + (t.locked ? ' 🔒' : ''); });
+  const tplMap = {};
+  firstTemplates().forEach((t) => { tplMap[t.id] = t; });
   const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) + '%' : '·');
+  const tplHasLink = (id) => { const t = tplMap[id]; return t ? /\{link\}/.test(t.body) : null; };
+  // with-link vs no-link aggregate
+  const wl = { sent: 0, viewed: 0, demos: 0, signups: 0 };
+  const nl = { sent: 0 };
+  rows.forEach((r) => {
+    const h = tplHasLink(r.tpl);
+    if (h === true) { wl.sent += r.sent; wl.viewed += r.viewed; wl.demos += r.demos; wl.signups += (r.signups || 0); }
+    else if (h === false) { nl.sent += r.sent; }
+  });
+  let split = '';
+  if (wl.sent || nl.sent) {
+    split = '<div class="tpl-linksplit">' +
+      '<div class="tls-card"><b>🔗 With a link</b><div>' + wl.sent + ' sent · ' + wl.viewed + ' viewed (' + pct(wl.viewed, wl.sent) + ') · ' + wl.demos + ' demo (' + pct(wl.demos, wl.sent) + ')</div></div>' +
+      '<div class="tls-card"><b>✉️ No link</b><div>' + nl.sent + ' sent · <span class="muted">opens/demos not trackable without a link, judge these on replies</span></div></div>' +
+      '</div>';
+  }
   const tr = rows.map((r) => {
-    const cell = names[r.tpl] ? '<b>' + esc(names[r.tpl]) + '</b>' : '<span class="muted">(removed template)</span>';
-    return `<tr><td>${cell}</td><td>${r.sent}</td>` +
+    const t = tplMap[r.tpl];
+    const cell = t ? '<b>' + esc(t.name) + (t.locked ? ' 🔒' : '') + '</b>' : '<span class="muted">(removed template)</span>';
+    const linkCell = t ? (/\{link\}/.test(t.body) ? '🔗 Link' : '<span class="muted">No link</span>') : '<span class="muted">·</span>';
+    return `<tr><td>${cell}</td><td>${linkCell}</td><td>${r.sent}</td>` +
       `<td>${r.viewed} <span class="muted">(${pct(r.viewed, r.sent)})</span></td>` +
       `<td>${r.demos} <span class="muted">(${pct(r.demos, r.sent)})</span></td><td>${r.signups || 0}</td></tr>`;
   }).join('');
   return '<div class="dash-table-wrap"><h3>🧪 By message template</h3>' +
-    '<p class="muted dash-sub">How each first-message template performs. Viewed % and demo % are out of how many you sent with that template. Lock a template to keep its wording (and these numbers) stable; duplicate it to test a variation.</p>' +
-    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Template</th><th>Sent</th><th>Mockup viewed</th><th>Demo click</th><th>Sign-up</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+    '<p class="muted dash-sub">How each first-message template performs. Viewed % and demo % are out of how many you sent with that template. A template without a <code>{link}</code> can\'t track opens or demo clicks (nothing to click), so compare those on replies instead. Lock a template to keep its wording (and these numbers) stable; duplicate it to test a variation.</p>' +
+    split +
+    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Template</th><th>Link?</th><th>Sent</th><th>Mockup viewed</th><th>Demo click</th><th>Sign-up</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
 function renderDashboard(d) {
   const body = $('dash-body');

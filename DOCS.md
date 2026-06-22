@@ -746,9 +746,12 @@ Newest first. Reference sections above are the source of truth; this is a quick 
   it, so opens (`view`) and demo-clicks (`cta`) attribute back to the template (`link_events.tpl` column,
   added via `ALTER TABLE … IF NOT EXISTS`). `api/track.js` stores it, `dashboardData` aggregates a
   `byTemplate` breakdown (distinct businesses per stage), and Performance shows a **🧪 By message
-  template** table (Sent / Mockup viewed % / Demo % / Sign-up), resolving template names locally from
-  this device. Only the first-message send tags a template (follow-up sends don't). Data starts
-  accumulating immediately; locking a template keeps its wording, and these numbers, stable.
+  template** table (Template / **Link?** / Sent / Mockup viewed **%** / Demo **%** / Sign-up), resolving
+  template names locally from this device. A **Link?** column flags whether each template contains
+  `{link}`: a template with no link can't track opens/demo-clicks (nothing to click), so the table also
+  shows a **with-link vs no-link** split so those are compared fairly (no-link judged on replies). Only
+  the first-message send tags a template (follow-up sends don't). Data accumulates immediately; locking
+  a template keeps its wording, and these numbers, stable.
 - **Multiple first-message templates (new):** Templates now manages a LIST of first-message templates
   (add ➕ / rename / 🗑 delete, each with a name), instead of one fixed message. When you send from the
   post-generate row, a small picker lets you choose which template to send; it **defaults to the
