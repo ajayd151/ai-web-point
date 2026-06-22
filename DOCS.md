@@ -741,6 +741,12 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-20**
+- **Auto template versions (V1, V2…):** every template gets an automatic, incremental version number
+  (no typing "V" yourself), shown as a badge in the editor and as a `V{n} · {name}` label in the edit
+  dropdown, the send picker, and the By-template stats. Stored as `v` per template + a monotonic
+  `tplSeq` counter (assigned/persisted on load via `ensureTemplateVersions`; never reused, even after a
+  delete). **Duplicate** now keeps the same name and takes the **next** version (so "V2 · Plumbers" →
+  "V3 · Plumbers" is a clean version history); **New** starts empty as the next version.
 - **Per-template performance tracking (new):** every send and engagement is now attributed to the
   first-message template used. The preview link carries `&t=<templateId>` and the `sent` beacon includes
   it, so opens (`view`) and demo-clicks (`cta`) attribute back to the template (`link_events.tpl` column,

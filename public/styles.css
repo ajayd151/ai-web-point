@@ -282,6 +282,7 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .tpl-mgr .tpl-bar select { flex: 1 1 auto; min-width: 0; }
 .tpl-mgr .tpl-field { display: block; margin-top: 12px; }
 .tpl-mgr .tpl-lbl { display: block; font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+.tpl-ver { display: inline-block; background: #4f46e5; color: #fff; font-weight: 600; font-size: 11px; padding: 1px 7px; border-radius: 20px; margin-right: 4px; vertical-align: middle; }
 .tpl-mgr #tpl-name { max-width: 340px; }
 .tpl-mgr .tpl-ph { display: block; margin: 0 0 5px; font-size: 12px; }
 .tpl-mgr #tpl-del[disabled] { opacity: 0.45; cursor: not-allowed; }

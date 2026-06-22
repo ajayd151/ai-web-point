@@ -34,10 +34,16 @@ function loadSettings() {
     list = [{ id: 'default', name: 'Default', body }];
   }
   list = list.filter((t) => t && typeof t.body === 'string').map((t, i) => ({
-    id: String(t.id || ('t' + i)), name: String(t.name || 'Untitled').slice(0, 40), body: String(t.body), locked: !!t.locked,
+    id: String(t.id || ('t' + i)), name: String(t.name == null ? '' : t.name).slice(0, 40), body: String(t.body),
+    locked: !!t.locked, v: Number.isFinite(t.v) ? t.v : null,
   }));
-  if (!list.length) list = [{ id: 'default', name: 'Default', body: DEFAULT_FIRST_MSG }];
+  if (!list.length) list = [{ id: 'default', name: 'Default', body: DEFAULT_FIRST_MSG, locked: false, v: null }];
+  // auto version numbers (V1, V2…): assign one to any template missing it; incremental, never reused
+  let maxV = 0;
+  list.forEach((t) => { if (Number.isFinite(t.v)) maxV = Math.max(maxV, t.v); });
+  list.forEach((t) => { if (!Number.isFinite(t.v)) t.v = ++maxV; });
   out.waTemplates = list;
+  out.tplSeq = Math.max(Number(s.tplSeq) || 0, maxV);
   out.lastTemplateId = list.some((t) => t.id === s.lastTemplateId) ? s.lastTemplateId : list[0].id;
   return out;
 }
@@ -63,7 +69,20 @@ function saveSettings() {
 }
 // ---- first-message template manager (Templates panel) --------------------
 let editingTplId = null;
-function tplLabel(t) { return (t.name || 'Untitled') + (t.locked ? ' 🔒' : ''); }
+function tplLabel(t) {
+  const nm = (t.name || '').trim();
+  return 'V' + (t.v || '?') + (nm ? ' · ' + nm : '') + (t.locked ? ' 🔒' : '');
+}
+// persist auto-assigned version numbers once (so they're stable in storage)
+function ensureTemplateVersions() {
+  let raw = {};
+  try { raw = JSON.parse(localStorage.getItem('aiwp_settings') || '{}'); } catch (e) {}
+  const stored = Array.isArray(raw.waTemplates) ? raw.waTemplates : null;
+  if (!stored || stored.some((t) => !Number.isFinite(t.v)) || !Number.isFinite(raw.tplSeq)) {
+    const s = loadSettings();
+    patchSettings({ waTemplates: s.waTemplates, tplSeq: s.tplSeq });
+  }
+}
 function renderTemplateManager() {
   const list = firstTemplates();
   if (!editingTplId || !list.some((t) => t.id === editingTplId)) editingTplId = activeFirstTemplate().id;
@@ -71,6 +90,7 @@ function renderTemplateManager() {
   const cur = firstTemplateById(editingTplId);
   $('tpl-name').value = cur.name;
   $('set-wa-msg').value = cur.body;
+  $('tpl-version').textContent = 'V' + (cur.v || '?');
   $('tpl-del').disabled = list.length <= 1;
   applyTplLockUI(cur);
 }
@@ -89,7 +109,7 @@ function applyTplLockUI(cur) {
 }
 function saveEditingTemplate() {
   const list = firstTemplates().map((t) => t.id === editingTplId
-    ? { id: t.id, name: ($('tpl-name').value || 'Untitled').slice(0, 40), body: t.locked ? t.body : $('set-wa-msg').value, locked: !!t.locked }
+    ? { id: t.id, name: $('tpl-name').value.slice(0, 40), body: t.locked ? t.body : $('set-wa-msg').value, locked: !!t.locked, v: t.v }
     : t);
   patchSettings({ waTemplates: list });
 }
@@ -103,41 +123,48 @@ function saveEditingTemplate() {
   $('set-grammar-fix').addEventListener('change', saveSettings);
   ['set-cta-hero', 'set-cta-bottom', 'set-followup', 'set-wa-cap'].forEach((id) => $(id).addEventListener('input', saveSettings));
   // template manager wiring
+  ensureTemplateVersions();
   renderTemplateManager();
   $('set-wa-msg').addEventListener('input', saveEditingTemplate);
   $('tpl-name').addEventListener('input', () => {
     saveEditingTemplate();
     const o = $('tpl-select').options[$('tpl-select').selectedIndex];
-    if (o) o.textContent = tplLabel({ name: $('tpl-name').value, locked: firstTemplateById(editingTplId).locked });
+    const cur = firstTemplateById(editingTplId);
+    if (o) o.textContent = tplLabel({ name: $('tpl-name').value, locked: cur.locked, v: cur.v });
   });
   $('tpl-select').addEventListener('change', () => {
     editingTplId = $('tpl-select').value;
     renderTemplateManager();
   });
   $('tpl-add').addEventListener('click', () => {
-    const list = firstTemplates().slice();
+    const s = loadSettings();
+    const v = s.tplSeq + 1;
     const id = newTemplateId();
-    list.push({ id, name: 'New template', body: '', locked: false }); // start empty + editable; placeholder prompts the wording
-    patchSettings({ waTemplates: list });
+    const list = s.waTemplates.slice();
+    list.push({ id, name: '', body: '', locked: false, v }); // empty + editable; placeholder prompts the wording
+    patchSettings({ waTemplates: list, tplSeq: v });
     editingTplId = id;
     renderTemplateManager();
-    $('tpl-name').focus(); $('tpl-name').select();
+    $('tpl-name').focus();
   });
   $('tpl-dup').addEventListener('click', () => {
-    const cur = firstTemplateById(editingTplId);
+    const s = loadSettings();
+    const cur = s.waTemplates.find((t) => t.id === editingTplId) || s.waTemplates[0];
+    const v = s.tplSeq + 1;
     const id = newTemplateId();
-    const list = firstTemplates().slice();
-    list.push({ id, name: (cur.name + ' (copy)').slice(0, 40), body: cur.body, locked: false }); // a fresh editable copy
-    patchSettings({ waTemplates: list });
+    const list = s.waTemplates.slice();
+    list.push({ id, name: cur.name, body: cur.body, locked: false, v }); // same name, the NEXT version
+    patchSettings({ waTemplates: list, tplSeq: v });
     editingTplId = id;
     renderTemplateManager();
     $('tpl-name').focus(); $('tpl-name').select();
   });
   $('tpl-lock').addEventListener('click', () => {
     if (!$('set-wa-msg').value.trim()) { alert('Add a message before you save and lock this template.'); return; }
-    if (!confirm('Save & lock "' + ($('tpl-name').value || 'this template') + '"?\n\nThe message becomes read-only so its performance stats stay tied to fixed wording. You can still rename it, and you can Duplicate it to make a different version.')) return;
+    const cur = firstTemplateById(editingTplId);
+    if (!confirm('Save & lock ' + tplLabel({ name: $('tpl-name').value, v: cur.v }) + '?\n\nThe message becomes read-only so its performance stats stay tied to fixed wording. You can still rename it, and you can Duplicate it to make the next version.')) return;
     const list = firstTemplates().map((t) => t.id === editingTplId
-      ? { id: t.id, name: ($('tpl-name').value || 'Untitled').slice(0, 40), body: $('set-wa-msg').value, locked: true }
+      ? { id: t.id, name: $('tpl-name').value.slice(0, 40), body: $('set-wa-msg').value, locked: true, v: t.v }
       : t);
     patchSettings({ waTemplates: list });
     renderTemplateManager();
@@ -842,7 +869,7 @@ function setupWhatsApp(business, link, personName) {
   if (picker) {
     if (list.length > 1) {
       const activeId = activeFirstTemplate().id;
-      picker.innerHTML = list.map((t) => `<option value="${esc(t.id)}"${t.id === activeId ? ' selected' : ''}>${esc(t.name || 'Untitled')}</option>`).join('');
+      picker.innerHTML = list.map((t) => `<option value="${esc(t.id)}"${t.id === activeId ? ' selected' : ''}>${esc(tplLabel(t))}</option>`).join('');
       picker.classList.remove('hidden');
     } else {
       picker.classList.add('hidden');
@@ -2355,7 +2382,7 @@ function byTemplateHTML(d) {
   }
   const tr = rows.map((r) => {
     const t = tplMap[r.tpl];
-    const cell = t ? '<b>' + esc(t.name) + (t.locked ? ' 🔒' : '') + '</b>' : '<span class="muted">(removed template)</span>';
+    const cell = t ? '<b>' + esc(tplLabel(t)) + '</b>' : '<span class="muted">(removed template)</span>';
     const linkCell = t ? (/\{link\}/.test(t.body) ? '🔗 Link' : '<span class="muted">No link</span>') : '<span class="muted">·</span>';
     return `<tr><td>${cell}</td><td>${linkCell}</td><td>${r.sent}</td>` +
       `<td>${r.viewed} <span class="muted">(${pct(r.viewed, r.sent)})</span></td>` +
