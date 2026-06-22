@@ -741,6 +741,14 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-20**
+- **Per-template performance tracking (new):** every send and engagement is now attributed to the
+  first-message template used. The preview link carries `&t=<templateId>` and the `sent` beacon includes
+  it, so opens (`view`) and demo-clicks (`cta`) attribute back to the template (`link_events.tpl` column,
+  added via `ALTER TABLE … IF NOT EXISTS`). `api/track.js` stores it, `dashboardData` aggregates a
+  `byTemplate` breakdown (distinct businesses per stage), and Performance shows a **🧪 By message
+  template** table (Sent / Mockup viewed % / Demo % / Sign-up), resolving template names locally from
+  this device. Only the first-message send tags a template (follow-up sends don't). Data starts
+  accumulating immediately; locking a template keeps its wording, and these numbers, stable.
 - **Multiple first-message templates (new):** Templates now manages a LIST of first-message templates
   (add ➕ / rename / 🗑 delete, each with a name), instead of one fixed message. When you send from the
   post-generate row, a small picker lets you choose which template to send; it **defaults to the

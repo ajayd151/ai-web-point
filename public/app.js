@@ -851,17 +851,22 @@ function setupWhatsApp(business, link, personName) {
   wa.classList.remove('hidden');
   sms.classList.remove('hidden');
   note.textContent = 'Opens WhatsApp, or your Messages app for SMS, to ' + phone + ' with your message + link pre-filled, you review and press send.';
-  renderFirstSendLinks(activeFirstTemplate().body);
+  renderFirstSendLinks(activeFirstTemplate());
 }
-// build the wa/sms hrefs from a chosen template body (+ optional AI grammar fix)
-function renderFirstSendLinks(tplBody) {
+// build the wa/sms hrefs from a chosen template (+ optional AI grammar fix). The
+// preview link is tagged with the template id (&t=) so opens/demo-clicks attribute
+// back to it for per-template stats; firstSendCtx.tplId feeds the 'sent' beacon.
+function renderFirstSendLinks(tpl) {
   if (!firstSendCtx) return;
+  firstSendCtx.tplId = tpl.id;
   const { business, link, personName, phone } = firstSendCtx;
   const wa = $('wa-send');
   const sms = $('sms-send');
   const myToken = ++sendToken;
-  const waMsg = fillWaMessage(tplBody, business, tagLink(link, 'w'), personName);
-  const smsMsg = fillWaMessage(tplBody, business, tagLink(link, 's'), personName);
+  const wlink = tagLink(link, 'w') + '&t=' + encodeURIComponent(tpl.id);
+  const slink = tagLink(link, 's') + '&t=' + encodeURIComponent(tpl.id);
+  const waMsg = fillWaMessage(tpl.body, business, wlink, personName);
+  const smsMsg = fillWaMessage(tpl.body, business, slink, personName);
   wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(waMsg);
   sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(smsMsg);
   // ✨ AI Grammar Fix (default on): the raw hrefs above work instantly; this swaps in
@@ -870,7 +875,7 @@ function renderFirstSendLinks(tplBody) {
     grammarFixMessage(waMsg).then((fixed) => {
       if (myToken !== sendToken || !fixed || fixed === waMsg) return;
       wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(fixed);
-      sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(fixed.replace(tagLink(link, 'w'), tagLink(link, 's')));
+      sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(fixed.replace(wlink, slink));
     });
   }
 }
@@ -878,7 +883,8 @@ function renderFirstSendLinks(tplBody) {
 function recordSendServer(channel) {
   if (!currentSlug) return;
   try {
-    const u = '/api/track?slug=' + encodeURIComponent(currentSlug) + '&e=sent&c=' + channel;
+    const tp = (firstSendCtx && firstSendCtx.tplId) ? '&t=' + encodeURIComponent(firstSendCtx.tplId) : '';
+    const u = '/api/track?slug=' + encodeURIComponent(currentSlug) + '&e=sent&c=' + channel + tp;
     if (navigator.sendBeacon) navigator.sendBeacon(u); else fetch(u, { keepalive: true }).catch(() => {});
   } catch (e) {}
 }
@@ -919,7 +925,7 @@ $('sms-send').addEventListener('click', () => { recordSentVia(currentSlug, 's');
 if ($('wa-template')) $('wa-template').addEventListener('change', () => {
   const id = $('wa-template').value;
   patchSettings({ lastTemplateId: id });
-  renderFirstSendLinks(firstTemplateById(id).body);
+  renderFirstSendLinks(firstTemplateById(id));
 });
 // record a send from ANY surface (warm leads, lead profile, follow-up) so the
 // "messaged" stat is accurate, not just the original preview button
@@ -2322,6 +2328,23 @@ function bySearchTypeHTML() {
   return '<div class="dash-table-wrap"><h3>🔎 By search type</h3><p class="muted dash-sub">Which niches and areas actually convert. The location is what you searched, with the lead\'s actual town in brackets if it differs (auto-expanded nearby). Mockup viewed % is of those you messaged. Grouped by niche, busiest first.</p>' +
     '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Niche / area</th><th>Mockups</th><th>Messaged</th><th>Mockup viewed</th><th>Demo clicks</th><th>Sign-up clicks</th><th>Not interested</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
 }
+// per first-message template performance (names resolved locally from this device's templates)
+function byTemplateHTML(d) {
+  const rows = (d && d.byTemplate) || [];
+  if (!rows.length) return ''; // hidden until sends with a template start landing
+  const names = {};
+  firstTemplates().forEach((t) => { names[t.id] = t.name + (t.locked ? ' 🔒' : ''); });
+  const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) + '%' : '·');
+  const tr = rows.map((r) => {
+    const cell = names[r.tpl] ? '<b>' + esc(names[r.tpl]) + '</b>' : '<span class="muted">(removed template)</span>';
+    return `<tr><td>${cell}</td><td>${r.sent}</td>` +
+      `<td>${r.viewed} <span class="muted">(${pct(r.viewed, r.sent)})</span></td>` +
+      `<td>${r.demos} <span class="muted">(${pct(r.demos, r.sent)})</span></td><td>${r.signups || 0}</td></tr>`;
+  }).join('');
+  return '<div class="dash-table-wrap"><h3>🧪 By message template</h3>' +
+    '<p class="muted dash-sub">How each first-message template performs. Viewed % and demo % are out of how many you sent with that template. Lock a template to keep its wording (and these numbers) stable; duplicate it to test a variation.</p>' +
+    '<div class="recent-scroll"><table class="recent-table"><thead><tr><th>Template</th><th>Sent</th><th>Mockup viewed</th><th>Demo click</th><th>Sign-up</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
+}
 function renderDashboard(d) {
   const body = $('dash-body');
   if (!d || d.configured === false) {
@@ -2402,7 +2425,7 @@ function renderDashboard(d) {
     table = '<div class="dash-table-wrap"><h3>🕒 Recent activity</h3><div class="recent-scroll"><table class="recent-table">' +
       '<thead><tr><th>Business</th><th>Sent via</th><th>Sent</th><th>Mockup viewed</th><th>Demo click</th><th>Sign-up click</th><th>Status</th></tr></thead><tbody>' + tr + '</tbody></table></div></div>';
   }
-  body.innerHTML = insights + top + dailyTableHTML(d) + bySearchTypeHTML() + channelBlock + hourChart + dayChart + table + tips +
+  body.innerHTML = insights + top + dailyTableHTML(d) + bySearchTypeHTML() + byTemplateHTML(d) + channelBlock + hourChart + dayChart + table + tips +
     '<div class="dash-refresh"><button id="dash-refresh" class="ghost">↻ Refresh</button></div>';
   const rb = $('dash-refresh'); if (rb) rb.addEventListener('click', loadDashboard);
 }

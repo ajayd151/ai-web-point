@@ -139,7 +139,7 @@ module.exports = async (req, res) => {
   <p class="foot">Designed by <a href="${agencyUrl}" target="_blank" rel="noopener">${AGENCY}</a>. Prefer to talk? We'll walk you through the full website over a quick call.</p>
 </div>${slug ? `<script>
 (function(){var s=${JSON.stringify(slug)};
-function t(e){try{var q=new URLSearchParams(location.search);var c=(q.get('c')||q.get('p')||'');var u='/api/track?slug='+encodeURIComponent(s)+'&e='+e+(c?'&c='+encodeURIComponent(c):'');if(navigator.sendBeacon){navigator.sendBeacon(u);}else{fetch(u,{keepalive:true});}}catch(x){}}
+function t(e){try{var q=new URLSearchParams(location.search);var c=(q.get('c')||q.get('p')||'');var tp=(q.get('t')||'');var u='/api/track?slug='+encodeURIComponent(s)+'&e='+e+(c?'&c='+encodeURIComponent(c):'')+(tp?'&t='+encodeURIComponent(tp):'');if(navigator.sendBeacon){navigator.sendBeacon(u);}else{fetch(u,{keepalive:true});}}catch(x){}}
 t('view');
 document.addEventListener('click',function(ev){var a=ev.target&&ev.target.closest?ev.target.closest('a.demo'):null;if(a){t('cta');}},true);
 var sel='';var nt=document.getElementById('nothanks');var panel=document.getElementById('declinePanel');var reasonsEl=document.getElementById('reasons');

@@ -14,12 +14,13 @@ module.exports = async (req, res) => {
   const event = (q.e === 'cta' || q.e === 'sent' || q.e === 'signup') ? q.e : 'view';
   const ch = q.c || q.p; // 'c' (channel) is canonical; 'p' kept for older links
   const platform = (ch === 'w' || ch === 's' || ch === 'e') ? ch : ''; // how it was sent
+  const tpl = String(q.t || '').replace(/[^a-z0-9]/gi, '').slice(0, 40); // which first-message template
   const ua = String(req.headers['user-agent'] || '').slice(0, 300);
 
   // never block the response on the DB write
   res.setHeader('Cache-Control', 'no-store');
   if (slug && !BOT_RE.test(ua)) {
-    try { await recordEvent(slug, event, ua, platform); } catch (e) { /* fail soft */ }
+    try { await recordEvent(slug, event, ua, platform, tpl); } catch (e) { /* fail soft */ }
   }
   res.status(204).end();
 };

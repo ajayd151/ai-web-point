@@ -178,6 +178,7 @@ module.exports = async (req, res) => {
     opensByDow: dows,
     daily,
     rows,
+    byTemplate: d.byTemplate || [],
     insights,
   });
 };
