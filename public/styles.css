@@ -344,6 +344,27 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 .mini.rc-prowl { background: linear-gradient(90deg, var(--blue), var(--mauve)); }
 .mini.rc-pounce { background: linear-gradient(90deg, #f59e0b, #ef6c00); }
 .mini:hover { filter: brightness(0.97); }
+/* tidy card action hierarchy */
+.card-actions { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.ca-prow { display: flex; gap: 8px; }
+.ca-btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 12px; border-radius: 11px; font-weight: 700; font-size: 14px; border: 1.5px solid var(--line); background: #fff; color: var(--ink); cursor: pointer; line-height: 1.2; }
+.ca-btn:hover { filter: brightness(0.98); }
+.ca-call { background: #16a34a; color: #fff; border-color: #16a34a; }
+.ca-call.added { background: #eaf6ee; color: #16794a; border-color: #cdebd8; cursor: default; }
+.ca-msg:hover { border-color: var(--blue); color: var(--blue); }
+.ca-gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); color: #fff; border: none; }
+.ca-sub { font-size: 11px; font-weight: 600; background: rgba(255,255,255,.25); padding: 1px 7px; border-radius: 20px; }
+.ca-block { background: none; border: none; color: #b91c1c; font-size: 12.5px; padding: 4px; cursor: pointer; align-self: center; }
+.ca-block:hover { text-decoration: underline; }
+/* quick message modal */
+.qm-preview { white-space: pre-wrap; background: #f7f8fb; border: 1px solid var(--line); border-radius: 10px; padding: 12px; font-size: 14px; line-height: 1.5; margin: 10px 0; max-height: 240px; overflow: auto; }
+.qm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.qm-btn { flex: 1 1 110px; text-align: center; padding: 12px; border-radius: 10px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.qm-btn.call { background: #eef2ff; color: #3730a3; }
+.qm-btn.sms { background: #0ea5e9; color: #fff; }
+.qm-btn.wa { background: #16a34a; color: #fff; }
+.qm-btn:hover { filter: brightness(0.97); }
+.qm-note { margin-top: 10px; font-size: 12.5px; }
 .sent-yes { font-size: 12.5px; font-weight: 700; color: #15803d; }
 .sent-no { font-size: 12.5px; color: var(--muted); }
 /* Block / do-not-contact */

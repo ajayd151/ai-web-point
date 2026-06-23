@@ -494,6 +494,27 @@
     </div>
   </div>
 
+  <!-- QUICK MESSAGE (no mockup) MODAL -->
+  <div id="qm-modal" class="modal hidden">
+    <div class="modal-card">
+      <div class="preview-head">
+        <h2 id="qm-title">💬 Message</h2>
+        <button id="qm-close" class="ghost">Close</button>
+      </div>
+      <div class="qm-body">
+        <p class="muted">Send a quick first message now, no mockup needed. Pick which template version to use.</p>
+        <label class="block"><span>Template version</span><select id="qm-template"></select></label>
+        <div class="qm-preview" id="qm-preview"></div>
+        <div class="qm-actions">
+          <a id="qm-call" class="qm-btn call" title="Call now">📞 Call</a>
+          <a id="qm-sms" class="qm-btn sms" target="_blank" rel="noopener" title="Open SMS with the message ready">💬 SMS</a>
+          <a id="qm-wa" class="qm-btn wa" target="_blank" rel="noopener" title="Open WhatsApp (daily cap protects your number)">🟢 WhatsApp</a>
+        </div>
+        <p class="qm-note muted" id="qm-note"></p>
+      </div>
+    </div>
+  </div>
+
   <!-- LEAD PROFILE MODAL -->
   <div id="lead-modal" class="modal hidden">
     <div class="modal-card wide">

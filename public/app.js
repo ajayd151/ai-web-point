@@ -20,7 +20,7 @@ const SETTINGS_DEFAULTS = {
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
   followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not, happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
-  waCap: 10, // hard daily WhatsApp send cap (ban protection)
+  waCap: 3, // hard daily WhatsApp send cap (ban protection; low by design for experimenting)
   grammarFix: true, // AI tidies the first message's grammar when sent (default on)
 };
 function loadSettings() {
@@ -182,8 +182,8 @@ function saveEditingTemplate() {
     renderTemplateManager();
   });
   $('set-wa-cap').addEventListener('change', () => {
-    const v = parseInt($('set-wa-cap').value, 10) || 10;
-    if (v > 10) alert('⚠️ Heads up: more than 10 WhatsApp sends a day raises the risk of another ban, especially on a number that has already been restricted.');
+    const v = parseInt($('set-wa-cap').value, 10) || 3;
+    if (v > 3) alert('⚠️ Heads up: you set this above 3. More cold WhatsApp a day raises the risk of another ban, especially on a number that has already been restricted. Keep it low while experimenting.');
     updateWaToday();
   });
 })();
@@ -485,21 +485,35 @@ function card(b) {
     el.appendChild(lab);
   }
 
-  // calls-first: the phone is the safe (and warmest) first touch
+  // ---- actions, tidy hierarchy (icon + label) -----------------------------
   const onList = isOnCallList(b, rec);
+  const actions = document.createElement('div');
+  actions.className = 'card-actions';
+
+  // primary row: the two free, everyday actions side by side
+  const prow = document.createElement('div');
+  prow.className = 'ca-prow';
   const callBtn = document.createElement('button');
-  callBtn.className = 'gen call-add' + (onList ? ' added' : '');
-  callBtn.textContent = onList ? '✓ On call list' : '📞 Add to call list';
+  callBtn.className = 'ca-btn ca-call' + (onList ? ' added' : '');
+  callBtn.innerHTML = onList ? '✓ On call list' : '📞 Add to call list';
   callBtn.title = 'Queue this business for a phone call (the safest first contact)';
   if (onList) callBtn.disabled = true;
   else callBtn.addEventListener('click', () => addToCallList(b, rec, callBtn));
-  el.appendChild(callBtn);
+  const msgBtn = document.createElement('button');
+  msgBtn.className = 'ca-btn ca-msg';
+  msgBtn.innerHTML = '💬 Message';
+  msgBtn.title = 'Send a quick SMS or WhatsApp now, no mockup needed';
+  msgBtn.addEventListener('click', () => openQuickMessage(b, rec));
+  prow.appendChild(callBtn); prow.appendChild(msgBtn);
+  actions.appendChild(prow);
 
-  const btn = document.createElement('button');
-  btn.className = 'gen';
-  btn.textContent = rec ? 'Regenerate mockup' : 'Generate website mockup';
-  btn.addEventListener('click', () => openGenerateModal(b));
-  el.appendChild(btn);
+  // secondary: generate a mockup, clearly marked as spending a credit
+  const genBtn = document.createElement('button');
+  genBtn.className = 'ca-btn ca-gen';
+  genBtn.innerHTML = (rec ? '🖼️ Regenerate mockup' : '🖼️ Generate mockup') + ' <span class="ca-sub">1 credit</span>';
+  genBtn.title = rec ? 'Make a fresh mockup (uses 1 credit)' : 'Create an AI website mockup to send (uses 1 credit)';
+  genBtn.addEventListener('click', () => openGenerateModal(b));
+  actions.appendChild(genBtn);
 
   // follow-up button: only once you've messaged them, and only after 24h
   if (mi) {
@@ -515,7 +529,7 @@ function card(b) {
       fb.disabled = true;
       fb.textContent = ready ? '↩ Follow-up: open the mockup to send' : '↩ Follow-up unlocks 24h after your first message';
     }
-    el.appendChild(fb);
+    actions.appendChild(fb);
   }
 
   // once a mockup exists, you can Prowl + Pounce this business straight from here
@@ -526,14 +540,17 @@ function card(b) {
     const pb = document.createElement('button'); pb.className = 'mini rc-prowl'; pb.textContent = '🐾 Prowl'; pb.addEventListener('click', () => openProwl(lead));
     const cb = document.createElement('button'); cb.className = 'mini rc-pounce'; cb.textContent = '🐆 Pounce'; cb.addEventListener('click', () => openPounce(lead));
     acts.appendChild(pb); acts.appendChild(cb);
-    el.appendChild(acts);
+    actions.appendChild(acts);
   }
+
   const blockBtn = document.createElement('button');
-  blockBtn.className = 'card-block';
-  blockBtn.textContent = '🚫 Block (not interested)';
+  blockBtn.className = 'ca-block';
+  blockBtn.innerHTML = '🚫 Block';
   blockBtn.title = 'Hide this business and never contact them';
   blockBtn.addEventListener('click', () => confirmBlock(b, () => renderResults(lastSearchResults)));
-  el.appendChild(blockBtn);
+  actions.appendChild(blockBtn);
+
+  el.appendChild(actions);
   return el;
 }
 
@@ -906,6 +923,72 @@ function renderFirstSendLinks(tpl) {
     });
   }
 }
+// ---- 💬 Quick Message (no mockup): send a first message straight from a search card ----
+// Call / SMS / WhatsApp (guarded by the daily cap). No mockup means no link, so it's a
+// no-link send, recorded against a stable dm- key so it shows in the template stats.
+let qmCtx = null;
+let qmToken = 0;
+function openQuickMessage(b, rec) {
+  const phone = (b.phones && b.phones[0]) || '';
+  const mobile = phone && window.BizData.isUkMobile(phone);
+  qmCtx = { b, rec, phone, mobile, tplId: null };
+  $('qm-title').textContent = '💬 Message ' + b.name;
+  const list = firstTemplates();
+  const activeId = activeFirstTemplate().id;
+  $('qm-template').innerHTML = list.map((t) => `<option value="${esc(t.id)}"${t.id === activeId ? ' selected' : ''}>${esc(tplLabel(t))}</option>`).join('');
+  $('qm-note').textContent = !mobile
+    ? (phone ? 'Only Call is available, ' + phone + ' looks like a landline (SMS and WhatsApp need a mobile).' : 'No mobile number listed, so SMS and WhatsApp are unavailable.')
+    : 'SMS and WhatsApp open with your message pre-filled, you review and press send. WhatsApp is capped daily to protect your number.';
+  renderQuickMessage();
+  $('qm-modal').classList.remove('hidden');
+}
+function renderQuickMessage() {
+  if (!qmCtx) return;
+  const { b, phone, mobile } = qmCtx;
+  const tpl = firstTemplateById($('qm-template').value);
+  qmCtx.tplId = tpl.id;
+  const business = { name: b.name, category: b.category, location: b.location, id: b.id };
+  const msg = fillWaMessage(tpl.body, business, '', ''); // no link (no mockup), no contact name
+  $('qm-preview').textContent = msg;
+  const call = $('qm-call'), sms = $('qm-sms'), wa = $('qm-wa');
+  call.href = phone ? 'tel:' + smsNumber(phone) : '#';
+  call.style.display = phone ? '' : 'none';
+  sms.style.display = mobile ? '' : 'none';
+  wa.style.display = mobile ? '' : 'none';
+  if (mobile) {
+    sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(msg);
+    wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(msg);
+    if (loadSettings().grammarFix !== false) {
+      const myTok = ++qmToken;
+      grammarFixMessage(msg).then((fixed) => {
+        if (myTok !== qmToken || !fixed || fixed === msg) return;
+        $('qm-preview').textContent = fixed;
+        sms.href = 'sms:' + smsNumber(phone) + '?&body=' + encodeURIComponent(fixed);
+        wa.href = 'https://wa.me/' + toWaNumber(phone) + '?text=' + encodeURIComponent(fixed);
+      });
+    }
+  }
+}
+function quickSent(channel) {
+  if (!qmCtx) return;
+  const b = qmCtx.b;
+  markMessaged(b, channel); // local "messaged" flag (keyed by business, no slug needed)
+  // a no-link 'sent' against a stable dm- key so it shows in Message template statistics
+  // as a no-link send (no mockup → no opens). dm- keys are excluded from the mockup tables.
+  const dmSlug = ('dm-' + bizKey(b)).replace(/[^a-z0-9-]/gi, '').slice(0, 120);
+  const tp = qmCtx.tplId ? '&t=' + encodeURIComponent(qmCtx.tplId) : '';
+  try {
+    const u = '/api/track?slug=' + encodeURIComponent(dmSlug) + '&e=sent&c=' + channel + tp;
+    if (navigator.sendBeacon) navigator.sendBeacon(u); else fetch(u, { keepalive: true }).catch(() => {});
+  } catch (e) {}
+  $('qm-modal').classList.add('hidden');
+}
+if ($('qm-close')) $('qm-close').addEventListener('click', () => $('qm-modal').classList.add('hidden'));
+if ($('qm-modal')) $('qm-modal').addEventListener('click', (e) => { if (e.target === $('qm-modal')) $('qm-modal').classList.add('hidden'); });
+if ($('qm-template')) $('qm-template').addEventListener('change', renderQuickMessage);
+if ($('qm-sms')) $('qm-sms').addEventListener('click', () => quickSent('s'));
+if ($('qm-wa')) $('qm-wa').addEventListener('click', () => quickSent('w'));
+
 // log the send server-side (channel + exact time) for later send-time analysis
 function recordSendServer(channel) {
   if (!currentSlug) return;

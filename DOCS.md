@@ -741,6 +741,15 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-20**
+- **💬 Message direct from search (no mockup) + tidier cards:** search cards were rebuilt into a clean
+  hierarchy (icon + label): a primary row (📞 Add to call list · 💬 Message), then 🖼️ Generate mockup
+  marked **"1 credit"**, then a small ghost 🚫 Block. The new **Message** action opens a modal to send a
+  first message **without generating a mockup** (saves a credit): pick a template version, then **📞 Call
+  / 💬 SMS / 🟢 WhatsApp**. WhatsApp routes through the existing daily-cap guard. No mockup means no link,
+  so it's a **no-link send**, recorded against a stable `dm-<bizkey>` slug so it appears in **Message
+  template statistics** as a no-link send (excluded from the mockup-funnel tables via `slug NOT LIKE
+  'dm-%'`). Grammar Fix applies to the message. **WhatsApp daily cap default lowered 10 → 3** (low by
+  design for experimenting; the warning now triggers above 3).
 - **Auto template versions (V1, V2…):** every template gets an automatic, incremental version number
   (no typing "V" yourself), shown as a badge in the editor and as a `V{n} · {name}` label in the edit
   dropdown, the send picker, and the By-template stats. Stored as `v` per template + a monotonic
