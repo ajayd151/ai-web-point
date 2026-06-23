@@ -301,7 +301,7 @@ let lastBatchFull = false;   // was the last batch a full page (more may exist)?
 function currentSearchFilters() {
   const starBuckets = Array.from(document.querySelectorAll('.f-star:checked')).map((c) => Number(c.value));
   const num = (id) => ($(id).value === '' ? null : Number($(id).value));
-  return { website: $('f-website').value, phone: $('f-phone').value, email: $('f-email').value, ratingsFrom: num('f-ratingsFrom'), ratingsTo: num('f-ratingsTo'), starBuckets };
+  return { website: $('f-website').value, phone: $('f-phone').value, email: $('f-email').value, company: $('f-company').value, ratingsFrom: num('f-ratingsFrom'), ratingsTo: num('f-ratingsTo'), starBuckets };
 }
 function searchExcludeIds() {
   const messagedMode = $('f-messaged').value;
@@ -1375,6 +1375,7 @@ function runRecentSearch(r) {
   $('f-website').value = f.website || 'any';
   $('f-phone').value = f.phone || 'any';
   $('f-email').value = f.email || 'any';
+  $('f-company').value = f.company || 'any';
   $('f-ratingsFrom').value = (f.ratingsFrom != null ? f.ratingsFrom : '');
   $('f-ratingsTo').value = (f.ratingsTo != null ? f.ratingsTo : '');
   const sb = f.starBuckets || [];
@@ -1571,7 +1572,7 @@ function renderDossier(d, lead) {
   }
   const services = (d.services && d.services.length) ? `<h3>What they do</h3><div class="chips">${d.services.map((s) => `<span class="chip site">${esc(s)}</span>`).join('')}</div>` : '';
   const strengths = (d.strengths && d.strengths.length) ? `<div class="dos-block"><h3>✅ Acknowledge first (builds rapport)</h3><div class="cue-list">${d.strengths.map((s) => `<div class="cue sev-good">${esc(s)}</div>`).join('')}</div></div>` : '';
-  const weak = (d.weaknesses && d.weaknesses.length) ? `<div class="dos-block"><h3>🎯 Where they're losing out</h3><div class="cue-list">${d.weaknesses.map((w) => `<div class="cue sev-${w.severity === 'high' ? 'high' : 'med'}">${esc(w.label)}</div>`).join('')}</div></div>` : '';
+  const weak = (d.weaknesses && d.weaknesses.length) ? `<div class="dos-block"><h3>🎯 Where they're losing out, and what you say</h3><table class="weak-table"><thead><tr><th>The gap</th><th>Your pitch (the fix + the win)</th></tr></thead><tbody>${d.weaknesses.map((w) => `<tr class="sev-${w.severity === 'high' ? 'high' : 'med'}"><td class="wt-gap">${esc(w.label)}</td><td class="wt-fix">${w.solution ? esc(w.solution) : '<span class="muted">Re-run to generate</span>'}</td></tr>`).join('')}</tbody></table></div>` : '';
   const ammo = (d.ammunition && d.ammunition.length) ? `<div class="dos-ammo"><h3>💬 Personalised AI talking points</h3><ol class="say-list">${d.ammunition.map((a) => `<li>${esc(a)}</li>`).join('')}</ol></div>` : '';
   const objections = (d.objections && d.objections.length) ? `<div class="dos-block dos-obj"><h3>🛡️ If they push back</h3>${d.objections.map((o) => `<div class="obj-item"><div class="obj-q">“${esc(o.objection)}”</div><div class="obj-a">${esc(o.response)}</div></div>`).join('')}</div>` : '';
   const opener = d.openingLine ? `<div class="dos-open"><h3>☎️ Your AI opener</h3><p>${esc(d.openingLine)}</p></div>` : '';

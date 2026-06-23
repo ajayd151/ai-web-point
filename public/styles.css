@@ -526,6 +526,20 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .cue.sev-high { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
 .cue.sev-med { background: #fff7ed; border-color: #f59e0b; color: #9a3412; }
 .cue.sev-good { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+/* "where they're losing out" gap -> pitch table */
+.weak-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+.weak-table thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); font-weight: 700; padding: 0 13px 2px; }
+.weak-table td { padding: 11px 13px; vertical-align: top; font-size: 14.5px; line-height: 1.5; }
+.weak-table .wt-gap { width: 38%; font-weight: 600; border-left: 5px solid #ef4444; border-radius: 10px 0 0 10px; background: #fef2f2; color: #991b1b; }
+.weak-table tr.sev-med .wt-gap { border-left-color: #f59e0b; background: #fff7ed; color: #9a3412; }
+.weak-table .wt-fix { background: #ecfdf5; color: #065f46; border-radius: 0 10px 10px 0; }
+.weak-table .wt-fix::before { content: '✅ '; }
+@media (max-width: 560px) {
+  .weak-table, .weak-table tbody, .weak-table tr, .weak-table td { display: block; width: auto; }
+  .weak-table thead { display: none; }
+  .weak-table .wt-gap { border-radius: 10px 10px 0 0; }
+  .weak-table .wt-fix { border-radius: 0 0 10px 10px; }
+}
 /* objection handling */
 .dos-obj .obj-item { background: var(--bg); border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; margin-bottom: 10px; }
 .obj-q { font-size: 14px; font-style: italic; color: var(--muted); margin-bottom: 6px; }

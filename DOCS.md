@@ -741,6 +741,15 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-20**
+- **Prowl "losing out" is now a gap → pitch table:** each weakness sits next to a one-line **solution
+  (the fix + the win)** the operator can say (e.g. "I can have a website live within 24 hours so you
+  show up when locals Google a plumber, and those jobs come to you"). New `solution` field per weakness
+  in `lib/intel.js`, rendered as a 2-column `.weak-table` (gap in red/amber, pitch in green, stacks on
+  mobile). Old dossiers show "Re-run to generate" in the pitch column until re-run.
+- **Company type filter (by name):** a new search filter, **Any / Limited (Ltd in name) / No "Ltd" in
+  name** (`f-company` → `filters.company` → `lib/filters.js` `matchCompany`). HEURISTIC ONLY: Google
+  gives no company type, so it reads Ltd/Limited/PLC/LLP off the business name. Verified company type
+  still needs Companies House (a per-business Prowl lookup, not feasible across a whole search).
 - **Prowl opener + talking points, less generic (prompt rewrite):** the AI opener and 💬 talking
   points were too cheesy/about-us. New `lib/intel.js` prompt forces: the **opener** to be spoken
   English that leads with their situation and ends on a question (e.g. "you've got 26 five-star reviews
