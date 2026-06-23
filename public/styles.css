@@ -513,8 +513,9 @@ button.call-add.added { background: #ecfdf5; color: #047857; border: 1px solid #
 .dos-table a { color: var(--blue); text-decoration: none; }
 .dos-ammo { background: linear-gradient(120deg, rgba(67,117,237,.08), rgba(196,133,177,.08)); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin: 16px 0; }
 .dos-ammo h3 { margin: 0 0 10px; }
-.say-list { margin: 0; padding-left: 20px; }
-.say-list li { font-size: 15.5px; line-height: 1.7; margin-bottom: 9px; }
+.say-list { margin: 0; padding-left: 24px; }
+.say-list li { font-size: 15.5px; line-height: 1.7; margin-bottom: 11px; padding-left: 4px; }
+ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .dos-open { background: #eff5ff; border: 1.5px solid #bcd3f7; border-radius: 12px; padding: 14px 18px; margin: 8px 0 14px; }
 .dos-open h3 { margin: 0 0 6px; }
 .dos-open p { margin: 0; font-size: 16.5px; line-height: 1.55; font-weight: 500; color: var(--ink); }

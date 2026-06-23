@@ -1572,7 +1572,7 @@ function renderDossier(d, lead) {
   const services = (d.services && d.services.length) ? `<h3>What they do</h3><div class="chips">${d.services.map((s) => `<span class="chip site">${esc(s)}</span>`).join('')}</div>` : '';
   const strengths = (d.strengths && d.strengths.length) ? `<div class="dos-block"><h3>✅ Acknowledge first (builds rapport)</h3><div class="cue-list">${d.strengths.map((s) => `<div class="cue sev-good">${esc(s)}</div>`).join('')}</div></div>` : '';
   const weak = (d.weaknesses && d.weaknesses.length) ? `<div class="dos-block"><h3>🎯 Where they're losing out</h3><div class="cue-list">${d.weaknesses.map((w) => `<div class="cue sev-${w.severity === 'high' ? 'high' : 'med'}">${esc(w.label)}</div>`).join('')}</div></div>` : '';
-  const ammo = (d.ammunition && d.ammunition.length) ? `<div class="dos-ammo"><h3>💬 Personalised AI talking points</h3><ul class="say-list">${d.ammunition.map((a) => `<li>${esc(a)}</li>`).join('')}</ul></div>` : '';
+  const ammo = (d.ammunition && d.ammunition.length) ? `<div class="dos-ammo"><h3>💬 Personalised AI talking points</h3><ol class="say-list">${d.ammunition.map((a) => `<li>${esc(a)}</li>`).join('')}</ol></div>` : '';
   const objections = (d.objections && d.objections.length) ? `<div class="dos-block dos-obj"><h3>🛡️ If they push back</h3>${d.objections.map((o) => `<div class="obj-item"><div class="obj-q">“${esc(o.objection)}”</div><div class="obj-a">${esc(o.response)}</div></div>`).join('')}</div>` : '';
   const opener = d.openingLine ? `<div class="dos-open"><h3>☎️ Your AI opener</h3><p>${esc(d.openingLine)}</p></div>` : '';
   // contact details + quick actions (so you can act on the intel right here)

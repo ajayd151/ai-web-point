@@ -741,6 +741,14 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-20**
+- **Prowl opener + talking points, less generic (prompt rewrite):** the AI opener and 💬 talking
+  points were too cheesy/about-us. New `lib/intel.js` prompt forces: the **opener** to be spoken
+  English that leads with their situation and ends on a question (e.g. "you've got 26 five-star reviews
+  but no website, is that on purpose or never got round to it?"), and the **talking points** to be
+  punchy, transformation/loss focused ("so they think 'I need that'"), with **at least one naming a real
+  nearby competitor** who has a website and is winning the work they're invisible for. Banned the
+  cliché phrases ("reach out", "fantastic reviews", "connect with even more customers", etc.). Talking
+  points are now a **numbered** list (`<ol>`). Existing dossiers need a ↻ Re-run to pick up the new style.
 - **💬 Message direct from search (no mockup) + tidier cards:** search cards were rebuilt into a clean
   hierarchy (icon + label): a primary row (📞 Add to call list · 💬 Message), then 🖼️ Generate mockup
   marked **"1 credit"**, then a small ghost 🚫 Block. The new **Message** action opens a modal to send a
