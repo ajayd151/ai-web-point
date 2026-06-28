@@ -750,10 +750,12 @@ Newest first. Reference sections above are the source of truth; this is a quick 
   saved on the device for **`RESULT_RETENTION_DAYS` (45, configurable, Super Admin / future per-tier)**,
   then auto-deleted. Stored in `aiwp_search_results` keyed by a search id (slim business fields only),
   with quota-guarded writes (evicts oldest if full). The **Recent searches** table shows a per-row
-  **⬇ CSV** (export that one search) and a retention note; expired rows show a dash. A new **⬇ Export…**
-  dialog (`#exp-modal`) exports across searches by **date range** (7/30/45 days or custom From/To) with
-  optional **keyword / area** filters, combined into one CSV with source columns. (The live current-search
-  ⬇ Export CSV button is unchanged.)
+  **⬇ CSV** (export that one search) and a retention note; expired rows show a dash. **Both** the
+  results-area button and the Recent-searches button now open ONE **⬇ Export… dialog** (`#exp-modal`)
+  with a "What to export" choice: **This search** (the live on-screen results, via `exportSearchCsv`,
+  includes status/prowled/messaged) or **Saved searches by date range** (7/30/45 days or custom From/To
+  + optional keyword/area, combined into one CSV with source columns). `openExport(scope)` sets the
+  default per button.
 - **💷 Rough API cost meter (new):** a small fixed pill bottom-right shows an **estimated** running daily
   API spend; click it for a per-action breakdown (Searches / Mockups / Prowls / Websites) + a disclaimer.
   Client-side: `recordSpend(kind)` increments `aiwp_spend` (per-device, resets daily) on each PAID action

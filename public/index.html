@@ -258,7 +258,7 @@
         <option value="msg-asc">Messaged: oldest first</option>
         <option value="msg-desc">Messaged: newest first</option>
       </select>
-      <button id="export-results" class="refresh-btn hidden" title="Download all these results as a CSV (company, website, phones, email, ratings, address)">⬇ Export CSV</button>
+      <button id="export-results" class="refresh-btn hidden" title="Export options: this search, or a date range of saved searches">⬇ Export…</button>
       <button id="refresh-results" class="refresh-btn hidden" title="Refresh the list, re-checks who you've messaged. No new search, no cost.">↻ Refresh</button>
     </div>
     <section id="results" class="results"></section>
@@ -293,21 +293,29 @@
           <button id="exp-close" class="ghost">Close</button>
         </div>
         <div class="exp-body">
-          <p class="muted">Download the businesses from searches you've already run. Pick a date range and (optionally) narrow by keyword or area.</p>
-          <label class="block"><span>Date range</span>
-            <select id="exp-range">
-              <option value="7">Last 7 days</option>
-              <option value="30" selected>Last 30 days</option>
-              <option value="45">Last 45 days (all kept)</option>
-              <option value="custom">Custom…</option>
+          <label class="block"><span>What to export</span>
+            <select id="exp-scope">
+              <option value="current">This search (the results on screen now)</option>
+              <option value="range">Saved searches, by date range</option>
             </select>
           </label>
-          <div id="exp-custom" class="exp-custom hidden">
-            <label class="block"><span>From</span><input id="exp-from" type="date" /></label>
-            <label class="block"><span>To</span><input id="exp-to" type="date" /></label>
+          <div id="exp-range-wrap">
+            <p class="muted">Download businesses from searches you've already run. Pick a date range and (optionally) narrow by keyword or area.</p>
+            <label class="block"><span>Date range</span>
+              <select id="exp-range">
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="45">Last 45 days (all kept)</option>
+                <option value="custom">Custom…</option>
+              </select>
+            </label>
+            <div id="exp-custom" class="exp-custom hidden">
+              <label class="block"><span>From</span><input id="exp-from" type="date" /></label>
+              <label class="block"><span>To</span><input id="exp-to" type="date" /></label>
+            </div>
+            <label class="block"><span>Keyword contains <span class="muted">(optional)</span></span><input id="exp-keyword" type="text" placeholder="e.g. plumber" /></label>
+            <label class="block"><span>Area contains <span class="muted">(optional)</span></span><input id="exp-area" type="text" placeholder="e.g. Wolverhampton" /></label>
           </div>
-          <label class="block"><span>Keyword contains <span class="muted">(optional)</span></span><input id="exp-keyword" type="text" placeholder="e.g. plumber" /></label>
-          <label class="block"><span>Area contains <span class="muted">(optional)</span></span><input id="exp-area" type="text" placeholder="e.g. Wolverhampton" /></label>
           <p id="exp-count" class="exp-count muted"></p>
           <div class="modal-actions">
             <button id="exp-go" class="primary btn">⬇ Export CSV</button>

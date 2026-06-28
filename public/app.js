@@ -289,7 +289,7 @@ async function refreshFeedback(btn, action) {
   setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 1300);
 }
 $('refresh-results').addEventListener('click', (e) => refreshFeedback(e.currentTarget, () => renderResults(lastSearchResults)));
-$('export-results').addEventListener('click', exportSearchCsv);
+$('export-results').addEventListener('click', () => openExport('current'));
 $('loadmore-btn').addEventListener('click', loadMoreResults);
 $('sort-order').addEventListener('change', () => renderResults(lastSearchResults));
 ['industry', 'location'].forEach((id) =>
@@ -1474,13 +1474,30 @@ function expEntries() {
     return true;
   });
 }
+function openExport(scope) {
+  $('exp-scope').value = (scope === 'range') ? 'range' : 'current';
+  $('exp-range-wrap').classList.toggle('hidden', $('exp-scope').value !== 'range');
+  updateExpCount();
+  $('exp-modal').classList.remove('hidden');
+}
 function updateExpCount() {
+  if ($('exp-scope').value === 'current') {
+    const n = (lastSearchResults || []).filter((b) => !isBlocked(b)).length;
+    $('exp-count').textContent = n + ' business' + (n === 1 ? '' : 'es') + ' from the current search (includes live status, prowled, messaged).';
+    return;
+  }
   const entries = expEntries();
   const store = loadSearchResultsStore();
   const biz = entries.reduce((n, r) => n + ((store[r.id] && store[r.id].results) ? store[r.id].results.length : 0), 0);
   $('exp-count').textContent = entries.length + ' search' + (entries.length === 1 ? '' : 'es') + ', ' + biz + ' business' + (biz === 1 ? '' : 'es') + ' to export.';
 }
 function runExport() {
+  if ($('exp-scope').value === 'current') {
+    if (!(lastSearchResults || []).filter((b) => !isBlocked(b)).length) { alert('No current results to export, run a search first.'); return; }
+    exportSearchCsv(); // the rich, live export of the on-screen results
+    $('exp-modal').classList.add('hidden');
+    return;
+  }
   const entries = expEntries();
   if (!entries.length) { alert('No saved searches in that range.'); return; }
   const store = loadSearchResultsStore();
@@ -1489,7 +1506,8 @@ function runExport() {
   downloadCsv('sitepounce-search-results.csv', EXPORT_COLS, rows);
   $('exp-modal').classList.add('hidden');
 }
-$('rs-export').addEventListener('click', () => { $('exp-modal').classList.remove('hidden'); updateExpCount(); });
+$('rs-export').addEventListener('click', () => openExport('range'));
+$('exp-scope').addEventListener('change', () => { $('exp-range-wrap').classList.toggle('hidden', $('exp-scope').value !== 'range'); updateExpCount(); });
 $('exp-close').addEventListener('click', () => $('exp-modal').classList.add('hidden'));
 $('exp-modal').addEventListener('click', (e) => { if (e.target === $('exp-modal')) $('exp-modal').classList.add('hidden'); });
 $('exp-range').addEventListener('change', () => { $('exp-custom').classList.toggle('hidden', $('exp-range').value !== 'custom'); updateExpCount(); });
