@@ -48,7 +48,25 @@ Keep what already works, add only three new pieces. Simple by design.
 
 Why it is a no-brainer: **Scout undercuts LeadsGorilla's entry ($57).** **Apex sits in SiteSwan's builder range ($149 to $300) but also includes the lead-gen and outreach**, so it replaces buying SiteSwan and LeadsGorilla separately.
 
-Pricing is proposed, not final. We lock it once you are happy.
+Prices are kept in config so we can change them any time. Confirmed: **no free trial at launch** (we can add one later); the founding-member offer carries the early risk-reversal.
+
+### Feature comparison (pricing-page style, like LeadsGorilla's)
+
+| Feature | Scout | Hunter | Apex |
+|---|---|---|---|
+| Find no-website local businesses | Yes | Yes | Yes |
+| Leads found per month | 2,000 | 10,000 | Unlimited (fair use) |
+| Call List, CRM + status, outreach (call / SMS / WhatsApp) | Yes | Yes | Yes |
+| Engagement tracking + Performance dashboard | Yes | Yes | Yes |
+| Message templates + per-template stats | Yes | Yes | Yes |
+| Enquiry inbox | Yes | Yes | Yes |
+| AI website mockups per month | No | 250 | 1,000 |
+| Prowl AI call intelligence | No | Yes | Yes |
+| Live website builder (Pounce) | No | No | Yes |
+| Publish live + custom domains | No | No | Yes |
+| White-label branding | No | No | Yes (Phase 3) |
+| Top-up credits | Yes | Yes | Yes |
+| Support | Standard | Priority | Priority + onboarding |
 
 ---
 
@@ -67,7 +85,7 @@ Pricing is proposed, not final. We lock it once you are happy.
 Goal: ship a payable product fast, prove people pay, see how they use it.
 
 - **Accounts:** sign-up + login with **Email and Google** (Clerk).
-- **Payments:** **Stripe** subscriptions for the 3 tiers, in £ and $, plus a **free trial** (for example 7 days, or "25 leads + 3 mockups free") so they feel the website magic before paying.
+- **Payments:** **Stripe** subscriptions for the 3 tiers, in £ and $. **No free trial at launch** (we can add one later); the founding-member offer carries the early risk-reversal.
 - **Per-customer data separation:** each account only sees its own leads, mockups, sites, searches.
 - **Feature gating by plan:** mockups locked to Hunter+, the live website builder locked to Apex.
 - **Credits, not raw cost,** shown to customers.
@@ -112,13 +130,14 @@ Goal: ship a payable product fast, prove people pay, see how they use it.
 - Add a **light / dark toggle**, default **light**, the choice is remembered per user.
 - A fresh, **flat accent colour** (not the blue to mauve gradient).
 
-### New logo
+### New logo, CONFIRMED direction: Option A
 - A **flat, distinctive mark, not the typical gradient AI logo.**
-- Direction options to choose from (I will mock these up):
-  - A) A clean geometric **pounce** mark (a stylised paw or a downward pounce into a location pin).
-  - B) A confident **wordmark** with one distinctive accent (for example a paw or pin replacing a letter).
-  - C) A **pin + paw fusion** (lead-gen meets pounce).
+- **Option A chosen:** a clean geometric **pounce** mark, a stylised paw fused with a location pin (lead-gen meets pounce). I will mock a few variants of this to pick from.
 - Must work in light and dark and shrink to a favicon.
+
+### Colours, CONFIRMED direction
+- **Bright, positive, happy, flat colours. No gradients. Distinctive.** (Today's blue-to-mauve gradient goes.)
+- A bold primary plus one or two cheerful accents, on light backgrounds, clearly different from LeadsGorilla's yellow/purple.
 
 ---
 
@@ -148,12 +167,15 @@ Goal: ship a payable product fast, prove people pay, see how they use it.
 
 ---
 
-## 10. Decisions I need from you before we build
+## 10. Decisions, status
 
-1. **Auth platform:** Clerk (my pick, least disruption) or Supabase (one backend, like ScrollyVid)?
-2. **Prices:** happy with the proposed tiers, or adjust?
-3. **Trial:** time-based (7 days) or usage-based ("25 leads + 3 mockups free")?
-4. **Logo direction:** A, B or C above (I will mock options once you pick a lean).
-5. **Theme accent colour:** any preference, or shall I propose a couple?
+| Decision | Status |
+|---|---|
+| Prices | Confirmed (as proposed, kept in config so editable) |
+| Free trial | Confirmed: none at launch |
+| Logo | Confirmed: Option A (paw + pin) |
+| Colours | Confirmed: bright, happy, flat, no gradients |
+| Comparison table | Confirmed: include a LeadsGorilla-style feature table |
+| Auth platform | Open: Clerk (my recommendation) vs Supabase, still to confirm |
 
-When you have read this and are happy, say go and I will (1) create the build tracker, then (2) start Phase 1. The tracker is deliberately not created yet, since you may want changes.
+When you are happy with the mocked logo and homepage, say go and I will (1) create the build tracker, then (2) start Phase 1. The tracker is deliberately not created yet, since you may still want changes.
