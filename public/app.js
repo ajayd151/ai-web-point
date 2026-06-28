@@ -411,6 +411,7 @@ async function doSearch(append) {
       if (heroEl) { const cd = document.createElement('div'); cd.className = 'sh-cost'; cd.textContent = '💷 ~$' + sc.toFixed(2) + ' estimated for this search' + (areasCount > 1 ? ' (' + areasCount + ' areas searched)' : ''); heroEl.appendChild(cd); }
       const searchId = String(Date.now());
       lastSearchParams.id = searchId;
+      lastSearchParams.expanded = expanded; // remembered so the "want more" panel survives a reload/restore
       const nowIso = new Date().toISOString();
       saveRecentSearch({ id: searchId, date: nowIso, industry, location, filters, matched: data.matched != null ? data.matched : results.length, limit });
       saveSearchResults(searchId, { date: nowIso, industry, location }, lastSearchResults);
@@ -2829,5 +2830,6 @@ function restoreLastSearch() {
   const rb = $('restored-rerun');
   if (rb) rb.addEventListener('click', () => runRecentSearch({ industry: c.params.industry, location: c.params.location, filters: c.params.filters }));
   renderResults(lastSearchResults);
+  try { renderWantMore(c.params.industry, c.params.expanded || []); } catch (e) { /* never break restore */ }
 }
 try { restoreLastSearch(); } catch (e) { /* a restore problem must never break the app */ }
