@@ -370,10 +370,10 @@ async function doSearch(append) {
     const data = await resp.json();
     if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
     if (!resp.ok) throw new Error(data.error || 'Search failed');
-    recordSpend('search'); // each Google Places call costs, fresh or load-more
     const results = data.results || [];
     lastBatchFull = results.length >= limit;
     if (append) {
+      recordSpend('search', COST_EST.search); // load-more = one more dig
       const have = new Set(lastSearchResults.map((b) => b.id));
       const fresh = results.filter((b) => !have.has(b.id));
       lastSearchResults = lastSearchResults.concat(fresh);
@@ -396,6 +396,11 @@ async function doSearch(append) {
       }
       $('summary').innerHTML = html;
       animateCounts($('summary'));
+      // per-search cost estimate, scaled by how many areas Google was queried across
+      const areasCount = 1 + expanded.length;
+      const sc = recordSpend('search', estSearchCost(areasCount));
+      const heroEl = $('summary').querySelector('.search-hero');
+      if (heroEl) { const cd = document.createElement('div'); cd.className = 'sh-cost'; cd.textContent = '💷 ~$' + sc.toFixed(2) + ' estimated for this search' + (areasCount > 1 ? ' (' + areasCount + ' areas searched)' : ''); heroEl.appendChild(cd); }
       saveRecentSearch({ date: new Date().toISOString(), industry, location, filters, matched: data.matched != null ? data.matched : results.length, limit });
       renderRecentSearches();
     }
@@ -1012,27 +1017,33 @@ function updateWaToday() { const el = $('wa-today'); if (el) el.textContent = wa
 // ---- 💷 rough API cost meter (ESTIMATES only; real spend is on the provider dashboards) ----
 // USD per action, ballpark: Google Places search, gpt-image-1 mockup (medium 1536x1024 ~6c),
 // Prowl (gpt-4o-mini + Google details), Pounce website. Tune COST_EST if your bills differ.
-const COST_EST = { search: 0.07, mockup: 0.07, prowl: 0.05, pounce: 0.06 };
+const COST_EST = { search: 0.05, mockup: 0.07, prowl: 0.05, pounce: 0.06 }; // USD; search = per AREA searched
 const COST_LABEL = { search: 'Searches', mockup: 'Mockups', prowl: 'Prowls', pounce: 'Websites' };
 function loadSpend() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem('aiwp_spend') || '{}'); } catch (e) {}
-  return (s.date === todayKey()) ? s : { date: todayKey(), search: 0, mockup: 0, prowl: 0, pounce: 0 };
+  if (s.date !== todayKey()) s = { date: todayKey() };
+  Object.keys(COST_EST).forEach((k) => { s[k] = s[k] || 0; s[k + 'C'] = s[k + 'C'] || 0; }); // count + accrued cost
+  return s;
 }
-function spendTotal(s) { return Object.keys(COST_EST).reduce((t, k) => t + (s[k] || 0) * COST_EST[k], 0); }
-function recordSpend(kind) {
-  if (!COST_EST[kind]) return;
+function spendTotal(s) { return Object.keys(COST_EST).reduce((t, k) => t + (s[k + 'C'] || 0), 0); }
+function estSearchCost(areas) { return Math.max(1, areas || 1) * COST_EST.search; }
+function recordSpend(kind, amount) {
+  if (!COST_EST[kind]) return 0;
+  const c = (amount != null ? amount : COST_EST[kind]);
   const s = loadSpend();
   s[kind] = (s[kind] || 0) + 1;
+  s[kind + 'C'] = (s[kind + 'C'] || 0) + c;
   try { localStorage.setItem('aiwp_spend', JSON.stringify(s)); } catch (e) {}
   renderSpendMeter(true);
+  return c;
 }
 let spendOpen = false;
 function renderSpendMeter(flash) {
   const el = $('spend-meter'); if (!el) return;
   const s = loadSpend();
   const tot = spendTotal(s);
-  const rows = Object.keys(COST_EST).map((k) => `<div class="sp-row"><span>${COST_LABEL[k]}: ${s[k] || 0}</span><span>~$${((s[k] || 0) * COST_EST[k]).toFixed(2)}</span></div>`).join('');
+  const rows = Object.keys(COST_EST).map((k) => `<div class="sp-row"><span>${COST_LABEL[k]}: ${s[k] || 0}</span><span>~$${(s[k + 'C'] || 0).toFixed(2)}</span></div>`).join('');
   el.innerHTML = `<button id="spend-pill" title="Rough estimate of today's API cost, click for the breakdown">💷 Today ~$${tot.toFixed(2)} <span class="muted">est</span></button>` +
     `<div id="spend-panel"${spendOpen ? '' : ' class="hidden"'}><div class="sp-head">Estimated API cost today</div>${rows}<div class="sp-row sp-tot"><span>Total</span><span>~$${tot.toFixed(2)}</span></div><p class="sp-note">Rough estimates in USD. Your real spend is on your <b>Google Cloud billing</b> and <b>OpenAI usage</b> dashboards. Counts reset daily on this device.</p></div>`;
   $('spend-pill').addEventListener('click', () => { spendOpen = !spendOpen; renderSpendMeter(); });

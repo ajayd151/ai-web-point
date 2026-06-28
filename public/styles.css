@@ -376,6 +376,7 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 #spend-panel .sp-row { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
 #spend-panel .sp-tot { border-top: 1px solid var(--line); margin-top: 7px; padding-top: 7px; font-weight: 700; }
 #spend-panel .sp-note { font-size: 11.5px; color: var(--muted); margin: 9px 0 0; line-height: 1.45; }
+.sh-cost { margin-top: 12px; font-size: 13px; font-weight: 600; color: #475569; background: rgba(255,255,255,.55); border-radius: 8px; padding: 6px 10px; display: inline-block; }
 .sent-yes { font-size: 12.5px; font-weight: 700; color: #15803d; }
 .sent-no { font-size: 12.5px; color: var(--muted); }
 /* Block / do-not-contact */

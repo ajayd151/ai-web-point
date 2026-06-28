@@ -747,7 +747,9 @@ Newest first. Reference sections above are the source of truth; this is a quick 
   (search hit, fresh mockup, fresh Prowl `cached:false`, fresh Pounce), costed by the `COST_EST` constants
   (USD ballparks: search 0.07, mockup 0.07 [gpt-image-1 medium 1536x1024 ~6c], prowl 0.05, pounce 0.06).
   Clearly labelled an ESTIMATE, real spend is on the Google Cloud + OpenAI dashboards. NB Google scrapped
-  the universal $200/month free credit, so searches are no longer free. (Search-results CSV export already
+  the universal $200/month free credit, so searches are no longer free. **Per-search cost** is also shown
+  on the results banner ("💷 ~$X estimated for this search (N areas)"), scaled by how many areas the deep
+  search queried; the meter now accrues actual estimated dollars (`COST_EST.search` is per area). (Search-results CSV export already
   existed via the ⬇ Export CSV button; past searches don't store their result lists, only criteria.)
 - **Prowl "losing out" is now a gap → pitch table:** each weakness sits next to a one-line **solution
   (the fix + the win)** the operator can say (e.g. "I can have a website live within 24 hours so you
