@@ -13,8 +13,9 @@ import sys
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, 'DOCS.md')
-OUT = os.path.join(ROOT, 'DOCS.docx')
+# optional: python3 scripts/md_to_docx.py <input.md> <output.docx> (defaults to DOCS)
+SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'DOCS.md')
+OUT = sys.argv[2] if len(sys.argv) > 2 else os.path.join(ROOT, 'DOCS.docx')
 
 
 def xml_escape(s):
