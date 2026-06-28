@@ -741,6 +741,19 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-20**
+- **🔎 "Want more?" suggestions (new):** below the results, a panel offers one-click ways to get more
+  leads, **related search terms** (curated per-trade list + generic fallback, client-side, no cost) and
+  **nearby areas** (the towns this search expanded into). Clicking a chip pre-fills the search box and
+  scrolls to the top (it does NOT auto-run, so you choose when to spend). Also: the banner's lead count
+  now updates after Load more, and the "that's everything" message points you to the panel.
+- **💾 45-day search-results retention + export with date range (new):** every search's results are now
+  saved on the device for **`RESULT_RETENTION_DAYS` (45, configurable, Super Admin / future per-tier)**,
+  then auto-deleted. Stored in `aiwp_search_results` keyed by a search id (slim business fields only),
+  with quota-guarded writes (evicts oldest if full). The **Recent searches** table shows a per-row
+  **⬇ CSV** (export that one search) and a retention note; expired rows show a dash. A new **⬇ Export…**
+  dialog (`#exp-modal`) exports across searches by **date range** (7/30/45 days or custom From/To) with
+  optional **keyword / area** filters, combined into one CSV with source columns. (The live current-search
+  ⬇ Export CSV button is unchanged.)
 - **💷 Rough API cost meter (new):** a small fixed pill bottom-right shows an **estimated** running daily
   API spend; click it for a per-action breakdown (Searches / Mockups / Prowls / Websites) + a disclaimer.
   Client-side: `recordSpend(kind)` increments `aiwp_spend` (per-device, resets daily) on each PAID action

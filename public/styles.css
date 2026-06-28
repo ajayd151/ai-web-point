@@ -377,6 +377,26 @@ button.gen { background: linear-gradient(90deg, var(--blue), var(--mauve)); colo
 #spend-panel .sp-tot { border-top: 1px solid var(--line); margin-top: 7px; padding-top: 7px; font-weight: 700; }
 #spend-panel .sp-note { font-size: 11.5px; color: var(--muted); margin: 9px 0 0; line-height: 1.45; }
 .sh-cost { margin-top: 12px; font-size: 13px; font-weight: 600; color: #475569; background: rgba(255,255,255,.55); border-radius: 8px; padding: 6px 10px; display: inline-block; }
+/* "want more?" suggestions */
+.want-more { margin: 14px 0 4px; }
+.wm-card { background: linear-gradient(120deg, #eef3ff, #f6edfb); border: 1px solid #d7defc; border-radius: 14px; padding: 16px 18px; }
+.wm-h { font-weight: 700; font-size: 16px; margin-bottom: 10px; }
+.wm-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 9px; }
+.wm-lbl { font-size: 12.5px; font-weight: 600; color: var(--muted); min-width: 130px; }
+.wm-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.wm-chip { background: #fff; border: 1.5px solid #c7d2fe; color: #3730a3; border-radius: 20px; padding: 7px 13px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.wm-chip:hover { background: #eef2ff; border-color: #818cf8; }
+.wm-note { font-size: 12px; margin: 6px 0 0; }
+#searchBtn.pulse { animation: btnPulse 1.6s ease 2; }
+@keyframes btnPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,.45); } 50% { box-shadow: 0 0 0 7px rgba(99,102,241,0); } }
+/* export past searches */
+.rs-retention { margin: 0 0 8px; font-size: 12px; }
+.rs-export-one { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; border-radius: 7px; padding: 5px 9px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.rs-export-one:hover { background: #e0e7ff; }
+.exp-body { padding: 4px 2px; }
+.exp-custom { display: flex; gap: 10px; }
+.exp-custom .block { flex: 1; }
+.exp-count { margin: 6px 0 2px; font-weight: 600; }
 .sent-yes { font-size: 12.5px; font-weight: 700; color: #15803d; }
 .sent-no { font-size: 12.5px; color: var(--muted); }
 /* Block / do-not-contact */

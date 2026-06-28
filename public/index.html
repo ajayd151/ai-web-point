@@ -266,18 +266,55 @@
       <button id="loadmore-btn" class="primary loadmore-btn">⬇ Load more results</button>
     </div>
 
+    <div id="want-more" class="want-more hidden"></div>
+
     <section id="recent-searches" class="panel recent hidden">
       <div class="recent-head">
         <h2 class="recent-title">Recent searches</h2>
-        <button id="rs-clear" class="linkbtn">Clear</button>
+        <div class="recent-head-actions">
+          <button id="rs-export" class="linkbtn" title="Export results from past searches (choose a date range)">⬇ Export…</button>
+          <button id="rs-clear" class="linkbtn">Clear</button>
+        </div>
       </div>
+      <p class="rs-retention muted" id="rs-retention"></p>
       <div class="recent-scroll">
         <table class="recent-table">
-          <thead><tr><th>Date</th><th>Industry</th><th>Location</th><th>Filters</th><th>Matches</th><th></th><th></th></tr></thead>
+          <thead><tr><th>Date</th><th>Industry</th><th>Location</th><th>Filters</th><th>Matches</th><th></th><th></th><th></th></tr></thead>
           <tbody id="rs-rows"></tbody>
         </table>
       </div>
     </section>
+
+    <!-- EXPORT PAST SEARCHES DIALOG -->
+    <div id="exp-modal" class="modal hidden">
+      <div class="modal-card">
+        <div class="preview-head">
+          <h2>⬇ Export past search results</h2>
+          <button id="exp-close" class="ghost">Close</button>
+        </div>
+        <div class="exp-body">
+          <p class="muted">Download the businesses from searches you've already run. Pick a date range and (optionally) narrow by keyword or area.</p>
+          <label class="block"><span>Date range</span>
+            <select id="exp-range">
+              <option value="7">Last 7 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="45">Last 45 days (all kept)</option>
+              <option value="custom">Custom…</option>
+            </select>
+          </label>
+          <div id="exp-custom" class="exp-custom hidden">
+            <label class="block"><span>From</span><input id="exp-from" type="date" /></label>
+            <label class="block"><span>To</span><input id="exp-to" type="date" /></label>
+          </div>
+          <label class="block"><span>Keyword contains <span class="muted">(optional)</span></span><input id="exp-keyword" type="text" placeholder="e.g. plumber" /></label>
+          <label class="block"><span>Area contains <span class="muted">(optional)</span></span><input id="exp-area" type="text" placeholder="e.g. Wolverhampton" /></label>
+          <p id="exp-count" class="exp-count muted"></p>
+          <div class="modal-actions">
+            <button id="exp-go" class="primary btn">⬇ Export CSV</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <section id="recent" class="panel recent hidden">
       <div class="recent-head">

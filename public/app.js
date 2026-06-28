@@ -363,6 +363,7 @@ async function doSearch(append) {
     $('summary').classList.remove('hidden');
     $('summary').textContent = `Searching Google for ${industry} in ${location}…`;
     $('results').innerHTML = '';
+    $('want-more').classList.add('hidden');
     lastSearchResults = [];
   }
   try {
@@ -378,6 +379,13 @@ async function doSearch(append) {
       const fresh = results.filter((b) => !have.has(b.id));
       lastSearchResults = lastSearchResults.concat(fresh);
       if (!fresh.length) lastBatchFull = false;
+      // keep the saved (exportable) results + the banner's lead count in sync with the bigger list
+      if (lastSearchParams && lastSearchParams.id) {
+        const ex0 = loadSearchResultsStore()[lastSearchParams.id];
+        saveSearchResults(lastSearchParams.id, { date: ex0 ? ex0.date : new Date().toISOString(), industry, location }, lastSearchResults);
+      }
+      const ln = $('summary').querySelector('.sh-lead .sh-num');
+      if (ln) { ln.setAttribute('data-to', String(lastSearchResults.length)); ln.textContent = String(lastSearchResults.length); }
     } else {
       lastSearchResults = results;
       const scanned = data.scanned || results.length;
@@ -401,13 +409,18 @@ async function doSearch(append) {
       const sc = recordSpend('search', estSearchCost(areasCount));
       const heroEl = $('summary').querySelector('.search-hero');
       if (heroEl) { const cd = document.createElement('div'); cd.className = 'sh-cost'; cd.textContent = '💷 ~$' + sc.toFixed(2) + ' estimated for this search' + (areasCount > 1 ? ' (' + areasCount + ' areas searched)' : ''); heroEl.appendChild(cd); }
-      saveRecentSearch({ date: new Date().toISOString(), industry, location, filters, matched: data.matched != null ? data.matched : results.length, limit });
+      const searchId = String(Date.now());
+      lastSearchParams.id = searchId;
+      const nowIso = new Date().toISOString();
+      saveRecentSearch({ id: searchId, date: nowIso, industry, location, filters, matched: data.matched != null ? data.matched : results.length, limit });
+      saveSearchResults(searchId, { date: nowIso, industry, location }, lastSearchResults);
       renderRecentSearches();
+      renderWantMore(industry, expanded);
     }
     renderResults(lastSearchResults);
     if (append && !lastBatchFull) {
       const hero = $('summary').querySelector('.search-hero');
-      if (hero && !hero.querySelector('.sh-note')) { const nn = document.createElement('div'); nn.className = 'sh-note'; nn.textContent = "That's everything Google has for this search."; hero.appendChild(nn); }
+      if (hero && !hero.querySelector('.sh-note')) { const nn = document.createElement('div'); nn.className = 'sh-note'; nn.textContent = 'All ' + lastSearchResults.length + ' pulled, that is everything Google lists here. Try a nearby area or related search below for more.'; hero.appendChild(nn); }
     }
     saveLastResults(); // survive a page reload (free restore, no credit)
   } catch (err) {
@@ -1353,6 +1366,136 @@ $('recent-clear').addEventListener('click', () => {
 renderRecent();
 renderBlocked();
 
+// ---- 🔎 "want more?" suggestions (related terms + nearby areas) ----------
+const RELATED_TERMS = {
+  electrician: ['electrical contractor', 'emergency electrician', 'electrical services', 'domestic electrician'],
+  plumber: ['emergency plumber', 'plumbing and heating', 'plumbing services', 'boiler repair'],
+  builder: ['building contractor', 'home extensions', 'renovation builder', 'construction company'],
+  roofer: ['roofing contractor', 'roof repair', 'flat roofing', 'emergency roofer'],
+  plasterer: ['plastering services', 'rendering', 'skimming plasterer'],
+  carpenter: ['joiner', 'carpentry services', 'bespoke joinery', 'kitchen fitter'],
+  painter: ['painter and decorator', 'decorating services', 'commercial decorator'],
+  decorator: ['painter and decorator', 'decorating services'],
+  landscaper: ['landscape gardener', 'garden design', 'driveways and patios', 'gardening services'],
+  gardener: ['garden maintenance', 'landscape gardener', 'lawn care'],
+  cleaner: ['cleaning services', 'commercial cleaning', 'end of tenancy cleaning', 'domestic cleaner'],
+  locksmith: ['emergency locksmith', 'auto locksmith', 'lock fitting'],
+  valet: ['mobile car valeting', 'car detailing', 'car wash'],
+  mechanic: ['car garage', 'mot and servicing', 'mobile mechanic'],
+  groomer: ['mobile dog grooming', 'pet grooming', 'dog walking'],
+  tiler: ['tiling services', 'bathroom fitter', 'wall and floor tiling'],
+  pest: ['pest removal', 'rodent control', 'wasp nest removal'],
+  removals: ['removal company', 'man and van', 'house clearance'],
+  scaffold: ['scaffolding contractor', 'scaffold hire'],
+  driveway: ['driveways and patios', 'block paving', 'tarmac driveways'],
+};
+function relatedTerms(industry) {
+  const I = String(industry || '').trim();
+  if (!I) return [];
+  const low = I.toLowerCase();
+  for (const key in RELATED_TERMS) { if (low.indexOf(key) !== -1) return RELATED_TERMS[key].filter((t) => t.toLowerCase() !== low).slice(0, 4); }
+  return ['emergency ' + I, I + ' services', 'local ' + I, I + ' company'].filter((t) => t.toLowerCase() !== low).slice(0, 4);
+}
+function renderWantMore(industry, expandedAreas) {
+  const el = $('want-more'); if (!el) return;
+  const terms = relatedTerms(industry);
+  const areas = (expandedAreas || []).slice(0, 8);
+  if (!terms.length && !areas.length) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  const chip = (kind, val, label) => `<button class="wm-chip" data-kind="${kind}" data-val="${esc(val)}">${esc(label)}</button>`;
+  el.innerHTML = '<div class="wm-card"><div class="wm-h">🔎 Want more leads?</div>' +
+    (terms.length ? '<div class="wm-row"><span class="wm-lbl">Try a related search</span><div class="wm-chips">' + terms.map((t) => chip('term', t, t)).join('') + '</div></div>' : '') +
+    (areas.length ? '<div class="wm-row"><span class="wm-lbl">Search a nearby area</span><div class="wm-chips">' + areas.map((a) => chip('area', a, '📍 ' + a)).join('') + '</div></div>' : '') +
+    '<p class="wm-note muted">Click one to fill the search box, then press Search. Each new search uses credits.</p></div>';
+  el.classList.remove('hidden');
+  el.querySelectorAll('.wm-chip').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.kind === 'term') $('industry').value = b.dataset.val; else $('location').value = b.dataset.val;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const sb = $('searchBtn'); if (sb) { sb.classList.add('pulse'); setTimeout(() => { try { sb.classList.remove('pulse'); } catch (e) {} }, 1600); }
+  }));
+}
+
+// ---- 💾 search-results retention (kept on this device for N days, then exportable) ----
+const RESULT_RETENTION_DAYS = 45; // Super Admin / future per-tier configurable
+function loadSearchResultsStore() {
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem('aiwp_search_results') || '{}'); } catch (e) {}
+  return s;
+}
+function slimBiz(b) {
+  return { name: b.name, category: b.category, location: b.location, address: b.address, website: b.website, phones: b.phones || [], email: b.email, rating: b.rating, userRatingsTotal: b.userRatingsTotal, mapsUrl: b.mapsUrl };
+}
+function pruneSearchResults(store) {
+  const cutoff = Date.now() - RESULT_RETENTION_DAYS * 86400000;
+  Object.keys(store).forEach((id) => { const d = new Date(store[id] && store[id].date).getTime(); if (!d || d < cutoff) delete store[id]; });
+  return store;
+}
+function saveSearchResults(id, meta, results) {
+  if (!id) return;
+  const store = pruneSearchResults(loadSearchResultsStore());
+  store[id] = { id: id, date: meta.date, industry: meta.industry, location: meta.location, results: (results || []).map(slimBiz) };
+  for (let i = 0; i < 40; i++) {
+    try { localStorage.setItem('aiwp_search_results', JSON.stringify(store)); return; }
+    catch (e) { // quota: drop the oldest stored search and retry
+      const ids = Object.keys(store).sort((a, b) => new Date(store[a].date) - new Date(store[b].date));
+      if (ids.length <= 1) { try { localStorage.removeItem('aiwp_search_results'); } catch (x) {} return; }
+      delete store[ids[0]];
+    }
+  }
+}
+// ---- export past search results (single search, or a date range) ----
+const EXPORT_COLS = ['Search date', 'Keyword', 'Search area', 'Company', 'Category', 'Business area', 'Address', 'Has website', 'Website', 'Phone(s)', 'Mobile?', 'Email', 'Star rating', 'Number of ratings', 'Google Maps'];
+function bizExportRow(meta, b) {
+  const phones = b.phones || [];
+  return [fmtDate(meta.date), meta.industry || '', meta.location || '', b.name || '', b.category || '', b.location || '', b.address || '',
+    b.website ? 'Yes' : 'No', b.website || '', phones.join(' / '), phones.some((p) => window.BizData.isUkMobile(p)) ? 'Yes' : 'No',
+    b.email || '', b.rating != null ? b.rating : '', b.userRatingsTotal != null ? b.userRatingsTotal : '', b.mapsUrl || ''];
+}
+function exportOneSearch(r) {
+  const e = loadSearchResultsStore()[r.id];
+  if (!e || !e.results || !e.results.length) { alert('These results are no longer saved (kept for ' + RESULT_RETENTION_DAYS + ' days).'); return; }
+  downloadCsv('search-' + String(r.industry || 'results').replace(/\W+/g, '-').toLowerCase() + '.csv', EXPORT_COLS, e.results.map((b) => bizExportRow(e, b)));
+}
+function expEntries() {
+  const store = loadSearchResultsStore();
+  const hist = loadRecentSearches().filter((r) => r.id && store[r.id] && store[r.id].results && store[r.id].results.length);
+  const range = $('exp-range').value;
+  let from = 0; let to = Date.now() + 86400000;
+  if (range === 'custom') {
+    if ($('exp-from').value) from = new Date($('exp-from').value).getTime();
+    if ($('exp-to').value) to = new Date($('exp-to').value).getTime() + 86400000;
+  } else { from = Date.now() - Number(range) * 86400000; }
+  const kw = $('exp-keyword').value.trim().toLowerCase();
+  const ar = $('exp-area').value.trim().toLowerCase();
+  return hist.filter((r) => {
+    const d = new Date(r.date).getTime();
+    if (d < from || d > to) return false;
+    if (kw && String(r.industry || '').toLowerCase().indexOf(kw) === -1) return false;
+    if (ar && String(r.location || '').toLowerCase().indexOf(ar) === -1) return false;
+    return true;
+  });
+}
+function updateExpCount() {
+  const entries = expEntries();
+  const store = loadSearchResultsStore();
+  const biz = entries.reduce((n, r) => n + ((store[r.id] && store[r.id].results) ? store[r.id].results.length : 0), 0);
+  $('exp-count').textContent = entries.length + ' search' + (entries.length === 1 ? '' : 'es') + ', ' + biz + ' business' + (biz === 1 ? '' : 'es') + ' to export.';
+}
+function runExport() {
+  const entries = expEntries();
+  if (!entries.length) { alert('No saved searches in that range.'); return; }
+  const store = loadSearchResultsStore();
+  const rows = [];
+  entries.forEach((r) => { const e = store[r.id]; (e.results || []).forEach((b) => rows.push(bizExportRow(e, b))); });
+  downloadCsv('sitepounce-search-results.csv', EXPORT_COLS, rows);
+  $('exp-modal').classList.add('hidden');
+}
+$('rs-export').addEventListener('click', () => { $('exp-modal').classList.remove('hidden'); updateExpCount(); });
+$('exp-close').addEventListener('click', () => $('exp-modal').classList.add('hidden'));
+$('exp-modal').addEventListener('click', (e) => { if (e.target === $('exp-modal')) $('exp-modal').classList.add('hidden'); });
+$('exp-range').addEventListener('change', () => { $('exp-custom').classList.toggle('hidden', $('exp-range').value !== 'custom'); updateExpCount(); });
+['exp-from', 'exp-to', 'exp-keyword', 'exp-area'].forEach((id) => $(id).addEventListener('input', updateExpCount));
+$('exp-go').addEventListener('click', runExport);
+
 // ---- recent searches (saved on this device, one-click re-run) -------------
 function loadRecentSearches() {
   try { return JSON.parse(localStorage.getItem('aiwp_searches') || '[]'); } catch (e) { return []; }
@@ -1362,9 +1505,10 @@ function searchSig(industry, location, filters) {
 }
 function saveRecentSearch(item) {
   const sig = searchSig(item.industry, item.location, item.filters);
-  let list = loadRecentSearches().filter((r) => searchSig(r.industry, r.location, r.filters) !== sig);
+  const cutoff = Date.now() - RESULT_RETENTION_DAYS * 86400000; // keep history in step with the results retention
+  let list = loadRecentSearches().filter((r) => searchSig(r.industry, r.location, r.filters) !== sig && new Date(r.date).getTime() >= cutoff);
   list.unshift(item);
-  list = list.slice(0, 20);
+  list = list.slice(0, 300);
   try { localStorage.setItem('aiwp_searches', JSON.stringify(list)); } catch (e) {}
 }
 function filterSummary(f) {
@@ -1386,10 +1530,14 @@ function renderRecentSearches() {
   const list = loadRecentSearches();
   const sec = $('recent-searches');
   const tb = $('rs-rows');
+  if ($('rs-retention')) $('rs-retention').textContent = 'Results are kept on this device for ' + RESULT_RETENTION_DAYS + ' days, then removed. Export anything you want to keep.';
   if (!list.length) { sec.classList.add('hidden'); tb.innerHTML = ''; return; }
   sec.classList.remove('hidden');
+  const store = loadSearchResultsStore();
   tb.innerHTML = '';
   list.forEach((r) => {
+    const e = r.id ? store[r.id] : null;
+    const hasRes = e && e.results && e.results.length;
     const tr = document.createElement('tr');
     tr.innerHTML =
       `<td>${esc(fmtDate(r.date))}</td>` +
@@ -1397,10 +1545,12 @@ function renderRecentSearches() {
       `<td>${esc(r.location || '')}</td>` +
       `<td class="rs-filters">${esc(filterSummary(r.filters))}</td>` +
       `<td>${r.matched != null ? esc(String(r.matched)) : ''}</td>` +
+      `<td>${hasRes ? '<button class="rs-export-one" title="Export these results as CSV">⬇ CSV</button>' : '<span class="muted" title="Results expired or not saved">·</span>'}</td>` +
       `<td><button class="primary rs-run">Run again ↻</button></td>` +
       `<td><button class="rs-del" title="Delete" aria-label="Delete this search">🗑</button></td>`;
     tr.querySelector('.rs-run').addEventListener('click', () => runRecentSearch(r));
     tr.querySelector('.rs-del').addEventListener('click', () => deleteRecentSearch(r));
+    const ex = tr.querySelector('.rs-export-one'); if (ex) ex.addEventListener('click', () => exportOneSearch(r));
     tb.appendChild(tr);
   });
 }
