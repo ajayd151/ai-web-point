@@ -292,6 +292,7 @@ $('refresh-results').addEventListener('click', (e) => refreshFeedback(e.currentT
 $('export-results').addEventListener('click', () => openExport('current'));
 $('loadmore-btn').addEventListener('click', loadMoreResults);
 $('sort-order').addEventListener('change', () => renderResults(lastSearchResults));
+$('newonly').addEventListener('change', () => renderResults(lastSearchResults));
 ['industry', 'location'].forEach((id) =>
   $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); })
 );
@@ -446,26 +447,51 @@ function sortResults(list) {
   }
   return arr;
 }
+// Google place ids we've ALREADY got: earlier searches (excluding this one), plus
+// businesses we've mockup'd, messaged or blocked. Used to flag truly-new leads.
+function seenBusinessIds(excludeId) {
+  const ids = new Set();
+  const store = loadSearchResultsStore();
+  Object.keys(store).forEach((id) => { if (id === excludeId) return; (store[id].results || []).forEach((b) => { if (b && b.id) ids.add(b.id); }); });
+  try { mergedRecent().forEach((r) => { if (r && r.placeId) ids.add(r.placeId); }); } catch (e) {}
+  try { const m = loadMessaged(); Object.keys(m).forEach((k) => { if (k.indexOf('id:') === 0) ids.add(k.slice(3)); }); } catch (e) {}
+  try { Object.values(loadBlocked()).forEach((r) => { if (r && r.placeId) ids.add(r.placeId); }); } catch (e) {}
+  return ids;
+}
 function renderResults(list) {
   lastSearchResults = list || [];
   const has = lastSearchResults.length > 0;
   $('refresh-results').classList.toggle('hidden', !has);
   $('export-results').classList.toggle('hidden', !has);
   $('sort-order').classList.toggle('hidden', !has);
+  $('newonly-wrap').classList.toggle('hidden', !has);
+  $('new-count').classList.toggle('hidden', !has);
   $('loadmore-wrap').classList.toggle('hidden', !(has && lastBatchFull));
   // index generated mockups so each result can show its status
   try { recentIndex = new Map(mergedRecent().map((r) => [normKey(r.name, r.location), r])); } catch (e) { recentIndex = new Map(); }
   const root = $('results');
   root.innerHTML = '';
   if (!has) { root.innerHTML = '<div class="empty">No businesses match these filters. Try loosening them.</div>'; return; }
+  const seen = seenBusinessIds((lastSearchParams && lastSearchParams.id) || '');
   const shown = sortResults(lastSearchResults.filter((b) => !isBlocked(b))); // hide do-not-contact, then sort
   if (!shown.length) { root.innerHTML = '<div class="empty">Every match here is on your blocked list. Try a different search.</div>'; return; }
-  shown.forEach((b) => root.appendChild(card(b)));
+  let newN = 0; let seenN = 0;
+  shown.forEach((b) => { if (b.id && seen.has(b.id)) seenN++; else newN++; });
+  $('new-count').textContent = '✨ ' + newN + ' new · ' + seenN + ' already in your lists';
+  const onlyNew = $('newonly').checked;
+  let rendered = 0;
+  shown.forEach((b) => {
+    const isSeen = !!(b.id && seen.has(b.id));
+    if (onlyNew && isSeen) return;
+    root.appendChild(card(b, isSeen));
+    rendered++;
+  });
+  if (!rendered) root.innerHTML = '<div class="empty">No new leads here, every match is already in your lists. Untick "✨ New only" to see them.</div>';
 }
 
-function card(b) {
+function card(b, isSeen) {
   const el = document.createElement('div');
-  el.className = 'card';
+  el.className = 'card' + (isSeen ? ' card-seen' : '');
   const rec = recentIndex.get(normKey(b.name, b.location));
   const recVia = rec ? recentSentVia(rec) : '';
   const statusChip = rec
@@ -487,6 +513,7 @@ function card(b) {
       ${phoneChip(b)}
       ${b.email ? '<span class="chip email">Email</span>' : ''}
       <span class="chip rating">★ ${b.rating} (${b.userRatingsTotal})</span>
+      ${isSeen ? '<span class="chip seen" title="Already in an earlier search, mockup, call list or messaged">Seen before</span>' : '<span class="chip newlead">✨ New</span>'}
       ${statusChip}
     </div>
     <div class="meta">

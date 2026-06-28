@@ -741,6 +741,10 @@ Things we deliberately deferred, newest first. Details in the bullets below + th
 Newest first. Reference sections above are the source of truth; this is a quick history.
 
 **2026-06-20**
+- **✨ New vs already-seen results (new):** each search card is flagged **✨ New** or **Seen before**, and
+  the toolbar shows a count ("✨ N new · M already in your lists") plus a **✨ New only** toggle to hide
+  the ones you already have. "Seen" = appeared in an earlier saved search (excluding the current one),
+  or already mockup'd / messaged / blocked (`seenBusinessIds`, by Google place id). Seen cards are dimmed.
 - **🔎 "Want more?" suggestions (new):** below the results, a panel offers one-click ways to get more
   leads, **related search terms** (curated per-trade list + generic fallback, client-side, no cost) and
   **nearby areas** (the towns this search expanded into). Clicking a chip pre-fills the search box and
