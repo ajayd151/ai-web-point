@@ -370,6 +370,7 @@ async function doSearch(append) {
     const data = await resp.json();
     if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
     if (!resp.ok) throw new Error(data.error || 'Search failed');
+    recordSpend('search'); // each Google Places call costs, fresh or load-more
     const results = data.results || [];
     lastBatchFull = results.length >= limit;
     if (append) {
@@ -624,6 +625,7 @@ async function runGeneration(business, requirements, personName) {
     if (!resp.ok) throw new Error(errText(data, resp.status));
 
     stopGenProgress();
+    recordSpend('mockup'); // a fresh AI image was generated
     $('preview-body').innerHTML = `<img src="${esc(data.imageUrl)}" alt="Website mockup" />`;
     $('img-url').value = data.imageUrl;
     $('open-view').href = data.viewUrl || data.imageUrl;
@@ -1006,6 +1008,36 @@ function recordSendServer(channel) {
 function todayKey() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function waLog() { let l = {}; try { l = JSON.parse(localStorage.getItem('aiwp_wa_log') || '{}'); } catch (e) {} return l.date === todayKey() ? l : { date: todayKey(), count: 0 }; }
 function updateWaToday() { const el = $('wa-today'); if (el) el.textContent = waLog().count + ' of ' + loadSettings().waCap; }
+
+// ---- 💷 rough API cost meter (ESTIMATES only; real spend is on the provider dashboards) ----
+// USD per action, ballpark: Google Places search, gpt-image-1 mockup (medium 1536x1024 ~6c),
+// Prowl (gpt-4o-mini + Google details), Pounce website. Tune COST_EST if your bills differ.
+const COST_EST = { search: 0.07, mockup: 0.07, prowl: 0.05, pounce: 0.06 };
+const COST_LABEL = { search: 'Searches', mockup: 'Mockups', prowl: 'Prowls', pounce: 'Websites' };
+function loadSpend() {
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem('aiwp_spend') || '{}'); } catch (e) {}
+  return (s.date === todayKey()) ? s : { date: todayKey(), search: 0, mockup: 0, prowl: 0, pounce: 0 };
+}
+function spendTotal(s) { return Object.keys(COST_EST).reduce((t, k) => t + (s[k] || 0) * COST_EST[k], 0); }
+function recordSpend(kind) {
+  if (!COST_EST[kind]) return;
+  const s = loadSpend();
+  s[kind] = (s[kind] || 0) + 1;
+  try { localStorage.setItem('aiwp_spend', JSON.stringify(s)); } catch (e) {}
+  renderSpendMeter(true);
+}
+let spendOpen = false;
+function renderSpendMeter(flash) {
+  const el = $('spend-meter'); if (!el) return;
+  const s = loadSpend();
+  const tot = spendTotal(s);
+  const rows = Object.keys(COST_EST).map((k) => `<div class="sp-row"><span>${COST_LABEL[k]}: ${s[k] || 0}</span><span>~$${((s[k] || 0) * COST_EST[k]).toFixed(2)}</span></div>`).join('');
+  el.innerHTML = `<button id="spend-pill" title="Rough estimate of today's API cost, click for the breakdown">💷 Today ~$${tot.toFixed(2)} <span class="muted">est</span></button>` +
+    `<div id="spend-panel"${spendOpen ? '' : ' class="hidden"'}><div class="sp-head">Estimated API cost today</div>${rows}<div class="sp-row sp-tot"><span>Total</span><span>~$${tot.toFixed(2)}</span></div><p class="sp-note">Rough estimates in USD. Your real spend is on your <b>Google Cloud billing</b> and <b>OpenAI usage</b> dashboards. Counts reset daily on this device.</p></div>`;
+  $('spend-pill').addEventListener('click', () => { spendOpen = !spendOpen; renderSpendMeter(); });
+  if (flash) { const p = $('spend-pill'); if (p) { p.classList.add('flash'); setTimeout(() => { try { p.classList.remove('flash'); } catch (e) {} }, 600); } }
+}
 function waGuardAllow() {
   const cap = loadSettings().waCap;
   const log = waLog();
@@ -1390,6 +1422,7 @@ $('rs-clear').addEventListener('click', () => {
   renderRecentSearches();
 });
 renderRecentSearches();
+renderSpendMeter();
 
 // ---- performance dashboard -----------------------------------------------
 // Generic best-practice tips (NOT based on your data, general outreach advice)
@@ -1544,7 +1577,10 @@ function startProwlProgress() {
 }
 function prowlFetch(lead, refresh) {
   return fetch('/api/prowl', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: lead.slug, name: lead.name, location: lead.location, category: lead.category || '', phone: lead.phone || '', refresh: !!refresh }) })
-    .then((r) => r.json().then((j) => ({ status: r.status, j })));
+    .then((r) => r.json().then((j) => {
+      if (r.status === 200 && j && j.cached === false) recordSpend('prowl'); // only a fresh dossier costs
+      return { status: r.status, j };
+    }));
 }
 function openProwl(lead) {
   $('prowl-title').textContent = '🐾 Prowl · ' + lead.name;
@@ -1672,7 +1708,10 @@ let lastPounceOpts = {};
 function pounceFetch(lead, refresh, opts) {
   const payload = Object.assign({ slug: lead.slug, name: lead.name, location: lead.location, category: lead.category || '', phone: lead.phone || '', refresh: !!refresh }, opts || {});
   return fetch('/api/pounce', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    .then((r) => r.json().then((j) => ({ status: r.status, j })));
+    .then((r) => r.json().then((j) => {
+      if (r.status === 200 && j && !j.cached) recordSpend('pounce'); // a cache hit returns cached:true, a fresh build doesn't
+      return { status: r.status, j };
+    }));
 }
 function pounceHeroNote(src) {
   if (src === 'google') return '🖼️ Hero: their own Google photo';
