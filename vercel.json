@@ -7,7 +7,7 @@
       "includeFiles": "fonts/**"
     },
     "api/search.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/mockups.js": {
       "maxDuration": 30

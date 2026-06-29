@@ -22,6 +22,8 @@ const SETTINGS_DEFAULTS = {
   followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not, happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
   waCap: 3, // hard daily WhatsApp send cap (ban protection; low by design for experimenting)
   grammarFix: true, // AI tidies the first message's grammar when sent (default on)
+  plan: 'apex', // membership tier driving result retention (owner defaults to top tier); Super Admin sets per customer later
+  retentionDays: 0, // 0 = use the tier default; any positive number overrides it (Super Admin)
 };
 function loadSettings() {
   let s = {};
@@ -1514,7 +1516,16 @@ function renderWantMore(industry, expandedAreas) {
 }
 
 // ---- 💾 search-results retention (kept on this device for N days, then exportable) ----
-const RESULT_RETENTION_DAYS = 45; // Super Admin / future per-tier configurable
+// How long saved search results + history are kept on this device, per membership tier.
+// Configurable: a per-customer override or Super Admin can change these later.
+const RETENTION_BY_TIER = { scout: 14, hunter: 45, apex: 120 };
+function currentPlan() { const s = loadSettings(); return (s && s.plan) || 'apex'; }
+function retentionDays() {
+  const s = loadSettings();
+  const override = Number(s && s.retentionDays);
+  if (override > 0) return override; // explicit override wins
+  return RETENTION_BY_TIER[currentPlan()] || 45;
+}
 function loadSearchResultsStore() {
   let s = {};
   try { s = JSON.parse(localStorage.getItem('aiwp_search_results') || '{}'); } catch (e) {}
@@ -1524,7 +1535,7 @@ function slimBiz(b) {
   return { name: b.name, category: b.category, location: b.location, address: b.address, website: b.website, phones: b.phones || [], email: b.email, rating: b.rating, userRatingsTotal: b.userRatingsTotal, mapsUrl: b.mapsUrl };
 }
 function pruneSearchResults(store) {
-  const cutoff = Date.now() - RESULT_RETENTION_DAYS * 86400000;
+  const cutoff = Date.now() - retentionDays() * 86400000;
   Object.keys(store).forEach((id) => { const d = new Date(store[id] && store[id].date).getTime(); if (!d || d < cutoff) delete store[id]; });
   return store;
 }
@@ -1551,7 +1562,7 @@ function bizExportRow(meta, b) {
 }
 function exportOneSearch(r) {
   const e = loadSearchResultsStore()[r.id];
-  if (!e || !e.results || !e.results.length) { alert('These results are no longer saved (kept for ' + RESULT_RETENTION_DAYS + ' days).'); return; }
+  if (!e || !e.results || !e.results.length) { alert('These results are no longer saved (kept for ' + retentionDays() + ' days).'); return; }
   downloadCsv('search-' + String(r.industry || 'results').replace(/\W+/g, '-').toLowerCase() + '.csv', EXPORT_COLS, e.results.map((b) => bizExportRow(e, b)));
 }
 function expEntries() {
@@ -1622,7 +1633,7 @@ function searchSig(industry, location, filters) {
 }
 function saveRecentSearch(item) {
   const sig = searchSig(item.industry, item.location, item.filters);
-  const cutoff = Date.now() - RESULT_RETENTION_DAYS * 86400000; // keep history in step with the results retention
+  const cutoff = Date.now() - retentionDays() * 86400000; // keep history in step with the results retention
   let list = loadRecentSearches().filter((r) => searchSig(r.industry, r.location, r.filters) !== sig && new Date(r.date).getTime() >= cutoff);
   list.unshift(item);
   list = list.slice(0, 300);
@@ -1647,7 +1658,7 @@ function renderRecentSearches() {
   const list = loadRecentSearches();
   const sec = $('recent-searches');
   const tb = $('rs-rows');
-  if ($('rs-retention')) $('rs-retention').textContent = 'Results are kept on this device for ' + RESULT_RETENTION_DAYS + ' days, then removed. Export anything you want to keep.';
+  if ($('rs-retention')) $('rs-retention').textContent = 'Results are kept on this device for ' + retentionDays() + ' days, then removed. Export anything you want to keep.';
   if (!list.length) { sec.classList.add('hidden'); tb.innerHTML = ''; return; }
   sec.classList.remove('hidden');
   const store = loadSearchResultsStore();

@@ -122,7 +122,7 @@ module.exports = async (req, res) => {
 
   // how many MATCHING businesses to return; we page through Google (up to its
   // ~60 max) to find them, applying the filters server-side as we go.
-  const want = Math.min(50, Math.max(1, Number(body.limit) || 20));
+  const want = Math.min(150, Math.max(1, Number(body.limit) || 20));
   const filters = body.filters || {};
   const excludeSet = new Set((Array.isArray(body.excludeIds) ? body.excludeIds : []).map(String));
   const services = servicesFor(industry);
@@ -192,9 +192,10 @@ module.exports = async (req, res) => {
     primaryCount = await searchArea(location);
 
     // If the primary area didn't yield the number asked for, auto-expand to
-    // nearby areas (AI-picked) until we hit `want` or run out (max 5 areas).
+    // nearby areas (AI-picked) until we hit `want` or run out. Demand-driven: it
+    // only digs into more areas when a bigger target needs them (cost scales with want).
     if (out.length < want) {
-      const areas = await nearbyAreas(location, 5);
+      const areas = await nearbyAreas(location, 15);
       for (const a of areas) {
         if (out.length >= want) break;
         if (!a || searchedLocations.some((s) => s.toLowerCase() === a.toLowerCase())) continue;
