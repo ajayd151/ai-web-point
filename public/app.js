@@ -197,6 +197,7 @@ function setAuthUI(on) {
   $('logout-btn').classList.toggle('hidden', !on);
   if (!on) { setTimeout(() => { try { $('gate-user').focus(); } catch (e) {} }, 60); }
   if (on) { loadServerMockups(); loadHotLeads(); loadCallList(); } // saved mockups + warm-lead and call-list badges + card states
+  if (on) { try { var pt = localStorage.getItem('aiwp_pending_tier'); if (pt) { localStorage.removeItem('aiwp_pending_tier'); startCheckout(pt); } } catch (e) {} } // resume a plan picked before sign-up
 }
 
 function showLoginMsg(text, kind) {
@@ -251,7 +252,44 @@ function openSignin(mode) {
 }
 if ($('nav-signin')) $('nav-signin').addEventListener('click', () => openSignin('signin'));
 ['nav-getstarted', 'hero-search'].forEach((id) => { const b = $(id); if (b) b.addEventListener('click', () => openSignin('create')); });
-document.querySelectorAll('.lp-tier-cta').forEach((b) => b.addEventListener('click', () => openSignin('create')));
+// Plan buttons: if signed in, go straight to Stripe checkout for that tier;
+// otherwise remember the choice and open sign-up, then resume checkout after login.
+document.querySelectorAll('.lp-tier-cta').forEach((b) => b.addEventListener('click', () => {
+  const tier = b.getAttribute('data-tier') || 'hunter';
+  if (authed) { startCheckout(tier); return; }
+  try { localStorage.setItem('aiwp_pending_tier', tier); } catch (e) {}
+  openSignin('create');
+}));
+async function startCheckout(tier) {
+  try {
+    const r = await fetch('/api/stripe-checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tier: tier }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.url) { window.location.href = d.url; return; }
+    alert(d.error || 'Could not start checkout. Billing may not be set up yet.');
+  } catch (e) { alert('Could not start checkout.'); }
+}
+async function openBillingPortal() {
+  try {
+    const r = await fetch('/api/stripe-portal', { method: 'POST' });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.url) { window.location.href = d.url; return; }
+    alert(d.error || 'No billing to manage yet.');
+  } catch (e) { alert('Could not open billing.'); }
+}
+// Returning from Stripe Checkout: confirm the session, then clean the URL.
+(function handleCheckoutReturn() {
+  var p = new URLSearchParams(window.location.search);
+  var status = p.get('checkout');
+  if (!status) return;
+  if (status === 'success' && p.get('session_id')) {
+    fetch('/api/stripe-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: p.get('session_id') }) })
+      .then((r) => r.json()).then((d) => { if (d && d.ok) alert('You are subscribed on the ' + (d.plan || '') + ' plan. Welcome aboard.'); else alert((d && d.error) || 'We could not confirm the payment, please contact support.'); })
+      .catch(() => {});
+  } else if (status === 'cancel') {
+    /* user backed out, nothing to do */
+  }
+  try { window.history.replaceState({}, '', window.location.pathname); } catch (e) {}
+})();
 document.querySelectorAll('.auth-tab').forEach((t) => t.addEventListener('click', () => setAuthTab(t.dataset.tab)));
 document.querySelectorAll('.auth-oauth').forEach((b) => b.addEventListener('click', () => { const n = $('auth-msg'); if (n) { n.textContent = 'Google and email sign-up switch on when we connect the account system, that is the next build step.'; n.classList.remove('hidden'); } }));
 { const c = $('signin-close'); if (c) c.addEventListener('click', () => $('signin-modal').classList.add('hidden')); }
