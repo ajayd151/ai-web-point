@@ -308,6 +308,64 @@ async function syncClerk() {
   finally { _clerkSyncing = false; }
 }
 
+// ---- landing: animated "How Site Pounce works" --------------------------
+(function initHowItWorks() {
+  var hw = document.getElementById('hw');
+  if (!hw) return;
+  var stepsEl = document.getElementById('hw-steps');
+  var stageEl = document.getElementById('hw-stage');
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var timers = [];
+  function clr() { timers.forEach(function (t) { clearTimeout(t); clearInterval(t); }); timers = []; }
+  function after(ms, fn) { var t = setTimeout(fn, reduce ? 0 : ms); timers.push(t); return t; }
+
+  function renderSearch() {
+    stageEl.innerHTML = '<div class="hw-sb"><div class="hw-search">🔍 <span class="hw-q" id="hw-q"></span><span class="hw-cur">|</span></div><div class="hw-chips" id="hw-chips"></div></div>';
+    var q = document.getElementById('hw-q'); var full = 'Electricians  ·  Solihull';
+    if (reduce) { q.textContent = full; document.getElementById('hw-chips').innerHTML = '<span class="hw-chip no">✕ No website</span>'; return; }
+    var n = 0; var iv = setInterval(function () { n++; q.textContent = full.slice(0, n); if (n >= full.length) { clearInterval(iv); after(250, function () { var c = document.getElementById('hw-chips'); if (c) c.innerHTML = '<span class="hw-chip no">✕ No website</span>'; }); } }, 70);
+    timers.push(iv);
+  }
+  function renderLeads() {
+    stageEl.innerHTML = '<div class="hw-head"><span>Combing Google and nearby areas</span><span><b class="hw-count" id="hw-cnt">0</b> leads ready</span></div><div class="hw-rows" id="hw-rows"></div>';
+    var names = ['Bright Spark Electrical', 'County Power Services', 'M. R. Signa Electrical'];
+    var rows = document.getElementById('hw-rows');
+    names.forEach(function (nm, i) { var r = document.createElement('div'); r.className = 'hw-row'; r.innerHTML = '<span>' + nm + '</span><span class="hw-pill">📱 mobile</span>'; rows.appendChild(r); after(180 * (i + 1), function () { r.classList.add('in'); }); });
+    var cnt = document.getElementById('hw-cnt'); var target = 38;
+    if (reduce) { cnt.textContent = target; return; }
+    var c = 0; var iv = setInterval(function () { c += 2; if (c >= target) { c = target; clearInterval(iv); } cnt.textContent = c; }, 45);
+    timers.push(iv);
+  }
+  function renderReach() {
+    stageEl.innerHTML = '<div class="hw-mid">Reach them your way, and pitch with an instant website</div><div class="hw-channels" id="hw-ch"></div>';
+    var ch = [{ e: '📞', l: 'Call' }, { e: '💬', l: 'SMS' }, { e: '📲', l: 'WhatsApp' }, { e: '✉️', l: 'Email' }, { e: '🌐', l: 'Website', web: true }];
+    var wrap = document.getElementById('hw-ch');
+    ch.forEach(function (c, i) { var b = document.createElement('div'); b.className = 'hw-ch' + (c.web ? ' web' : ''); b.innerHTML = '<span class="e">' + c.e + '</span><span>' + c.l + '</span>'; wrap.appendChild(b); after(150 * (i + 1), function () { b.classList.add('in'); }); });
+  }
+  function renderWin() {
+    stageEl.innerHTML = '<div class="hw-winwrap"><div class="hw-mid">Every open, reply and demo tracked, until they say yes</div><span class="hw-status" id="hw-st">New</span></div>';
+    var stages = [{ t: 'New', bg: '#f7fafb', ink: '#5b6b7f', bd: 'var(--line)' }, { t: 'Contacted', bg: '#e8f1fd', ink: '#1d4e89', bd: '#9cc2f0' }, { t: 'Interested', bg: '#fef3da', ink: '#9a6a06', bd: '#f0c97a' }, { t: 'Won, customer', bg: '#e9faf7', ink: 'var(--brand-dark)', bd: 'var(--brand)' }];
+    var el = document.getElementById('hw-st');
+    function paint(s, won) { el.textContent = (won ? '✓ ' : '') + s.t; el.style.background = s.bg; el.style.color = s.ink; el.style.borderColor = s.bd; }
+    if (reduce) { paint(stages[3], true); return; }
+    var k = 0; (function flip() { paint(stages[k], k === 3); if (k < 3) { k++; after(620, flip); } })();
+  }
+
+  var RENDER = [renderSearch, renderLeads, renderReach, renderWin];
+  var steps = Array.prototype.slice.call(stepsEl.querySelectorAll('.hw-step'));
+  var cur = -1, loop = null;
+  function setActive(i) { steps.forEach(function (s, j) { s.classList.toggle('active', j === i); }); }
+  function show(i) { clr(); cur = i; setActive(i); RENDER[i](); }
+  function advance() { show((cur + 1) % 4); }
+  function start() { if (loop) return; show(0); if (!reduce) loop = setInterval(advance, 2900); }
+  function stop() { if (loop) { clearInterval(loop); loop = null; } clr(); cur = -1; }
+  steps.forEach(function (s, i) { s.addEventListener('click', function () { if (loop) { clearInterval(loop); loop = null; } show(i); }); });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) { entries.forEach(function (e) { if (e.isIntersecting) start(); else stop(); }); }, { threshold: 0.3 });
+    io.observe(hw);
+  } else { start(); }
+})();
+
 // ---- founding-member application (public landing form) -------------------
 function openApply() { applyMsg('', ''); $('apply-modal').classList.remove('hidden'); setTimeout(() => { try { $('ap-name').focus(); } catch (e) {} }, 50); }
 function closeApply() { $('apply-modal').classList.add('hidden'); }

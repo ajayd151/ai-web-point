@@ -10,6 +10,9 @@ Launch a payable, multi-user subscription. Auth = **Clerk**, billing = **Stripe*
 - [x] Founding-member / "launching soon" removed from the landing (apply modal kept but unlinked)
 - [x] Terms + Privacy pages (linked in the footer)
 - [x] Broader, LeadsGorilla-aware messaging (not just "no website")
+- [x] Animated **"How Site Pounce works"** section (Search -> Get qualified leads -> Reach out -> Win the work), scroll-triggered + looping, reduced-motion safe; replaced the old Find/Show/Pounce block
+- [x] Pricing table corrected to launch pricing (Scout £29 / Hunter £59 / Apex £129); fixed the Hunter £69 typo
+- [x] Logout button contrast fixed (was white text on the new light header)
 - [ ] Light/dark toggle (remembered per user)
 - [ ] Sweep remaining decorative gradients to flat
 - [ ] Full tier comparison table on the pricing page (currently summary tiers)

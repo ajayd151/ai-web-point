@@ -187,8 +187,8 @@ button.gen { background: var(--brand); color: #fff; width: 100%; margin-top: 12p
 .messaged-lab .ml-when { display: block; font-weight: 600; font-size: 11.5px; margin-top: 2px; opacity: 0.85; }
 
 .top-right { display: flex; align-items: center; gap: 10px; }
-.logoutbtn { cursor: pointer; color: #fff; }
-.logoutbtn:hover { background: rgba(255, 255, 255, 0.25); }
+.logoutbtn { cursor: pointer; color: var(--ink); }
+.logoutbtn:hover { background: rgba(0, 0, 0, 0.06); }
 
 .gate { position: fixed; inset: 0; z-index: 100; overflow: auto; background: #F6FAFB; color: var(--ink); }
 /* ---- light marketing landing ---- */
@@ -220,12 +220,42 @@ button.gen { background: var(--brand); color: #fff; width: 100%; margin-top: 12p
 .lp-ico { font-size: 26px; margin-bottom: 8px; }
 .lp-feat h3 { margin: 0 0 5px; font-size: 16.5px; color: var(--ink); }
 .lp-feat p { margin: 0; font-size: 14px; color: #5b6b7f; line-height: 1.5; }
-.lp-steps { max-width: 900px; margin: 0 auto; padding: 30px 24px 40px; }
-.lp-stepcards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.lp-step { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 22px; text-align: center; }
-.lp-step .lp-num { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; border-radius: 50%; background: var(--brand); color: #fff; font-weight: 800; font-size: 17px; margin-bottom: 10px; }
-.lp-step h3 { margin: 0 0 5px; color: var(--ink); }
-.lp-step p { margin: 0; font-size: 14px; color: #5b6b7f; }
+/* animated "How Site Pounce works" */
+.lp-how { max-width: 900px; margin: 0 auto; padding: 30px 24px 44px; text-align: center; }
+.lp-how .lp-h2 { margin-bottom: 6px; }
+.lp-how-sub { margin: 0 0 26px; color: #5b6b7f; font-size: 15.5px; }
+.hw-steps { display: flex; gap: 10px; }
+.hw-step { flex: 1; background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 14px 10px; cursor: pointer; font: inherit; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: border-color .25s, background .25s; }
+.hw-step b { font-size: 14px; color: var(--ink); }
+.hw-step > span:last-child { font-size: 12px; color: #5b6b7f; line-height: 1.35; }
+.hw-ico { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: #eef2f7; font-size: 19px; margin-bottom: 4px; transition: background .25s, transform .25s; }
+.hw-step.active { border-color: var(--brand); background: #e9faf7; }
+.hw-step.active .hw-ico { background: var(--brand); transform: scale(1.08); }
+.hw-step.active b { color: var(--brand-dark); }
+.hw-stage { margin-top: 14px; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 22px; min-height: 150px; display: flex; flex-direction: column; justify-content: center; }
+.hw-sb { max-width: 400px; margin: 0 auto; width: 100%; }
+.hw-search { display: flex; align-items: center; gap: 8px; background: #f7fafb; border: 1.5px solid #dbe3ea; border-radius: 11px; padding: 11px 14px; font-size: 15px; }
+.hw-q { color: var(--ink); }
+.hw-cur { color: var(--brand); font-weight: 700; }
+.hw-chips { display: flex; gap: 7px; margin-top: 11px; min-height: 26px; justify-content: center; }
+.hw-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; padding: 4px 11px; border-radius: 999px; font-weight: 600; }
+.hw-chip.no { background: #fde7e7; color: #c0392b; }
+.hw-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; font-size: 13.5px; color: #5b6b7f; }
+.hw-count { font-size: 24px; font-weight: 800; color: var(--brand-dark); }
+.hw-rows { display: flex; flex-direction: column; gap: 7px; }
+.hw-row { display: flex; align-items: center; justify-content: space-between; background: #f7fafb; border: 1px solid var(--line); border-radius: 9px; padding: 8px 11px; font-size: 13.5px; color: var(--ink); opacity: 0; transform: translateY(6px); transition: opacity .3s, transform .3s; }
+.hw-row.in { opacity: 1; transform: none; }
+.hw-pill { font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; background: #e9faf7; color: var(--brand-dark); }
+.hw-mid { text-align: center; font-size: 14px; color: #5b6b7f; margin-bottom: 13px; }
+.hw-channels { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.hw-ch { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 11px 13px; border-radius: 12px; border: 1.5px solid var(--line); background: #fff; min-width: 64px; opacity: 0; transform: scale(.82); transition: opacity .25s, transform .25s; }
+.hw-ch.in { opacity: 1; transform: none; }
+.hw-ch .e { font-size: 20px; }
+.hw-ch span:last-child { font-size: 12px; color: #5b6b7f; }
+.hw-ch.web { border-color: var(--accent); background: #fff3f3; }
+.hw-winwrap { text-align: center; }
+.hw-status { display: inline-flex; align-items: center; gap: 6px; font-size: 14.5px; font-weight: 700; padding: 8px 18px; border-radius: 999px; border: 1.5px solid var(--line); background: #f7fafb; color: #5b6b7f; transition: background .3s, color .3s, border-color .3s; }
+@media (max-width: 640px) { .hw-steps { flex-wrap: wrap; } .hw-step { flex: 1 1 calc(50% - 5px); } }
 .lp-pricing { max-width: 1000px; margin: 0 auto; padding: 40px 24px; }
 .lp-pricesub { text-align: center; color: #5b6b7f; margin: -16px 0 26px; }
 .lp-tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
