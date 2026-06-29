@@ -130,14 +130,15 @@ Goal: ship a payable product fast, prove people pay, see how they use it.
 - Add a **light / dark toggle**, default **light**, the choice is remembered per user.
 - A fresh, **flat accent colour** (not the blue to mauve gradient).
 
-### New logo, CONFIRMED direction: Option A
-- A **flat, distinctive mark, not the typical gradient AI logo.**
-- **Option A chosen:** a clean geometric **pounce** mark, a stylised paw fused with a location pin (lead-gen meets pounce). I will mock a few variants of this to pick from.
-- Must work in light and dark and shrink to a favicon.
+### New logo, CONFIRMED: "Pin + bolt"
+- A **flat, distinctive, on-message mark** (no animals, the audience must instantly read "find local businesses fast"):
+  a **location pin** (local lead-gen) with a **lightning bolt** inside it (pounce, speed).
+- Teal pin, white inner circle, coral bolt. Works on light and dark, shrinks to a favicon.
+- Wordmark lockup: **Site** in ink + **Pounce** in teal, with the strapline "Find. Show. Pounce."
 
-### Colours, CONFIRMED direction
-- **Bright, positive, happy, flat colours. No gradients. Distinctive.** (Today's blue-to-mauve gradient goes.)
-- A bold primary plus one or two cheerful accents, on light backgrounds, clearly different from LeadsGorilla's yellow/purple.
+### Colours, CONFIRMED
+- **Bright, flat, no gradients** (the blue-to-mauve gradient goes).
+- **Primary teal `#0FB6A8`**, **accent coral `#FF6B6B`**, **highlight amber `#FFC233`**, **ink `#15233B`**, on light backgrounds. Clearly different from LeadsGorilla's yellow/purple.
 
 ---
 
@@ -173,8 +174,8 @@ Goal: ship a payable product fast, prove people pay, see how they use it.
 |---|---|
 | Prices | Confirmed (as proposed, kept in config so editable) |
 | Free trial | Confirmed: none at launch |
-| Logo | Confirmed: Option A (paw + pin) |
-| Colours | Confirmed: bright, happy, flat, no gradients |
+| Logo | Confirmed: "pin + bolt" (location pin + lightning) |
+| Colours | Confirmed: teal #0FB6A8 + coral #FF6B6B + amber #FFC233, flat, no gradients |
 | Comparison table | Confirmed: include a LeadsGorilla-style feature table |
 | Auth platform | Open: Clerk (my recommendation) vs Supabase, still to confirm |
 
