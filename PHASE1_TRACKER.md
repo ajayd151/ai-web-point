@@ -3,10 +3,12 @@
 Launch a payable, multi-user subscription. Auth = **Clerk**, billing = **Stripe**, kept on the current Vercel + Neon + Blob stack (no rewrite). Tick off as we go. Items marked **[Ajay]** are yours (credentials), everything else is mine.
 
 ## A. Brand refresh (do first, safe + visible, no backend risk)
-- [ ] New **pin + bolt** logo as SVG + favicon (teal `#0FB6A8`, coral `#FF6B6B`)
-- [ ] New palette across the app (teal / coral / amber `#FFC233` / ink `#15233B`), flat, no gradients
-- [ ] **Light theme by default** + a light/dark toggle (remembered per user)
-- [ ] New **light homepage** with the 3-field search hero (business type, location, "no website / has phone")
+- [x] New **pin + bolt** logo as SVG + favicon (teal `#0FB6A8`, coral `#FF6B6B`)
+- [x] New palette + flat brand colours across the app (teal / coral / amber / ink), main gradients removed
+- [x] App header (topbar) switched to light
+- [ ] **Light homepage** (convert the dark gate to light) with the 3-field search hero, NEXT, with a preview
+- [ ] Light/dark toggle (remembered per user)
+- [ ] Sweep remaining decorative gradients to flat
 - [ ] Public **pricing page** with the tier comparison table
 
 ## B. Accounts + auth (Clerk)
