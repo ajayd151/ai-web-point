@@ -59,9 +59,13 @@ application form). The whole interface is hidden behind it until signed in.
 - **Google Places (New)** text search for real businesses.
 - **Filters:** website (any/none/has), phone (any/has/**mobile**/landline/none), email,
   ratings-count range, star buckets, and **"Already messaged"** (exclude ever / last 3 months).
-- **Deep paging + server-side filtering** (scans ~60 results, not just top 10).
+- **Deep paging + server-side filtering** (scans ~60 results per town, not just top 10).
+- **Max matches** selector (10 / 20 / 50 / 100 / 150, default **50**); server caps the target (`want`) at **150**.
 - **Auto-expand to nearby areas**, if a town is thin, an AI call (gpt-4o-mini) names the
   nearest towns/suburbs and searches those too, so "Birmingham had 1" → "21 across nearby areas".
+  Expansion is **demand-driven** (up to **15** nearby areas) and stops the moment the target is met,
+  so a bigger "Max matches" only digs more areas (and costs more) when it actually needs to. The
+  search function runs up to 60s to allow these larger multi-area pulls.
 - **Recent searches** table, one-click **Run again** + per-row delete.
 - **Results survive a reload (free restore):** each search is cached locally
   (`aiwp_last_results`: criteria + results + the stats banner + load-more state) and restored on
@@ -752,8 +756,9 @@ Newest first. Reference sections above are the source of truth; this is a quick 
   scrolls to the top (it does NOT auto-run, so you choose when to spend). Also: the banner's lead count
   now updates after Load more, and the "that's everything" message points you to the panel.
 - **💾 45-day search-results retention + export with date range (new):** every search's results are now
-  saved on the device for **`RESULT_RETENTION_DAYS` (45, configurable, Super Admin / future per-tier)**,
-  then auto-deleted. Stored in `aiwp_search_results` keyed by a search id (slim business fields only),
+  saved on the device for a **per-tier retention window** (`RETENTION_BY_TIER`: Scout **14** / Hunter **45** /
+  Apex **120** days), resolved by `retentionDays()` from the settings `plan` (owner defaults to `apex`) with an
+  optional `retentionDays` override (Super Admin). Then auto-deleted. Stored in `aiwp_search_results` keyed by a search id (slim business fields only),
   with quota-guarded writes (evicts oldest if full). The **Recent searches** table shows a per-row
   **⬇ CSV** (export that one search) and a retention note; expired rows show a dash. **Both** the
   results-area button and the Recent-searches button now open ONE **⬇ Export… dialog** (`#exp-modal`)
