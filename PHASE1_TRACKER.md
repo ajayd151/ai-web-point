@@ -16,9 +16,11 @@ Launch a payable, multi-user subscription. Auth = **Clerk**, billing = **Stripe*
 - [ ] Wire Sign in / Get started to Clerk (Google + email) — section B
 
 ## B. Accounts + auth (Clerk)
-- [ ] **[Ajay]** Create the "Site Pounce" Clerk app, enable Email + Google (mirror ScrollyVid), paste keys into Vercel env
-- [ ] Front-end sign-up / sign-in via Clerk JS (replace the current login gate)
-- [ ] Verify the Clerk session in every API function (replace `lib/auth.js` HMAC cookie)
+- [x] Created the "Site Pounce" Clerk app (Development instance `major-cod-60.clerk.accounts.dev`), enabled Email + Google, added an `email` claim to the session token (for allow-listing)
+- [x] Front-end sign-up / sign-in via Clerk JS, built **dormant** behind `window.AIWP_CLERK.enabled` (flip to `true` to turn on); `openSignin` / logout defer to Clerk's UI when enabled
+- [x] Backend Clerk session verification via `lib/clerkauth.js` (zero-dep JWKS verify) + `api/clerk-session.js`, which exchanges the Clerk token for the existing `aiwp` cookie, so all 16 protected endpoints stay unchanged
+- [ ] **[Ajay]** Paste `CLERK_SECRET_KEY` (from Clerk → API keys) + set `ALLOWED_EMAILS=ajay@aimpro.co.uk` in Vercel, then I flip `enabled:true` and we test sign-in
+- [ ] Swap the dev instance for a **Production** instance + your own Google OAuth creds at launch (point sitepounce.com at it, use `pk_live_`/`sk_live_`)
 - [ ] `users` table in Neon (clerk_user_id, email, plan, founding flag, created)
 
 ## C. Billing (Stripe)
