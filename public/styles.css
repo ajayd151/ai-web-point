@@ -244,8 +244,14 @@ button.gen { background: var(--brand); color: #fff; width: 100%; margin-top: 12p
 .lp-foot-links { display: flex; gap: 18px; }
 .lp-foot-links a { color: #5b6b7f; text-decoration: none; }
 .lp-foot-links a:hover { color: var(--ink); }
-.signin-card { max-width: 400px; }
-.signin-soon { margin-top: 12px; font-size: 12.5px; }
+.signin-card { max-width: 410px; }
+.auth-tabs { display: flex; gap: 6px; background: #f1f4f9; border-radius: 10px; padding: 4px; margin: 8px 0 16px; }
+.auth-tab { flex: 1; border: none; background: none; padding: 9px; border-radius: 8px; font-weight: 700; font-size: 14px; color: #5b6b7f; cursor: pointer; }
+.auth-tab.active { background: #fff; color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.auth-oauth { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; font-weight: 700; font-size: 14.5px; color: var(--ink); cursor: pointer; margin-bottom: 9px; }
+.auth-oauth:hover { border-color: var(--brand); }
+.auth-or { text-align: center; color: #94a3b8; font-size: 12.5px; margin: 6px 0 10px; }
+.auth-fine { font-size: 12.5px; margin-top: 6px; }
 @media (max-width: 760px) {
   .lp-h1 { font-size: 30px; }
   .lp-feats, .lp-stepcards, .lp-tiers { grid-template-columns: 1fr; }

@@ -27,8 +27,8 @@
     </header>
 
     <section class="lp-hero">
-      <h1 class="lp-h1">Find local business clients, and win them with a website you've already built.</h1>
-      <p class="lp-sub">Search any town, find the businesses worth pitching, see where they're losing out online, and hand them a website built for their business. The whole pipeline, in one tool.</p>
+      <h1 class="lp-h1">Find local business leads, and turn them into clients.</h1>
+      <p class="lp-sub">The all-in-one platform for agencies. Search any trade in any town, filter to the businesses worth your time, then call, text or WhatsApp them, pitch with an instant AI website, and track every reply. The whole lead-gen pipeline in one tool.</p>
       <div class="lp-search">
         <div class="lp-field"><label>I'm looking for</label><input id="hero-trade" type="text" placeholder="e.g. electricians" /></div>
         <div class="lp-field"><label>Location</label><input id="hero-loc" type="text" placeholder="e.g. Wolverhampton" /></div>
@@ -97,13 +97,25 @@
 
     <div id="signin-modal" class="modal hidden">
       <div class="modal-card signin-card">
-        <div class="preview-head"><h2>Sign in</h2><button id="signin-close" class="ghost" type="button">Close</button></div>
-        <p class="muted">Welcome back. Sign in to your account.</p>
-        <label class="block"><span>Username</span><input id="gate-user" type="text" autocomplete="username" /></label>
-        <label class="block"><span>Password</span><input id="gate-pass" type="password" autocomplete="current-password" /></label>
-        <button id="gate-btn" class="primary gate-btn" type="button">Sign in</button>
-        <p id="gate-msg" class="login-msg hidden"></p>
-        <p class="muted signin-soon">Google &amp; email sign-up arrive with launch.</p>
+        <div class="preview-head"><h2 id="auth-title">Create your account</h2><button id="signin-close" class="ghost" type="button">Close</button></div>
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="create" type="button">Create account</button>
+          <button class="auth-tab" data-tab="signin" type="button">Sign in</button>
+        </div>
+        <div id="auth-create" class="auth-pane">
+          <button class="auth-oauth" type="button">Continue with Google</button>
+          <button class="auth-oauth" type="button">Sign up with email</button>
+          <p class="muted auth-fine">Free to start. No card needed to run your first searches.</p>
+        </div>
+        <div id="auth-signin" class="auth-pane hidden">
+          <button class="auth-oauth" type="button">Continue with Google</button>
+          <div class="auth-or"><span>or</span></div>
+          <label class="block"><span>Username</span><input id="gate-user" type="text" autocomplete="username" /></label>
+          <label class="block"><span>Password</span><input id="gate-pass" type="password" autocomplete="current-password" /></label>
+          <button id="gate-btn" class="primary gate-btn" type="button">Sign in</button>
+          <p id="gate-msg" class="login-msg hidden"></p>
+        </div>
+        <p id="auth-msg" class="login-msg hidden"></p>
       </div>
     </div>
   </div>

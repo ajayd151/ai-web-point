@@ -230,10 +230,21 @@ async function doLogin() {
 $('gate-btn').addEventListener('click', doLogin);
 $('gate-user').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('gate-pass').focus(); });
 $('gate-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
-// landing: open the sign-in modal (Clerk + Google/email sign-up replaces this in Phase 1 section B)
-function openSignin() { const m = $('signin-modal'); if (!m) return; m.classList.remove('hidden'); setTimeout(() => { try { $('gate-user').focus(); } catch (e) {} }, 50); }
-['nav-signin', 'nav-getstarted', 'hero-search'].forEach((id) => { const b = $(id); if (b) b.addEventListener('click', openSignin); });
-document.querySelectorAll('.lp-tier-cta').forEach((b) => b.addEventListener('click', openSignin));
+// landing: sign-in / create-account modal. The Google + email buttons get wired to
+// Clerk in Phase 1 section B; the username/password sign-in works now (operator login).
+function setAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === tab));
+  if ($('auth-create')) $('auth-create').classList.toggle('hidden', tab !== 'create');
+  if ($('auth-signin')) $('auth-signin').classList.toggle('hidden', tab !== 'signin');
+  if ($('auth-title')) $('auth-title').textContent = tab === 'signin' ? 'Sign in' : 'Create your account';
+  if ($('auth-msg')) $('auth-msg').classList.add('hidden');
+}
+function openSignin(mode) { const m = $('signin-modal'); if (!m) return; setAuthTab(mode === 'signin' ? 'signin' : 'create'); m.classList.remove('hidden'); }
+if ($('nav-signin')) $('nav-signin').addEventListener('click', () => openSignin('signin'));
+['nav-getstarted', 'hero-search'].forEach((id) => { const b = $(id); if (b) b.addEventListener('click', () => openSignin('create')); });
+document.querySelectorAll('.lp-tier-cta').forEach((b) => b.addEventListener('click', () => openSignin('create')));
+document.querySelectorAll('.auth-tab').forEach((t) => t.addEventListener('click', () => setAuthTab(t.dataset.tab)));
+document.querySelectorAll('.auth-oauth').forEach((b) => b.addEventListener('click', () => { const n = $('auth-msg'); if (n) { n.textContent = 'Google and email sign-up switch on when we connect the account system, that is the next build step.'; n.classList.remove('hidden'); } }));
 { const c = $('signin-close'); if (c) c.addEventListener('click', () => $('signin-modal').classList.add('hidden')); }
 { const m = $('signin-modal'); if (m) m.addEventListener('click', (e) => { if (e.target === m) m.classList.add('hidden'); }); }
 $('logout-btn').addEventListener('click', () => { setAuthUI(false); showLoginMsg('', ''); });
