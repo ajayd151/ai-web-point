@@ -230,6 +230,12 @@ async function doLogin() {
 $('gate-btn').addEventListener('click', doLogin);
 $('gate-user').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('gate-pass').focus(); });
 $('gate-pass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doLogin(); });
+// landing: open the sign-in modal (Clerk + Google/email sign-up replaces this in Phase 1 section B)
+function openSignin() { const m = $('signin-modal'); if (!m) return; m.classList.remove('hidden'); setTimeout(() => { try { $('gate-user').focus(); } catch (e) {} }, 50); }
+['nav-signin', 'nav-getstarted', 'hero-search'].forEach((id) => { const b = $(id); if (b) b.addEventListener('click', openSignin); });
+document.querySelectorAll('.lp-tier-cta').forEach((b) => b.addEventListener('click', openSignin));
+{ const c = $('signin-close'); if (c) c.addEventListener('click', () => $('signin-modal').classList.add('hidden')); }
+{ const m = $('signin-modal'); if (m) m.addEventListener('click', (e) => { if (e.target === m) m.classList.add('hidden'); }); }
 $('logout-btn').addEventListener('click', () => { setAuthUI(false); showLoginMsg('', ''); });
 
 // check existing session on load (gate stays up until this confirms a valid cookie)

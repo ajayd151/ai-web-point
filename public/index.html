@@ -12,72 +12,100 @@
 <body>
   <!-- LANDING + LOGIN GATE (covers the whole app until signed in) -->
   <div id="gate" class="gate">
-    <div class="gate-inner">
-      <div class="gate-hero">
-        <div class="gate-brand">
-          <svg class="brandmark" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3 C14.6 3 7 10.6 7 20 C7 31.9 24 46 24 46 C24 46 41 31.9 41 20 C41 10.6 33.4 3 24 3 Z" fill="#0FB6A8"/><circle cx="24" cy="19.5" r="9.6" fill="#fff"/><path d="M25.6 10.8 L17.4 22 L22.6 22 L20.8 28.4 L30.6 16.6 L24.8 16.6 Z" fill="#FF6B6B"/></svg>
-          <div>
-            <h1>Site Pounce</h1>
-            <p>AI lead finder &amp; instant website mockups</p>
-          </div>
-        </div>
-        <span class="lp-tag">Launching soon · 20 founding spots</span>
-        <h2 class="gate-headline">Win local clients by showing them their website before you even call.</h2>
-        <p class="gate-desc">Site Pounce finds nearby businesses that don't have a website yet, then uses AI to build a polished, on-brand homepage preview in seconds, ready to share and turn into booked work.</p>
-        <ul class="gate-points">
-          <li>Pinpoint businesses with no website in any town or city</li>
-          <li>AI-generate a professional homepage mockup instantly</li>
-          <li>Share a branded preview link or send it straight to WhatsApp</li>
-        </ul>
-        <button id="apply-open" class="primary gate-apply">Apply to become a Founding Member →</button>
+    <header class="lp-nav">
+      <div class="lp-nav-brand">
+        <svg class="brandmark" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3 C14.6 3 7 10.6 7 20 C7 31.9 24 46 24 46 C24 46 41 31.9 41 20 C41 10.6 33.4 3 24 3 Z" fill="#0FB6A8"/><circle cx="24" cy="19.5" r="9.6" fill="#fff"/><path d="M25.6 10.8 L17.4 22 L22.6 22 L20.8 28.4 L30.6 16.6 L24.8 16.6 Z" fill="#FF6B6B"/></svg>
+        <span class="lp-nav-name">Site<span class="tealtext">Pounce</span></span>
       </div>
+      <nav class="lp-nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <button id="nav-signin" class="lp-navlink" type="button">Sign in</button>
+        <button id="nav-getstarted" class="lp-navcta" type="button">Get started</button>
+      </nav>
+    </header>
 
-      <div class="gate-card">
-        <h3>Member sign in</h3>
-        <p class="gate-lead">Already a member? Access your dashboard.</p>
+    <section class="lp-hero">
+      <h1 class="lp-h1">Find local business clients, and win them with a website you've already built.</h1>
+      <p class="lp-sub">Search any town, find the businesses worth pitching, see where they're losing out online, and hand them a website built for their business. The whole pipeline, in one tool.</p>
+      <div class="lp-search">
+        <div class="lp-field"><label>I'm looking for</label><input id="hero-trade" type="text" placeholder="e.g. electricians" /></div>
+        <div class="lp-field"><label>Location</label><input id="hero-loc" type="text" placeholder="e.g. Wolverhampton" /></div>
+        <button id="hero-search" class="lp-searchbtn" type="button">Find leads →</button>
+      </div>
+      <div class="lp-chips"><span>No website</span><span>Few reviews</span><span>Has phone</span><span>Ltd company</span></div>
+      <p class="lp-micro">Free to start. Sign up with Google or email to run your first search.</p>
+    </section>
+
+    <section id="features" class="lp-why">
+      <h2 class="lp-h2">Everything you need to land local clients</h2>
+      <div class="lp-feats">
+        <div class="lp-feat"><div class="lp-ico">🔎</div><h3>Find the right leads</h3><p>Search any trade and town. Filter by no website, few reviews, mobile number, Ltd company and more.</p></div>
+        <div class="lp-feat"><div class="lp-ico">🖼️</div><h3>Show them a website</h3><p>Generate a polished homepage for their business in seconds, the pitch that closes itself.</p></div>
+        <div class="lp-feat"><div class="lp-ico">🐾</div><h3>Know what to say</h3><p>Prowl builds an AI call briefing: their gaps, their wins, and the exact lines to use.</p></div>
+        <div class="lp-feat"><div class="lp-ico">📞</div><h3>Reach out safely</h3><p>Call list, SMS and WhatsApp with built-in guardrails, plus open and reply tracking.</p></div>
+        <div class="lp-feat"><div class="lp-ico">🚀</div><h3>Build it live</h3><p>Turn the mockup into a real, hosted website on their own address in one click.</p></div>
+        <div class="lp-feat"><div class="lp-ico">📊</div><h3>Track what works</h3><p>See opens, demo clicks, and which message templates convert best.</p></div>
+      </div>
+    </section>
+
+    <section id="how" class="lp-steps">
+      <h2 class="lp-h2">Find. Show. Pounce.</h2>
+      <div class="lp-stepcards">
+        <div class="lp-step"><span class="lp-num">1</span><h3>Find</h3><p>Surface local businesses worth pitching in any area.</p></div>
+        <div class="lp-step"><span class="lp-num">2</span><h3>Show</h3><p>Hand them a website built for their business.</p></div>
+        <div class="lp-step"><span class="lp-num">3</span><h3>Pounce</h3><p>Send it, follow up, and win the client.</p></div>
+      </div>
+    </section>
+
+    <section id="pricing" class="lp-pricing">
+      <h2 class="lp-h2">Simple pricing</h2>
+      <p class="lp-pricesub">Pick a plan, change or cancel any time. No surprise API bills.</p>
+      <div class="lp-tiers">
+        <div class="lp-tier">
+          <div class="lp-tier-name">🐾 Scout</div>
+          <div class="lp-price">£29<span>/mo</span></div>
+          <ul><li>Find local leads</li><li>Call list, CRM &amp; outreach</li><li>Tracking &amp; message templates</li></ul>
+          <button class="lp-tier-cta" type="button">Get started</button>
+        </div>
+        <div class="lp-tier lp-tier-pop">
+          <div class="lp-tier-badge">Most popular</div>
+          <div class="lp-tier-name">🐆 Hunter</div>
+          <div class="lp-price">£69<span>/mo</span></div>
+          <ul><li>Everything in Scout</li><li>AI website mockups</li><li>Prowl call intelligence</li></ul>
+          <button class="lp-tier-cta" type="button">Get started</button>
+        </div>
+        <div class="lp-tier">
+          <div class="lp-tier-name">🦁 Apex</div>
+          <div class="lp-price">£129<span>/mo</span></div>
+          <ul><li>Everything in Hunter</li><li>Live website builder</li><li>Custom domains &amp; white-label</li></ul>
+          <button class="lp-tier-cta" type="button">Get started</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="lp-footer">
+      <div class="lp-foot-brand">© Site Pounce</div>
+      <div class="lp-foot-links">
+        <a href="#pricing">Pricing</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="mailto:ajay@aimpro.co.uk?subject=Site%20Pounce%20enquiry">Contact</a>
+      </div>
+    </footer>
+
+    <div id="signin-modal" class="modal hidden">
+      <div class="modal-card signin-card">
+        <div class="preview-head"><h2>Sign in</h2><button id="signin-close" class="ghost" type="button">Close</button></div>
+        <p class="muted">Welcome back. Sign in to your account.</p>
         <label class="block"><span>Username</span><input id="gate-user" type="text" autocomplete="username" /></label>
         <label class="block"><span>Password</span><input id="gate-pass" type="password" autocomplete="current-password" /></label>
-        <button id="gate-btn" class="primary gate-btn">Sign in</button>
+        <button id="gate-btn" class="primary gate-btn" type="button">Sign in</button>
         <p id="gate-msg" class="login-msg hidden"></p>
+        <p class="muted signin-soon">Google &amp; email sign-up arrive with launch.</p>
       </div>
     </div>
-
-    <!-- Founding members offer -->
-    <section class="lp-section lp-founding">
-      <div class="lp-wrap">
-        <span class="lp-badge">Founding Members · only 20 places</span>
-        <h2>Get in before everyone else, and never pay more.</h2>
-        <p class="lp-lead">We're opening just <strong>20 founding accounts</strong> before launch. Become one and we'll <strong>grandfather you a fixed monthly fee, locked in for life</strong>, no matter how high the price climbs later.</p>
-        <ul class="lp-perks">
-          <li>🔒 A fixed founder rate, locked in forever</li>
-          <li>🎟️ A private demo, included if your application is accepted</li>
-          <li>🗣️ Direct line to shape the roadmap with the founder</li>
-          <li>🚀 First access the moment we go live</li>
-        </ul>
-        <button id="apply-open2" class="primary lp-cta">Apply now →</button>
-        <p class="lp-fine">By application only. We hand-pick our founders, not everyone will be offered a place.</p>
-      </div>
-    </section>
-
-    <!-- What it does (teaser) -->
-    <section class="lp-section lp-how">
-      <div class="lp-wrap">
-        <h2>How Site Pounce wins you work</h2>
-        <div class="lp-cards">
-          <div class="lp-card"><span class="lp-num">1</span><h3>Find the gaps</h3><p>Surface local businesses that have no website, the ones who need you most.</p></div>
-          <div class="lp-card"><span class="lp-num">2</span><h3>Show, don't pitch</h3><p>AI builds them a finished homepage of their own business. Instantly credible.</p></div>
-          <div class="lp-card"><span class="lp-num">3</span><h3>Turn it into work</h3><p>Send it, track who's interested, and follow up at exactly the right moment.</p></div>
-        </div>
-        <p class="lp-tease">There's a lot more under the hood than we show here, the smartest parts we keep for members. The best way to really get it is to see it live.</p>
-        <button id="apply-open3" class="ghost lp-cta">See it in a private demo →</button>
-        <p class="lp-fine">Demos are reserved for founding applicants.</p>
-      </div>
-    </section>
-
-    <footer class="gate-footer">
-      <span>© Site Pounce</span>
-      <a href="mailto:ajay@aimpro.co.uk?subject=Site%20Pounce%20enquiry">Make an enquiry</a>
-    </footer>
   </div>
 
   <!-- FOUNDING MEMBER APPLICATION MODAL -->

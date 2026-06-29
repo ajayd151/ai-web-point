@@ -6,10 +6,14 @@ Launch a payable, multi-user subscription. Auth = **Clerk**, billing = **Stripe*
 - [x] New **pin + bolt** logo as SVG + favicon (teal `#0FB6A8`, coral `#FF6B6B`)
 - [x] New palette + flat brand colours across the app (teal / coral / amber / ink), main gradients removed
 - [x] App header (topbar) switched to light
-- [ ] **Light homepage** (convert the dark gate to light) with the 3-field search hero, NEXT, with a preview
+- [x] **Light homepage** rebuilt: top nav (Features / How / Pricing / Sign in / Get started), impactful hero with the 3-field search, Features, How-it-works, Pricing tiers, footer
+- [x] Founding-member / "launching soon" removed from the landing (apply modal kept but unlinked)
+- [x] Terms + Privacy pages (linked in the footer)
+- [x] Broader, LeadsGorilla-aware messaging (not just "no website")
 - [ ] Light/dark toggle (remembered per user)
 - [ ] Sweep remaining decorative gradients to flat
-- [ ] Public **pricing page** with the tier comparison table
+- [ ] Full tier comparison table on the pricing page (currently summary tiers)
+- [ ] Wire Sign in / Get started to Clerk (Google + email) — section B
 
 ## B. Accounts + auth (Clerk)
 - [ ] **[Ajay]** Create the "Site Pounce" Clerk app, enable Email + Google (mirror ScrollyVid), paste keys into Vercel env
