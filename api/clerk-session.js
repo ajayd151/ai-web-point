@@ -1,0 +1,46 @@
+// Exchanges a verified Clerk session token for the app's existing `aiwp` session
+// cookie. This is the ONLY place Clerk is checked on the backend, so every other
+// protected endpoint keeps working unchanged. Dormant until CLERK_SECRET_KEY is
+// set in Vercel, and nobody gets in unless their email is in ALLOWED_EMAILS.
+const { sign } = require('../lib/auth');
+const { verifyClerkToken } = require('../lib/clerkauth');
+
+const ISSUER = process.env.CLERK_ISSUER || 'https://major-cod-60.clerk.accounts.dev';
+
+function isAllowed(email) {
+  const list = (process.env.ALLOWED_EMAILS || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (!list.length) return false; // safe default: nobody until the allow-list is set
+  return list.includes(String(email || '').toLowerCase());
+}
+
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
+  // on-switch: stays dormant until the Clerk secret is configured in Vercel
+  if (!process.env.CLERK_SECRET_KEY && !process.env.CLERK_ENABLED) {
+    res.status(503).json({ error: 'Clerk is not enabled yet.' });
+    return;
+  }
+  try {
+    const authH = (req.headers && req.headers.authorization) || '';
+    let token = authH.startsWith('Bearer ') ? authH.slice(7) : '';
+    if (!token && req.body) {
+      let b = req.body;
+      if (typeof b === 'string') { try { b = JSON.parse(b || '{}'); } catch (e) { b = {}; } }
+      token = (b && b.token) || '';
+    }
+    const claims = await verifyClerkToken(token, ISSUER);
+    if (!claims) { res.status(401).json({ error: 'Invalid session.' }); return; }
+
+    const email = claims.email || '';
+    if (!isAllowed(email)) { res.status(403).json({ error: 'not_allowed', email }); return; }
+
+    const cookie = sign(email, Date.now());
+    res.setHeader('Set-Cookie', `aiwp=${encodeURIComponent(cookie)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=43200`);
+    res.status(200).json({ ok: true, email });
+  } catch (err) {
+    res.status(500).json({ error: 'Sign-in failed.' });
+  }
+};

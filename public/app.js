@@ -239,7 +239,14 @@ function setAuthTab(tab) {
   if ($('auth-title')) $('auth-title').textContent = tab === 'signin' ? 'Sign in' : 'Create your account';
   if ($('auth-msg')) $('auth-msg').classList.add('hidden');
 }
-function openSignin(mode) { const m = $('signin-modal'); if (!m) return; setAuthTab(mode === 'signin' ? 'signin' : 'create'); m.classList.remove('hidden'); }
+function openSignin(mode) {
+  const CK = window.AIWP_CLERK || {};
+  if (CK.enabled && window.Clerk && window.Clerk.loaded) {
+    try { if (mode === 'signin') window.Clerk.openSignIn({}); else window.Clerk.openSignUp({}); } catch (e) {}
+    return;
+  }
+  const m = $('signin-modal'); if (!m) return; setAuthTab(mode === 'signin' ? 'signin' : 'create'); m.classList.remove('hidden');
+}
 if ($('nav-signin')) $('nav-signin').addEventListener('click', () => openSignin('signin'));
 ['nav-getstarted', 'hero-search'].forEach((id) => { const b = $(id); if (b) b.addEventListener('click', () => openSignin('create')); });
 document.querySelectorAll('.lp-tier-cta').forEach((b) => b.addEventListener('click', () => openSignin('create')));
@@ -247,10 +254,57 @@ document.querySelectorAll('.auth-tab').forEach((t) => t.addEventListener('click'
 document.querySelectorAll('.auth-oauth').forEach((b) => b.addEventListener('click', () => { const n = $('auth-msg'); if (n) { n.textContent = 'Google and email sign-up switch on when we connect the account system, that is the next build step.'; n.classList.remove('hidden'); } }));
 { const c = $('signin-close'); if (c) c.addEventListener('click', () => $('signin-modal').classList.add('hidden')); }
 { const m = $('signin-modal'); if (m) m.addEventListener('click', (e) => { if (e.target === m) m.classList.add('hidden'); }); }
-$('logout-btn').addEventListener('click', () => { setAuthUI(false); showLoginMsg('', ''); });
+$('logout-btn').addEventListener('click', () => {
+  const CK = window.AIWP_CLERK || {};
+  if (CK.enabled && window.Clerk) { try { window.Clerk.signOut(); } catch (e) {} }
+  setAuthUI(false); showLoginMsg('', '');
+});
 
-// check existing session on load (gate stays up until this confirms a valid cookie)
-fetch('/api/login').then((r) => r.json()).then((d) => setAuthUI(!!d.authed)).catch(() => setAuthUI(false));
+// Auth bootstrap. With Clerk enabled, the Clerk session drives login (exchanged for
+// the app cookie via /api/clerk-session); otherwise the existing cookie check runs.
+(function bootAuth() {
+  const CK = window.AIWP_CLERK || {};
+  if (CK.enabled && CK.pk) { startClerk(); return; }
+  fetch('/api/login').then((r) => r.json()).then((d) => setAuthUI(!!d.authed)).catch(() => setAuthUI(false));
+})();
+
+function startClerk() {
+  const CK = window.AIWP_CLERK || {};
+  const s = document.createElement('script');
+  s.setAttribute('data-clerk-publishable-key', CK.pk);
+  s.async = true;
+  s.crossOrigin = 'anonymous';
+  s.src = 'https://' + CK.domain + '/npm/@clerk/clerk-js@5/dist/clerk.browser.js';
+  s.addEventListener('load', async () => {
+    try {
+      await window.Clerk.load();
+      window.Clerk.addListener(() => syncClerk());
+      syncClerk();
+    } catch (e) { console.error('Clerk load failed', e); setAuthUI(false); }
+  });
+  s.addEventListener('error', () => { console.error('Clerk script failed to load'); setAuthUI(false); });
+  document.head.appendChild(s);
+}
+
+let _clerkSyncing = false;
+async function syncClerk() {
+  if (!window.Clerk) return;
+  if (!window.Clerk.user) { setAuthUI(false); return; }
+  if (_clerkSyncing) return;
+  _clerkSyncing = true;
+  try {
+    const token = await window.Clerk.session.getToken();
+    const r = await fetch('/api/clerk-session', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
+    if (r.ok) { showLoginMsg('', ''); setAuthUI(true); }
+    else if (r.status === 403) {
+      setAuthUI(false);
+      const d = await r.json().catch(() => ({}));
+      alert('Your account' + (d.email ? ' (' + d.email + ')' : '') + ' is not enabled yet. We are onboarding accounts gradually, please check back soon.');
+      try { window.Clerk.signOut(); } catch (e) {}
+    } else { setAuthUI(false); showLoginMsg('Sign-in could not be completed, please try again.', 'err'); }
+  } catch (e) { setAuthUI(false); }
+  finally { _clerkSyncing = false; }
+}
 
 // ---- founding-member application (public landing form) -------------------
 function openApply() { applyMsg('', ''); $('apply-modal').classList.remove('hidden'); setTimeout(() => { try { $('ap-name').focus(); } catch (e) {} }, 50); }

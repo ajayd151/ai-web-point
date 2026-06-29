@@ -673,6 +673,15 @@
     </div>
   </div>
 
+  <!-- Clerk config. The publishable key is public (it ships in all Clerk front-ends).
+       enabled:false keeps the current password login live; flip to true to turn Clerk on. -->
+  <script>
+    window.AIWP_CLERK = {
+      enabled: false,
+      pk: 'pk_test_bWFqb3ItY29kLTYwLmNsZXJrLmFjY291bnRzLmRldiQ',
+      domain: 'major-cod-60.clerk.accounts.dev'
+    };
+  </script>
   <script src="data.js"></script>
   <script src="app.js"></script>
 </body>
