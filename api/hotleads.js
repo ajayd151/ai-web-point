@@ -3,6 +3,7 @@
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { hotLeadRows } = require('../lib/db');
+const { ownsSlug } = require('../lib/tenant');
 
 function nameFromSlug(slug) {
   return String(slug || '').replace(/-[0-9a-f]{8}$/i, '').split('-')
@@ -21,6 +22,7 @@ module.exports = async (req, res) => {
 
   let rows = [];
   try { rows = await hotLeadRows(); } catch (e) { rows = []; }
+  rows = rows.filter((r) => ownsSlug(req, r.slug)); // only this tenant's hot leads
 
   // CRM statuses (slug -> status) from the notes index, so cards can show them
   let statusMap = {};

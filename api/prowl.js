@@ -3,7 +3,7 @@
 // Result is cached in Blob per slug.
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
-const { tenantPrefix } = require('../lib/tenant');
+const { tenantPrefix, tenantSlug } = require('../lib/tenant');
 const { gatherDossier, readDossier } = require('../lib/intel');
 
 module.exports = async (req, res) => {
@@ -11,7 +11,7 @@ module.exports = async (req, res) => {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; } }
   body = body || {};
-  const slug = String(body.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120);
+  const slug = tenantSlug(req, String(body.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120)); // tenant-namespaced (idempotent)
   // peek: return the cached dossier (or null) without gathering, no credit spent
   if (body.peek) {
     if (!slug) { res.status(400).json({ error: 'Missing slug.' }); return; }

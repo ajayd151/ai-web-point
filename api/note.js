@@ -4,6 +4,7 @@
 // notes/_index.json maps slug -> status so the Leads view can show status cheaply.
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
+const { tenantSlug } = require('../lib/tenant');
 
 const STATUSES = ['contacted', 'no-answer', 'interested', 'callback', 'not-interested', 'declined', 'invalid-phone', 'won', 'lost'];
 
@@ -22,7 +23,7 @@ module.exports = async (req, res) => {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; } }
   body = body || {};
-  const slug = String((isPost ? body.slug : (req.query && req.query.slug)) || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120);
+  const slug = tenantSlug(req, String((isPost ? body.slug : (req.query && req.query.slug)) || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120)); // tenant-namespaced (idempotent)
   if (!slug) { res.status(400).json({ error: 'Missing slug.' }); return; }
   const path = 'notes/' + slug + '.json';
   const data = (await readJson(path)) || { slug, status: '', statusAt: '', comments: [] };

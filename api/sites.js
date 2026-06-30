@@ -3,6 +3,7 @@
 // so old previews can be reviewed/cleaned up in a later tidy-up session.
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
+const { ownsSlug } = require('../lib/tenant');
 
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
@@ -14,6 +15,7 @@ module.exports = async (req, res) => {
     for (const b of blobs) {
       if (!/\.json$/.test(b.pathname)) continue;
       const slug = b.pathname.replace(/^sites\//, '').replace(/\.json$/, '');
+      if (!ownsSlug(req, slug)) continue; // only this tenant's sites
       let name = slug, mode = 'preview', createdAt = b.uploadedAt || '', subdomain = '';
       try {
         const j = await (await fetch(b.url)).json();

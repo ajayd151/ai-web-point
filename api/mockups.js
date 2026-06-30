@@ -4,13 +4,14 @@
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { statsBySlug } = require('../lib/db');
+const { ownsSlug } = require('../lib/tenant');
 
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
 
   try {
     const { blobs } = await list({ prefix: 'mockups/', limit: 1000 });
-    const metas = blobs.filter((b) => b.pathname.endsWith('.json'));
+    const metas = blobs.filter((b) => b.pathname.endsWith('.json') && ownsSlug(req, b.pathname.replace(/^mockups\//, '').replace(/\.json$/, '')));
     metas.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
     const top = metas.slice(0, 40);
 

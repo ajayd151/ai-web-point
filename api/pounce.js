@@ -5,7 +5,7 @@
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
-const { tenantPrefix } = require('../lib/tenant');
+const { tenantPrefix, tenantSlug } = require('../lib/tenant');
 const { readDossier, gatherDossier } = require('../lib/intel');
 
 const GKEY = () => process.env.GOOGLE_PLACES_API_KEY;
@@ -152,7 +152,7 @@ module.exports = async (req, res) => {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; } }
   body = body || {};
-  const slug = String(body.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120);
+  const slug = tenantSlug(req, String(body.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120)); // tenant-namespaced (idempotent)
   const name = String(body.name || '').trim();
   const location = String(body.location || '').trim();
   const category = String(body.category || '').trim() || 'local business';

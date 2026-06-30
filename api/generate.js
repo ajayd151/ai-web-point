@@ -12,7 +12,7 @@ const { put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { humaniseBusinessName } = require('../lib/names');
 const { check, record } = require('../lib/ratelimit');
-const { tenantPrefix } = require('../lib/tenant');
+const { tenantPrefix, tenantSlug } = require('../lib/tenant');
 
 // ---- brand ---------------------------------------------------------------
 const BRAND_BLUE = '#4375ED';
@@ -461,7 +461,8 @@ module.exports = async (req, res) => {
 
     const id = crypto.randomUUID().slice(0, 8);
     const safe = String(business.name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'mockup';
-    const base = `mockups/${safe}-${id}`;
+    const slug = tenantSlug(req, `${safe}-${id}`); // tenant-namespaced for non-owners so the public /v/<slug> stays globally unique
+    const base = `mockups/${slug}`;
 
     const png = await put(`${base}.png`, pngBuffer, { access: 'public', contentType: 'image/png', addRandomSuffix: false });
 
@@ -474,7 +475,6 @@ module.exports = async (req, res) => {
     // short, clean, WhatsApp-friendly link (no query string / special chars)
     const host = req.headers['x-forwarded-host'] || req.headers.host;
     const linkBase = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
-    const slug = `${safe}-${id}`;
     const viewUrl = `${linkBase}/v/${slug}`;
     const imageUrl = `${linkBase}/i/${slug}.png`; // branded, hides the blob host
 
