@@ -8,10 +8,9 @@
 // POST {remove}  -> remove by key
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
+const { tenantPrefix } = require('../lib/tenant');
 
-const PATH = 'calls/_list.json';
-
-async function readList() {
+async function readList(PATH) {
   try {
     const { blobs } = await list({ prefix: PATH });
     const b = blobs.find((x) => x.pathname === PATH);
@@ -30,9 +29,10 @@ function keyFor(a) {
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
   res.setHeader('Cache-Control', 'no-store');
+  const PATH = tenantPrefix(req) + 'calls/_list.json'; // owner -> 'calls/_list.json' (unchanged); other customers -> u/<hash>/calls/_list.json
 
   if (req.method !== 'POST') {
-    const map = await readList();
+    const map = await readList(PATH);
     const calls = Object.values(map).sort((a, b) => String(b.addedAt || '').localeCompare(String(a.addedAt || '')));
     res.status(200).json({ calls });
     return;
@@ -41,7 +41,7 @@ module.exports = async (req, res) => {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; } }
   body = body || {};
-  const map = await readList();
+  const map = await readList(PATH);
 
   if (body.add && body.add.name) {
     const a = body.add;
