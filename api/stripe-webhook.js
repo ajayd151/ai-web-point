@@ -34,7 +34,7 @@ async function applySubscription(subId) {
   if (active && await markWelcomed(email)) {
     let nm = '';
     try { const cust = await stripeReq('GET', 'customers/' + encodeURIComponent(sub.customer), {}); nm = (cust && cust.name) || ''; } catch (e) { /* optional */ }
-    sendNewCustomerEmails({ email: email, name: nm, plan: tier }).catch(() => {});
+    try { await sendNewCustomerEmails({ email: email, name: nm, plan: tier }); } catch (e) { /* fail soft */ }
   }
 }
 

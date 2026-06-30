@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
     try {
       await markWelcomed(email || sEmail); // mark so the webhook fallback won't also email
       const nm = (s.customer_details && s.customer_details.name) || '';
-      sendNewCustomerEmails({ email: email || sEmail, name: nm, plan: tier }).catch(() => {}); // always send on a fresh checkout
+      await sendNewCustomerEmails({ email: email || sEmail, name: nm, plan: tier }); // AWAIT: Vercel freezes the fn after the response, so fire-and-forget never sends
     } catch (e) { /* fail soft */ }
     res.status(200).json({ ok: true, plan: (updated && updated.plan) || tier });
   } catch (err) {
