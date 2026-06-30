@@ -3,6 +3,7 @@
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { dashboardData } = require('../lib/db');
+const { tenantKey, ownsSlug } = require('../lib/tenant');
 
 const DOW = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 function fmtHour(h) {
@@ -36,7 +37,7 @@ module.exports = async (req, res) => {
   const mockupNamesByDay = {}; // London-date string -> [names], for hover validation
   try {
     const { blobs } = await list({ prefix: 'mockups/', limit: 1000 });
-    const jsons = blobs.filter((b) => b.pathname.endsWith('.json'));
+    const jsons = blobs.filter((b) => b.pathname.endsWith('.json') && ownsSlug(req, b.pathname.replace(/^mockups\//, '').replace(/\.json$/, '')));
     generated = jsons.filter((b) => (!since || new Date(b.uploadedAt).toISOString() >= since)).length;
     jsons.forEach((b) => {
       const d = londonDate(new Date(b.uploadedAt));
@@ -55,6 +56,7 @@ module.exports = async (req, res) => {
     if (b) {
       const idx = await (await fetch(b.url + '?t=' + Date.now())).json();
       for (const k in idx) {
+        if (!ownsSlug(req, k)) continue; // only this tenant's leads
         if (idx[k] && idx[k].status) statuses[k] = idx[k].status;
         if (idx[k] && idx[k].status === 'declined' && idx[k].declineReason) declineReasonCount[idx[k].declineReason] = (declineReasonCount[idx[k].declineReason] || 0) + 1;
       }
@@ -62,7 +64,10 @@ module.exports = async (req, res) => {
   } catch (e) { /* ignore */ }
   const declineReasons = Object.keys(declineReasonCount).map((r) => ({ reason: r, n: declineReasonCount[r] })).sort((a, b) => b.n - a.n);
 
-  const d = await dashboardData(since);
+  const tkey = tenantKey(req);
+  const neg = tkey === 'owner';
+  const tpat = neg ? '%--%' : (tkey + '--%');
+  const d = await dashboardData(since, neg, tpat);
   if (!d) { res.status(200).json({ configured: false, generated, statuses }); return; }
 
   const counts = {};
