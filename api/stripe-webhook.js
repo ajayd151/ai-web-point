@@ -4,7 +4,8 @@
 // Stripe by id (the source of truth) before changing anything, so a forged event
 // can't grant a plan that isn't backed by a real, active subscription.
 const { stripeReq, configured } = require('../lib/stripe');
-const { upsertUser } = require('../lib/db');
+const { upsertUser, markWelcomed } = require('../lib/db');
+const { sendNewCustomerEmails } = require('../lib/email');
 
 function tierFromPrice(pid) {
   if (!pid) return '';
@@ -29,6 +30,12 @@ async function applySubscription(subId) {
     stripe_customer_id: sub.customer,
     stripe_subscription_id: sub.id,
   });
+  // first-time-only welcome + admin notification (deduped; only for a live subscription)
+  if (active && await markWelcomed(email)) {
+    let nm = '';
+    try { const cust = await stripeReq('GET', 'customers/' + encodeURIComponent(sub.customer), {}); nm = (cust && cust.name) || ''; } catch (e) { /* optional */ }
+    sendNewCustomerEmails({ email: email, name: nm, plan: tier }).catch(() => {});
+  }
 }
 
 module.exports = async (req, res) => {

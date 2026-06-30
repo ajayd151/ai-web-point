@@ -3,7 +3,8 @@
 // session's email must match the signed-in user.
 const { verify, identity, parseCookie } = require('../lib/auth');
 const { stripeReq, configured } = require('../lib/stripe');
-const { upsertUser } = require('../lib/db');
+const { upsertUser, markWelcomed } = require('../lib/db');
+const { sendNewCustomerEmails } = require('../lib/email');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
@@ -28,6 +29,13 @@ module.exports = async (req, res) => {
     const updated = await upsertUser(email || sEmail, {
       plan: tier, status: 'active', stripe_customer_id: s.customer, stripe_subscription_id: sub || null,
     });
+    // first-time-only welcome + admin notification (deduped by markWelcomed)
+    try {
+      if (await markWelcomed(email || sEmail)) {
+        const nm = (s.customer_details && s.customer_details.name) || '';
+        sendNewCustomerEmails({ email: email || sEmail, name: nm, plan: tier }).catch(() => {});
+      }
+    } catch (e) { /* fail soft */ }
     res.status(200).json({ ok: true, plan: (updated && updated.plan) || tier });
   } catch (err) {
     res.status(500).json({ ok: false, error: 'Could not confirm payment. ' + (err.message || '') });
