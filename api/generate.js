@@ -12,6 +12,7 @@ const { put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { humaniseBusinessName } = require('../lib/names');
 const { check, record } = require('../lib/ratelimit');
+const { tenantPrefix } = require('../lib/tenant');
 
 // ---- brand ---------------------------------------------------------------
 const BRAND_BLUE = '#4375ED';
@@ -437,7 +438,7 @@ module.exports = async (req, res) => {
   }
   // usage cap (checked before any OpenAI call; only RECORDED on success below, so
   // failed/retried generations never burn quota)
-  const rl = await check('generate', Date.now());
+  const rl = await check('generate', Date.now(), tenantPrefix(req));
   if (!rl.ok) {
     res.status(429).json({ error: `Mockup limit reached (${rl.limit} per ${rl.windowHours} hours). Try again in ~${rl.retryHours}h.` });
     return;
@@ -477,7 +478,7 @@ module.exports = async (req, res) => {
     const viewUrl = `${linkBase}/v/${slug}`;
     const imageUrl = `${linkBase}/i/${slug}.png`; // branded, hides the blob host
 
-    await record('generate', Date.now()); // count the slot only now that it actually worked
+    await record('generate', Date.now(), tenantPrefix(req)); // count the slot only now that it actually worked
     res.status(200).json({ imageUrl, viewUrl, id, slug });
   } catch (err) {
     console.error('generate error:', err);

@@ -4,6 +4,7 @@
 // cheap. ANY failure returns the original text unchanged, so it never blocks a send.
 const { verify, parseCookie } = require('../lib/auth');
 const { check, record } = require('../lib/ratelimit');
+const { tenantPrefix } = require('../lib/tenant');
 
 const SYS = [
   'You lightly correct the grammar of a short, casual outreach message so it reads naturally and professionally.',
@@ -30,7 +31,7 @@ module.exports = async (req, res) => {
   if (!key) { res.status(200).json({ text }); return; } // no key, return unchanged
 
   // generous cost cap (the call is tiny, this just stops a runaway loop)
-  const rl = await check('grammar', Date.now());
+  const rl = await check('grammar', Date.now(), tenantPrefix(req));
   if (!rl.ok) { res.status(200).json({ text }); return; } // over cap, return original
 
   try {
@@ -45,7 +46,7 @@ module.exports = async (req, res) => {
     clearTimeout(t);
     const d = await r.json().catch(() => ({}));
     const out = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-    if (out && out.trim()) { await record('grammar', Date.now()); res.status(200).json({ text: out.trim() }); return; }
+    if (out && out.trim()) { await record('grammar', Date.now(), tenantPrefix(req)); res.status(200).json({ text: out.trim() }); return; }
   } catch (e) { /* fall through to original */ }
   res.status(200).json({ text });
 };
