@@ -251,7 +251,9 @@ function openSignin(mode) {
   const m = $('signin-modal'); if (!m) return; setAuthTab(mode === 'signin' ? 'signin' : 'create'); m.classList.remove('hidden');
 }
 if ($('nav-signin')) $('nav-signin').addEventListener('click', () => openSignin('signin'));
-['nav-getstarted', 'hero-search'].forEach((id) => { const b = $(id); if (b) b.addEventListener('click', () => openSignin('create')); });
+// "Get started" sends you to pick a plan first (which then drives sign-up + checkout)
+if ($('nav-getstarted')) $('nav-getstarted').addEventListener('click', () => { const p = document.getElementById('pricing'); if (p) p.scrollIntoView({ behavior: 'smooth' }); else openSignin('create'); });
+if ($('hero-search')) $('hero-search').addEventListener('click', () => { const p = document.getElementById('pricing'); if (p) p.scrollIntoView({ behavior: 'smooth' }); else openSignin('create'); });
 // Plan buttons: if signed in, go straight to Stripe checkout for that tier;
 // otherwise remember the choice and open sign-up, then resume checkout after login.
 document.querySelectorAll('.lp-tier-cta').forEach((b) => b.addEventListener('click', () => {
