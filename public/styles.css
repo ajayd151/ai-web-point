@@ -333,6 +333,24 @@ button.gen { background: var(--brand); color: #fff; width: 100%; margin-top: 12p
   .gate-card { flex-basis: 100%; max-width: 100%; }
 }
 
+/* ---- paywall (signed in, no active plan) ---- */
+.paywall { position: fixed; inset: 0; z-index: 90; overflow: auto; background: #F6FAFB; color: var(--ink); display: flex; align-items: center; justify-content: center; padding: 32px 18px; }
+.paywall-card { width: 100%; max-width: 720px; background: #fff; border: 1px solid var(--line, #e4ebee); border-radius: 20px; padding: 34px 30px; box-shadow: 0 18px 50px rgba(8,40,46,.10); text-align: center; }
+.paywall-card h2 { margin: 0 0 8px; font-size: 26px; font-weight: 800; }
+.paywall-lead { margin: 0 auto 22px; max-width: 520px; font-size: 15px; line-height: 1.6; color: var(--muted, #5a6b70); }
+.paywall-tiers { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.paywall-tier { position: relative; flex: 1 1 180px; max-width: 220px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 20px 16px; border-radius: 16px; border: 1.5px solid var(--line, #e4ebee); background: #fff; cursor: pointer; transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease; }
+.paywall-tier:hover { transform: translateY(-2px); border-color: var(--brand, #0FB6A8); box-shadow: 0 10px 24px rgba(15,182,168,.16); }
+.paywall-tier.featured { border-color: var(--brand, #0FB6A8); box-shadow: 0 10px 24px rgba(15,182,168,.14); }
+.paywall-tier .pt-name { font-size: 16px; font-weight: 800; }
+.paywall-tier .pt-price { font-size: 26px; font-weight: 800; color: var(--brand, #0FB6A8); }
+.paywall-tier .pt-price small { font-size: 13px; font-weight: 600; color: var(--muted, #5a6b70); }
+.paywall-tier .pt-tag { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); font-size: 10.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; background: var(--brand, #0FB6A8); color: #fff; white-space: nowrap; }
+.paywall-incl { margin: 22px auto 0; max-width: 540px; font-size: 13px; line-height: 1.55; color: var(--muted, #5a6b70); }
+.paywall-foot { margin: 14px 0 0; font-size: 13px; }
+.paywall-foot a { color: var(--muted, #5a6b70); text-decoration: underline; cursor: pointer; }
+.paywall-foot a:hover { color: var(--ink); }
+
 /* ---- landing-page sections on the gate ---- */
 .lp-tag, .lp-badge { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; background: rgba(196,133,177,.22); color: #f3cfe6; border: 1px solid rgba(196,133,177,.4); margin-bottom: 14px; }
 .gate-apply { margin-top: 22px; }

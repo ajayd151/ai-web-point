@@ -5,6 +5,7 @@
 const { verify, parseCookie } = require('../lib/auth');
 const { check, record } = require('../lib/ratelimit');
 const { tenantPrefix } = require('../lib/tenant');
+const { requirePaid } = require('../lib/access');
 
 const SYS = [
   'You lightly correct the grammar of a short, casual outreach message so it reads naturally and professionally.',
@@ -20,6 +21,7 @@ const SYS = [
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in.' }); return; }
+  if (!(await requirePaid(req, res))) return; // paywall: needs an active subscription (owner/allow-list comped)
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
 
   let body = req.body;

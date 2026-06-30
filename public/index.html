@@ -190,6 +190,21 @@
     </div>
   </header>
 
+  <!-- Paywall: shown when signed in but without an active plan. Hidden for subscribers + comped accounts. -->
+  <div id="paywall" class="paywall hidden">
+    <div class="paywall-card">
+      <h2>Choose your plan to start</h2>
+      <p class="paywall-lead">You are signed in. Pick a plan to unlock searching for leads, AI mockups and outreach. You can cancel anytime.</p>
+      <div class="paywall-tiers">
+        <button class="lp-tier-cta paywall-tier" type="button" data-tier="scout"><span class="pt-name">Scout</span><span class="pt-price">£29<small>/mo</small></span></button>
+        <button class="lp-tier-cta paywall-tier featured" type="button" data-tier="hunter"><span class="pt-tag">Most popular</span><span class="pt-name">Hunter</span><span class="pt-price">£59<small>/mo</small></span></button>
+        <button class="lp-tier-cta paywall-tier" type="button" data-tier="apex"><span class="pt-name">Apex</span><span class="pt-price">£129<small>/mo</small></span></button>
+      </div>
+      <p class="paywall-incl">Every plan includes lead search, AI website mockups, outreach and tracking. Higher tiers keep your data longer and return more results per search.</p>
+      <p class="paywall-foot"><a href="#" id="paywall-signout">Sign out</a></p>
+    </div>
+  </div>
+
   <nav class="topnav">
     <button class="navbtn active" data-view="search">🔍 Search</button>
     <button class="navbtn" data-view="messages">💬 Templates</button>

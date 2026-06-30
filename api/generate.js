@@ -13,6 +13,7 @@ const { verify, parseCookie } = require('../lib/auth');
 const { humaniseBusinessName } = require('../lib/names');
 const { check, record } = require('../lib/ratelimit');
 const { tenantPrefix, tenantSlug } = require('../lib/tenant');
+const { requirePaid } = require('../lib/access');
 
 // ---- brand ---------------------------------------------------------------
 const BRAND_BLUE = '#4375ED';
@@ -436,6 +437,7 @@ module.exports = async (req, res) => {
     res.status(401).json({ error: 'Please log in first.' });
     return;
   }
+  if (!(await requirePaid(req, res))) return; // paywall: needs an active subscription (owner/allow-list comped)
   // usage cap (checked before any OpenAI call; only RECORDED on success below, so
   // failed/retried generations never burn quota)
   const rl = await check('generate', Date.now(), tenantPrefix(req));

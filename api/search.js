@@ -5,6 +5,7 @@
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
 const { tenantPrefix } = require('../lib/tenant');
+const { requirePaid } = require('../lib/access');
 const { matchesFilters } = require('../lib/filters');
 
 const SERVICE_MAP = {
@@ -103,6 +104,7 @@ async function nearbyAreas(location, count) {
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
+  if (!(await requirePaid(req, res))) return; // paywall: needs an active subscription (owner/allow-list comped)
 
   let body = req.body;
   if (typeof body === 'string') body = JSON.parse(body || '{}');

@@ -195,9 +195,27 @@ function setAuthUI(on) {
   authed = on;
   $('gate').classList.toggle('hidden', on);          // full-screen gate hides the app until signed in
   $('logout-btn').classList.toggle('hidden', !on);
-  if (!on) { setTimeout(() => { try { $('gate-user').focus(); } catch (e) {} }, 60); }
-  if (on) { loadServerMockups(); loadHotLeads(); loadCallList(); } // saved mockups + warm-lead and call-list badges + card states
-  if (on) { try { var pt = localStorage.getItem('aiwp_pending_tier'); if (pt) { localStorage.removeItem('aiwp_pending_tier'); startCheckout(pt); } } catch (e) {} } // resume a plan picked before sign-up
+  if (!on) {
+    if ($('paywall')) $('paywall').classList.add('hidden');
+    setTimeout(() => { try { $('gate-user').focus(); } catch (e) {} }, 60);
+    return;
+  }
+  refreshAccess(); // signed in: decide app vs paywall based on subscription
+}
+
+// Checks /api/me: subscribers/comped see the app; signed-in-but-unpaid see the paywall.
+async function refreshAccess() {
+  let acc = { access: true, loggedIn: true };
+  try { acc = await (await fetch('/api/me')).json(); } catch (e) {}
+  window.AIWP_ACCESS = acc;
+  const paid = !!acc.access;
+  if ($('paywall')) $('paywall').classList.toggle('hidden', paid);
+  if (paid) {
+    loadServerMockups(); loadHotLeads(); loadCallList(); // saved mockups + warm-lead / call-list badges + card states
+  }
+  // resume a plan the user picked before signing up (works whether or not they have access yet:
+  // a brand-new signup has no plan, so this sends them straight to Stripe checkout)
+  try { var pt = localStorage.getItem('aiwp_pending_tier'); if (pt) { localStorage.removeItem('aiwp_pending_tier'); startCheckout(pt); } } catch (e) {}
 }
 
 function showLoginMsg(text, kind) {
@@ -285,7 +303,7 @@ async function openBillingPortal() {
   if (!status) return;
   if (status === 'success' && p.get('session_id')) {
     fetch('/api/stripe-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: p.get('session_id') }) })
-      .then((r) => r.json()).then((d) => { if (d && d.ok) alert('You are subscribed on the ' + (d.plan || '') + ' plan. Welcome aboard.'); else alert((d && d.error) || 'We could not confirm the payment, please contact support.'); })
+      .then((r) => r.json()).then((d) => { if (d && d.ok) { alert('You are subscribed on the ' + (d.plan || '') + ' plan. Welcome aboard.'); try { refreshAccess(); } catch (e) {} } else alert((d && d.error) || 'We could not confirm the payment, please contact support.'); })
       .catch(() => {});
   } else if (status === 'cancel') {
     /* user backed out, nothing to do */
@@ -301,6 +319,8 @@ $('logout-btn').addEventListener('click', () => {
   if (CK.enabled && window.Clerk) { try { window.Clerk.signOut(); } catch (e) {} }
   setAuthUI(false); showLoginMsg('', '');
 });
+// Paywall footer links
+{ const a = $('paywall-signout'); if (a) a.addEventListener('click', (e) => { e.preventDefault(); $('logout-btn').click(); }); }
 
 // Auth bootstrap. With Clerk enabled, the Clerk session drives login (exchanged for
 // the app cookie via /api/clerk-session); otherwise the existing cookie check runs.
@@ -542,6 +562,7 @@ async function doSearch(append) {
     const resp = await fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ industry, location, limit, filters, excludeIds }) });
     const data = await resp.json();
     if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
+    if (resp.status === 402) { if ($('paywall')) $('paywall').classList.remove('hidden'); throw new Error('Choose a plan to start searching.'); }
     if (!resp.ok) throw new Error(data.error || 'Search failed');
     const results = data.results || [];
     lastBatchFull = results.length >= limit;
@@ -839,6 +860,7 @@ async function runGeneration(business, requirements, personName) {
       setAuthUI(false);
       throw new Error('Your session expired, please log in again (top of the page).');
     }
+    if (resp.status === 402) { if ($('paywall')) $('paywall').classList.remove('hidden'); throw new Error('Choose a plan to start generating mockups.'); }
     if (!resp.ok) throw new Error(errText(data, resp.status));
 
     stopGenProgress();

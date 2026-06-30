@@ -35,7 +35,14 @@ module.exports = async (req, res) => {
     if (!claims) { res.status(401).json({ error: 'Invalid session.' }); return; }
 
     const email = claims.email || '';
-    if (!isAllowed(email)) { res.status(403).json({ error: 'not_allowed', email }); return; }
+    // Two modes:
+    //  - default (SIGNUP_OPEN unset): allow-list only, so the live app is owner-only
+    //    exactly as before, nothing changes until we are ready to sell.
+    //  - open (SIGNUP_OPEN=1): anyone who signs in via Clerk gets a session cookie, but
+    //    paid features stay gated by subscription (see lib/access.js). This is the
+    //    "public sign-up" switch we flip when going live with real Stripe billing.
+    const signupOpen = process.env.SIGNUP_OPEN === '1' || process.env.SIGNUP_OPEN === 'true';
+    if (!signupOpen && !isAllowed(email)) { res.status(403).json({ error: 'not_allowed', email }); return; }
 
     const cookie = sign(email, Date.now());
     res.setHeader('Set-Cookie', `aiwp=${encodeURIComponent(cookie)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=43200`);

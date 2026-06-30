@@ -4,10 +4,12 @@
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
 const { tenantPrefix, tenantSlug } = require('../lib/tenant');
+const { requirePaid } = require('../lib/access');
 const { gatherDossier, readDossier } = require('../lib/intel');
 
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
+  if (!(await requirePaid(req, res))) return; // paywall: needs an active subscription (owner/allow-list comped)
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; } }
   body = body || {};
