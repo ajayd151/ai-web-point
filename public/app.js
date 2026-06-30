@@ -197,6 +197,7 @@ function setAuthUI(on) {
   $('logout-btn').classList.toggle('hidden', !on);
   if (!on) {
     if ($('paywall')) $('paywall').classList.add('hidden');
+    if ($('billing-btn')) $('billing-btn').classList.add('hidden');
     setTimeout(() => { try { $('gate-user').focus(); } catch (e) {} }, 60);
     return;
   }
@@ -210,6 +211,8 @@ async function refreshAccess() {
   window.AIWP_ACCESS = acc;
   const paid = !!acc.access;
   if ($('paywall')) $('paywall').classList.toggle('hidden', paid);
+  // "Manage billing" only for real paying subscribers (not comped owner/operator)
+  if ($('billing-btn')) $('billing-btn').classList.toggle('hidden', acc.status !== 'active');
   if (paid) {
     loadServerMockups(); loadHotLeads(); loadCallList(); // saved mockups + warm-lead / call-list badges + card states
   }
@@ -321,6 +324,7 @@ $('logout-btn').addEventListener('click', () => {
 });
 // Paywall footer links
 { const a = $('paywall-signout'); if (a) a.addEventListener('click', (e) => { e.preventDefault(); $('logout-btn').click(); }); }
+{ const b = $('billing-btn'); if (b) b.addEventListener('click', () => openBillingPortal()); }
 
 // Auth bootstrap. With Clerk enabled, the Clerk session drives login (exchanged for
 // the app cookie via /api/clerk-session); otherwise the existing cookie check runs.
