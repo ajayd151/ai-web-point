@@ -68,6 +68,16 @@ Free access alone (above) still lets them burn credit up to the global caps (~30
 4. Share the code. At checkout they click **"Add promotion code"** (already enabled on our
    checkout) and enter it. Deactivate the code in Stripe anytime to stop new redemptions.
 
+## HOW-TO: read user feedback
+- Signed-in users see a **💬 Feedback** button (bottom-left). They pick a type + how
+  important it is, and write a message. We also record their email, plan, the page they
+  were on, and their browser automatically.
+- To read it all: signed in as the owner, open **`/api/feedback`** in your browser (e.g.
+  `https://www.sitepounce.com/api/feedback`). It returns the latest submissions as JSON,
+  newest first. (Owner-only; everyone else gets 403.) A proper in-app Super Admin screen
+  for this is still TODO.
+- Data lives in the Neon **`feedback`** table.
+
 ## HOW-TO: open or close public sign-ups
 - Env var `SIGNUP_OPEN` in Vercel: `1` = anyone can sign up (paid features still gated by a
   subscription); unset/`0` = allow-list only. Redeploy after changing.

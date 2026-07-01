@@ -195,6 +195,7 @@ function setAuthUI(on) {
   authed = on;
   $('gate').classList.toggle('hidden', on);          // full-screen gate hides the app until signed in
   $('logout-btn').classList.toggle('hidden', !on);
+  if ($('fb-btn')) $('fb-btn').classList.toggle('hidden', !on); // floating feedback button, signed-in only
   if (!on) {
     if ($('paywall')) $('paywall').classList.add('hidden');
     if ($('billing-btn')) $('billing-btn').classList.add('hidden');
@@ -352,6 +353,41 @@ $('logout-btn').addEventListener('click', () => {
 { const a = $('paywall-signout'); if (a) a.addEventListener('click', (e) => { e.preventDefault(); $('logout-btn').click(); }); }
 { const b = $('billing-btn'); if (b) b.addEventListener('click', () => openBillingPortal()); }
 // (Welcome screen moved to its own page, public/welcome.html; the checkout return redirects there.)
+
+// ---- floating "Give feedback" button ----
+function fbMsg(text, kind) {
+  const el = $('fb-msg'); if (!el) return;
+  el.textContent = text || ''; el.className = 'login-msg ' + (kind || ''); el.classList.toggle('hidden', !text);
+}
+function openFeedback() {
+  if (!$('fb-modal')) return;
+  fbMsg(''); $('fb-message').value = '';
+  $('fb-modal').classList.remove('hidden');
+  setTimeout(() => { try { $('fb-message').focus(); } catch (e) {} }, 60);
+}
+function closeFeedback() { if ($('fb-modal')) $('fb-modal').classList.add('hidden'); }
+async function sendFeedback() {
+  const message = ($('fb-message').value || '').trim();
+  if (!message) { fbMsg('Please add a message.', 'err'); return; }
+  $('fb-send').disabled = true; fbMsg('Sending...', '');
+  try {
+    const r = await fetch('/api/feedback', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: $('fb-type').value, importance: $('fb-importance').value, message,
+        page: window.AIWP_VIEW || 'search', url: location.href,
+      }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) { fbMsg('Thank you, we got it.', 'ok'); setTimeout(closeFeedback, 1100); }
+    else { fbMsg(d.error || 'Could not send just now, please try again.', 'err'); }
+  } catch (e) { fbMsg('Network error, please try again.', 'err'); }
+  $('fb-send').disabled = false;
+}
+{ const b = $('fb-btn'); if (b) b.addEventListener('click', openFeedback); }
+{ const c = $('fb-close'); if (c) c.addEventListener('click', closeFeedback); }
+{ const s = $('fb-send'); if (s) s.addEventListener('click', sendFeedback); }
+{ const m = $('fb-modal'); if (m) m.addEventListener('click', (e) => { if (e.target === m) closeFeedback(); }); }
 
 // Auth bootstrap. With Clerk enabled, the Clerk session drives login (exchanged for
 // the app cookie via /api/clerk-session); otherwise the existing cookie check runs.
@@ -1878,6 +1914,7 @@ const GENERIC_TIPS = [
 let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
+  window.AIWP_VIEW = name; // remembered so the feedback form can note which page you were on
   ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only

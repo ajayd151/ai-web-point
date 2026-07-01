@@ -208,6 +208,38 @@
     </div>
   </div>
 
+  <!-- Floating "Give feedback" button (bottom-left, shown only when signed in) -->
+  <button id="fb-btn" class="fb-btn hidden" type="button" aria-label="Give feedback">💬 Feedback</button>
+  <div id="fb-modal" class="modal hidden">
+    <div class="modal-card fb-card">
+      <div class="preview-head"><h2>Give us feedback</h2><button id="fb-close" class="ghost" type="button">Close</button></div>
+      <p class="muted fb-intro">Spotted a bug, or got an idea? Tell us. We read every one.</p>
+      <label class="block"><span>Type</span>
+        <select id="fb-type">
+          <option value="idea">Idea / feature request</option>
+          <option value="bug">Something is broken</option>
+          <option value="question">Question</option>
+          <option value="praise">Praise</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+      <label class="block"><span>How important is this to you?</span>
+        <select id="fb-importance">
+          <option value="thought">Just a thought</option>
+          <option value="nice" selected>Nice to have</option>
+          <option value="important">Important</option>
+          <option value="critical">Critical / it is blocking me</option>
+        </select>
+      </label>
+      <label class="block"><span>Your message</span>
+        <textarea id="fb-message" rows="4" placeholder="What is on your mind?"></textarea>
+      </label>
+      <p class="muted fb-fine">We will also note which page you are on, to help us find it.</p>
+      <button id="fb-send" class="primary" type="button">Send feedback</button>
+      <p id="fb-msg" class="login-msg hidden"></p>
+    </div>
+  </div>
+
   <nav class="topnav">
     <button class="navbtn active" data-view="search">🔍 Search</button>
     <button class="navbtn" data-view="messages">💬 Templates</button>

@@ -835,3 +835,24 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 #prowl-body .gp-done, #pounce-body .gp-done { color: #16a34a; }
 #prowl-body .genprog-foot, #pounce-body .genprog-foot { color: var(--muted); }
 .spinner.sm { width: 14px; height: 14px; border-width: 2px; }
+
+/* ---- Floating "Give feedback" button + form ---- */
+.fb-btn {
+  position: fixed; left: 18px; bottom: 18px; z-index: 45;
+  background: var(--brand); color: #fff; border: none; border-radius: 999px;
+  padding: 11px 18px; font-weight: 800; font-size: 14px; cursor: pointer;
+  box-shadow: 0 6px 20px rgba(15, 182, 168, 0.35);
+}
+.fb-btn:hover { background: var(--brand-dark); }
+.fb-card { width: 460px; }
+.fb-card .fb-intro { margin: 0 0 14px; }
+.fb-card label.block { margin-bottom: 12px; }
+.fb-card label.block > span { display: block; font-weight: 700; color: var(--ink); font-size: 13.5px; margin-bottom: 5px; }
+.fb-card select, .fb-card textarea {
+  width: 100%; border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px;
+  font-size: 14px; color: var(--ink); background: #fff; font-family: inherit; box-sizing: border-box;
+}
+.fb-card textarea { resize: vertical; min-height: 84px; }
+.fb-card .fb-fine { font-size: 12px; margin: 0 0 14px; }
+.fb-card .primary { width: 100%; }
+@media (max-width: 560px) { .fb-btn { padding: 9px 14px; font-size: 13px; } }
