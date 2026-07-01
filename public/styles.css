@@ -893,3 +893,21 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .fbadm-actions .linkbtn[disabled] { opacity: .5; cursor: default; }
 .fbadm-del { color: #dc2626; }
 @media (max-width: 720px) { .admin-wrap { flex-direction: column; } .admin-menu { position: static; width: 100%; flex-basis: auto; display: flex; gap: 6px; flex-wrap: wrap; } .admin-menu-title { width: 100%; } }
+
+/* ---- 🔎 DeepDossier (private MVP) ---- */
+.dd-banner { padding: 10px 14px; border-radius: 10px; background: #eef7f6; border: 1px solid var(--line); color: var(--ink); font-size: 13.5px; margin: 4px 0 14px; }
+.dd-banner code { background: rgba(20,30,60,.06); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+.dd-banner-warn { background: #fff6e0; border-color: #ffe1a1; }
+.dd-seniority { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 12px 0 4px; }
+.dd-check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink); cursor: pointer; }
+.dd-actions { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+.dd-results-wrap { margin-top: 16px; }
+.dd-tablewrap { overflow-x: auto; }
+.dd-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.dd-table th, .dd-table td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.dd-table th { position: sticky; top: 0; background: #f7f9fc; font-weight: 700; color: var(--ink); cursor: pointer; user-select: none; }
+.dd-table th:hover { background: #eef2f8; }
+.dd-table td.dd-yes { color: #0a8f4f; font-weight: 700; }
+.dd-table td.dd-no { color: #dc2626; font-weight: 700; }
+.dd-table td.dd-unk { color: var(--muted); }
+.dd-conf { display: inline-block; min-width: 34px; text-align: center; padding: 2px 8px; border-radius: 20px; background: rgba(15,182,168,.12); color: #0b7a70; font-weight: 700; }

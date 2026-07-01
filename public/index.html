@@ -250,6 +250,7 @@
     <button class="navbtn" data-view="websites">🌐 Websites</button>
     <button class="navbtn" data-view="enquiries">📨 Enquiries <span id="enq-count" class="navbadge hidden">0</span></button>
     <button class="navbtn navbtn-admin hidden" id="nav-admin" data-view="admin">⚙️ Admin</button>
+    <button class="navbtn hidden" id="nav-deepdossier" data-view="deepdossier">🔎 DeepDossier</button>
   </nav>
 
   <main>
@@ -652,6 +653,85 @@
           </div>
         </section>
       </div>
+    </div>
+
+    <!-- DEEPDOSSIER (private MVP, owner/allow-list only) -->
+    <div id="view-deepdossier" class="view hidden">
+      <section class="panel">
+        <h2 class="view-title">🔎 DeepDossier <span class="badge" style="background:#eef;color:#334;">Private beta</span></h2>
+        <p class="muted view-sub">Advanced lead enrichment: combines Apollo, Hunter and Companies House into one verified prospect record. Private to your account.</p>
+        <div id="dd-banner" class="dd-banner hidden"></div>
+        <div class="row">
+          <label>
+            <span>Industry / sector keywords</span>
+            <input id="dd-keywords" type="text" placeholder="e.g. loss adjuster" />
+          </label>
+          <label>
+            <span>Country</span>
+            <select id="dd-country">
+              <option value="United Kingdom" selected>United Kingdom</option>
+              <option value="Ireland">Ireland</option>
+              <option value="United States">United States</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label>
+            <span>Company size band</span>
+            <select id="dd-size">
+              <option value="">Any</option>
+              <option value="1,10">1-10</option>
+              <option value="11,50">11-50</option>
+              <option value="51,200">51-200</option>
+              <option value="51,500" selected>51-500</option>
+              <option value="201,500">201-500</option>
+              <option value="501,1000">501-1000</option>
+              <option value="1001,5000">1001-5000</option>
+            </select>
+          </label>
+          <label>
+            <span>Max records <span class="muted">(cap 10)</span></span>
+            <input id="dd-max" type="number" min="1" max="10" value="5" />
+          </label>
+        </div>
+        <label class="block">
+          <span>Job titles <span class="muted">(comma-separated)</span></span>
+          <input id="dd-titles" type="text" placeholder="e.g. Head of Major Loss, Major & Complex Director, Property Claims Director" />
+        </label>
+        <div class="dd-seniority">
+          <span class="muted">Seniority</span>
+          <label class="dd-check"><input type="checkbox" class="dd-sen" value="C-suite" /> C-suite</label>
+          <label class="dd-check"><input type="checkbox" class="dd-sen" value="Director" checked /> Director</label>
+          <label class="dd-check"><input type="checkbox" class="dd-sen" value="Head of" checked /> Head of</label>
+          <label class="dd-check"><input type="checkbox" class="dd-sen" value="Manager" /> Manager</label>
+        </div>
+        <div class="dd-actions">
+          <button id="dd-run" class="primary btn" type="button">Run DeepDossier</button>
+          <button id="dd-export" class="linkbtn hidden">⬇ Export CSV</button>
+          <span id="dd-status" class="muted"></span>
+        </div>
+      </section>
+      <section class="panel dd-results-wrap hidden" id="dd-results-panel">
+        <div class="dd-tablewrap">
+          <table class="dd-table" id="dd-table">
+            <thead>
+              <tr>
+                <th data-sort="name">Name</th>
+                <th data-sort="title">Job Title</th>
+                <th data-sort="company">Company</th>
+                <th data-sort="linkedin">LinkedIn</th>
+                <th data-sort="email">Work Email</th>
+                <th data-sort="emailVerified">Verified?</th>
+                <th data-sort="confidence">Confidence</th>
+                <th data-sort="location">Location</th>
+                <th data-sort="tenure">Tenure</th>
+                <th data-sort="sources">Sources</th>
+              </tr>
+            </thead>
+            <tbody id="dd-tbody"></tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </main>
 

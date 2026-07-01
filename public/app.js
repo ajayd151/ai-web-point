@@ -243,6 +243,8 @@ async function refreshAccess() {
   // ⚙️ Admin menu only for the owner / comped operator (account() reports plan 'owner', status 'comped')
   const isOwner = acc.status === 'comped' || acc.plan === 'owner';
   if ($('nav-admin')) $('nav-admin').classList.toggle('hidden', !isOwner);
+  // 🔎 DeepDossier: private MVP, only the allow-listed account (server decides via /api/me)
+  if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
   if (paid) {
     loadServerMockups(); loadHotLeads(); loadCallList(); // saved mockups + warm-lead / call-list badges + card states
   }
@@ -1918,7 +1920,7 @@ let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
   window.AIWP_VIEW = name; // remembered so the feedback form can note which page you were on
-  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
+  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin', 'deepdossier'].forEach((v) => { const el = $('view-' + v); if (el) el.classList.toggle('hidden', v !== name); });
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'messages') { renderBlocked(); updateWaToday(); }
@@ -1929,6 +1931,109 @@ function showView(name) {
   if (name === 'admin') loadFeedbackAdmin();
 }
 document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
+
+// ---- 🔎 DeepDossier (private MVP) ----
+var ddRows = [];       // last result set (for CSV + sorting)
+var ddSort = { key: 'confidence', dir: -1 };
+var DD_COLS = ['name', 'title', 'company', 'linkedin', 'email', 'emailVerified', 'confidence', 'location', 'tenure', 'sources'];
+var DD_HEADERS = ['Name', 'Job Title', 'Company', 'LinkedIn URL', 'Work Email', 'Email Verified?', 'Confidence Score', 'Location', 'Tenure in Role', 'Data Sources'];
+
+function ddEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function ddRenderRows() {
+  var tb = $('dd-tbody');
+  if (!tb) return;
+  var sorted = ddRows.slice().sort(function (a, b) {
+    var k = ddSort.key, av = a[k], bv = b[k];
+    if (k === 'confidence') { av = Number(av) || 0; bv = Number(bv) || 0; return (av - bv) * ddSort.dir; }
+    return String(av || '').localeCompare(String(bv || '')) * ddSort.dir;
+  });
+  tb.innerHTML = sorted.map(function (r) {
+    var li = r.linkedin ? '<a href="' + ddEsc(r.linkedin) + '" target="_blank" rel="noopener">profile ↗</a>' : '<span class="muted">-</span>';
+    var vClass = r.emailVerified === 'Yes' ? 'dd-yes' : (r.emailVerified === 'No' ? 'dd-no' : 'dd-unk');
+    return '<tr>' +
+      '<td>' + ddEsc(r.name) + '</td>' +
+      '<td>' + ddEsc(r.title) + '</td>' +
+      '<td>' + ddEsc(r.company) + '</td>' +
+      '<td>' + li + '</td>' +
+      '<td>' + ddEsc(r.email) + '</td>' +
+      '<td class="' + vClass + '">' + ddEsc(r.emailVerified) + '</td>' +
+      '<td><span class="dd-conf">' + ddEsc(r.confidence) + '</span></td>' +
+      '<td>' + ddEsc(r.location) + '</td>' +
+      '<td>' + ddEsc(r.tenure) + '</td>' +
+      '<td class="muted">' + ddEsc(r.sources) + '</td>' +
+      '</tr>';
+  }).join('');
+}
+
+document.querySelectorAll('#dd-table th[data-sort]').forEach(function (th) {
+  th.addEventListener('click', function () {
+    var k = th.dataset.sort;
+    if (ddSort.key === k) ddSort.dir *= -1; else { ddSort.key = k; ddSort.dir = (k === 'confidence' ? -1 : 1); }
+    ddRenderRows();
+  });
+});
+
+function ddSeniority() {
+  return Array.prototype.slice.call(document.querySelectorAll('.dd-sen:checked')).map(function (c) { return c.value; });
+}
+
+async function ddRun() {
+  var btn = $('dd-run'); if (!btn) return;
+  var status = $('dd-status');
+  var payload = {
+    keywords: ($('dd-keywords').value || '').trim(),
+    country: $('dd-country').value,
+    sizeBand: $('dd-size').value,
+    titles: ($('dd-titles').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean),
+    seniority: ddSeniority(),
+    max: Math.max(1, Math.min(10, Number($('dd-max').value) || 5)),
+  };
+  if (!payload.keywords && !payload.titles.length) { status.textContent = 'Enter keywords or at least one job title.'; return; }
+  btn.disabled = true; btn.textContent = 'Running…'; status.textContent = 'Enriching (up to ~45s)…';
+  try {
+    var res = await fetch('/api/deepdossier/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (res.status === 404) { status.textContent = 'Not available on this account.'; return; }
+    var d = await res.json().catch(function () { return {}; });
+    if (!res.ok) { status.textContent = d.error || ('Error (HTTP ' + res.status + ').'); return; }
+    ddRows = d.rows || [];
+    ddSort = { key: 'confidence', dir: -1 };
+    ddRenderRows();
+    $('dd-results-panel').classList.toggle('hidden', !ddRows.length);
+    $('dd-export').classList.toggle('hidden', !ddRows.length);
+    var m = d.meta || {};
+    var banner = $('dd-banner');
+    if (m.mock) {
+      banner.className = 'dd-banner dd-banner-warn';
+      banner.innerHTML = '⚠️ <strong>Sample data.</strong> Apollo / Hunter API keys are not connected yet, so these rows are realistic placeholders to test the flow. Add <code>APOLLO_API_KEY</code> and <code>HUNTER_API_KEY</code> for live results.';
+      banner.classList.remove('hidden');
+    } else {
+      banner.className = 'dd-banner';
+      banner.innerHTML = 'Live sources: ' + (m.sourcesLive ? Object.keys(m.sourcesLive).filter(function (k) { return m.sourcesLive[k]; }).join(', ') : '') + '.';
+      banner.classList.remove('hidden');
+    }
+    status.textContent = (ddRows.length + ' record(s)') + (m.cached ? ' · cached (no charge)' : (m.costGbp != null ? ' · est. £' + m.costGbp.toFixed(2) : '')) + (m.msTotal ? ' · ' + (m.msTotal / 1000).toFixed(1) + 's' : '');
+  } catch (e) {
+    status.textContent = 'Network error, please retry.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Run DeepDossier';
+  }
+}
+if ($('dd-run')) $('dd-run').addEventListener('click', ddRun);
+
+function ddExportCsv() {
+  if (!ddRows.length) return;
+  var esc = function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var lines = [DD_HEADERS.join(',')];
+  ddRows.forEach(function (r) { lines.push(DD_COLS.map(function (c) { return esc(r[c]); }).join(',')); });
+  var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'deepdossier_export.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+if ($('dd-export')) $('dd-export').addEventListener('click', ddExportCsv);
 
 // ---- Super Admin: left menu + Feedback management ----
 document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('click', () => {

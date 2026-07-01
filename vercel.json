@@ -18,6 +18,9 @@
     "api/pounce.js": {
       "memory": 1024,
       "maxDuration": 120
+    },
+    "api/deepdossier/search.js": {
+      "maxDuration": 120
     }
   },
   "rewrites": [
