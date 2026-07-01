@@ -12,7 +12,7 @@ const { put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { humaniseBusinessName } = require('../lib/names');
 const { check, record } = require('../lib/ratelimit');
-const { tenantPrefix, tenantSlug } = require('../lib/tenant');
+const { tenantPrefix, tenantSlug, emailOf } = require('../lib/tenant');
 const { requirePaid } = require('../lib/access');
 
 // ---- brand ---------------------------------------------------------------
@@ -440,7 +440,7 @@ module.exports = async (req, res) => {
   if (!(await requirePaid(req, res))) return; // paywall: needs an active subscription (owner/allow-list comped)
   // usage cap (checked before any OpenAI call; only RECORDED on success below, so
   // failed/retried generations never burn quota)
-  const rl = await check('generate', Date.now(), tenantPrefix(req));
+  const rl = await check('generate', Date.now(), tenantPrefix(req), emailOf(req));
   if (!rl.ok) {
     res.status(429).json({ error: `Mockup limit reached (${rl.limit} per ${rl.windowHours} hours). Try again in ~${rl.retryHours}h.` });
     return;

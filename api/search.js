@@ -4,7 +4,7 @@
 // NOTE: Google does not return email addresses, `email` is always null.
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
-const { tenantPrefix } = require('../lib/tenant');
+const { tenantPrefix, emailOf } = require('../lib/tenant');
 const { requirePaid } = require('../lib/access');
 const { matchesFilters } = require('../lib/filters');
 
@@ -117,7 +117,7 @@ module.exports = async (req, res) => {
   if (!key) { res.status(503).json({ error: 'GOOGLE_PLACES_API_KEY is not set in Vercel yet.' }); return; }
 
   // 12-hour usage cap
-  const rl = await checkAndRecord('search', Date.now(), tenantPrefix(req));
+  const rl = await checkAndRecord('search', Date.now(), tenantPrefix(req), emailOf(req));
   if (!rl.ok) {
     res.status(429).json({ error: `Search limit reached (${rl.limit} searches per ${rl.windowHours} hours). Try again in ~${rl.retryHours}h.` });
     return;

@@ -5,7 +5,7 @@
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
-const { tenantPrefix, tenantSlug } = require('../lib/tenant');
+const { tenantPrefix, tenantSlug, emailOf } = require('../lib/tenant');
 const { requirePaid } = require('../lib/access');
 const { readDossier, gatherDossier } = require('../lib/intel');
 
@@ -202,7 +202,7 @@ module.exports = async (req, res) => {
   }
 
   if (!GKEY()) { res.status(503).json({ error: 'Google Places key not set.' }); return; }
-  const rl = await checkAndRecord('pounce', Date.now(), tenantPrefix(req));
+  const rl = await checkAndRecord('pounce', Date.now(), tenantPrefix(req), emailOf(req));
   if (!rl.ok) { res.status(429).json({ error: `Pounce limit reached (${rl.limit} per ${rl.windowHours} hours). Try again in ~${rl.retryHours}h.` }); return; }
 
   // Kick off the Prowl intel gather NOW so it runs in parallel with the photo

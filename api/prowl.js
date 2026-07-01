@@ -3,7 +3,7 @@
 // Result is cached in Blob per slug.
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
-const { tenantPrefix, tenantSlug } = require('../lib/tenant');
+const { tenantPrefix, tenantSlug, emailOf } = require('../lib/tenant');
 const { requirePaid } = require('../lib/access');
 const { gatherDossier, readDossier } = require('../lib/intel');
 
@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
   }
 
   if (!process.env.GOOGLE_PLACES_API_KEY) { res.status(503).json({ error: 'Google Places key is not set.' }); return; }
-  const rl = await checkAndRecord('prowl', Date.now(), tenantPrefix(req));
+  const rl = await checkAndRecord('prowl', Date.now(), tenantPrefix(req), emailOf(req));
   if (!rl.ok) { res.status(429).json({ error: `Prowl limit reached (${rl.limit} per ${rl.windowHours} hours). Try again in ~${rl.retryHours}h.` }); return; }
 
   try {

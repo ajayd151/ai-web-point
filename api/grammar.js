@@ -4,7 +4,7 @@
 // cheap. ANY failure returns the original text unchanged, so it never blocks a send.
 const { verify, parseCookie } = require('../lib/auth');
 const { check, record } = require('../lib/ratelimit');
-const { tenantPrefix } = require('../lib/tenant');
+const { tenantPrefix, emailOf } = require('../lib/tenant');
 const { requirePaid } = require('../lib/access');
 
 const SYS = [
@@ -33,7 +33,7 @@ module.exports = async (req, res) => {
   if (!key) { res.status(200).json({ text }); return; } // no key, return unchanged
 
   // generous cost cap (the call is tiny, this just stops a runaway loop)
-  const rl = await check('grammar', Date.now(), tenantPrefix(req));
+  const rl = await check('grammar', Date.now(), tenantPrefix(req), emailOf(req));
   if (!rl.ok) { res.status(200).json({ text }); return; } // over cap, return original
 
   try {
