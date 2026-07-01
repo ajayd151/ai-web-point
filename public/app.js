@@ -1958,7 +1958,7 @@ function renderFeedbackAdmin(items) {
   const list = $('fbadm-list'); if (!list) return;
   if (!items.length) { list.innerHTML = '<p class="muted">Nothing here.</p>'; return; }
   list.innerHTML = items.map((f) => {
-    const st = f.status || 'new';
+    const st = f.admin_status || 'new';
     const imp = FB_IMP[f.importance] || f.importance || '';
     return '<div class="fbadm-item status-' + esc(st) + '" data-id="' + f.id + '">' +
       '<div class="fbadm-top">' +
