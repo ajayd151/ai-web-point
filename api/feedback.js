@@ -5,6 +5,7 @@
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
 const { recordFeedback, feedbackList } = require('../lib/db');
+const { sendFeedbackEmail } = require('../lib/email');
 
 const TYPES = ['bug', 'idea', 'question', 'praise', 'other'];
 const IMPORTANCE = ['thought', 'nice', 'important', 'critical'];
@@ -36,10 +37,11 @@ module.exports = async (req, res) => {
   const url = String(body.url || '').slice(0, 500);
   const ua = String(req.headers['user-agent'] || '').slice(0, 500);
 
-  const ok = await recordFeedback({
-    email: acct.email, plan: acct.plan, status: acct.status,
-    type, importance, message, page, url, ua,
-  });
+  const record = { email: acct.email, plan: acct.plan, status: acct.status, type, importance, message, page, url, ua };
+  const ok = await recordFeedback(record);
   if (!ok) { res.status(500).json({ error: 'Could not save just now, please try again.' }); return; }
+  // Notify the owner by email. MUST await (Vercel freezes the function after the response,
+  // so a fire-and-forget send would be dropped). Fails soft inside sendFeedbackEmail.
+  await sendFeedbackEmail(record);
   res.status(200).json({ ok: true });
 };
