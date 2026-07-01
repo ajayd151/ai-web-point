@@ -240,6 +240,9 @@ async function refreshAccess() {
   if ($('paywall')) $('paywall').classList.toggle('hidden', paid);
   // "Manage billing" only for real paying subscribers (not comped owner/operator)
   if ($('billing-btn')) $('billing-btn').classList.toggle('hidden', acc.status !== 'active');
+  // ⚙️ Admin menu only for the owner / comped operator (account() reports plan 'owner', status 'comped')
+  const isOwner = acc.status === 'comped' || acc.plan === 'owner';
+  if ($('nav-admin')) $('nav-admin').classList.toggle('hidden', !isOwner);
   if (paid) {
     loadServerMockups(); loadHotLeads(); loadCallList(); // saved mockups + warm-lead / call-list badges + card states
   }
@@ -1915,7 +1918,7 @@ let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
   window.AIWP_VIEW = name; // remembered so the feedback form can note which page you were on
-  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
+  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin'].forEach((v) => $('view-' + v).classList.toggle('hidden', v !== name));
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'messages') { renderBlocked(); updateWaToday(); }
@@ -1923,8 +1926,76 @@ function showView(name) {
   if (name === 'websites') loadWebsites();
   if (name === 'calls') loadCallList();
   if (name === 'enquiries') loadEnquiries();
+  if (name === 'admin') loadFeedbackAdmin();
 }
 document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
+
+// ---- Super Admin: left menu + Feedback management ----
+document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.admin-navbtn').forEach((x) => x.classList.toggle('active', x === b));
+  const v = b.dataset.adminview;
+  document.querySelectorAll('.admin-pane').forEach((p) => p.classList.toggle('hidden', p.id !== 'admin-' + v));
+  if (v === 'feedback') loadFeedbackAdmin();
+}));
+let fbadmLoading = false;
+async function loadFeedbackAdmin() {
+  const list = $('fbadm-list'); if (!list) return;
+  if (fbadmLoading) return; fbadmLoading = true;
+  const filter = ($('fbadm-filter') && $('fbadm-filter').value) || 'open';
+  const qs = filter === 'all' ? '' : ('?status=' + (filter === 'open' ? 'new' : filter));
+  list.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const r = await fetch('/api/feedback' + qs);
+    if (!r.ok) { list.innerHTML = '<p class="muted">' + (r.status === 403 ? 'Owner only.' : 'Could not load.') + '</p>'; fbadmLoading = false; return; }
+    const d = await r.json().catch(() => ({}));
+    renderFeedbackAdmin(d.items || []);
+  } catch (e) { list.innerHTML = '<p class="muted">Network error.</p>'; }
+  fbadmLoading = false;
+}
+const FB_TYPE = { idea: 'Idea', bug: 'Bug', question: 'Question', praise: 'Praise', other: 'Other' };
+const FB_IMP = { thought: 'Just a thought', nice: 'Nice to have', important: 'Important', critical: 'Critical' };
+function renderFeedbackAdmin(items) {
+  const list = $('fbadm-list'); if (!list) return;
+  if (!items.length) { list.innerHTML = '<p class="muted">Nothing here.</p>'; return; }
+  list.innerHTML = items.map((f) => {
+    const st = f.status || 'new';
+    const imp = FB_IMP[f.importance] || f.importance || '';
+    return '<div class="fbadm-item status-' + esc(st) + '" data-id="' + f.id + '">' +
+      '<div class="fbadm-top">' +
+        '<span class="fbadm-imp imp-' + esc(f.importance || 'nice') + '">' + esc(imp) + '</span>' +
+        '<span class="fbadm-type">' + esc(FB_TYPE[f.type] || f.type || '') + '</span>' +
+        (st !== 'new' ? '<span class="fbadm-badge b-' + esc(st) + '">' + esc(st) + '</span>' : '') +
+        '<span class="fbadm-when">' + esc(fmtDate(f.created)) + '</span>' +
+      '</div>' +
+      '<div class="fbadm-msg">' + esc(f.message || '') + '</div>' +
+      '<div class="fbadm-meta">' + esc(f.email || '(unknown)') + ' · ' + esc(f.plan || '') + ' · page: ' + esc(f.page || '') + '</div>' +
+      '<div class="fbadm-actions">' +
+        (st !== 'done' ? '<button class="linkbtn" data-fbact="done">✓ Mark done</button>' : '') +
+        (st !== 'ignored' ? '<button class="linkbtn" data-fbact="ignored">Ignore</button>' : '') +
+        (st !== 'new' ? '<button class="linkbtn" data-fbact="new">Reopen</button>' : '') +
+        '<button class="linkbtn" disabled title="Coming soon: refine and Run Now">⚙️ Implement (soon)</button>' +
+        '<button class="linkbtn fbadm-del" data-fbact="delete">Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+async function fbAdminAction(id, action) {
+  const body = action === 'delete' ? { action: 'delete', id: id } : { action: 'status', id: id, status: action };
+  try {
+    const r = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) { alert('Could not update, please try again.'); return; }
+    loadFeedbackAdmin();
+  } catch (e) { alert('Network error, please try again.'); }
+}
+{ const l = $('fbadm-list'); if (l) l.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-fbact]'); if (!btn) return;
+  const item = e.target.closest('.fbadm-item'); if (!item) return;
+  const id = Number(item.dataset.id); const act = btn.dataset.fbact;
+  if (act === 'delete' && !confirm('Delete this feedback permanently?')) return;
+  fbAdminAction(id, act);
+}); }
+{ const f = $('fbadm-filter'); if (f) f.addEventListener('change', loadFeedbackAdmin); }
+{ const rb = $('fbadm-refresh'); if (rb) rb.addEventListener('click', (e) => { e.preventDefault(); loadFeedbackAdmin(); }); }
 document.querySelectorAll('.dash-rbtn').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.dash-rbtn').forEach((x) => x.classList.toggle('active', x === b));
   currentDashDays = Number(b.dataset.days) || 0;

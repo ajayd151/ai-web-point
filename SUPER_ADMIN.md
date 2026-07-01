@@ -68,15 +68,16 @@ Free access alone (above) still lets them burn credit up to the global caps (~30
 4. Share the code. At checkout they click **"Add promotion code"** (already enabled on our
    checkout) and enter it. Deactivate the code in Stripe anytime to stop new redemptions.
 
-## HOW-TO: read user feedback
+## HOW-TO: read + manage user feedback
 - Signed-in users see a **💬 Feedback** button (bottom-left). They pick a type + how
   important it is, and write a message. We also record their email, plan, the page they
-  were on, and their browser automatically.
-- To read it all: signed in as the owner, open **`/api/feedback`** in your browser (e.g.
-  `https://www.sitepounce.com/api/feedback`). It returns the latest submissions as JSON,
-  newest first. (Owner-only; everyone else gets 403.) A proper in-app Super Admin screen
-  for this is still TODO.
-- Data lives in the Neon **`feedback`** table.
+  were on, and their browser automatically. Each submission is also emailed to you.
+- Manage it in-app: signed in as the owner, open the **⚙️ Admin** tab (top nav, owner-only)
+  -> **Feedback**. There you can filter (Open / All / Done / Ignored), **Mark done**,
+  **Ignore**, **Reopen**, or **Delete** each item. ("Implement" is a stub for later.)
+- The Admin tab is where all future admin tools live (left menu inside it).
+- Raw data is still at **`/api/feedback`** (owner-only JSON) and in the Neon **`feedback`**
+  table (with a `status` column: new / done / ignored).
 
 ## HOW-TO: open or close public sign-ups
 - Env var `SIGNUP_OPEN` in Vercel: `1` = anyone can sign up (paid features still gated by a

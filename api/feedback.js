@@ -4,7 +4,7 @@
 // so the review shows who said it and on which plan. Fails soft; never blocks the app.
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
-const { recordFeedback, feedbackList } = require('../lib/db');
+const { recordFeedback, feedbackList, setFeedbackStatus, deleteFeedback } = require('../lib/db');
 const { sendFeedbackEmail } = require('../lib/email');
 
 const TYPES = ['bug', 'idea', 'question', 'praise', 'other'];
@@ -15,10 +15,11 @@ module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please sign in first.' }); return; }
   const acct = await account(req);
 
-  // GET: owner-only review of everything submitted.
+  // GET: owner-only review of everything submitted (optional ?status= filter).
   if (req.method === 'GET') {
     if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
-    const items = await feedbackList(req.query && req.query.limit);
+    const q = req.query || {};
+    const items = await feedbackList(q.limit, q.status);
     res.status(200).json({ items });
     return;
   }
@@ -28,6 +29,24 @@ module.exports = async (req, res) => {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; } }
   body = body || {};
+
+  // Owner-only admin actions on an existing item (set status / delete).
+  if (body.action) {
+    if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
+    const id = Number(body.id);
+    if (!id) { res.status(400).json({ error: 'Missing id.' }); return; }
+    if (body.action === 'status') {
+      const ok = await setFeedbackStatus(id, String(body.status || ''));
+      if (!ok) { res.status(500).json({ error: 'Could not update.' }); return; }
+      res.status(200).json({ ok: true }); return;
+    }
+    if (body.action === 'delete') {
+      const ok = await deleteFeedback(id);
+      if (!ok) { res.status(500).json({ error: 'Could not delete.' }); return; }
+      res.status(200).json({ ok: true }); return;
+    }
+    res.status(400).json({ error: 'Unknown action.' }); return;
+  }
 
   const message = String(body.message || '').trim().slice(0, 4000);
   if (!message) { res.status(400).json({ error: 'Please add a message.' }); return; }
