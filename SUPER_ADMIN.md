@@ -47,6 +47,26 @@ operator login, and anyone in the `ALLOWED_EMAILS` env var. Everyone else must s
 ## HOW-TO: give someone free (comped) access
 - Add their email to the `ALLOWED_EMAILS` env var in Vercel (comma-separated), then redeploy.
   They then get full access without paying. Remove them to require a subscription again.
+- Alternative (recommended for friends/testers): give them a **100% discount code** (see the
+  discount-codes how-to) so they "subscribe" for £0. They then show up as a real customer you
+  can see + cancel in Stripe, no redeploy needed.
+
+## HOW-TO: give a teammate free access but CAP how much they can use
+Free access alone (above) still lets them burn credit up to the global caps (~30 searches /
+50 mockups / 30 prowls / 30 sites per 20h). To throttle ONE person lower:
+1. Set the `USER_LIMITS` env var in Vercel to JSON keyed by their lowercase email, e.g.
+   `{"mate@example.com":{"search":10,"generate":5,"prowl":5,"pounce":2}}`
+   (only the kinds you list are capped; the rest use the global default). Add more people by
+   adding more keys. Redeploy.
+2. Give them access (allow-list or a 100% code). Their searches/mockups/etc. now stop at the
+   per-person numbers you set, and are counted separately from yours.
+
+## HOW-TO: create a discount code (for friends / testers / a free teammate)
+1. Stripe (live) -> **Product catalogue -> Coupons** (or Payments -> Coupons) -> **New**.
+2. Pick the discount: e.g. **100% off** (free), forever or for a set duration (e.g. 6 months).
+3. On the coupon, add a **promotion code** = the shareable text code (e.g. `FEEDBACK100`).
+4. Share the code. At checkout they click **"Add promotion code"** (already enabled on our
+   checkout) and enter it. Deactivate the code in Stripe anytime to stop new redemptions.
 
 ## HOW-TO: open or close public sign-ups
 - Env var `SIGNUP_OPEN` in Vercel: `1` = anyone can sign up (paid features still gated by a
