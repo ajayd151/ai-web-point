@@ -2081,8 +2081,9 @@ function renderHotLeads(list) {
   updateTabTitle();
   const body = $('hot-body');
   if (!n) { body.innerHTML = '<div class="empty">No warm leads yet. When a prospect opens their preview and clicks "Request a demo", or "Yes, sign me up", they\'ll appear here with their contact details, ready to follow up.</div>'; return; }
+  const demoCount = n - signupCount;
   const intro = signupCount
-    ? `<p class="muted view-sub"><b>🤑 ${signupCount} ${signupCount === 1 ? 'prospect' : 'prospects'} clicked “Sign me up”</b>, call these first. Below them, prospects who clicked "Request a demo".</p>`
+    ? `<p class="muted view-sub"><b>🤑 ${signupCount} ${signupCount === 1 ? 'prospect' : 'prospects'} clicked “Sign me up”</b>, call these first.${demoCount ? ` Below them, ${demoCount} ${demoCount === 1 ? 'prospect' : 'prospects'} who clicked "Request a demo".` : ''} (${n} warm ${n === 1 ? 'lead' : 'leads'} in total.)</p>`
     : '<p class="muted view-sub">These prospects opened their preview and clicked "Request a demo", your warmest leads. Follow up fast.</p>';
   const defnote = '<p class="dash-defnote">ⓘ <b>Requested a demo</b> = clicked the "Request a demo" button on their preview (which opens your booking page). <b>Clicked Sign Up</b> = clicked "Yes, sign me up" (opens your subscribe page). Both are interest clicks, <b>not</b> a confirmed booking or a payment.</p>';
   body.innerHTML = intro + defnote + lastHotLeads.map(hotLeadCardHTML).join('');
@@ -2096,6 +2097,24 @@ async function loadHotLeads() {
   } catch (e) { /* keep showing whatever's there */ }
 }
 $('hot-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadHotLeads));
+// Export the warm leads (both sign-ups and demo-requests) to CSV, same as the Call List.
+function exportHotLeadsCsv() {
+  const list = (lastHotLeads || []).filter((l) => !isBlocked(l));
+  if (!list.length) { alert('No warm leads to export yet.'); return; }
+  const header = ['Business', 'Location', 'Phone', 'Interest', 'When', 'Your status', 'Preview link', 'Google Maps'];
+  const rows = list.map((l) => [
+    l.name || '',
+    l.location || '',
+    l.phone || '',
+    l.signupAt ? 'Clicked Sign Up' : (l.demoAt ? 'Requested a demo' : ''),
+    l.signupAt ? fmtDate(l.signupAt) : (l.demoAt ? fmtDate(l.demoAt) : ''),
+    l.status ? statusLabel(l.status) : '',
+    l.viewUrl || '',
+    mapsLink(l) || '',
+  ]);
+  downloadCsv('warm-leads.csv', header, rows);
+}
+$('hot-export').addEventListener('click', exportHotLeadsCsv);
 
 // ---- 🐾 Prowl: lead intelligence dossier ----
 $('hot-body').addEventListener('click', (e) => {
