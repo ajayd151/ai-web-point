@@ -26,16 +26,16 @@ module.exports = async (req, res) => {
 
     const tier = String((s.metadata && s.metadata.tier) || '').toLowerCase() || 'scout';
     const sub = s.subscription && typeof s.subscription === 'object' ? s.subscription.id : s.subscription;
+    const custName = (s.customer_details && s.customer_details.name) || '';
     const updated = await upsertUser(email || sEmail, {
       plan: tier, status: 'active', stripe_customer_id: s.customer, stripe_subscription_id: sub || null,
     });
     // first-time-only welcome + admin notification (deduped by markWelcomed)
     try {
       await markWelcomed(email || sEmail); // mark so the webhook fallback won't also email
-      const nm = (s.customer_details && s.customer_details.name) || '';
-      await sendNewCustomerEmails({ email: email || sEmail, name: nm, plan: tier }); // AWAIT: Vercel freezes the fn after the response, so fire-and-forget never sends
+      await sendNewCustomerEmails({ email: email || sEmail, name: custName, plan: tier }); // AWAIT: Vercel freezes the fn after the response, so fire-and-forget never sends
     } catch (e) { /* fail soft */ }
-    res.status(200).json({ ok: true, plan: (updated && updated.plan) || tier });
+    res.status(200).json({ ok: true, plan: (updated && updated.plan) || tier, name: (custName.split(' ')[0] || '') });
   } catch (err) {
     res.status(500).json({ ok: false, error: 'Could not confirm payment. ' + (err.message || '') });
   }

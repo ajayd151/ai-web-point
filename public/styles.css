@@ -359,6 +359,19 @@ button.gen { background: var(--brand); color: #fff; width: 100%; margin-top: 12p
 .paywall-foot a { color: var(--muted, #5a6b70); text-decoration: underline; cursor: pointer; }
 .paywall-foot a:hover { color: var(--ink); }
 
+/* ---- welcome overlay (one-time, after subscribing) ---- */
+.welcome { position: fixed; inset: 0; z-index: 95; overflow: auto; background: #F6FAFB; color: var(--ink); display: flex; align-items: center; justify-content: center; padding: 32px 18px; }
+.welcome-card { width: 100%; max-width: 560px; background: #fff; border: 1px solid var(--line, #e4ebee); border-radius: 20px; padding: 34px 32px; box-shadow: 0 18px 50px rgba(8,40,46,.10); text-align: center; }
+.welcome-badge { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+.welcome-card h2 { margin: 0 0 8px; font-size: 26px; font-weight: 800; }
+.welcome-lead { margin: 0 auto 22px; max-width: 460px; font-size: 15px; line-height: 1.6; color: var(--muted, #5a6b70); }
+.welcome-steps { list-style: none; counter-reset: w; padding: 0; margin: 0 0 26px; text-align: left; }
+.welcome-steps li { counter-increment: w; position: relative; padding: 12px 12px 12px 52px; border: 1px solid var(--line, #e4ebee); border-radius: 12px; margin-bottom: 10px; }
+.welcome-steps li::before { content: counter(w); position: absolute; left: 12px; top: 12px; width: 28px; height: 28px; border-radius: 50%; background: var(--brand, #0FB6A8); color: #fff; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.welcome-steps li b { display: block; font-size: 15px; color: var(--ink); }
+.welcome-steps li span { display: block; font-size: 13.5px; color: var(--muted, #5a6b70); margin-top: 2px; line-height: 1.5; }
+.welcome-btn { width: 100%; max-width: 320px; padding: 13px; font-size: 15px; }
+
 /* ---- landing-page sections on the gate ---- */
 .lp-tag, .lp-badge { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; background: rgba(196,133,177,.22); color: #f3cfe6; border: 1px solid rgba(196,133,177,.4); margin-bottom: 14px; }
 .gate-apply { margin-top: 22px; }
