@@ -371,6 +371,7 @@ button.gen { background: var(--brand); color: #fff; width: 100%; margin-top: 12p
 .welcome-steps li b { display: block; font-size: 15px; color: var(--ink); }
 .welcome-steps li span { display: block; font-size: 13.5px; color: var(--muted, #5a6b70); margin-top: 2px; line-height: 1.5; }
 .welcome-btn { width: 100%; max-width: 320px; padding: 13px; font-size: 15px; }
+.welcome-note { margin: 16px auto 0; max-width: 460px; font-size: 12.5px; line-height: 1.55; color: var(--muted, #5a6b70); background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 12px; }
 
 /* ---- landing-page sections on the gate ---- */
 .lp-tag, .lp-badge { display: inline-block; font-size: 12px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; padding: 5px 12px; border-radius: 999px; background: rgba(196,133,177,.22); color: #f3cfe6; border: 1px solid rgba(196,133,177,.4); margin-bottom: 14px; }

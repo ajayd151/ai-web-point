@@ -366,6 +366,8 @@ function showWelcome(plan, name) {
   try { document.querySelector('[data-view="search"]').click(); } catch (e) {}
   setTimeout(() => { try { $('industry').focus(); } catch (e) {} }, 60);
 }); }
+// Preview the welcome page without paying: /?welcome=preview
+try { if (new URLSearchParams(location.search).get('welcome') === 'preview') showWelcome('scout', 'Ajay'); } catch (e) {}
 
 // Auth bootstrap. With Clerk enabled, the Clerk session drives login (exchanged for
 // the app cookie via /api/clerk-session); otherwise the existing cookie check runs.
