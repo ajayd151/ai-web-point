@@ -204,11 +204,37 @@ function setAuthUI(on) {
   refreshAccess(); // signed in: decide app vs paywall based on subscription
 }
 
+// Wipe this device's cached search/leads data so a DIFFERENT user who signs in on the
+// same browser never sees the previous user's prospects. Keeps operator settings +
+// the WhatsApp safety log (device-level). Server data is already tenant-scoped; this is
+// the client-cache half of that separation.
+function resetUserCache() {
+  ['aiwp_last_results', 'aiwp_search_results', 'aiwp_searches', 'aiwp_recent', 'aiwp_messaged', 'aiwp_spend']
+    .forEach((k) => { try { localStorage.removeItem(k); } catch (e) {} });
+  lastSearchResults = []; lastSearchParams = null; lastBatchFull = false;
+  try {
+    if ($('summary')) { $('summary').innerHTML = ''; $('summary').classList.add('hidden'); }
+    if ($('results')) $('results').innerHTML = '';
+    ['want-more', 'sort-order', 'newonly-wrap', 'new-count', 'export-results', 'refresh-results']
+      .forEach((id) => { if ($(id)) $(id).classList.add('hidden'); });
+    if ($('industry')) $('industry').value = '';
+    if ($('location')) $('location').value = '';
+  } catch (e) {}
+  try { renderRecentSearches(); } catch (e) {}
+}
+
 // Checks /api/me: subscribers/comped see the app; signed-in-but-unpaid see the paywall.
 async function refreshAccess() {
   let acc = { access: true, loggedIn: true };
   try { acc = await (await fetch('/api/me')).json(); } catch (e) {}
   window.AIWP_ACCESS = acc;
+  // clean slate when the signed-in identity changes on this device
+  try {
+    const who = (acc.email || '').toLowerCase();
+    const last = localStorage.getItem('aiwp_last_user') || '';
+    if (who && last && last !== who) resetUserCache();
+    if (who) localStorage.setItem('aiwp_last_user', who);
+  } catch (e) {}
   const paid = !!acc.access;
   if ($('paywall')) $('paywall').classList.toggle('hidden', paid);
   // "Manage billing" only for real paying subscribers (not comped owner/operator)
@@ -3041,6 +3067,7 @@ function saveLastResults() {
       results: lastSearchResults,
       batchFull: lastBatchFull,
       summaryHTML: $('summary') ? $('summary').innerHTML : '',
+      user: (window.AIWP_ACCESS && window.AIWP_ACCESS.email) || localStorage.getItem('aiwp_last_user') || '',
     }));
   } catch (e) { /* storage full: not fatal, just no restore */ }
 }
@@ -3049,6 +3076,9 @@ function restoreLastSearch() {
   try { c = JSON.parse(localStorage.getItem('aiwp_last_results') || 'null'); } catch (e) {}
   if (!c || !c.params || !c.results || !c.results.length) return;
   if (Date.now() - new Date(c.at).getTime() > 48 * 3600 * 1000) return; // too stale, nudge a fresh search instead
+  // never restore another user's cached search on a shared device (see resetUserCache)
+  const me = localStorage.getItem('aiwp_last_user') || '';
+  if (me && c.user && c.user !== me) return;
   lastSearchParams = c.params;
   lastSearchResults = c.results;
   lastBatchFull = !!c.batchFull;
