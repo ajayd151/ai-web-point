@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to Site Pounce</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta name="theme-color" content="#0FB6A8" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="welcome" style="position: static; min-height: 100vh;">
+    <div class="welcome-card">
+      <div class="welcome-badge">🎉</div>
+      <h2 id="welcome-head">Welcome to Site Pounce!</h2>
+      <p class="welcome-lead" id="welcome-lead">You're all set. Here's how to land your first client.</p>
+      <ol class="welcome-steps">
+        <li><b>Find leads</b><span>Type a trade and a town (e.g. "electrician, Birmingham") and hit Search.</span></li>
+        <li><b>Show them a website</b><span>Generate an instant AI mockup or a real 1-page site to pitch with.</span></li>
+        <li><b>Reach out &amp; track</b><span>Call, text, email or WhatsApp, then watch opens and replies come in.</span></li>
+      </ol>
+      <button id="welcome-start" class="primary welcome-btn" type="button" onclick="window.location.href='/'">Start finding leads</button>
+      <p class="welcome-note">📩 Heads up: our emails (your receipt, account updates) can land in your <b>spam/junk</b> folder at first. Please check there and mark them "not junk" so you don't miss anything.</p>
+    </div>
+  </div>
+  <script>
+    var q = new URLSearchParams(location.search);
+    var name = (q.get('name') || '').trim();
+    var plan = (q.get('plan') || '').toLowerCase();
+    var planName = { scout: 'Scout', hunter: 'Hunter', apex: 'Apex' }[plan] || '';
+    if (name) document.getElementById('welcome-head').textContent = 'Welcome aboard, ' + name + '!';
+    document.getElementById('welcome-lead').textContent = "You're on the " + (planName || 'new') + " plan. Here's how to land your first client.";
+  </script>
+</body>
+</html>

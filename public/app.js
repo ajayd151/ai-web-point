@@ -332,7 +332,7 @@ async function openBillingPortal() {
   if (!status) return;
   if (status === 'success' && p.get('session_id')) {
     fetch('/api/stripe-confirm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: p.get('session_id') }) })
-      .then((r) => r.json()).then((d) => { if (d && d.ok) { try { refreshAccess(); } catch (e) {} showWelcome(d.plan, d.name); } else alert((d && d.error) || 'We could not confirm the payment, please contact support.'); })
+      .then((r) => r.json()).then((d) => { if (d && d.ok) { window.location.replace('/welcome.html?plan=' + encodeURIComponent(d.plan || '') + '&name=' + encodeURIComponent(d.name || '')); } else alert((d && d.error) || 'We could not confirm the payment, please contact support.'); })
       .catch(() => {});
   } else if (status === 'cancel') {
     /* user backed out, nothing to do */
@@ -351,23 +351,7 @@ $('logout-btn').addEventListener('click', () => {
 // Paywall footer links
 { const a = $('paywall-signout'); if (a) a.addEventListener('click', (e) => { e.preventDefault(); $('logout-btn').click(); }); }
 { const b = $('billing-btn'); if (b) b.addEventListener('click', () => openBillingPortal()); }
-// One-time welcome after a successful subscription (replaces the old alert popup)
-function showWelcome(plan, name) {
-  const el = $('welcome'); if (!el) return;
-  const planName = { scout: 'Scout', hunter: 'Hunter', apex: 'Apex' }[String(plan || '').toLowerCase()] || '';
-  const nm = (name || '').trim();
-  if ($('welcome-head')) $('welcome-head').textContent = nm ? ('Welcome aboard, ' + nm + '!') : 'Welcome to Site Pounce!';
-  if ($('welcome-lead')) $('welcome-lead').textContent = "You're on the " + (planName || 'new') + " plan. Here's how to land your first client.";
-  if ($('paywall')) $('paywall').classList.add('hidden');
-  el.classList.remove('hidden');
-}
-{ const w = $('welcome-start'); if (w) w.addEventListener('click', () => {
-  if ($('welcome')) $('welcome').classList.add('hidden');
-  try { document.querySelector('[data-view="search"]').click(); } catch (e) {}
-  setTimeout(() => { try { $('industry').focus(); } catch (e) {} }, 60);
-}); }
-// Preview the welcome page without paying: /?welcome=preview
-try { if (new URLSearchParams(location.search).get('welcome') === 'preview') showWelcome('scout', 'Ajay'); } catch (e) {}
+// (Welcome screen moved to its own page, public/welcome.html; the checkout return redirects there.)
 
 // Auth bootstrap. With Clerk enabled, the Clerk session drives login (exchanged for
 // the app cookie via /api/clerk-session); otherwise the existing cookie check runs.
