@@ -1935,8 +1935,8 @@ document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', 
 // ---- 🔎 DeepDossier (private MVP) ----
 var ddRows = [];       // last result set (for CSV + sorting)
 var ddSort = { key: 'confidence', dir: -1 };
-var DD_COLS = ['name', 'title', 'company', 'linkedin', 'email', 'emailVerified', 'confidence', 'location', 'tenure', 'sources'];
-var DD_HEADERS = ['Name', 'Job Title', 'Company', 'LinkedIn URL', 'Work Email', 'Email Verified?', 'Confidence Score', 'Location', 'Tenure in Role', 'Data Sources'];
+var DD_COLS = ['name', 'title', 'company', 'mobile', 'directDial', 'landline', 'email', 'emailVerified', 'altEmail', 'linkedin', 'buyingSignal', 'confidence', 'location', 'sources'];
+var DD_HEADERS = ['Name', 'Job Title', 'Company', 'Mobile', 'Direct Dial', 'Landline', 'Work Email', 'Email Verified?', 'Alt Email', 'LinkedIn URL', 'Buying Signal', 'Confidence Score', 'Location', 'Data Sources'];
 
 function ddEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
@@ -1948,6 +1948,8 @@ function ddRenderRows() {
     if (k === 'confidence') { av = Number(av) || 0; bv = Number(bv) || 0; return (av - bv) * ddSort.dir; }
     return String(av || '').localeCompare(String(bv || '')) * ddSort.dir;
   });
+  var tel = function (v) { return v ? '<a href="tel:' + ddEsc(String(v).replace(/\s/g, '')) + '">' + ddEsc(v) + '</a>' : '<span class="muted">-</span>'; };
+  var mail = function (v) { return v ? '<a href="mailto:' + ddEsc(v) + '">' + ddEsc(v) + '</a>' : '<span class="muted">-</span>'; };
   tb.innerHTML = sorted.map(function (r) {
     var li = r.linkedin ? '<a href="' + ddEsc(r.linkedin) + '" target="_blank" rel="noopener">profile ↗</a>' : '<span class="muted">-</span>';
     var vClass = r.emailVerified === 'Yes' ? 'dd-yes' : (r.emailVerified === 'No' ? 'dd-no' : 'dd-unk');
@@ -1955,12 +1957,16 @@ function ddRenderRows() {
       '<td>' + ddEsc(r.name) + '</td>' +
       '<td>' + ddEsc(r.title) + '</td>' +
       '<td>' + ddEsc(r.company) + '</td>' +
-      '<td>' + li + '</td>' +
-      '<td>' + ddEsc(r.email) + '</td>' +
+      '<td class="dd-tel">' + tel(r.mobile) + '</td>' +
+      '<td class="dd-tel">' + tel(r.directDial) + '</td>' +
+      '<td class="dd-tel">' + tel(r.landline) + '</td>' +
+      '<td>' + mail(r.email) + '</td>' +
       '<td class="' + vClass + '">' + ddEsc(r.emailVerified) + '</td>' +
+      '<td>' + mail(r.altEmail) + '</td>' +
+      '<td>' + li + '</td>' +
+      '<td class="dd-signal">' + (r.buyingSignal ? ddEsc(r.buyingSignal) : '<span class="muted">-</span>') + '</td>' +
       '<td><span class="dd-conf">' + ddEsc(r.confidence) + '</span></td>' +
       '<td>' + ddEsc(r.location) + '</td>' +
-      '<td>' + ddEsc(r.tenure) + '</td>' +
       '<td class="muted">' + ddEsc(r.sources) + '</td>' +
       '</tr>';
   }).join('');

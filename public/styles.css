@@ -911,3 +911,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .dd-table td.dd-no { color: #dc2626; font-weight: 700; }
 .dd-table td.dd-unk { color: var(--muted); }
 .dd-conf { display: inline-block; min-width: 34px; text-align: center; padding: 2px 8px; border-radius: 20px; background: rgba(15,182,168,.12); color: #0b7a70; font-weight: 700; }
+.dd-table td.dd-tel a { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dd-table td.dd-signal { white-space: normal; min-width: 220px; max-width: 300px; color: var(--ink); }
