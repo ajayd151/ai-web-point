@@ -43,20 +43,29 @@ module.exports = async (req, res) => {
   body = body || {};
   const map = await readList(PATH);
 
-  if (body.add && body.add.name) {
-    const a = body.add;
-    const key = keyFor(a);
-    map[key] = {
-      key,
-      name: String(a.name || '').slice(0, 120),
-      location: String(a.location || '').slice(0, 80),
-      category: String(a.category || '').slice(0, 80),
-      phone: String(a.phone || '').slice(0, 30),
-      placeId: String(a.placeId || '').slice(0, 80),
-      slug: String(a.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120),
-      mapsUrl: String(a.mapsUrl || '').slice(0, 300),
-      addedAt: (map[key] && map[key].addedAt) || new Date().toISOString(),
-    };
+  // `add` may be a single business OR an array (batch add from the search page).
+  // Merging them all in this ONE read-modify-write avoids the blob race that loses
+  // writes when many single adds overlap.
+  if (body.add) {
+    const items = Array.isArray(body.add) ? body.add : [body.add];
+    let added = 0;
+    for (const a of items) {
+      if (!a || !a.name) continue;
+      const key = keyFor(a);
+      map[key] = {
+        key,
+        name: String(a.name || '').slice(0, 120),
+        location: String(a.location || '').slice(0, 80),
+        category: String(a.category || '').slice(0, 80),
+        phone: String(a.phone || '').slice(0, 30),
+        placeId: String(a.placeId || '').slice(0, 80),
+        slug: String(a.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120),
+        mapsUrl: String(a.mapsUrl || '').slice(0, 300),
+        addedAt: (map[key] && map[key].addedAt) || new Date().toISOString(),
+      };
+      added++;
+    }
+    if (!added) { res.status(400).json({ error: 'Nothing to add.' }); return; }
   } else if (body.remove) {
     delete map[String(body.remove)];
   } else {

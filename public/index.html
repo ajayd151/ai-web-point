@@ -362,6 +362,13 @@
       <button id="export-results" class="refresh-btn hidden" title="Export options: this search, or a date range of saved searches">⬇ Export…</button>
       <button id="refresh-results" class="refresh-btn hidden" title="Refresh the list, re-checks who you've messaged. No new search, no cost.">↻ Refresh</button>
     </div>
+    <div id="batch-bar" class="batch-bar hidden">
+      <label class="batch-all"><input type="checkbox" id="batch-selectall" /> Select all</label>
+      <span id="batch-count" class="batch-count">0 selected</span>
+      <button id="batch-addcall" class="batch-btn" disabled>📞 Add to call list</button>
+      <button id="batch-export" class="batch-btn" disabled>⬇ Export CSV</button>
+      <button id="batch-clear" class="linkbtn" disabled>Clear</button>
+    </div>
     <section id="results" class="results"></section>
     <div id="loadmore-wrap" class="loadmore-wrap hidden">
       <button id="loadmore-btn" class="primary loadmore-btn">⬇ Load more results</button>

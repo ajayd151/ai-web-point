@@ -8,7 +8,10 @@ let lastSearchResults = [];
 let hotCount = 0;
 let signupCount = 0;
 let recentIndex = new Map(); // normalized name|location -> recent mockup (for search-result status)
+let selectedResults = new Set(); // keys of search-result cards ticked for a batch action
+let renderedResults = [];        // the businesses currently shown (for Select all + batch actions)
 function normKey(name, loc) { return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '') + '|' + String(loc || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function resultKey(b) { return b.id || normKey(b.name, b.location); }
 let authed = false;
 const $ = (id) => document.getElementById(id);
 
@@ -553,6 +556,52 @@ async function refreshFeedback(btn, action) {
 }
 $('refresh-results').addEventListener('click', (e) => refreshFeedback(e.currentTarget, () => renderResults(lastSearchResults)));
 $('export-results').addEventListener('click', () => openExport('current'));
+
+// ---- batch select (tick boxes on search cards) ----
+function selectedBusinesses() { return renderedResults.filter((b) => selectedResults.has(resultKey(b))); }
+function updateBatchBar() {
+  const n = selectedResults.size;
+  const cnt = $('batch-count'); if (cnt) cnt.textContent = n + (n === 1 ? ' selected' : ' selected');
+  ['batch-addcall', 'batch-export', 'batch-clear'].forEach((id) => { if ($(id)) $(id).disabled = n === 0; });
+  const all = $('batch-selectall');
+  if (all) { all.checked = n > 0 && n === renderedResults.length; all.indeterminate = n > 0 && n < renderedResults.length; }
+}
+{ const a = $('batch-selectall'); if (a) a.addEventListener('change', () => {
+  if (a.checked) renderedResults.forEach((b) => selectedResults.add(resultKey(b)));
+  else selectedResults.clear();
+  renderResults(lastSearchResults); // re-render to reflect every card's tick
+}); }
+{ const c = $('batch-clear'); if (c) c.addEventListener('click', () => { selectedResults.clear(); renderResults(lastSearchResults); }); }
+{ const ex = $('batch-export'); if (ex) ex.addEventListener('click', () => {
+  const list = selectedBusinesses();
+  if (!list.length) return;
+  const meta = lastSearchParams || {};
+  downloadCsv('selected-leads.csv', EXPORT_COLS, list.map((b) => bizExportRow(meta, b)));
+}); }
+{ const ac = $('batch-addcall'); if (ac) ac.addEventListener('click', () => batchAddToCallList()); }
+// Add every selected business to the call list in ONE request (atomic, no blob race).
+async function batchAddToCallList() {
+  const list = selectedBusinesses().filter((b) => !isOnCallList(b, recentIndex.get(normKey(b.name, b.location))));
+  const btn = $('batch-addcall');
+  if (!list.length) { alert('Those are already on your call list.'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
+  const adds = list.map((b) => ({
+    name: b.name, location: b.location || '', category: b.category || '',
+    phone: (b.phones && b.phones[0]) || b.phone || '', placeId: b.id || b.placeId || '',
+    slug: (recentIndex.get(normKey(b.name, b.location)) || {}).id || b.slug || '', mapsUrl: b.mapsUrl || '',
+  }));
+  try {
+    await callsPost({ add: adds }); // one serialized write for the whole batch
+    adds.forEach((a) => { callKeys.add(callKeyFor(a)); callNameKeys.add(normKey(a.name, a.location)); callOptimistic.add(normKey(a.name, a.location)); });
+    selectedResults.clear();
+    await loadCallList();      // refresh cache + tab badge from the server
+    renderResults(lastSearchResults); // reflect the ✓ On-call-list state on the cards
+  } catch (e) {
+    alert('Could not add to the call list: ' + (e.message || e));
+  }
+  if (btn) { btn.textContent = '📞 Add to call list'; }
+  updateBatchBar();
+}
 $('loadmore-btn').addEventListener('click', loadMoreResults);
 $('sort-order').addEventListener('change', () => renderResults(lastSearchResults));
 $('newonly').addEventListener('change', () => renderResults(lastSearchResults));
@@ -743,14 +792,19 @@ function renderResults(list) {
   shown.forEach((b) => { if (b.id && seen.has(b.id)) seenN++; else newN++; });
   $('new-count').textContent = '✨ ' + newN + ' new · ' + seenN + ' already in your lists';
   const onlyNew = $('newonly').checked;
-  let rendered = 0;
+  renderedResults = [];
   shown.forEach((b) => {
     const isSeen = !!(b.id && seen.has(b.id));
     if (onlyNew && isSeen) return;
     root.appendChild(card(b, isSeen));
-    rendered++;
+    renderedResults.push(b);
   });
-  if (!rendered) root.innerHTML = '<div class="empty">No new leads here, every match is already in your lists. Untick "✨ New only" to see them.</div>';
+  if (!renderedResults.length) root.innerHTML = '<div class="empty">No new leads here, every match is already in your lists. Untick "✨ New only" to see them.</div>';
+  // batch-select bar follows the rendered list
+  const keys = new Set(renderedResults.map(resultKey));
+  selectedResults = new Set([...selectedResults].filter((k) => keys.has(k))); // drop selections no longer visible
+  if ($('batch-bar')) $('batch-bar').classList.toggle('hidden', !renderedResults.length);
+  updateBatchBar();
 }
 
 function card(b, isSeen) {
@@ -787,6 +841,23 @@ function card(b, isSeen) {
       <div>📍 ${esc(b.address)}</div>
       <div><a href="${esc(b.mapsUrl)}" target="_blank" rel="noopener">View on Google Maps ↗</a></div>
     </div>`;
+
+  // batch-select tick (top-right); toggles this business in/out of the selection
+  const rkey = resultKey(b);
+  const sel = document.createElement('label');
+  sel.className = 'card-select';
+  sel.title = 'Select for a batch action';
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = selectedResults.has(rkey);
+  cb.addEventListener('change', () => {
+    if (cb.checked) selectedResults.add(rkey); else selectedResults.delete(rkey);
+    el.classList.toggle('card-picked', cb.checked);
+    updateBatchBar();
+  });
+  el.classList.toggle('card-picked', cb.checked);
+  sel.appendChild(cb);
+  el.appendChild(sel);
 
   const mi = messagedInfo(b);
   if (mi) {
