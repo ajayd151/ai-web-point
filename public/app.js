@@ -198,6 +198,7 @@ function setAuthUI(on) {
   authed = on;
   $('gate').classList.toggle('hidden', on);          // full-screen gate hides the app until signed in
   $('logout-btn').classList.toggle('hidden', !on);
+  if ($('home-btn')) $('home-btn').classList.toggle('hidden', !on); // Home shortcut, signed-in only
   if ($('fb-btn')) $('fb-btn').classList.toggle('hidden', !on); // floating feedback button, signed-in only
   if (!on) {
     if ($('paywall')) $('paywall').classList.add('hidden');
@@ -2002,6 +2003,10 @@ function showView(name) {
   if (name === 'admin') loadFeedbackAdmin();
 }
 document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
+// Home shortcut: the logo and the 🏠 Home button both go back to Search (the home page)
+function goHome() { showView('search'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+{ const h = $('home-btn'); if (h) h.addEventListener('click', goHome); }
+{ const b = $('brand-home'); if (b) { b.addEventListener('click', goHome); b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goHome(); } }); } }
 
 // ---- 🔎 DeepDossier (private MVP) ----
 var ddRows = [];       // last result set (for CSV + sorting)

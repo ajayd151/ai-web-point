@@ -932,3 +932,10 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 /* ---- Call List: headline count + badge states ---- */
 .calls-summary { font-size: 14px; font-weight: 600; color: var(--muted); margin-left: 8px; }
 .navbadge.allclear { background: #9aa4b2; } /* nothing left to call: grey, not alarm-red */
+
+/* ---- Home shortcut (clickable logo + Home button) ---- */
+.brand-home { cursor: pointer; border-radius: 10px; transition: opacity .15s; }
+.brand-home:hover { opacity: .8; }
+.brand-home:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+.home-btn { cursor: pointer; font-weight: 700; }
+.home-btn:hover { background: #f1f4f9; }
