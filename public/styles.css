@@ -939,3 +939,17 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .brand-home:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
 .home-btn { cursor: pointer; font-weight: 700; }
 .home-btn:hover { background: #f1f4f9; }
+
+/* ---- Admin: Team ---- */
+.team-add { display: flex; gap: 10px; margin: 6px 0 4px; flex-wrap: wrap; }
+.team-add input { flex: 1 1 280px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--ink); font-family: inherit; }
+.team-note { font-size: 12.5px; margin-top: 12px; }
+.team-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.team-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #fff; border: 1px solid var(--line); border-radius: 11px; padding: 12px 15px; box-shadow: var(--shadow); flex-wrap: wrap; }
+.team-item.team-susp { opacity: .6; }
+.team-main b { font-size: 14.5px; color: var(--ink); }
+.team-badge { margin-left: 9px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; background: #eef2f6; color: #6b7585; }
+.team-badge.b-active { background: #dcfce7; color: #15803d; }
+.team-when { font-size: 12px; margin-top: 3px; }
+.team-acts { display: flex; gap: 14px; }
+.team-del { color: #dc2626; }

@@ -4,6 +4,7 @@
 // set in Vercel, and nobody gets in unless their email is in ALLOWED_EMAILS.
 const { sign } = require('../lib/auth');
 const { verifyClerkToken } = require('../lib/clerkauth');
+const { getTeamMember } = require('../lib/db');
 
 const ISSUER = process.env.CLERK_ISSUER || 'https://major-cod-60.clerk.accounts.dev';
 
@@ -41,10 +42,17 @@ module.exports = async (req, res) => {
     //  - open (SIGNUP_OPEN=1): anyone who signs in via Clerk gets a session cookie, but
     //    paid features stay gated by subscription (see lib/access.js). This is the
     //    "public sign-up" switch we flip when going live with real Stripe billing.
-    const signupOpen = process.env.SIGNUP_OPEN === '1' || process.env.SIGNUP_OPEN === 'true';
-    if (!signupOpen && !isAllowed(email)) { res.status(403).json({ error: 'not_allowed', email }); return; }
+    // Team member? They share their owner's workspace and don't need the allow-list or a
+    // subscription. `account` is baked into the cookie so the data layer scopes them to the owner.
+    let member = null;
+    try { member = await getTeamMember(email); } catch (e) { /* treat as non-member */ }
+    const isTeam = !!(member && !member.suspended);
 
-    const cookie = sign(email, Date.now());
+    const signupOpen = process.env.SIGNUP_OPEN === '1' || process.env.SIGNUP_OPEN === 'true';
+    if (!signupOpen && !isAllowed(email) && !isTeam) { res.status(403).json({ error: 'not_allowed', email }); return; }
+
+    const account = isTeam ? String(member.owner_email || '').toLowerCase() : email;
+    const cookie = sign(email, Date.now(), account);
     res.setHeader('Set-Cookie', `aiwp=${encodeURIComponent(cookie)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=43200`);
     res.status(200).json({ ok: true, email });
   } catch (err) {

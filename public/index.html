@@ -640,6 +640,7 @@
         <aside class="admin-menu">
           <div class="admin-menu-title">Admin</div>
           <button class="admin-navbtn active" data-adminview="feedback">💬 Feedback</button>
+          <button class="admin-navbtn" data-adminview="team">👥 Team</button>
           <!-- more admin sections get added here -->
         </aside>
         <section class="admin-content">
@@ -658,6 +659,21 @@
             </div>
             <p class="muted view-sub">Every message sent via the in-app feedback button. Mark items done or ignored, or delete them.</p>
             <div id="fbadm-list" class="fbadm-list"></div>
+          </div>
+
+          <div id="admin-team" class="admin-pane hidden">
+            <div class="admin-pane-head">
+              <h2 class="view-title">👥 Team</h2>
+              <button id="team-refresh" class="linkbtn">↻ Refresh</button>
+            </div>
+            <p class="muted view-sub">Add a colleague from your company. They sign in with their own email and share this workspace (your leads, call list, searches and mockups), free on your plan. Suspend to pause their access, or remove them entirely.</p>
+            <div class="team-add">
+              <input id="team-email" type="email" placeholder="colleague@yourcompany.com" autocomplete="off" />
+              <button id="team-add-btn" class="batch-btn">Add team member</button>
+            </div>
+            <p id="team-msg" class="login-msg hidden"></p>
+            <div id="team-list" class="team-list"></div>
+            <p class="muted team-note">After you add someone, they go to sitepounce.com and sign up with that exact email, then they are straight into your shared workspace. (Permission controls, for example who can delete or export, are coming next.)</p>
           </div>
         </section>
       </div>

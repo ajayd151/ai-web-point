@@ -2123,7 +2123,71 @@ document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('cl
   const v = b.dataset.adminview;
   document.querySelectorAll('.admin-pane').forEach((p) => p.classList.toggle('hidden', p.id !== 'admin-' + v));
   if (v === 'feedback') loadFeedbackAdmin();
+  if (v === 'team') loadTeamAdmin();
 }));
+
+// ---- Super Admin: Team management ----
+function teamMsg(text, kind) {
+  const el = $('team-msg'); if (!el) return;
+  el.textContent = text || ''; el.className = 'login-msg ' + (kind || ''); el.classList.toggle('hidden', !text);
+}
+async function loadTeamAdmin() {
+  const list = $('team-list'); if (!list) return;
+  list.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const r = await fetch('/api/team');
+    if (!r.ok) { list.innerHTML = '<p class="muted">' + (r.status === 403 ? 'Owner only.' : 'Could not load.') + '</p>'; return; }
+    const d = await r.json().catch(() => ({}));
+    renderTeam(d.members || []);
+  } catch (e) { list.innerHTML = '<p class="muted">Network error.</p>'; }
+}
+function renderTeam(members) {
+  const list = $('team-list'); if (!list) return;
+  if (!members.length) { list.innerHTML = '<p class="muted">No team members yet. Add a colleague above.</p>'; return; }
+  list.innerHTML = members.map((m) => {
+    const susp = !!m.suspended;
+    return '<div class="team-item' + (susp ? ' team-susp' : '') + '" data-email="' + esc(m.member_email) + '">' +
+      '<div class="team-main"><b>' + esc(m.member_email) + '</b>' +
+        (susp ? '<span class="team-badge">Suspended</span>' : '<span class="team-badge b-active">Active</span>') +
+        '<div class="team-when muted">Added ' + esc(fmtDate(m.created_at)) + '</div></div>' +
+      '<div class="team-acts">' +
+        (susp ? '<button class="linkbtn" data-teamact="unsuspend">Reactivate</button>'
+              : '<button class="linkbtn" data-teamact="suspend">Suspend</button>') +
+        '<button class="linkbtn team-del" data-teamact="remove">Remove</button>' +
+      '</div></div>';
+  }).join('');
+}
+async function teamAction(email, action) {
+  try {
+    const r = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: action, email: email }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { teamMsg(d.error || 'Could not update, please try again.', 'err'); return; }
+    teamMsg('', ''); loadTeamAdmin();
+  } catch (e) { teamMsg('Network error, please try again.', 'err'); }
+}
+async function addTeamMember() {
+  const inp = $('team-email'); if (!inp) return;
+  const email = (inp.value || '').trim().toLowerCase();
+  if (!email) { teamMsg('Enter their email address.', 'err'); return; }
+  const btn = $('team-add-btn'); if (btn) btn.disabled = true;
+  try {
+    const r = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', email: email }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) { teamMsg(d.error || 'Could not add, please try again.', 'err'); }
+    else { inp.value = ''; teamMsg('Added. Ask them to sign up with that exact email.', 'ok'); loadTeamAdmin(); }
+  } catch (e) { teamMsg('Network error, please try again.', 'err'); }
+  if (btn) btn.disabled = false;
+}
+{ const b = $('team-add-btn'); if (b) b.addEventListener('click', addTeamMember); }
+{ const i = $('team-email'); if (i) i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addTeamMember(); } }); }
+{ const r = $('team-refresh'); if (r) r.addEventListener('click', (e) => { e.preventDefault(); loadTeamAdmin(); }); }
+{ const l = $('team-list'); if (l) l.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-teamact]'); if (!btn) return;
+  const item = e.target.closest('.team-item'); if (!item) return;
+  const email = item.dataset.email; const act = btn.dataset.teamact;
+  if (act === 'remove' && !confirm('Remove ' + email + ' from your team? They lose access to your workspace.')) return;
+  teamAction(email, act);
+}); }
 let fbadmLoading = false;
 async function loadFeedbackAdmin() {
   const list = $('fbadm-list'); if (!list) return;
