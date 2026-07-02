@@ -2920,13 +2920,24 @@ function filteredCalls() {
 function updateCallBadge() {
   const el = $('call-count'); if (!el) return;
   if (!callsData) { el.classList.add('hidden'); return; }
-  const need = callsData.calls.filter((c) => { const st = callStatusOf(c); return st === '' || st === 'no-answer' || st === 'callback'; }).length;
-  el.textContent = need;
-  el.classList.toggle('hidden', need <= 0);
+  const total = callsData.calls.length;
+  // "still to call" = not yet reached: New (no status) or a previous no-answer
+  const toCall = callsData.calls.filter((c) => { const st = callStatusOf(c); return st === '' || st === 'no-answer'; }).length;
+  el.textContent = total ? (toCall + '/' + total) : '0';
+  el.title = total ? (toCall + ' still to call, ' + total + ' on your call list') : 'Your call list is empty';
+  el.classList.toggle('allclear', toCall === 0 && total > 0); // greyed when nothing left to call
+  el.classList.toggle('hidden', total === 0);
 }
 function renderCallList() {
   const tb = $('calls-rows'); if (!tb || !callsData) return;
   const counts = { all: callsData.calls.length };
+  // headline count so you can see the size of your list at a glance
+  const sum = $('calls-summary');
+  if (sum) {
+    const total = callsData.calls.length;
+    const toCall = callsData.calls.filter((c) => { const st = callStatusOf(c); return st === '' || st === 'no-answer'; }).length;
+    sum.textContent = total ? (total + (total === 1 ? ' record' : ' records') + ' · ' + toCall + ' still to call') : '';
+  }
   Object.keys(CALL_FILTERS).forEach((f) => { counts[f] = callsData.calls.filter((c) => CALL_FILTERS[f].indexOf(callStatusOf(c)) >= 0).length; });
   document.querySelectorAll('#calls-filters .leadf-btn').forEach((b) => {
     const base = b.textContent.replace(/\s*\(\d+\)\s*$/, '');

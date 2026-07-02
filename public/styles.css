@@ -928,3 +928,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .batch-btn:hover:not([disabled]) { background: var(--brand-dark); }
 .batch-btn[disabled] { opacity: .45; cursor: default; }
 .batch-bar .linkbtn[disabled] { opacity: .45; cursor: default; }
+
+/* ---- Call List: headline count + badge states ---- */
+.calls-summary { font-size: 14px; font-weight: 600; color: var(--muted); margin-left: 8px; }
+.navbadge.allclear { background: #9aa4b2; } /* nothing left to call: grey, not alarm-red */
