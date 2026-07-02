@@ -2241,7 +2241,7 @@ async function addTeamMember() {
     const r = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', firstName: first, lastName: last, email: email, permissions: permissions }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) { teamMsg(d.error || 'Could not add, please try again.', 'err'); }
-    else { $('team-first').value = ''; $('team-last').value = ''; $('team-email').value = ''; teamMsg('Added. Ask them to sign up with that exact email.', 'ok'); loadTeamAdmin(); }
+    else { $('team-first').value = ''; $('team-last').value = ''; $('team-email').value = ''; teamMsg('Added, and emailed them an invite to set up their account and password.', 'ok'); loadTeamAdmin(); }
   } catch (e) { teamMsg('Network error, please try again.', 'err'); }
   if (btn) btn.disabled = false;
 }

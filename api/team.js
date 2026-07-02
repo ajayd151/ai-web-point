@@ -7,6 +7,7 @@
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped, PERM_KEYS } = require('../lib/access');
 const { listTeamMembers, addTeamMember, setTeamSuspended, setTeamPermissions, removeTeamMember, getUserByEmail } = require('../lib/db');
+const { sendTeamInviteEmail, sendTeamAddedAdminEmail } = require('../lib/email');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -46,6 +47,10 @@ module.exports = async (req, res) => {
     try { const u = await getUserByEmail(email); if (u && ['active', 'trialing'].includes(u.status)) { res.status(409).json({ error: 'That email already has its own paid account.' }); return; } } catch (e) { /* ignore */ }
     const ok = await addTeamMember(owner, email, firstName, lastName, cleanPerms(body.permissions));
     if (!ok) { res.status(500).json({ error: 'Could not add, please try again.' }); return; }
+    // Email the member an invite (set up account + own password) and notify the admin.
+    // MUST await both (Vercel freezes the function after the response). Both fail soft.
+    await sendTeamInviteEmail({ to: email, firstName: firstName, ownerEmail: owner });
+    await sendTeamAddedAdminEmail({ adminTo: owner, memberName: (firstName + ' ' + lastName).trim(), memberEmail: email });
     res.status(200).json({ ok: true }); return;
   }
   if (action === 'permissions') {
