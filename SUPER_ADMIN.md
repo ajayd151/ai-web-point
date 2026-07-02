@@ -54,16 +54,20 @@ operator login, and anyone in the `ALLOWED_EMAILS` env var. Everyone else must s
 ## HOW-TO: add a team member (share your workspace)
 Use this when a colleague in YOUR company should work the same leads as you (shared
 call list, leads, searches, mockups), free, with their own login.
-1. **⚙️ Admin -> 👥 Team** (owner-only tab). Type their email, **Add team member**.
+1. **⚙️ Admin -> 👥 Team** (owner-only tab). Enter their **first name, surname and email**,
+   tick **what they are allowed to do**, then **Add team member**.
 2. Tell them to go to sitepounce.com and **sign up with that exact email** (check spam for
    the code). They land straight in your shared workspace, no payment, no allow-list needed.
-3. **Suspend** pauses their access (they can't get in); **Reactivate** restores it;
-   **Remove** deletes them from your team.
+3. On first login they see a one-time **professional-use notice** (use it professionally,
+   all activity is logged and visible to admins).
+4. **Permissions** button on each member re-opens the tickboxes; **Suspend** pauses access;
+   **Reactivate** restores it; **Remove** deletes them.
+- Permissions: Run searches / See leads / Delete leads / Export CSV / Create mockups /
+  Generate websites / Send SMS / Send emails / Add to call list / Block contacts. The four
+  server actions (search, mockups, websites, add-to-call-list) are HARD-enforced on the
+  backend; the rest are hidden in the member's app (client-side).
 - How it works: their login cookie is stamped with your account email, so the data layer
-  scopes them to your workspace. Stored in the Neon `team_members` table.
-- LIMITATION (phase 1): a team member currently has FULL access to everything in your
-  workspace. Per-permission tickboxes (who can delete / export / send / etc.) are the next
-  phase. Don't add anyone you wouldn't trust with the whole account yet.
+  scopes them to your workspace. Stored in the Neon `team_members` table (with permissions).
 - Don't add an email that already has its OWN paid subscription (the screen blocks this).
 
 ## HOW-TO: give a teammate free access but CAP how much they can use

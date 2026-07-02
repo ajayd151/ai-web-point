@@ -11,6 +11,8 @@ module.exports = async (req, res) => {
     access: !!a.access,
     plan: a.plan,
     status: a.status,
+    member: !!a.member,   // true = a team member (restricted by permissions)
+    perms: a.perms || {}, // permission map, used by the UI to hide what they can't do
     deepdossier: canDeepDossier(a.email), // private MVP: gates the hidden DeepDossier nav button
   });
 };

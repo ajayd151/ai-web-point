@@ -953,3 +953,31 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .team-when { font-size: 12px; margin-top: 3px; }
 .team-acts { display: flex; gap: 14px; }
 .team-del { color: #dc2626; }
+
+/* ---- Team form: names + permission tickboxes ---- */
+.team-form { background: #f7fafb; border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 6px; }
+.team-names { display: flex; gap: 10px; flex-wrap: wrap; }
+.team-names input { flex: 1 1 180px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--ink); font-family: inherit; }
+.team-perms { margin: 12px 0; }
+.team-perms-title { font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 8px; }
+.team-perms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 14px; }
+.team-perm { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; color: var(--ink); cursor: pointer; }
+.team-perm input { width: 16px; height: 16px; accent-color: var(--brand); cursor: pointer; }
+.team-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.team-em { color: var(--muted); font-size: 13.5px; }
+.team-editperms { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.team-editperms .team-perms-grid { margin-bottom: 12px; }
+
+/* ---- team notice modal ---- */
+.team-notice-card { width: 480px; }
+.team-notice-list { margin: 10px 0 18px; padding-left: 20px; line-height: 1.7; color: var(--ink); font-size: 14.5px; }
+.team-notice-card .primary { width: 100%; }
+
+/* ---- permission-based hiding (team members only) ---- */
+.noperm-export #export-results, .noperm-export #batch-export, .noperm-export #calls-export, .noperm-export #hot-export { display: none !important; }
+.noperm-mockups .ca-gen { display: none !important; }
+.noperm-sites .hl-pounce { display: none !important; }
+.noperm-callList .ca-call, .noperm-callList #batch-addcall { display: none !important; }
+.noperm-block .hl-block { display: none !important; }
+.noperm-messaging .ca-msg, .noperm-messaging .wa { display: none !important; }
+.noperm-seeLeads .navbtn[data-view="leads"], .noperm-seeLeads .navbtn[data-view="hotleads"] { display: none !important; }

@@ -244,11 +244,14 @@ async function refreshAccess() {
   if ($('paywall')) $('paywall').classList.toggle('hidden', paid);
   // "Manage billing" only for real paying subscribers (not comped owner/operator)
   if ($('billing-btn')) $('billing-btn').classList.toggle('hidden', acc.status !== 'active');
-  // ⚙️ Admin menu only for the owner / comped operator (account() reports plan 'owner', status 'comped')
-  const isOwner = acc.status === 'comped' || acc.plan === 'owner';
+  // ⚙️ Admin menu only for the OWNER (plan 'owner'). NOTE: team members are also
+  // status 'comped', so we key on plan, not status, or they'd see Admin.
+  const isOwner = acc.plan === 'owner';
   if ($('nav-admin')) $('nav-admin').classList.toggle('hidden', !isOwner);
   // 🔎 DeepDossier: private MVP, only the allow-listed account (server decides via /api/me)
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
+  // team member: hide the controls they lack permission for + show a one-time professional-use notice
+  applyMemberUI(acc);
   if (paid) {
     loadServerMockups(); loadHotLeads(); loadCallList(); // saved mockups + warm-lead / call-list badges + card states
   }
@@ -256,6 +259,30 @@ async function refreshAccess() {
   // a brand-new signup has no plan, so this sends them straight to Stripe checkout)
   try { var pt = localStorage.getItem('aiwp_pending_tier'); if (pt) { localStorage.removeItem('aiwp_pending_tier'); startCheckout(pt); } } catch (e) {}
 }
+
+// Apply a team member's permissions to the UI: body classes drive CSS that hides the
+// controls they can't use (the server still enforces the important ones). Non-members
+// (owner, paying customers) always have every class cleared = full UI.
+const MEMBER_PERM_KEYS = ['search', 'seeLeads', 'deleteLeads', 'export', 'mockups', 'sites', 'sms', 'emails', 'callList', 'block'];
+function applyMemberUI(acc) {
+  const perms = (acc && acc.perms) || {};
+  const isMember = !!(acc && acc.member);
+  document.body.classList.toggle('is-team-member', isMember);
+  MEMBER_PERM_KEYS.forEach((k) => document.body.classList.toggle('noperm-' + k, isMember && perms[k] === false));
+  // the Message button covers SMS + WhatsApp + email, so hide it only when ALL are off
+  document.body.classList.toggle('noperm-messaging', isMember && perms.sms === false && perms.emails === false);
+  if (isMember) maybeShowTeamNotice();
+}
+// One-time-per-session professional-use reminder for team members.
+function maybeShowTeamNotice() {
+  try { if (sessionStorage.getItem('aiwp_team_notice')) return; } catch (e) {}
+  const m = $('team-notice'); if (!m) return;
+  m.classList.remove('hidden');
+}
+{ const b = $('team-notice-ok'); if (b) b.addEventListener('click', () => {
+  try { sessionStorage.setItem('aiwp_team_notice', '1'); } catch (e) {}
+  const m = $('team-notice'); if (m) m.classList.add('hidden');
+}); }
 
 function showLoginMsg(text, kind) {
   const el = $('gate-msg');
@@ -2127,11 +2154,31 @@ document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('cl
 }));
 
 // ---- Super Admin: Team management ----
+// Permission keys + labels, kept in sync with PERM_KEYS in lib/access.js.
+const TEAM_PERMS = [
+  ['search', 'Run searches'], ['seeLeads', 'See leads'], ['deleteLeads', 'Delete leads'],
+  ['export', 'Export to CSV'], ['mockups', 'Create mockups'], ['sites', 'Generate websites'],
+  ['sms', 'Send SMS'], ['emails', 'Send emails'], ['callList', 'Add to call list'], ['block', 'Block contacts'],
+];
+function permCheckboxes(perms, prefix) {
+  const p = perms || {};
+  return TEAM_PERMS.map(([k, label]) =>
+    '<label class="team-perm"><input type="checkbox" data-perm="' + k + '"' + (p[k] === false ? '' : ' checked') + ' /> ' + esc(label) + '</label>'
+  ).join('');
+}
+function readPerms(container) {
+  const out = {};
+  TEAM_PERMS.forEach(([k]) => { const cb = container.querySelector('input[data-perm="' + k + '"]'); out[k] = cb ? cb.checked : true; });
+  return out;
+}
 function teamMsg(text, kind) {
   const el = $('team-msg'); if (!el) return;
   el.textContent = text || ''; el.className = 'login-msg ' + (kind || ''); el.classList.toggle('hidden', !text);
 }
 async function loadTeamAdmin() {
+  // paint the add-form permission grid once (all ticked by default)
+  const grid = document.querySelector('#team-perms-add .team-perms-grid');
+  if (grid && !grid.dataset.painted) { grid.innerHTML = permCheckboxes({}, 'add'); grid.dataset.painted = '1'; }
   const list = $('team-list'); if (!list) return;
   list.innerHTML = '<p class="muted">Loading…</p>';
   try {
@@ -2141,52 +2188,79 @@ async function loadTeamAdmin() {
     renderTeam(d.members || []);
   } catch (e) { list.innerHTML = '<p class="muted">Network error.</p>'; }
 }
+function permSummary(perms) {
+  const p = perms || {};
+  const on = TEAM_PERMS.filter(([k]) => p[k] !== false).length;
+  if (on === TEAM_PERMS.length) return 'Full access';
+  if (on === 0) return 'No permissions';
+  return on + ' of ' + TEAM_PERMS.length + ' allowed';
+}
 function renderTeam(members) {
   const list = $('team-list'); if (!list) return;
   if (!members.length) { list.innerHTML = '<p class="muted">No team members yet. Add a colleague above.</p>'; return; }
   list.innerHTML = members.map((m) => {
     const susp = !!m.suspended;
+    const name = ((m.first_name || '') + ' ' + (m.last_name || '')).trim();
     return '<div class="team-item' + (susp ? ' team-susp' : '') + '" data-email="' + esc(m.member_email) + '">' +
-      '<div class="team-main"><b>' + esc(m.member_email) + '</b>' +
-        (susp ? '<span class="team-badge">Suspended</span>' : '<span class="team-badge b-active">Active</span>') +
-        '<div class="team-when muted">Added ' + esc(fmtDate(m.created_at)) + '</div></div>' +
-      '<div class="team-acts">' +
-        (susp ? '<button class="linkbtn" data-teamact="unsuspend">Reactivate</button>'
-              : '<button class="linkbtn" data-teamact="suspend">Suspend</button>') +
-        '<button class="linkbtn team-del" data-teamact="remove">Remove</button>' +
-      '</div></div>';
+      '<div class="team-row">' +
+        '<div class="team-main">' + (name ? '<b>' + esc(name) + '</b> · ' : '') + '<span class="team-em">' + esc(m.member_email) + '</span>' +
+          (susp ? '<span class="team-badge">Suspended</span>' : '<span class="team-badge b-active">Active</span>') +
+          '<div class="team-when muted">' + esc(permSummary(m.permissions)) + ' · added ' + esc(fmtDate(m.created_at)) + '</div></div>' +
+        '<div class="team-acts">' +
+          '<button class="linkbtn" data-teamact="editperms">Permissions</button>' +
+          (susp ? '<button class="linkbtn" data-teamact="unsuspend">Reactivate</button>'
+                : '<button class="linkbtn" data-teamact="suspend">Suspend</button>') +
+          '<button class="linkbtn team-del" data-teamact="remove">Remove</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="team-editperms hidden">' +
+        '<div class="team-perms-grid">' + permCheckboxes(m.permissions, 'edit') + '</div>' +
+        '<button class="batch-btn team-saveperms" data-teamact="saveperms">Save permissions</button>' +
+      '</div>' +
+    '</div>';
   }).join('');
 }
-async function teamAction(email, action) {
+async function teamAction(email, action, extra) {
   try {
-    const r = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: action, email: email }) });
+    const r = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ action: action, email: email }, extra || {})) });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok) { teamMsg(d.error || 'Could not update, please try again.', 'err'); return; }
-    teamMsg('', ''); loadTeamAdmin();
-  } catch (e) { teamMsg('Network error, please try again.', 'err'); }
+    if (!r.ok) { teamMsg(d.error || 'Could not update, please try again.', 'err'); return false; }
+    teamMsg('', ''); return true;
+  } catch (e) { teamMsg('Network error, please try again.', 'err'); return false; }
 }
 async function addTeamMember() {
-  const inp = $('team-email'); if (!inp) return;
-  const email = (inp.value || '').trim().toLowerCase();
+  const first = ($('team-first') && $('team-first').value || '').trim();
+  const last = ($('team-last') && $('team-last').value || '').trim();
+  const email = ($('team-email') && $('team-email').value || '').trim().toLowerCase();
+  if (!first || !last) { teamMsg('Enter their first name and surname.', 'err'); return; }
   if (!email) { teamMsg('Enter their email address.', 'err'); return; }
+  const permsBox = $('team-perms-add');
+  const permissions = permsBox ? readPerms(permsBox) : {};
   const btn = $('team-add-btn'); if (btn) btn.disabled = true;
   try {
-    const r = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', email: email }) });
+    const r = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', firstName: first, lastName: last, email: email, permissions: permissions }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) { teamMsg(d.error || 'Could not add, please try again.', 'err'); }
-    else { inp.value = ''; teamMsg('Added. Ask them to sign up with that exact email.', 'ok'); loadTeamAdmin(); }
+    else { $('team-first').value = ''; $('team-last').value = ''; $('team-email').value = ''; teamMsg('Added. Ask them to sign up with that exact email.', 'ok'); loadTeamAdmin(); }
   } catch (e) { teamMsg('Network error, please try again.', 'err'); }
   if (btn) btn.disabled = false;
 }
 { const b = $('team-add-btn'); if (b) b.addEventListener('click', addTeamMember); }
 { const i = $('team-email'); if (i) i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addTeamMember(); } }); }
 { const r = $('team-refresh'); if (r) r.addEventListener('click', (e) => { e.preventDefault(); loadTeamAdmin(); }); }
-{ const l = $('team-list'); if (l) l.addEventListener('click', (e) => {
+{ const l = $('team-list'); if (l) l.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-teamact]'); if (!btn) return;
   const item = e.target.closest('.team-item'); if (!item) return;
   const email = item.dataset.email; const act = btn.dataset.teamact;
+  if (act === 'editperms') { const box = item.querySelector('.team-editperms'); if (box) box.classList.toggle('hidden'); return; }
+  if (act === 'saveperms') {
+    const box = item.querySelector('.team-editperms');
+    const ok = await teamAction(email, 'permissions', { permissions: readPerms(box) });
+    if (ok) { teamMsg('Permissions saved.', 'ok'); loadTeamAdmin(); }
+    return;
+  }
   if (act === 'remove' && !confirm('Remove ' + email + ' from your team? They lose access to your workspace.')) return;
-  teamAction(email, act);
+  if (await teamAction(email, act)) loadTeamAdmin();
 }); }
 let fbadmLoading = false;
 async function loadFeedbackAdmin() {

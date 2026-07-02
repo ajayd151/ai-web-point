@@ -5,10 +5,17 @@
 //   POST {action:'add', email}   -> add (or re-activate) a member
 //   POST {action:'suspend'|'unsuspend'|'remove', email}
 const { verify, parseCookie } = require('../lib/auth');
-const { account, isComped } = require('../lib/access');
-const { listTeamMembers, addTeamMember, setTeamSuspended, removeTeamMember, getUserByEmail } = require('../lib/db');
+const { account, isComped, PERM_KEYS } = require('../lib/access');
+const { listTeamMembers, addTeamMember, setTeamSuspended, setTeamPermissions, removeTeamMember, getUserByEmail } = require('../lib/db');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Keep only known permission keys, coerced to booleans.
+function cleanPerms(p) {
+  const out = {}; const src = p || {};
+  PERM_KEYS.forEach((k) => { out[k] = src[k] !== false; }); // default allow unless explicitly false
+  return out;
+}
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -32,10 +39,18 @@ module.exports = async (req, res) => {
   if (email === owner) { res.status(400).json({ error: "That's your own account." }); return; }
 
   if (action === 'add') {
+    const firstName = String(body.firstName || '').trim().slice(0, 60);
+    const lastName = String(body.lastName || '').trim().slice(0, 60);
+    if (!firstName || !lastName) { res.status(400).json({ error: 'First name and surname are required.' }); return; }
     // Don't hijack someone who already pays for their own separate subscription.
     try { const u = await getUserByEmail(email); if (u && ['active', 'trialing'].includes(u.status)) { res.status(409).json({ error: 'That email already has its own paid account.' }); return; } } catch (e) { /* ignore */ }
-    const ok = await addTeamMember(owner, email);
+    const ok = await addTeamMember(owner, email, firstName, lastName, cleanPerms(body.permissions));
     if (!ok) { res.status(500).json({ error: 'Could not add, please try again.' }); return; }
+    res.status(200).json({ ok: true }); return;
+  }
+  if (action === 'permissions') {
+    const ok = await setTeamPermissions(owner, email, cleanPerms(body.permissions));
+    if (!ok) { res.status(404).json({ error: 'Member not found.' }); return; }
     res.status(200).json({ ok: true }); return;
   }
   if (action === 'suspend' || action === 'unsuspend') {

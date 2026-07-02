@@ -9,6 +9,7 @@
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { tenantPrefix } = require('../lib/tenant');
+const { requirePermission } = require('../lib/access');
 
 async function readList(PATH) {
   try {
@@ -41,6 +42,9 @@ module.exports = async (req, res) => {
   let body = req.body;
   if (typeof body === 'string') { try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; } }
   body = body || {};
+  // team-member permission gates: adding needs 'callList', removing needs 'deleteLeads'
+  if (body.add && !(await requirePermission(req, res, 'callList'))) return;
+  if (body.remove && !(await requirePermission(req, res, 'deleteLeads'))) return;
   const map = await readList(PATH);
 
   // `add` may be a single business OR an array (batch add from the search page).

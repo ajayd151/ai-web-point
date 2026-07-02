@@ -13,7 +13,7 @@ const { verify, parseCookie } = require('../lib/auth');
 const { humaniseBusinessName } = require('../lib/names');
 const { check, record } = require('../lib/ratelimit');
 const { tenantPrefix, tenantSlug, emailOf } = require('../lib/tenant');
-const { requirePaid } = require('../lib/access');
+const { requirePaid, requirePermission } = require('../lib/access');
 
 // ---- brand ---------------------------------------------------------------
 const BRAND_BLUE = '#4375ED';
@@ -438,6 +438,7 @@ module.exports = async (req, res) => {
     return;
   }
   if (!(await requirePaid(req, res))) return; // paywall: needs an active subscription (owner/allow-list comped)
+  if (!(await requirePermission(req, res, 'mockups'))) return; // team-member permission gate
   // usage cap (checked before any OpenAI call; only RECORDED on success below, so
   // failed/retried generations never burn quota)
   const rl = await check('generate', Date.now(), tenantPrefix(req), emailOf(req));

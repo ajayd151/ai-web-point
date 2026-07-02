@@ -209,6 +209,20 @@
     </div>
   </div>
 
+  <!-- Professional-use notice, shown once per session to team members -->
+  <div id="team-notice" class="modal hidden">
+    <div class="modal-card team-notice-card">
+      <h2>Welcome to the team workspace</h2>
+      <p>You are signed in to a shared Site Pounce workspace. A few ground rules:</p>
+      <ul class="team-notice-list">
+        <li>Please use it <b>professionally</b> and only for legitimate business outreach.</li>
+        <li><b>All searches and activity are logged</b> and can be seen by the account admin.</li>
+        <li>Treat the leads and data here as confidential to the business.</li>
+      </ul>
+      <button id="team-notice-ok" class="primary">I understand</button>
+    </div>
+  </div>
+
   <!-- Floating "Give feedback" button (bottom-left, shown only when signed in) -->
   <button id="fb-btn" class="fb-btn hidden" type="button" aria-label="Give feedback">💬 Feedback</button>
   <div id="fb-modal" class="modal hidden">
@@ -666,14 +680,22 @@
               <h2 class="view-title">👥 Team</h2>
               <button id="team-refresh" class="linkbtn">↻ Refresh</button>
             </div>
-            <p class="muted view-sub">Add a colleague from your company. They sign in with their own email and share this workspace (your leads, call list, searches and mockups), free on your plan. Suspend to pause their access, or remove them entirely.</p>
-            <div class="team-add">
-              <input id="team-email" type="email" placeholder="colleague@yourcompany.com" autocomplete="off" />
+            <p class="muted view-sub">Add a colleague from your company. They sign in with their own email and share this workspace (your leads, call list, searches and mockups), free on your plan. Tick what they are allowed to do. Suspend to pause access, or remove them entirely.</p>
+            <div class="team-form">
+              <div class="team-names">
+                <input id="team-first" type="text" placeholder="First name" autocomplete="off" />
+                <input id="team-last" type="text" placeholder="Surname" autocomplete="off" />
+                <input id="team-email" type="email" placeholder="colleague@yourcompany.com" autocomplete="off" />
+              </div>
+              <div class="team-perms" id="team-perms-add">
+                <div class="team-perms-title">What can they do?</div>
+                <div class="team-perms-grid"></div>
+              </div>
               <button id="team-add-btn" class="batch-btn">Add team member</button>
             </div>
             <p id="team-msg" class="login-msg hidden"></p>
             <div id="team-list" class="team-list"></div>
-            <p class="muted team-note">After you add someone, they go to sitepounce.com and sign up with that exact email, then they are straight into your shared workspace. (Permission controls, for example who can delete or export, are coming next.)</p>
+            <p class="muted team-note">After you add someone, they go to sitepounce.com and sign up with that exact email, then they are straight into your shared workspace. Server actions (searching, mockups, websites, call list) are enforced; the rest are hidden in their app.</p>
           </div>
         </section>
       </div>
