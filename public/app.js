@@ -250,7 +250,9 @@ async function refreshAccess() {
   if ($('nav-admin')) $('nav-admin').classList.toggle('hidden', !isOwner);
   // 🔎 DeepDossier: private MVP, only the allow-listed account (server decides via /api/me)
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
-  if ($('nav-ourleads')) $('nav-ourleads').classList.toggle('hidden', !acc.deepdossier);
+  // 📇 Our Leads is a DeepDossier sub-tab: shown only while in that section (see showView)
+  window.AIWP_DD = !!acc.deepdossier;
+  if ($('nav-ourleads')) $('nav-ourleads').classList.add('hidden');
   // team member: hide the controls they lack permission for + show a one-time professional-use notice
   applyMemberUI(acc);
   if (paid) {
@@ -2022,6 +2024,8 @@ function showView(name) {
   window.AIWP_VIEW = name; // remembered so the feedback form can note which page you were on
   ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin', 'deepdossier', 'ourleads'].forEach((v) => { const el = $('view-' + v); if (el) el.classList.toggle('hidden', v !== name); });
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
+  // 📇 Our Leads button only appears while in the DeepDossier section
+  if ($('nav-ourleads')) $('nav-ourleads').classList.toggle('hidden', !(window.AIWP_DD && (name === 'deepdossier' || name === 'ourleads')));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'messages') { renderBlocked(); updateWaToday(); }
   if (name === 'leads') loadLeads();
