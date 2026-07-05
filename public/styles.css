@@ -1052,3 +1052,13 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 /* ---- Our Leads controls ---- */
 .dd-table th.ol-check, .dd-table td.ol-check { width: 28px; text-align: center; }
 .dd-ol-sep { display: inline-block; width: 1px; height: 16px; background: var(--line); margin: 0 4px; vertical-align: middle; }
+
+/* ---- DeepDossier left sub-menu (New search / Deep Dossier Leads) ---- */
+.dd-wrap { display: flex; gap: 18px; align-items: flex-start; }
+.dd-menu { flex: 0 0 190px; position: sticky; top: 10px; }
+.dd-menu-title { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); font-weight: 700; margin: 4px 8px 8px; }
+.dd-navbtn { display: block; width: 100%; text-align: left; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; font-weight: 600; color: var(--ink); cursor: pointer; }
+.dd-navbtn:hover { background: #f5f8fc; }
+.dd-navbtn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
+.dd-content { flex: 1; min-width: 0; }
+@media (max-width: 820px) { .dd-wrap { flex-direction: column; } .dd-menu { position: static; width: 100%; flex-basis: auto; display: flex; gap: 6px; flex-wrap: wrap; } .dd-menu-title { width: 100%; } .dd-navbtn { margin-bottom: 0; width: auto; } }

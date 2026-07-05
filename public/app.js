@@ -248,11 +248,9 @@ async function refreshAccess() {
   // status 'comped', so we key on plan, not status, or they'd see Admin.
   const isOwner = acc.plan === 'owner';
   if ($('nav-admin')) $('nav-admin').classList.toggle('hidden', !isOwner);
-  // 🔎 DeepDossier: private MVP, only the allow-listed account (server decides via /api/me)
+  // 🔎 DeepDossier: private MVP, only the allow-listed account (server decides via /api/me).
+  // Deep Dossier Leads lives as a left sub-menu inside this section, not a top tab.
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
-  // 📇 Our Leads is a DeepDossier sub-tab: shown only while in that section (see showView)
-  window.AIWP_DD = !!acc.deepdossier;
-  if ($('nav-ourleads')) $('nav-ourleads').classList.add('hidden');
   // team member: hide the controls they lack permission for + show a one-time professional-use notice
   applyMemberUI(acc);
   if (paid) {
@@ -2022,10 +2020,9 @@ let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
   window.AIWP_VIEW = name; // remembered so the feedback form can note which page you were on
-  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin', 'deepdossier', 'ourleads'].forEach((v) => { const el = $('view-' + v); if (el) el.classList.toggle('hidden', v !== name); });
+  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin', 'deepdossier'].forEach((v) => { const el = $('view-' + v); if (el) el.classList.toggle('hidden', v !== name); });
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
-  // 📇 Our Leads button only appears while in the DeepDossier section
-  if ($('nav-ourleads')) $('nav-ourleads').classList.toggle('hidden', !(window.AIWP_DD && (name === 'deepdossier' || name === 'ourleads')));
+  if (name === 'deepdossier') ddShowPane('search'); // always open on the search sub-tab
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'messages') { renderBlocked(); updateWaToday(); }
   if (name === 'leads') loadLeads();
@@ -2033,8 +2030,14 @@ function showView(name) {
   if (name === 'calls') loadCallList();
   if (name === 'enquiries') loadEnquiries();
   if (name === 'admin') loadFeedbackAdmin();
-  if (name === 'ourleads') loadOurLeads();
 }
+// DeepDossier left sub-menu: switch between the search pane and the leads bank.
+function ddShowPane(v) {
+  document.querySelectorAll('.dd-navbtn').forEach(function (b) { b.classList.toggle('active', b.dataset.ddview === v); });
+  document.querySelectorAll('.dd-pane').forEach(function (p) { p.classList.toggle('hidden', p.id !== 'ddpane-' + v); });
+  if (v === 'leads') loadOurLeads();
+}
+document.querySelectorAll('.dd-navbtn').forEach(function (b) { b.addEventListener('click', function () { ddShowPane(b.dataset.ddview); }); });
 document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 // Home shortcut: the logo and the 🏠 Home button both go back to Search (the home page)
 function goHome() { showView('search'); window.scrollTo({ top: 0, behavior: 'smooth' }); }

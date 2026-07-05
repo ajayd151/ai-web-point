@@ -266,7 +266,6 @@
     <button class="navbtn" data-view="enquiries">📨 Enquiries <span id="enq-count" class="navbadge hidden">0</span></button>
     <button class="navbtn navbtn-admin hidden" id="nav-admin" data-view="admin">⚙️ Admin</button>
     <button class="navbtn hidden" id="nav-deepdossier" data-view="deepdossier">🔎 DeepDossier</button>
-    <button class="navbtn hidden" id="nav-ourleads" data-view="ourleads">📇 Our Leads</button>
   </nav>
 
   <main>
@@ -704,6 +703,14 @@
 
     <!-- DEEPDOSSIER (private MVP, owner/allow-list only) -->
     <div id="view-deepdossier" class="view hidden">
+      <div class="dd-wrap">
+        <aside class="dd-menu">
+          <div class="dd-menu-title">DeepDossier</div>
+          <button class="dd-navbtn active" data-ddview="search">🔎 New search</button>
+          <button class="dd-navbtn" data-ddview="leads">📇 Deep Dossier Leads</button>
+        </aside>
+        <div class="dd-content">
+        <div id="ddpane-search" class="dd-pane">
       <section class="panel">
         <h2 class="view-title">🔎 DeepDossier <span class="badge" style="background:#eef;color:#334;">Private beta</span></h2>
         <p class="muted view-sub">Advanced lead enrichment: combines Apollo, Hunter and Companies House into one verified prospect record. Private to your account.</p>
@@ -806,45 +813,37 @@
           </table>
         </div>
       </section>
-      <!-- Print-only container: one nicely-presented sheet per record -->
-      <div id="dd-print" class="dd-print" aria-hidden="true"></div>
-    </div>
+        </div><!-- /ddpane-search -->
 
-    <!-- OUR LEADS (saved DeepDossier lead bank, owner-only) -->
-    <div id="view-ourleads" class="view hidden">
-      <section class="panel">
-        <h2 class="view-title">📇 Our Leads</h2>
-        <p class="muted view-sub">Every record pulled by DeepDossier is saved here. Tick the ones you want, then export to CSV or PDF.</p>
-        <div class="dd-actions">
-          <button id="ol-refresh" class="linkbtn">↻ Refresh</button>
-          <button id="ol-import" class="linkbtn">⬇ Import found leads</button>
-          <span class="dd-ol-sep"></span>
-          <button id="ol-csv" class="linkbtn">⬇ CSV (selected)</button>
-          <button id="ol-pdf" class="linkbtn">📄 PDF (selected)</button>
-          <span id="ol-status" class="muted"></span>
-        </div>
-        <div class="dd-tablewrap">
-          <table class="dd-table" id="ol-table">
-            <thead>
-              <tr>
-                <th class="ol-check"><input type="checkbox" id="ol-all" title="Select all" /></th>
-                <th>Match</th>
-                <th>Name</th>
-                <th>Job Title</th>
-                <th>Company</th>
-                <th>📱 Mobile</th>
-                <th>Work Email</th>
-                <th>Verified?</th>
-                <th>Location</th>
-                <th>Company no.</th>
-                <th>Confidence</th>
-                <th>Sources</th>
-              </tr>
-            </thead>
-            <tbody id="ol-tbody"></tbody>
-          </table>
-        </div>
-      </section>
+        <div id="ddpane-leads" class="dd-pane hidden">
+          <section class="panel">
+            <h2 class="view-title">📇 Deep Dossier Leads</h2>
+            <p class="muted view-sub">Every record pulled by DeepDossier is saved here. Tick the ones you want, then export to CSV or PDF.</p>
+            <div class="dd-actions">
+              <button id="ol-refresh" class="linkbtn">↻ Refresh</button>
+              <button id="ol-import" class="linkbtn">⬇ Import found leads</button>
+              <span class="dd-ol-sep"></span>
+              <button id="ol-csv" class="linkbtn">⬇ CSV (selected)</button>
+              <button id="ol-pdf" class="linkbtn">📄 PDF (selected)</button>
+              <span id="ol-status" class="muted"></span>
+            </div>
+            <div class="dd-tablewrap">
+              <table class="dd-table" id="ol-table">
+                <thead>
+                  <tr>
+                    <th class="ol-check"><input type="checkbox" id="ol-all" title="Select all" /></th>
+                    <th>Match</th><th>Name</th><th>Job Title</th><th>Company</th><th>📱 Mobile</th><th>Work Email</th><th>Verified?</th><th>Location</th><th>Company no.</th><th>Confidence</th><th>Sources</th>
+                  </tr>
+                </thead>
+                <tbody id="ol-tbody"></tbody>
+              </table>
+            </div>
+          </section>
+        </div><!-- /ddpane-leads -->
+        </div><!-- /dd-content -->
+      </div><!-- /dd-wrap -->
+      <!-- Print-only containers: one nicely-presented sheet per record -->
+      <div id="dd-print" class="dd-print" aria-hidden="true"></div>
       <div id="ol-print" class="dd-print" aria-hidden="true"></div>
     </div>
   </main>
