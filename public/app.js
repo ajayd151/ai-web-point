@@ -2102,6 +2102,8 @@ async function ddRun() {
   var status = $('dd-status');
   var payload = {
     keywords: ($('dd-keywords').value || '').trim(),
+    company: ($('dd-company') ? $('dd-company').value : '').trim(),
+    name: ($('dd-name') ? $('dd-name').value : '').trim(),
     country: $('dd-country').value,
     sizeBand: $('dd-size').value,
     titles: ($('dd-titles').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean),
@@ -2110,7 +2112,7 @@ async function ddRun() {
     deep: $('dd-deep') ? $('dd-deep').checked : true,
   };
   window.ddCriteria = payload; // remembered so the PDF sheets can show the search brief
-  if (!payload.keywords && !payload.titles.length) { status.textContent = 'Enter keywords or at least one job title.'; return; }
+  if (!payload.keywords && !payload.titles.length && !payload.company && !payload.name) { status.textContent = 'Enter keywords, a company, a name, or at least one job title.'; return; }
   btn.disabled = true; btn.textContent = 'Running…'; status.textContent = 'Enriching (up to ~45s)…';
   try {
     var res = await fetch('/api/deepdossier/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });

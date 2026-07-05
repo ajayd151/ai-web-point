@@ -19,6 +19,8 @@ module.exports = async (req, res) => {
 
   const input = {
     keywords: String(body.keywords || '').trim(),
+    company: String(body.company || '').trim(),
+    name: String(body.name || '').trim(),
     country: String(body.country || 'United Kingdom').trim(),
     sizeBand: String(body.sizeBand || '').trim(),
     titles: Array.isArray(body.titles) ? body.titles : String(body.titles || '').split(',').map((s) => s.trim()).filter(Boolean),
@@ -26,8 +28,8 @@ module.exports = async (req, res) => {
     max: clampMax(body.max),
     deep: body.deep !== false, // paid add-on: Companies House + news + fit score
   };
-  if (!input.keywords && !input.titles.length) {
-    res.status(400).json({ error: 'Enter industry keywords or at least one job title.' });
+  if (!input.keywords && !input.titles.length && !input.company && !input.name) {
+    res.status(400).json({ error: 'Enter industry keywords, a company, a name, or at least one job title.' });
     return;
   }
 
