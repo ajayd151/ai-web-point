@@ -1028,3 +1028,23 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .ddp-band-green { background: #e2f6ec; color: #0a7a44; }
 .ddp-band-amber { background: #fff2d6; color: #9a6b00; }
 .ddp-band-red { background: #fde2e2; color: #b42323; }
+
+/* ---- DeepDossier PDF: logo, criteria block, graphical confidence ---- */
+.ddp-brand { display: flex; align-items: center; gap: 6px; }
+.ddp-logo { width: 22px; height: 22px; }
+.ddp-wm { font-size: 16px; font-weight: 800; color: var(--ink); letter-spacing: -.3px; }
+.ddp-wm b { color: var(--brand); font-weight: 800; }
+.ddp-criteria { border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; margin: 0 0 12px; background: #fbfdff; }
+.ddp-crit-title { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: #8a93a5; font-weight: 700; margin-bottom: 4px; }
+.ddp-crit-row { display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; padding: 1px 0; }
+.ddp-crit-row span { color: var(--muted); }
+.ddp-crit-row b { color: var(--ink); text-align: right; }
+.ddp-conf-wrap { display: flex; align-items: center; gap: 12px; }
+.ddp-conf-num { font-size: 30px; font-weight: 800; line-height: 1; white-space: nowrap; }
+.ddp-conf-num span { font-size: 13px; font-weight: 600; color: var(--muted); }
+.ddp-conf-track { flex: 1; height: 10px; background: #eef1f6; border-radius: 6px; overflow: hidden; }
+.ddp-conf-fill { height: 100%; border-radius: 6px; }
+.ddp-cc-green { color: #0a8f4f; } .ddp-conf-fill.ddp-cc-green { background: #10a05a; }
+.ddp-cc-amber { color: #9a6b00; } .ddp-conf-fill.ddp-cc-amber { background: #e8a81e; }
+.ddp-cc-red { color: #b42323; } .ddp-conf-fill.ddp-cc-red { background: #c83737; }
+@media print { .ddp-logo, .ddp-conf-fill, .ddp-conf-track, .ddp-criteria { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

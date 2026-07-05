@@ -2103,6 +2103,7 @@ async function ddRun() {
     max: Math.max(1, Math.min(10, Number($('dd-max').value) || 5)),
     deep: $('dd-deep') ? $('dd-deep').checked : true,
   };
+  window.ddCriteria = payload; // remembered so the PDF sheets can show the search brief
   if (!payload.keywords && !payload.titles.length) { status.textContent = 'Enter keywords or at least one job title.'; return; }
   btn.disabled = true; btn.textContent = 'Running…'; status.textContent = 'Enriching (up to ~45s)…';
   try {
@@ -2170,6 +2171,27 @@ function ddField(label, value) {
   if (!value) return '';
   return '<div class="ddp-field"><span class="ddp-lbl">' + ddEsc(label) + '</span><span class="ddp-val">' + ddEsc(value) + '</span></div>';
 }
+var DD_LOGO = '<svg class="ddp-logo" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path d="M24 3 C14.6 3 7 10.6 7 20 C7 31.9 24 46 24 46 C24 46 41 31.9 41 20 C41 10.6 33.4 3 24 3 Z" fill="#0FB6A8"/><circle cx="24" cy="19.5" r="9.6" fill="#fff"/><path d="M25.6 10.8 L17.4 22 L22.6 22 L20.8 28.4 L30.6 16.6 L24.8 16.6 Z" fill="#FF6B6B"/></svg><span class="ddp-wm">Site<b>Pounce</b></span>';
+function ddCriteriaBlock() {
+  var c = window.ddCriteria || {};
+  var rows = [
+    ['Sector', c.keywords || 'Any'],
+    ['Job titles', (c.titles && c.titles.length ? c.titles.join(', ') : 'Any')],
+    ['Location', c.country || 'United Kingdom'],
+    ['Seniority', (c.seniority && c.seniority.length ? c.seniority.join(', ') : 'Any')]
+  ];
+  return '<div class="ddp-criteria"><div class="ddp-crit-title">Search criteria (what we are looking for)</div>' +
+    rows.map(function (x) { return '<div class="ddp-crit-row"><span>' + ddEsc(x[0]) + '</span><b>' + ddEsc(x[1]) + '</b></div>'; }).join('') +
+    '</div>';
+}
+function ddConfBlock(r) {
+  var s = Number(r.confidence) || 0;
+  var band = s >= 80 ? 'green' : (s >= 65 ? 'amber' : 'red');
+  return '<div class="ddp-section"><h3>Confidence score</h3>' +
+    '<div class="ddp-conf-wrap"><div class="ddp-conf-num ddp-cc-' + band + '">' + s + '<span>/100</span></div>' +
+    '<div class="ddp-conf-track"><div class="ddp-conf-fill ddp-cc-' + band + '" style="width:' + s + '%"></div></div></div>' +
+    '<p class="ddp-muted">Data quality and reachability (contact completeness, email verification, company match).</p></div>';
+}
 function ddSheet(r, idx) {
   var ch = r.companiesHouse || {};
   var news = Array.isArray(r.news) ? r.news : [];
@@ -2203,8 +2225,10 @@ function ddSheet(r, idx) {
         '<div class="ddp-title">' + ddEsc([r.title, r.company].filter(Boolean).join(' | ')) + '</div>' +
         (r.match ? '<div class="ddp-band ddp-band-' + ddEsc(r.match.band) + '">Search match: ' + ddEsc(r.match.label) + ' (' + ddEsc(r.match.band.toUpperCase()) + ')</div>' : '') +
       '</div>' +
-      '<div class="ddp-brand">SitePounce - DeepDossier</div>' +
+      '<div class="ddp-brand">' + DD_LOGO + '</div>' +
     '</header>' +
+    ddCriteriaBlock() +
+    ddConfBlock(r) +
     '<div class="ddp-section"><h3>Direct contact</h3><div class="ddp-grid">' +
       ddField('Mobile', r.mobile) + ddField('Direct dial', r.directDial) +
       ddField('Landline', r.landline) + ddField('Work email', r.email) +
@@ -2215,7 +2239,7 @@ function ddSheet(r, idx) {
     '<div class="ddp-section"><h3>Company (Companies House)</h3>' + chHtml + '</div>' +
     '<div class="ddp-section"><h3>Recent news mentions</h3>' + newsHtml + '</div>' +
     (r.buyingSignal ? '<div class="ddp-section"><h3>Buying signal</h3><p>' + ddEsc(r.buyingSignal) + '</p></div>' : '') +
-    '<footer class="ddp-foot">Confidence ' + ddEsc(r.confidence) + '/100 · Record ' + (idx + 1) + '</footer>' +
+    '<footer class="ddp-foot">SitePounce DeepDossier &middot; Companies House is official public record &middot; Private &amp; confidential</footer>' +
     '</section>';
 }
 function ddExportPdf() {
