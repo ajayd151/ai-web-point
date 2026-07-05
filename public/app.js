@@ -250,6 +250,7 @@ async function refreshAccess() {
   if ($('nav-admin')) $('nav-admin').classList.toggle('hidden', !isOwner);
   // 🔎 DeepDossier: private MVP, only the allow-listed account (server decides via /api/me)
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
+  if ($('nav-ourleads')) $('nav-ourleads').classList.toggle('hidden', !acc.deepdossier);
   // team member: hide the controls they lack permission for + show a one-time professional-use notice
   applyMemberUI(acc);
   if (paid) {
@@ -2019,7 +2020,7 @@ let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
   window.AIWP_VIEW = name; // remembered so the feedback form can note which page you were on
-  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin', 'deepdossier'].forEach((v) => { const el = $('view-' + v); if (el) el.classList.toggle('hidden', v !== name); });
+  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin', 'deepdossier', 'ourleads'].forEach((v) => { const el = $('view-' + v); if (el) el.classList.toggle('hidden', v !== name); });
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'messages') { renderBlocked(); updateWaToday(); }
@@ -2028,6 +2029,7 @@ function showView(name) {
   if (name === 'calls') loadCallList();
   if (name === 'enquiries') loadEnquiries();
   if (name === 'admin') loadFeedbackAdmin();
+  if (name === 'ourleads') loadOurLeads();
 }
 document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 // Home shortcut: the logo and the 🏠 Home button both go back to Search (the home page)
@@ -2253,6 +2255,91 @@ function ddExportPdf() {
   setTimeout(function () { window.print(); }, 60); // let the DOM paint first
 }
 if ($('dd-export-pdf')) $('dd-export-pdf').addEventListener('click', ddExportPdf);
+
+// ---- 📇 Our Leads (saved lead bank) ----
+var olLeads = [];
+async function loadOurLeads() {
+  var status = $('ol-status');
+  if (status) status.textContent = 'Loading…';
+  try {
+    var res = await fetch('/api/deepdossier/leads');
+    if (res.status === 404) { if (status) status.textContent = 'Not available on this account.'; return; }
+    var d = await res.json().catch(function () { return {}; });
+    olLeads = d.leads || [];
+    olRender();
+    if (status) status.textContent = olLeads.length + ' saved lead(s)';
+  } catch (e) { if (status) status.textContent = 'Could not load leads.'; }
+}
+function olRender() {
+  var tb = $('ol-tbody');
+  if (!tb) return;
+  tb.innerHTML = olLeads.map(function (r, i) {
+    var ch = r.companiesHouse || {};
+    var mb = r.match ? '<span class="dd-band dd-band-' + ddEsc(r.match.band) + '">' + ddEsc(r.match.label || r.match.band) + '</span>' : '<span class="muted">-</span>';
+    return '<tr>' +
+      '<td class="ol-check"><input type="checkbox" class="ol-row" data-i="' + i + '" /></td>' +
+      '<td>' + mb + '</td>' +
+      '<td>' + ddEsc(r.name) + '</td>' +
+      '<td>' + ddEsc(r.title) + '</td>' +
+      '<td>' + ddEsc(r.company) + '</td>' +
+      '<td class="dd-tel">' + (r.mobile ? ddEsc(r.mobile) : '<span class="muted">-</span>') + '</td>' +
+      '<td>' + (r.email ? ddEsc(r.email) : '<span class="muted">-</span>') + '</td>' +
+      '<td>' + ddEsc(r.emailVerified || '') + '</td>' +
+      '<td>' + ddEsc(r.location || '') + '</td>' +
+      '<td>' + ddEsc(ch.number || '') + '</td>' +
+      '<td><span class="dd-conf">' + ddEsc(r.confidence != null ? r.confidence : '') + '</span></td>' +
+      '<td class="muted">' + ddEsc(r.sources || '') + '</td>' +
+      '</tr>';
+  }).join('');
+  if ($('ol-all')) $('ol-all').checked = false;
+}
+function olSelected() {
+  var out = [];
+  document.querySelectorAll('.ol-row:checked').forEach(function (c) { var i = Number(c.dataset.i); if (olLeads[i]) out.push(olLeads[i]); });
+  return out;
+}
+if ($('ol-all')) $('ol-all').addEventListener('change', function () {
+  var on = $('ol-all').checked;
+  document.querySelectorAll('.ol-row').forEach(function (c) { c.checked = on; });
+});
+if ($('ol-refresh')) $('ol-refresh').addEventListener('click', loadOurLeads);
+if ($('ol-import')) $('ol-import').addEventListener('click', async function () {
+  var status = $('ol-status'); if (status) status.textContent = 'Importing…';
+  try {
+    var res = await fetch('/api/deepdossier/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ seed: 1 }) });
+    var d = await res.json().catch(function () { return {}; });
+    if (status) status.textContent = 'Imported ' + (d.saved || 0) + ' lead(s).';
+    loadOurLeads();
+  } catch (e) { if (status) status.textContent = 'Import failed.'; }
+});
+if ($('ol-csv')) $('ol-csv').addEventListener('click', function () {
+  var sel = olSelected();
+  if (!sel.length) { $('ol-status').textContent = 'Tick some leads first.'; return; }
+  var esc = function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  var lines = [DD_HEADERS.join(',')];
+  sel.forEach(function (r) {
+    lines.push(DD_COLS.map(function (c) {
+      if (c === 'match') return esc(r.match ? (r.match.band.toUpperCase() + ' (' + (r.match.label || '') + ')') : '');
+      return esc(r[c]);
+    }).join(','));
+  });
+  var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a'); a.href = url; a.download = 'our_leads.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+});
+if ($('ol-pdf')) $('ol-pdf').addEventListener('click', function () {
+  var sel = olSelected();
+  if (!sel.length) { $('ol-status').textContent = 'Tick some leads first.'; return; }
+  var host = $('ol-print');
+  if (!host) return;
+  host.innerHTML = sel.map(function (r, i) { return ddSheet(r, i); }).join('');
+  document.body.classList.add('dd-printing');
+  var cleanup = function () { document.body.classList.remove('dd-printing'); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(function () { window.print(); }, 60);
+});
 
 // ---- Super Admin: left menu + Feedback management ----
 document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('click', () => {

@@ -266,6 +266,7 @@
     <button class="navbtn" data-view="enquiries">📨 Enquiries <span id="enq-count" class="navbadge hidden">0</span></button>
     <button class="navbtn navbtn-admin hidden" id="nav-admin" data-view="admin">⚙️ Admin</button>
     <button class="navbtn hidden" id="nav-deepdossier" data-view="deepdossier">🔎 DeepDossier</button>
+    <button class="navbtn hidden" id="nav-ourleads" data-view="ourleads">📇 Our Leads</button>
   </nav>
 
   <main>
@@ -736,8 +737,14 @@
             </select>
           </label>
           <label>
-            <span>Max records <span class="muted">(cap 10)</span></span>
-            <input id="dd-max" type="number" min="1" max="10" value="5" />
+            <span>Records to return</span>
+            <select id="dd-max">
+              <option value="5" selected>5</option>
+              <option value="10">10</option>
+              <option value="15">15</option>
+              <option value="20">20</option>
+              <option value="25">25</option>
+            </select>
           </label>
         </div>
         <label class="block">
@@ -791,6 +798,44 @@
       </section>
       <!-- Print-only container: one nicely-presented sheet per record -->
       <div id="dd-print" class="dd-print" aria-hidden="true"></div>
+    </div>
+
+    <!-- OUR LEADS (saved DeepDossier lead bank, owner-only) -->
+    <div id="view-ourleads" class="view hidden">
+      <section class="panel">
+        <h2 class="view-title">📇 Our Leads</h2>
+        <p class="muted view-sub">Every record pulled by DeepDossier is saved here. Tick the ones you want, then export to CSV or PDF.</p>
+        <div class="dd-actions">
+          <button id="ol-refresh" class="linkbtn">↻ Refresh</button>
+          <button id="ol-import" class="linkbtn">⬇ Import found leads</button>
+          <span class="dd-ol-sep"></span>
+          <button id="ol-csv" class="linkbtn">⬇ CSV (selected)</button>
+          <button id="ol-pdf" class="linkbtn">📄 PDF (selected)</button>
+          <span id="ol-status" class="muted"></span>
+        </div>
+        <div class="dd-tablewrap">
+          <table class="dd-table" id="ol-table">
+            <thead>
+              <tr>
+                <th class="ol-check"><input type="checkbox" id="ol-all" title="Select all" /></th>
+                <th>Match</th>
+                <th>Name</th>
+                <th>Job Title</th>
+                <th>Company</th>
+                <th>📱 Mobile</th>
+                <th>Work Email</th>
+                <th>Verified?</th>
+                <th>Location</th>
+                <th>Company no.</th>
+                <th>Confidence</th>
+                <th>Sources</th>
+              </tr>
+            </thead>
+            <tbody id="ol-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+      <div id="ol-print" class="dd-print" aria-hidden="true"></div>
     </div>
   </main>
 

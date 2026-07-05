@@ -1005,8 +1005,8 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 
 @media print {
   body.dd-printing * { visibility: hidden; }
-  body.dd-printing #dd-print, body.dd-printing #dd-print * { visibility: visible; }
-  body.dd-printing #dd-print { display: block; position: absolute; left: 0; top: 0; width: 100%; }
+  body.dd-printing .dd-print, body.dd-printing .dd-print * { visibility: visible; }
+  body.dd-printing .dd-print { display: block; position: absolute; left: 0; top: 0; width: 100%; }
   body.dd-printing .dd-sheet { page-break-after: always; break-after: page; padding: 8mm 6mm; }
   body.dd-printing .dd-sheet:last-child { page-break-after: auto; break-after: auto; }
   .ddp-head, .ddp-section h3 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -1048,3 +1048,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .ddp-cc-amber { color: #9a6b00; } .ddp-conf-fill.ddp-cc-amber { background: #e8a81e; }
 .ddp-cc-red { color: #b42323; } .ddp-conf-fill.ddp-cc-red { background: #c83737; }
 @media print { .ddp-logo, .ddp-conf-fill, .ddp-conf-track, .ddp-criteria { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+/* ---- Our Leads controls ---- */
+.dd-table th.ol-check, .dd-table td.ol-check { width: 28px; text-align: center; }
+.dd-ol-sep { display: inline-block; width: 1px; height: 16px; background: var(--line); margin: 0 4px; vertical-align: middle; }

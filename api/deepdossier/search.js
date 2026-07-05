@@ -4,7 +4,7 @@
 // exists). Synchronous for Phase 1 (<=10 records fits inside maxDuration).
 const { requireDeepDossier } = require('../../lib/access');
 const { runDeepDossier, clampMax } = require('../../lib/deepdossier');
-const { recordDeepDossierRun } = require('../../lib/db');
+const { recordDeepDossierRun, saveDeepDossierLeads } = require('../../lib/db');
 
 module.exports = async (req, res) => {
   // Gate FIRST, before we even look at the method, so nothing leaks.
@@ -33,6 +33,8 @@ module.exports = async (req, res) => {
 
   try {
     const { rows, meta } = await runDeepDossier(input);
+    // Bank every pulled lead into "Our Leads" (best-effort, upserts by email/name).
+    saveDeepDossierLeads(acct.email, rows, input);
     // Log every run (best-effort). Cached re-runs are logged too, flagged cached (no re-bill).
     recordDeepDossierRun({
       email: acct.email,
