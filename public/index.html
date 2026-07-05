@@ -751,6 +751,11 @@
           <label class="dd-check"><input type="checkbox" class="dd-sen" value="Head of" checked /> Head of</label>
           <label class="dd-check"><input type="checkbox" class="dd-sen" value="Manager" /> Manager</label>
         </div>
+        <label class="dd-addon">
+          <input type="checkbox" id="dd-deep" checked />
+          <span><strong>Deep enrichment</strong> <span class="dd-paid">Paid add-on</span><br>
+          <span class="muted">Adds Companies House (directors, owners, status), recent news, and a Green/Amber/Red search-fit score to every record.</span></span>
+        </label>
         <div class="dd-actions">
           <button id="dd-run" class="primary btn" type="button">Run DeepDossier</button>
           <button id="dd-export" class="linkbtn hidden">⬇ Export CSV</button>
@@ -763,6 +768,7 @@
           <table class="dd-table" id="dd-table">
             <thead>
               <tr>
+                <th data-sort="match">Match</th>
                 <th data-sort="name">Name</th>
                 <th data-sort="title">Job Title</th>
                 <th data-sort="company">Company</th>

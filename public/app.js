@@ -2038,8 +2038,9 @@ function goHome() { showView('search'); window.scrollTo({ top: 0, behavior: 'smo
 // ---- 🔎 DeepDossier (private MVP) ----
 var ddRows = [];       // last result set (for CSV + sorting)
 var ddSort = { key: 'confidence', dir: -1 };
-var DD_COLS = ['name', 'title', 'company', 'mobile', 'directDial', 'landline', 'email', 'emailVerified', 'altEmail', 'linkedin', 'buyingSignal', 'confidence', 'location', 'sources'];
-var DD_HEADERS = ['Name', 'Job Title', 'Company', 'Mobile', 'Direct Dial', 'Landline', 'Work Email', 'Email Verified?', 'Alt Email', 'LinkedIn URL', 'Buying Signal', 'Confidence Score', 'Location', 'Data Sources'];
+var DD_COLS = ['match', 'name', 'title', 'company', 'mobile', 'directDial', 'landline', 'email', 'emailVerified', 'altEmail', 'linkedin', 'buyingSignal', 'confidence', 'location', 'sources'];
+var DD_HEADERS = ['Search Match', 'Name', 'Job Title', 'Company', 'Mobile', 'Direct Dial', 'Landline', 'Work Email', 'Email Verified?', 'Alt Email', 'LinkedIn URL', 'Buying Signal', 'Confidence Score', 'Location', 'Data Sources'];
+var DD_BAND_RANK = { green: 0, amber: 1, red: 2 };
 
 function ddEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
@@ -2048,6 +2049,7 @@ function ddRenderRows() {
   if (!tb) return;
   var sorted = ddRows.slice().sort(function (a, b) {
     var k = ddSort.key, av = a[k], bv = b[k];
+    if (k === 'match') { av = a.match ? DD_BAND_RANK[a.match.band] : 1; bv = b.match ? DD_BAND_RANK[b.match.band] : 1; return (av - bv) * ddSort.dir; }
     if (k === 'confidence') { av = Number(av) || 0; bv = Number(bv) || 0; return (av - bv) * ddSort.dir; }
     return String(av || '').localeCompare(String(bv || '')) * ddSort.dir;
   });
@@ -2056,7 +2058,9 @@ function ddRenderRows() {
   tb.innerHTML = sorted.map(function (r) {
     var li = r.linkedin ? '<a href="' + ddEsc(r.linkedin) + '" target="_blank" rel="noopener">profile ↗</a>' : '<span class="muted">-</span>';
     var vClass = r.emailVerified === 'Yes' ? 'dd-yes' : (r.emailVerified === 'No' ? 'dd-no' : 'dd-unk');
+    var mb = r.match ? '<span class="dd-band dd-band-' + ddEsc(r.match.band) + '" title="' + ddEsc((r.match.reasons || []).join('; ')) + '">' + ddEsc(r.match.label) + '</span>' : '<span class="muted">-</span>';
     return '<tr>' +
+      '<td>' + mb + '</td>' +
       '<td>' + ddEsc(r.name) + '</td>' +
       '<td>' + ddEsc(r.title) + '</td>' +
       '<td>' + ddEsc(r.company) + '</td>' +
@@ -2097,6 +2101,7 @@ async function ddRun() {
     titles: ($('dd-titles').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean),
     seniority: ddSeniority(),
     max: Math.max(1, Math.min(10, Number($('dd-max').value) || 5)),
+    deep: $('dd-deep') ? $('dd-deep').checked : true,
   };
   if (!payload.keywords && !payload.titles.length) { status.textContent = 'Enter keywords or at least one job title.'; return; }
   btn.disabled = true; btn.textContent = 'Running…'; status.textContent = 'Enriching (up to ~45s)…';
@@ -2122,6 +2127,16 @@ async function ddRun() {
       banner.innerHTML = 'Live sources: ' + (m.sourcesLive ? Object.keys(m.sourcesLive).filter(function (k) { return m.sourcesLive[k]; }).join(', ') : '') + '.';
       banner.classList.remove('hidden');
     }
+    if (m.matchBands) {
+      var mbs = m.matchBands;
+      var card = '<div class="dd-scorecard"><span class="muted">Search fit:</span> ' +
+        '<span class="dd-band dd-band-green">' + mbs.green + ' Green</span>' +
+        '<span class="dd-band dd-band-amber">' + mbs.amber + ' Amber</span>' +
+        '<span class="dd-band dd-band-red">' + mbs.red + ' Red</span>' +
+        (mbs.red ? '<span class="dd-rerun">' + mbs.red + ' weak match(es) - consider re-running to replace them</span>' : '<span class="muted">All records meet the brief</span>') +
+        '</div>';
+      banner.innerHTML += card;
+    }
     status.textContent = (ddRows.length + ' record(s)') + (m.cached ? ' · cached (no charge)' : (m.costGbp != null ? ' · est. £' + m.costGbp.toFixed(2) : '')) + (m.msTotal ? ' · ' + (m.msTotal / 1000).toFixed(1) + 's' : '');
   } catch (e) {
     status.textContent = 'Network error, please retry.';
@@ -2135,7 +2150,12 @@ function ddExportCsv() {
   if (!ddRows.length) return;
   var esc = function (v) { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
   var lines = [DD_HEADERS.join(',')];
-  ddRows.forEach(function (r) { lines.push(DD_COLS.map(function (c) { return esc(r[c]); }).join(',')); });
+  ddRows.forEach(function (r) {
+    lines.push(DD_COLS.map(function (c) {
+      if (c === 'match') return esc(r.match ? (r.match.band.toUpperCase() + ' (' + r.match.label + ')') : '');
+      return esc(r[c]);
+    }).join(','));
+  });
   var blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
@@ -2180,8 +2200,10 @@ function ddSheet(r, idx) {
   return '<section class="dd-sheet">' +
     '<header class="ddp-head">' +
       '<div><div class="ddp-name">' + ddEsc(r.name) + '</div>' +
-        '<div class="ddp-title">' + ddEsc([r.title, r.company].filter(Boolean).join(' · ')) + '</div></div>' +
-      '<div class="ddp-brand">Site Pounce · DeepDossier</div>' +
+        '<div class="ddp-title">' + ddEsc([r.title, r.company].filter(Boolean).join(' | ')) + '</div>' +
+        (r.match ? '<div class="ddp-band ddp-band-' + ddEsc(r.match.band) + '">Search match: ' + ddEsc(r.match.label) + ' (' + ddEsc(r.match.band.toUpperCase()) + ')</div>' : '') +
+      '</div>' +
+      '<div class="ddp-brand">SitePounce - DeepDossier</div>' +
     '</header>' +
     '<div class="ddp-section"><h3>Direct contact</h3><div class="ddp-grid">' +
       ddField('Mobile', r.mobile) + ddField('Direct dial', r.directDial) +

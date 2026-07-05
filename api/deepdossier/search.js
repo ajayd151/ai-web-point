@@ -24,6 +24,7 @@ module.exports = async (req, res) => {
     titles: Array.isArray(body.titles) ? body.titles : String(body.titles || '').split(',').map((s) => s.trim()).filter(Boolean),
     seniority: Array.isArray(body.seniority) ? body.seniority.map((s) => String(s).trim()).filter(Boolean) : [],
     max: clampMax(body.max),
+    deep: body.deep !== false, // paid add-on: Companies House + news + fit score
   };
   if (!input.keywords && !input.titles.length) {
     res.status(400).json({ error: 'Enter industry keywords or at least one job title.' });

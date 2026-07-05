@@ -1011,3 +1011,20 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
   body.dd-printing .dd-sheet:last-child { page-break-after: auto; break-after: auto; }
   .ddp-head, .ddp-section h3 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---- DeepDossier: paid add-on + Green/Amber/Red match score ---- */
+.dd-addon { display: flex; gap: 10px; align-items: flex-start; margin: 14px 0 2px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: #fbfdff; cursor: pointer; }
+.dd-addon input { margin-top: 3px; }
+.dd-paid { display: inline-block; background: var(--amber); color: #4a3b00; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 20px; vertical-align: middle; }
+.dd-band { display: inline-block; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 20px; white-space: nowrap; }
+.dd-band-green { background: #e2f6ec; color: #0a7a44; }
+.dd-band-amber { background: #fff2d6; color: #9a6b00; }
+.dd-band-red { background: #fde2e2; color: #b42323; }
+.dd-scorecard { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.dd-rerun { font-size: 12.5px; color: #9a6b00; font-weight: 600; }
+
+/* match badge inside the print sheet */
+.ddp-band { display: inline-block; margin-top: 5px; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.ddp-band-green { background: #e2f6ec; color: #0a7a44; }
+.ddp-band-amber { background: #fff2d6; color: #9a6b00; }
+.ddp-band-red { background: #fde2e2; color: #b42323; }
