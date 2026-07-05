@@ -981,3 +981,33 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .noperm-block .hl-block { display: none !important; }
 .noperm-messaging .ca-msg, .noperm-messaging .wa { display: none !important; }
 .noperm-seeLeads .navbtn[data-view="leads"], .noperm-seeLeads .navbtn[data-view="hotleads"] { display: none !important; }
+
+/* ---- DeepDossier PDF (print-only, one sheet per record) ---- */
+.dd-print { display: none; }
+.dd-sheet { color: #15233B; font-size: 13px; line-height: 1.5; }
+.ddp-head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid var(--brand); padding-bottom: 12px; margin-bottom: 16px; }
+.ddp-name { font-size: 24px; font-weight: 800; letter-spacing: -.3px; }
+.ddp-title { font-size: 14px; color: #46536b; margin-top: 2px; }
+.ddp-brand { font-size: 11px; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+.ddp-section { margin: 0 0 16px; }
+.ddp-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: #8a93a5; margin: 0 0 8px; border-bottom: 1px solid #e7eaf0; padding-bottom: 4px; }
+.ddp-section p { margin: 0; }
+.ddp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
+.ddp-field { display: flex; flex-direction: column; }
+.ddp-lbl { font-size: 10px; text-transform: uppercase; letter-spacing: .4px; color: #9aa2b1; }
+.ddp-val { font-size: 13px; font-weight: 600; word-break: break-word; }
+.ddp-sub { font-size: 12px; font-weight: 700; margin: 10px 0 4px; }
+.ddp-list { margin: 0; padding-left: 18px; }
+.ddp-list li { margin: 2px 0; }
+.ddp-news-t { font-weight: 600; }
+.ddp-muted { color: #8a93a5; font-size: 12px; }
+.ddp-foot { margin-top: 18px; padding-top: 8px; border-top: 1px solid #e7eaf0; font-size: 11px; color: #9aa2b1; }
+
+@media print {
+  body.dd-printing * { visibility: hidden; }
+  body.dd-printing #dd-print, body.dd-printing #dd-print * { visibility: visible; }
+  body.dd-printing #dd-print { display: block; position: absolute; left: 0; top: 0; width: 100%; }
+  body.dd-printing .dd-sheet { page-break-after: always; break-after: page; padding: 8mm 6mm; }
+  body.dd-printing .dd-sheet:last-child { page-break-after: auto; break-after: auto; }
+  .ddp-head, .ddp-section h3 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

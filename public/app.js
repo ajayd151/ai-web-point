@@ -2110,6 +2110,7 @@ async function ddRun() {
     ddRenderRows();
     $('dd-results-panel').classList.toggle('hidden', !ddRows.length);
     $('dd-export').classList.toggle('hidden', !ddRows.length);
+    if ($('dd-export-pdf')) $('dd-export-pdf').classList.toggle('hidden', !ddRows.length);
     var m = d.meta || {};
     var banner = $('dd-banner');
     if (m.mock) {
@@ -2143,6 +2144,69 @@ function ddExportCsv() {
   setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
 }
 if ($('dd-export')) $('dd-export').addEventListener('click', ddExportCsv);
+
+// ---- DeepDossier PDF: one nicely-presented sheet per record ----
+function ddField(label, value) {
+  if (!value) return '';
+  return '<div class="ddp-field"><span class="ddp-lbl">' + ddEsc(label) + '</span><span class="ddp-val">' + ddEsc(value) + '</span></div>';
+}
+function ddSheet(r, idx) {
+  var ch = r.companiesHouse || {};
+  var news = Array.isArray(r.news) ? r.news : [];
+  // Companies House block
+  var chHtml;
+  if (ch.found) {
+    var dirs = (ch.directors || []).map(function (d) { return '<li>' + ddEsc(d.name) + (d.appointed ? ' <span class="ddp-muted">(appointed ' + ddEsc(d.appointed) + ')</span>' : '') + '</li>'; }).join('');
+    var pscs = (ch.pscs || []).map(function (x) { return '<li>' + ddEsc(x.name) + (x.control && x.control.length ? ' <span class="ddp-muted">(' + ddEsc(x.control.join(', ')) + ')</span>' : '') + '</li>'; }).join('');
+    chHtml = '<div class="ddp-grid">' +
+      ddField('Company', ch.name) + ddField('Company no.', ch.number) +
+      ddField('Status', ch.status) + ddField('Incorporated', ch.incorporated) +
+      ddField('SIC', (ch.sic || []).join('; ')) + ddField('Accounts due', ch.accountsNextDue) +
+      ddField('Registered office', ch.address) +
+      '</div>' +
+      (dirs ? '<div class="ddp-sub">Directors</div><ul class="ddp-list">' + dirs + '</ul>' : '') +
+      (pscs ? '<div class="ddp-sub">Persons of significant control (owners)</div><ul class="ddp-list">' + pscs + '</ul>' : '');
+  } else {
+    chHtml = '<p class="ddp-muted">' + ddEsc(ch.note || 'No Companies House match on file.') + '</p>';
+  }
+  // News block
+  var newsHtml = news.length
+    ? '<ul class="ddp-list">' + news.map(function (n) {
+        return '<li><span class="ddp-news-t">' + ddEsc(n.title) + '</span>' +
+          '<span class="ddp-muted"> ' + ddEsc([n.source, n.date].filter(Boolean).join(' · ')) + '</span></li>';
+      }).join('') + '</ul>'
+    : '<p class="ddp-muted">No recent news mentions found.</p>';
+
+  return '<section class="dd-sheet">' +
+    '<header class="ddp-head">' +
+      '<div><div class="ddp-name">' + ddEsc(r.name) + '</div>' +
+        '<div class="ddp-title">' + ddEsc([r.title, r.company].filter(Boolean).join(' · ')) + '</div></div>' +
+      '<div class="ddp-brand">Site Pounce · DeepDossier</div>' +
+    '</header>' +
+    '<div class="ddp-section"><h3>Direct contact</h3><div class="ddp-grid">' +
+      ddField('Mobile', r.mobile) + ddField('Direct dial', r.directDial) +
+      ddField('Landline', r.landline) + ddField('Work email', r.email) +
+      ddField('Email verified', r.emailVerified) + ddField('Alt email', r.altEmail) +
+      ddField('LinkedIn', r.linkedin) + ddField('Location', r.location) +
+    '</div></div>' +
+    (r.summary ? '<div class="ddp-section"><h3>Summary</h3><p>' + ddEsc(r.summary) + '</p></div>' : '') +
+    '<div class="ddp-section"><h3>Company (Companies House)</h3>' + chHtml + '</div>' +
+    '<div class="ddp-section"><h3>Recent news mentions</h3>' + newsHtml + '</div>' +
+    (r.buyingSignal ? '<div class="ddp-section"><h3>Buying signal</h3><p>' + ddEsc(r.buyingSignal) + '</p></div>' : '') +
+    '<footer class="ddp-foot">Confidence ' + ddEsc(r.confidence) + '/100 · Record ' + (idx + 1) + '</footer>' +
+    '</section>';
+}
+function ddExportPdf() {
+  if (!ddRows.length) return;
+  var host = $('dd-print');
+  if (!host) return;
+  host.innerHTML = ddRows.map(function (r, i) { return ddSheet(r, i); }).join('');
+  document.body.classList.add('dd-printing');
+  var cleanup = function () { document.body.classList.remove('dd-printing'); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(function () { window.print(); }, 60); // let the DOM paint first
+}
+if ($('dd-export-pdf')) $('dd-export-pdf').addEventListener('click', ddExportPdf);
 
 // ---- Super Admin: left menu + Feedback management ----
 document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('click', () => {
