@@ -1062,3 +1062,6 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .dd-navbtn.active { background: var(--brand); color: #fff; border-color: var(--brand); }
 .dd-content { flex: 1; min-width: 0; }
 @media (max-width: 820px) { .dd-wrap { flex-direction: column; } .dd-menu { position: static; width: 100%; flex-basis: auto; display: flex; gap: 6px; flex-wrap: wrap; } .dd-menu-title { width: 100%; } .dd-navbtn { margin-bottom: 0; width: auto; } }
+
+/* email-verification source tag (Apollo baseline vs Hunter MX/SMTP re-check) */
+.dd-vcheck { display: inline-block; margin-left: 5px; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 10px; background: rgba(15,182,168,.12); color: #0b7a70; vertical-align: middle; }

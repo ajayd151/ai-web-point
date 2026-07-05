@@ -2077,7 +2077,7 @@ function ddRenderRows() {
       '<td class="dd-tel">' + tel(r.directDial) + '</td>' +
       '<td class="dd-tel">' + tel(r.landline) + '</td>' +
       '<td>' + mail(r.email) + '</td>' +
-      '<td class="' + vClass + '">' + ddEsc(r.emailVerified) + '</td>' +
+      '<td class="' + vClass + '" title="' + ddEsc(r.emailCheck || '') + '">' + ddEsc(r.emailVerified) + (r.emailCheck ? '<span class="dd-vcheck">' + ddEsc(r.emailCheck.indexOf('Hunter') === 0 ? 'MX/SMTP' : 'Apollo') + '</span>' : '') + '</td>' +
       '<td>' + mail(r.altEmail) + '</td>' +
       '<td>' + li + '</td>' +
       '<td class="dd-signal">' + (r.buyingSignal ? ddEsc(r.buyingSignal) : '<span class="muted">-</span>') + '</td>' +
@@ -2243,7 +2243,7 @@ function ddSheet(r, idx) {
     '<div class="ddp-section"><h3>Direct contact</h3><div class="ddp-grid">' +
       ddField('Mobile', r.mobile) + ddField('Direct dial', r.directDial) +
       ddField('Landline', r.landline) + ddField('Work email', r.email) +
-      ddField('Email verified', r.emailVerified) + ddField('Alt email', r.altEmail) +
+      ddField('Email verified', r.emailVerified + (r.emailCheck ? ' (' + r.emailCheck + ')' : '')) + ddField('Alt email', r.altEmail) +
       ddField('LinkedIn', r.linkedin) + ddField('Location', r.location) +
     '</div></div>' +
     (r.summary ? '<div class="ddp-section"><h3>Summary</h3><p>' + ddEsc(r.summary) + '</p></div>' : '') +
@@ -2293,7 +2293,7 @@ function olRender() {
       '<td>' + ddEsc(r.company) + '</td>' +
       '<td class="dd-tel">' + (r.mobile ? ddEsc(r.mobile) : '<span class="muted">-</span>') + '</td>' +
       '<td>' + (r.email ? ddEsc(r.email) : '<span class="muted">-</span>') + '</td>' +
-      '<td>' + ddEsc(r.emailVerified || '') + '</td>' +
+      '<td title="' + ddEsc(r.emailCheck || '') + '">' + ddEsc(r.emailVerified || '') + (r.emailCheck ? '<span class="dd-vcheck">' + ddEsc(r.emailCheck.indexOf('Hunter') === 0 ? 'MX/SMTP' : 'Apollo') + '</span>' : '') + '</td>' +
       '<td>' + ddEsc(r.location || '') + '</td>' +
       '<td>' + ddEsc(ch.number || '') + '</td>' +
       '<td><span class="dd-conf">' + ddEsc(r.confidence != null ? r.confidence : '') + '</span></td>' +
