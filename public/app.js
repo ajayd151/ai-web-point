@@ -2386,9 +2386,62 @@ document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('cl
   document.querySelectorAll('.admin-pane').forEach((p) => p.classList.toggle('hidden', p.id !== 'admin-' + v));
   if (v === 'overview') loadAdminOverview();
   if (v === 'customers') loadCustomers();
+  if (v === 'targets') renderTargets();
   if (v === 'feedback') loadFeedbackAdmin();
   if (v === 'team') loadTeamAdmin();
 }));
+
+// ---- Super Admin: Who to Target (personal playbook) ----
+// Priority-ordered for July/August: no website + quiet in summer + benefits from a site/reviews
+// + answers the phone. `term` is what gets dropped into the Search Industry field.
+const TARGET_INDUSTRIES = [
+  { term: 'plumbers', name: 'Plumbers & heating engineers', why: 'Summer off-peak (no heating jobs); want work + boiler-service upsell', time: 'Before 8am or after 5pm' },
+  { term: 'chimney sweep', name: 'Chimney sweeps', why: 'Off-season now, chasing autumn and winter bookings', time: 'Before 9am or after 5pm' },
+  { term: 'boiler service', name: 'Gas / boiler service engineers', why: 'Quiet before the autumn rush; keen on service plans', time: 'Before 8am or after 5pm' },
+  { term: 'carpet cleaning', name: 'Carpet & upholstery cleaners', why: 'Quieter, keen to fill the diary; sole traders, no site', time: 'Mid-morning or early afternoon' },
+  { term: 'oven cleaning', name: 'Oven cleaners', why: 'Steady niche, one-man bands, word-of-mouth only', time: 'Mid-morning or early afternoon' },
+  { term: 'dog grooming', name: 'Mobile dog groomers', why: 'Not weather-tied, Instagram-only, reviews drive bookings', time: 'Mid-morning between appointments' },
+  { term: 'cleaners', name: 'Domestic cleaners', why: 'Steady, easy to reach, seldom have a website', time: 'Mid-morning or early afternoon' },
+  { term: 'appliance repair', name: 'Appliance repair engineers', why: 'Steady work, sole traders, reviews build trust', time: 'Before 9am or after 5pm' },
+  { term: 'hairdressers', name: 'Independent salons & barbers', why: 'August holiday dip; social-only; want repeat bookings', time: 'Mid-morning or 2-4pm; avoid Saturdays' },
+  { term: 'nail salon', name: 'Nail & beauty salons', why: 'Post-holiday lull in August; Instagram-only', time: 'Mid-morning or 2-4pm; avoid Saturdays' },
+  { term: 'driving instructor', name: 'Driving instructors', why: 'Sole traders, reviews win pupils, demand builds toward September', time: 'Late morning or early evening' },
+  { term: 'handyman', name: 'Handyman / property maintenance', why: 'Plenty of indoor jobs in summer; many have no site', time: 'Before 8am or after 5pm' },
+  { term: 'mobile hairdresser', name: 'Mobile hairdressers', why: 'Sole traders, Insta-only, keen to fill quiet weeks', time: 'Mid-morning or early afternoon' },
+  { term: 'tutors', name: 'Private tutors', why: 'Quiet now but gearing up for September; reviews convert parents', time: 'Late morning or early evening' },
+  { term: 'locksmith', name: 'Locksmiths', why: 'Phone-first (emergencies); reviews = trust; often only on directories', time: 'Late morning (or any time, emergency-led)' },
+  { term: 'upholstery', name: 'Upholsterers / furniture repair', why: 'Quiet niche, word-of-mouth only; benefit from a portfolio site', time: 'Late morning or early afternoon' },
+  { term: 'blinds fitter', name: 'Blind & curtain fitters', why: 'Steady indoor work, sole traders, no site common', time: 'Late morning or early afternoon' },
+  { term: 'sports massage', name: 'Physios / sports massage', why: 'Sole practitioners, booking and reviews driven, many social-only', time: 'Lunchtime or end of day' },
+  { term: 'chiropodist', name: 'Chiropodists / mobile foot care', why: 'Older sole traders, phone-first, rarely a website', time: 'Late morning or lunchtime' },
+  { term: 'spray tan', name: 'Aesthetics / spray tan / lash techs', why: 'Quieter after the June-July rush; Instagram-only; reviews critical', time: 'Mid-morning or 2-4pm; avoid Saturdays' },
+];
+const TARGET_AVOID = 'gardeners/landscapers, roofers, builders, exterior decorators, window cleaners, removals/man-and-van, fencing, air-con installers';
+function renderTargets() {
+  const box = $('target-list'); if (!box || box.dataset.painted) return;
+  box.innerHTML =
+    '<div class="tgt-tip">🔥 Start with the top 3 (heating trades in their off-season), they have the strongest "you are quiet, here is more work" hook.</div>' +
+    '<div class="tgt-scroll"><table class="tgt-table"><thead><tr><th>#</th><th>Industry</th><th>Why now</th><th>Best time to reach</th></tr></thead><tbody>' +
+    TARGET_INDUSTRIES.map((t, i) =>
+      '<tr><td class="tgt-rank">' + (i + 1) + '</td>' +
+      '<td><a href="#" class="tgt-link" data-term="' + esc(t.term) + '">' + esc(t.name) + ' →</a></td>' +
+      '<td>' + esc(t.why) + '</td>' +
+      '<td class="tgt-time">' + esc(t.time) + '</td></tr>'
+    ).join('') + '</tbody></table></div>' +
+    '<p class="muted tgt-avoid"><b>Avoid in summer (full diaries):</b> ' + esc(TARGET_AVOID) + '.</p>';
+  box.dataset.painted = '1';
+}
+{ const l = $('target-list'); if (l) l.addEventListener('click', (e) => {
+  const a = e.target.closest('.tgt-link'); if (!a) return;
+  e.preventDefault();
+  const term = a.dataset.term || '';
+  if ($('company')) { $('company').value = ''; }
+  if (typeof updateCompanyMode === 'function') updateCompanyMode(); // re-enable Industry if it was greyed
+  if ($('industry')) $('industry').value = term;
+  showView('search');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  setTimeout(() => { try { $('location').focus(); } catch (e2) {} }, 80);
+}); }
 
 // ---- Super Admin: Customers ----
 let allCustomers = [];
