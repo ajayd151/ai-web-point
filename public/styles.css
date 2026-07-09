@@ -1076,3 +1076,15 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .company-mode #industry { opacity: .45; background: #f2f4f7; cursor: not-allowed; }
 .company-mode .filters, .company-mode .results-pick { opacity: .5; pointer-events: none; }
 .company-mode .company-field input { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(15,182,168,.15); }
+
+/* ---- Admin overview: stat tiles ---- */
+.ov-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 14px; }
+.ov-tile { position: relative; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 16px; box-shadow: var(--shadow); overflow: hidden; }
+.ov-tile::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--brand); }
+.ov-tile:nth-child(2)::before { background: #6366f1; }
+.ov-tile:nth-child(3)::before { background: var(--accent); }
+.ov-tile:nth-child(4)::before { background: var(--amber); }
+.ov-ico { font-size: 22px; line-height: 1; margin-bottom: 8px; }
+.ov-num { font-size: 34px; font-weight: 800; color: var(--ink); letter-spacing: -.5px; line-height: 1; }
+.ov-label { font-size: 14px; font-weight: 700; color: var(--ink); margin-top: 6px; }
+.ov-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }

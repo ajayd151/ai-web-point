@@ -2058,7 +2058,7 @@ function showView(name) {
   if (name === 'websites') loadWebsites();
   if (name === 'calls') loadCallList();
   if (name === 'enquiries') loadEnquiries();
-  if (name === 'admin') loadFeedbackAdmin();
+  if (name === 'admin') loadAdminOverview();
 }
 // DeepDossier left sub-menu: switch between the search pane and the leads bank.
 function ddShowPane(v) {
@@ -2384,9 +2384,34 @@ document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('cl
   document.querySelectorAll('.admin-navbtn').forEach((x) => x.classList.toggle('active', x === b));
   const v = b.dataset.adminview;
   document.querySelectorAll('.admin-pane').forEach((p) => p.classList.toggle('hidden', p.id !== 'admin-' + v));
+  if (v === 'overview') loadAdminOverview();
   if (v === 'feedback') loadFeedbackAdmin();
   if (v === 'team') loadTeamAdmin();
 }));
+
+// ---- Super Admin: Overview dashboard ----
+function ovTile(icon, num, label, sub) {
+  return '<div class="ov-tile"><div class="ov-ico">' + icon + '</div>' +
+    '<div class="ov-num">' + num + '</div><div class="ov-label">' + esc(label) + '</div>' +
+    (sub ? '<div class="ov-sub">' + esc(sub) + '</div>' : '') + '</div>';
+}
+async function loadAdminOverview() {
+  const box = $('ov-stats'); if (!box) return;
+  box.innerHTML = '<p class="muted">Loading…</p>';
+  let d = null;
+  try {
+    const r = await fetch('/api/admin-stats');
+    if (!r.ok) { box.innerHTML = '<p class="muted">' + (r.status === 403 ? 'Owner only.' : 'Could not load.') + '</p>'; return; }
+    d = await r.json();
+  } catch (e) { box.innerHTML = '<p class="muted">Network error.</p>'; return; }
+  const team = d.team || {}; const fb = d.feedback || {};
+  box.innerHTML =
+    ovTile('🤑', (d.customers != null ? d.customers : 0), 'Paying customers', 'Active or trialing') +
+    ovTile('👥', (team.total || 0), 'Team members', (team.active || 0) + ' active' + (team.suspended ? ', ' + team.suspended + ' suspended' : '')) +
+    ovTile('💬', (fb.new || 0), 'Open feedback', (fb.total || 0) + ' total, ' + (fb.done || 0) + ' done') +
+    ovTile('📨', (fb.total || 0), 'All feedback', (fb.ignored || 0) + ' ignored');
+}
+{ const b = $('ov-refresh'); if (b) b.addEventListener('click', (e) => { e.preventDefault(); loadAdminOverview(); }); }
 
 // ---- Super Admin: Team management ----
 // Permission keys + labels, kept in sync with PERM_KEYS in lib/access.js.

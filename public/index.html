@@ -659,12 +659,22 @@
       <div class="admin-wrap">
         <aside class="admin-menu">
           <div class="admin-menu-title">Admin</div>
-          <button class="admin-navbtn active" data-adminview="feedback">💬 Feedback</button>
+          <button class="admin-navbtn active" data-adminview="overview">📊 Overview</button>
+          <button class="admin-navbtn" data-adminview="feedback">💬 Feedback</button>
           <button class="admin-navbtn" data-adminview="team">👥 Team</button>
           <!-- more admin sections get added here -->
         </aside>
         <section class="admin-content">
-          <div id="admin-feedback" class="admin-pane">
+          <div id="admin-overview" class="admin-pane">
+            <div class="admin-pane-head">
+              <h2 class="view-title">📊 Overview</h2>
+              <button id="ov-refresh" class="linkbtn">↻ Refresh</button>
+            </div>
+            <p class="muted view-sub">A quick snapshot of your Site Pounce account.</p>
+            <div id="ov-stats" class="ov-stats"></div>
+          </div>
+
+          <div id="admin-feedback" class="admin-pane hidden">
             <div class="admin-pane-head">
               <h2 class="view-title">💬 Feedback</h2>
               <div class="admin-pane-tools">
