@@ -645,6 +645,7 @@ function updateCompanyMode() {
   const locEmpty = !($('location') && $('location').value.trim());
   document.body.classList.toggle('company-mode', has);
   if ($('industry')) $('industry').disabled = has;
+  if ($('f-limit')) $('f-limit').disabled = has; // look-up is fixed at 5 + Load more, so Max matches doesn't apply
   document.querySelectorAll('.filters input, .filters select').forEach((el) => { el.disabled = has; });
   const hint = $('company-hint'); if (hint) hint.classList.toggle('hidden', !(has && locEmpty));
 }
