@@ -2404,12 +2404,27 @@ async function loadAdminOverview() {
     if (!r.ok) { box.innerHTML = '<p class="muted">' + (r.status === 403 ? 'Owner only.' : 'Could not load.') + '</p>'; return; }
     d = await r.json();
   } catch (e) { box.innerHTML = '<p class="muted">Network error.</p>'; return; }
-  const team = d.team || {}; const fb = d.feedback || {};
-  box.innerHTML =
-    ovTile('🤑', (d.customers != null ? d.customers : 0), 'Paying customers', 'Active or trialing') +
-    ovTile('👥', (team.total || 0), 'Team members', (team.active || 0) + ' active' + (team.suspended ? ', ' + team.suspended + ' suspended' : '')) +
-    ovTile('💬', (fb.new || 0), 'Open feedback', (fb.total || 0) + ' total, ' + (fb.done || 0) + ' done') +
-    ovTile('📨', (fb.total || 0), 'All feedback', (fb.ignored || 0) + ' ignored');
+  const team = d.team || {}; const fb = d.feedback || {}; const rev = d.revenue;
+  const gbp = (n) => '£' + (Math.round(Number(n || 0) * 100) / 100).toLocaleString('en-GB');
+  let tiles = ovTile('🤑', (d.customers != null ? d.customers : 0), 'Paying customers', 'Active or trialing');
+  if (rev && !rev.error) {
+    tiles += ovTile('💷', gbp(rev.mrr), 'Monthly revenue', 'MRR from ' + (rev.count || 0) + ' subscription' + ((rev.count === 1) ? '' : 's')) +
+             ovTile('📈', gbp(rev.arpu), 'Avg per customer', 'Per active subscriber');
+  }
+  tiles += ovTile('👥', (team.total || 0), 'Team members', (team.active || 0) + ' active' + (team.suspended ? ', ' + team.suspended + ' suspended' : '')) +
+           ovTile('💬', (fb.new || 0), 'Open feedback', (fb.total || 0) + ' total, ' + (fb.done || 0) + ' done');
+  box.innerHTML = tiles;
+
+  // revenue-by-customer table
+  const rbox = $('ov-revenue'); if (!rbox) return;
+  if (!rev) { rbox.innerHTML = '<p class="muted ov-rev-note">Connect Stripe to see revenue here.</p>'; return; }
+  if (rev.error) { rbox.innerHTML = '<p class="muted ov-rev-note">Revenue unavailable right now (' + esc(rev.error) + ').</p>'; return; }
+  const rows = rev.customers || [];
+  if (!rows.length) { rbox.innerHTML = '<div class="ov-rev-head">Revenue by customer</div><p class="muted ov-rev-note">No active paid subscriptions yet.</p>'; return; }
+  rbox.innerHTML = '<div class="ov-rev-head">Revenue by customer <span class="muted">(' + rows.length + ')</span></div>' +
+    '<div class="ov-rev-scroll"><table class="ov-rev-table"><thead><tr><th>Customer</th><th>Plan</th><th class="ov-rev-amt">Per month</th></tr></thead><tbody>' +
+    rows.map((c) => '<tr><td>' + esc(c.name ? (c.name + ' · ' + c.email) : c.email) + '</td><td>' + esc(c.plan || '') + '</td><td class="ov-rev-amt">' + gbp(c.monthly) + '</td></tr>').join('') +
+    '</tbody></table></div>';
 }
 { const b = $('ov-refresh'); if (b) b.addEventListener('click', (e) => { e.preventDefault(); loadAdminOverview(); }); }
 
