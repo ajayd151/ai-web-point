@@ -1071,7 +1071,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .company-field > span { display: block; font-size: 15.5px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
 .company-field > span small { font-weight: 600; font-size: 12.5px; }
 .company-field input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #fff; font-size: 15px; }
-.company-hint { display: block; margin-top: 6px; color: #b45309; font-weight: 700; font-size: 13px; }
+.company-hint { display: block; margin-top: 6px; color: var(--muted); font-weight: 600; font-size: 12.5px; }
 /* when a company name is typed, grey out the Industry field + filters (not used) */
 .company-mode #industry { opacity: .45; background: #f2f4f7; cursor: not-allowed; }
 .company-mode .filters { opacity: .5; pointer-events: none; }

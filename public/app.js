@@ -675,8 +675,7 @@ async function runSearch() {
   const industry = $('industry').value.trim();
   const location = $('location').value.trim();
   if (company) {
-    // look up a specific business: location is mandatory, industry + filters ignored
-    if (!location) { updateCompanyMode(); if ($('location')) $('location').focus(); return; }
+    // look up a specific business: location optional (a nudge shows if blank), industry + filters ignored
     lastSearchParams = { company, location, lookup: true, filters: {} };
   } else {
     if (!industry || !location) { alert('Please enter both an industry and a location.'); return; }
@@ -759,9 +758,10 @@ async function doSearch(append) {
       const areaWord = expanded.length === 1 ? 'area' : 'areas';
       let html;
       if (lookup) {
+        const where = location ? ' in ' + esc(location) : '';
         html = results.length
-          ? `<div class="search-hero"><div class="sh-head">🔎 Found ${results.length} result${results.length === 1 ? '' : 's'} for "${esc(company)}"</div><div class="sh-sub">in ${esc(primaryLoc)}.${lastBatchFull ? ' Not the one? Load more below.' : ''}</div></div>`
-          : `<div class="search-hero sh-empty"><b>⚠️ No match.</b> Couldn't find "${esc(company)}" in ${esc(primaryLoc)}. Check the spelling, or try the town or city it is actually in.</div>`;
+          ? `<div class="search-hero"><div class="sh-head">🔎 Found ${results.length} result${results.length === 1 ? '' : 's'} for "${esc(company)}"</div><div class="sh-sub">${where ? 'Found' + where + '.' : 'Searched by name across the UK.'}${lastBatchFull ? ' Not the one? Load more below.' : ''}</div></div>`
+          : `<div class="search-hero sh-empty"><b>⚠️ No match.</b> Couldn't find "${esc(company)}"${where}. Check the spelling${location ? ', or try the town it is actually in' : ', or add the town or city'}.</div>`;
       } else if (results.length === 0) {
         const areasNote = expanded.length ? `, plus ${expanded.length} nearby ${areaWord} (${esc(expanded.join(', '))}),` : '';
         html = `<div class="search-hero sh-empty"><b>⚠️ No matches.</b> No ${esc(industry)} in ${esc(primaryLoc)}${areasNote} matched your filters (I scanned ${scanned} listings). Try loosening them: set Phone to "Has phone" (not "Mobile only"), or Website to "Any". Well-established businesses (solicitors, accountants, etc.) nearly all have a website, so "No website" + "Mobile only" together often returns nothing.</div>`;

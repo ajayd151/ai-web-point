@@ -114,11 +114,11 @@ module.exports = async (req, res) => {
   const location = String(body.location || '').trim();
   const company = String(body.company || '').trim();
   const lookup = !!company; // "look up a specific business" mode: targeted, no auto-expand, no filters
-  if (lookup) {
-    if (!location) { res.status(400).json({ error: 'Location is required when searching by company name.' }); return; }
-  } else if (!industry || !location) {
+  if (!lookup && (!industry || !location)) {
     res.status(400).json({ error: 'Industry and location are required.' }); return;
   }
+  // in look-up mode the location is optional: with it we narrow to the area, without it we
+  // search the name nationally.
 
   const key = process.env.GOOGLE_PLACES_API_KEY;
   if (!key) { res.status(503).json({ error: 'GOOGLE_PLACES_API_KEY is not set in Vercel yet.' }); return; }
@@ -150,7 +150,7 @@ module.exports = async (req, res) => {
     let pageToken = null;
     let added = 0;
     for (let pageNum = 0; pageNum < 3; pageNum++) {
-      const reqBody = { textQuery: lookup ? `${company} in ${area}` : `${industry} in ${area}`, pageSize: 20, regionCode: 'GB', languageCode: 'en' };
+      const reqBody = { textQuery: lookup ? (area ? `${company} in ${area}` : company) : `${industry} in ${area}`, pageSize: 20, regionCode: 'GB', languageCode: 'en' };
       if (pageToken) reqBody.pageToken = pageToken;
       const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
         method: 'POST',
