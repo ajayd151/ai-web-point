@@ -1099,3 +1099,25 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .ov-rev-table thead th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 800; }
 .ov-rev-table tbody tr:last-child td { border-bottom: 0; }
 .ov-rev-table .ov-rev-amt { text-align: right; font-weight: 800; }
+
+/* ---- Admin: Customers ---- */
+.cust-count { font-size: 13px; margin-bottom: 8px; }
+.cust-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); background: #fff; }
+.cust-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.cust-table th, .cust-table td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--line); color: var(--ink); vertical-align: top; }
+.cust-table thead th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 800; white-space: nowrap; }
+.cust-row { cursor: pointer; }
+.cust-row:hover { background: #f7fafb; }
+.cust-row.cust-open { background: #f2fbfa; }
+.cust-em { font-size: 12.5px; margin-top: 2px; }
+.cust-found { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; background: #fff2d6; color: #b45309; padding: 2px 6px; border-radius: 999px; }
+.cust-badge { display: inline-block; font-size: 11px; font-weight: 800; text-transform: capitalize; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.cs-active { background: #dcfce7; color: #15803d; }
+.cs-ended { background: #fee2e2; color: #b91c1c; }
+.cs-none { background: #eef2f6; color: #6b7585; }
+.cust-detail td { padding: 0 14px 0 14px; background: #f7fafb; }
+.cust-detail-box { padding: 14px 2px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 20px; }
+.cd-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; border-bottom: 1px dashed var(--line); padding: 5px 0; }
+.cd-k { color: var(--muted); font-weight: 700; }
+.cd-v { color: var(--ink); text-align: right; }
+.cd-actions { grid-column: 1 / -1; margin-top: 6px; }

@@ -660,6 +660,7 @@
         <aside class="admin-menu">
           <div class="admin-menu-title">Admin</div>
           <button class="admin-navbtn active" data-adminview="overview">📊 Overview</button>
+          <button class="admin-navbtn" data-adminview="customers">👤 Customers</button>
           <button class="admin-navbtn" data-adminview="feedback">💬 Feedback</button>
           <button class="admin-navbtn" data-adminview="team">👥 Team</button>
           <!-- more admin sections get added here -->
@@ -673,6 +674,18 @@
             <p class="muted view-sub">A quick snapshot of your Site Pounce account.</p>
             <div id="ov-stats" class="ov-stats"></div>
             <div id="ov-revenue" class="ov-revenue"></div>
+          </div>
+
+          <div id="admin-customers" class="admin-pane hidden">
+            <div class="admin-pane-head">
+              <h2 class="view-title">👤 Customers</h2>
+              <div class="admin-pane-tools">
+                <input id="cust-search" type="text" placeholder="Search name or email…" />
+                <button id="cust-refresh" class="linkbtn">↻ Refresh</button>
+              </div>
+            </div>
+            <p class="muted view-sub">Everyone who has signed up, with their plan and status. Click a row to see their details and open their Stripe profile.</p>
+            <div id="cust-list" class="cust-list"></div>
           </div>
 
           <div id="admin-feedback" class="admin-pane hidden">

@@ -2385,9 +2385,81 @@ document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('cl
   const v = b.dataset.adminview;
   document.querySelectorAll('.admin-pane').forEach((p) => p.classList.toggle('hidden', p.id !== 'admin-' + v));
   if (v === 'overview') loadAdminOverview();
+  if (v === 'customers') loadCustomers();
   if (v === 'feedback') loadFeedbackAdmin();
   if (v === 'team') loadTeamAdmin();
 }));
+
+// ---- Super Admin: Customers ----
+let allCustomers = [];
+function statusBadgeClass(s) {
+  const st = String(s || '').toLowerCase();
+  if (st === 'active' || st === 'trialing') return 'cs-active';
+  if (st === 'canceled' || st === 'cancelled' || st === 'past_due' || st === 'unpaid') return 'cs-ended';
+  return 'cs-none'; // 'signed up' / none / inactive
+}
+async function loadCustomers() {
+  const box = $('cust-list'); if (!box) return;
+  box.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const r = await fetch('/api/admin-customers');
+    if (!r.ok) { box.innerHTML = '<p class="muted">' + (r.status === 403 ? 'Owner only.' : 'Could not load.') + '</p>'; return; }
+    const d = await r.json();
+    allCustomers = d.customers || [];
+    renderCustomers();
+  } catch (e) { box.innerHTML = '<p class="muted">Network error.</p>'; }
+}
+function renderCustomers() {
+  const box = $('cust-list'); if (!box) return;
+  const q = (($('cust-search') && $('cust-search').value) || '').toLowerCase().trim();
+  let list = allCustomers;
+  if (q) list = list.filter((c) => ((c.name || '') + ' ' + (c.email || '')).toLowerCase().indexOf(q) >= 0);
+  if (!list.length) { box.innerHTML = '<p class="muted">' + (allCustomers.length ? 'No one matches that search.' : 'No sign-ups yet.') + '</p>'; return; }
+  box.innerHTML = '<div class="cust-count muted">' + list.length + ' ' + (list.length === 1 ? 'person' : 'people') + '</div>' +
+    '<div class="cust-scroll"><table class="cust-table"><thead><tr><th>Customer</th><th>Plan</th><th>Status</th><th>Signed up</th><th>Last active</th></tr></thead><tbody>' +
+    list.map((c, i) => {
+      const name = c.name ? esc(c.name) : '<span class="muted">(no name)</span>';
+      const foundTag = c.founding ? ' <span class="cust-found">Founding</span>' : '';
+      return '<tr class="cust-row" data-i="' + i + '">' +
+        '<td><b>' + name + '</b>' + foundTag + '<div class="cust-em muted">' + esc(c.email) + '</div></td>' +
+        '<td>' + esc((c.plan && c.plan !== 'none') ? (c.plan.charAt(0).toUpperCase() + c.plan.slice(1)) : '—') + '</td>' +
+        '<td><span class="cust-badge ' + statusBadgeClass(c.status) + '">' + esc(c.status) + '</span></td>' +
+        '<td>' + (c.signedUp ? esc(fmtDateShort(c.signedUp)) : '—') + '</td>' +
+        '<td>' + (c.lastActive ? esc(fmtDateShort(c.lastActive)) : '—') + '</td>' +
+        '</tr>' +
+        '<tr class="cust-detail hidden" data-detail="' + i + '"><td colspan="5"></td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+function renderCustomerDetail(c) {
+  const rows = [
+    ['Email', esc(c.email)],
+    ['Plan', esc((c.plan && c.plan !== 'none') ? c.plan : 'No plan')],
+    ['Status', esc(c.status)],
+    ['Signed up', c.signedUp ? esc(fmtDate(c.signedUp)) : '—'],
+    ['Last active', c.lastActive ? esc(fmtDate(c.lastActive)) : '—'],
+    ['Founding member', c.founding ? 'Yes' : 'No'],
+  ].map((r) => '<div class="cd-row"><span class="cd-k">' + r[0] + '</span><span class="cd-v">' + r[1] + '</span></div>').join('');
+  const stripe = c.stripeCustomerId
+    ? '<a class="batch-btn" target="_blank" rel="noopener" href="https://dashboard.stripe.com/customers/' + encodeURIComponent(c.stripeCustomerId) + '">Open in Stripe ↗</a>'
+    : '<span class="muted" style="font-size:13px">No Stripe customer yet (has not subscribed).</span>';
+  return '<div class="cust-detail-box">' + rows + '<div class="cd-actions">' + stripe + '</div></div>';
+}
+{ const l = $('cust-list'); if (l) l.addEventListener('click', (e) => {
+  const row = e.target.closest('.cust-row'); if (!row) return;
+  const i = row.dataset.i;
+  const det = document.querySelector('.cust-detail[data-detail="' + i + '"]'); if (!det) return;
+  const cell = det.querySelector('td');
+  const showing = !det.classList.contains('hidden');
+  if (showing) { det.classList.add('hidden'); row.classList.remove('cust-open'); return; }
+  const q = (($('cust-search') && $('cust-search').value) || '').toLowerCase().trim();
+  let list = allCustomers;
+  if (q) list = list.filter((c) => ((c.name || '') + ' ' + (c.email || '')).toLowerCase().indexOf(q) >= 0);
+  const c = list[Number(i)]; if (!c) return;
+  cell.innerHTML = renderCustomerDetail(c);
+  det.classList.remove('hidden'); row.classList.add('cust-open');
+}); }
+{ const s = $('cust-search'); if (s) s.addEventListener('input', renderCustomers); }
+{ const rb = $('cust-refresh'); if (rb) rb.addEventListener('click', (e) => { e.preventDefault(); loadCustomers(); }); }
 
 // ---- Super Admin: Overview dashboard ----
 function ovTile(icon, num, label, sub) {
