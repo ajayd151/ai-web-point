@@ -224,6 +224,7 @@ function resetUserCache() {
       .forEach((id) => { if ($(id)) $(id).classList.add('hidden'); });
     if ($('industry')) $('industry').value = '';
     if ($('location')) $('location').value = '';
+    if ($('company')) { $('company').value = ''; updateCompanyMode(); }
   } catch (e) {}
   try { renderRecentSearches(); } catch (e) {}
 }
@@ -634,9 +635,22 @@ async function batchAddToCallList() {
 $('loadmore-btn').addEventListener('click', loadMoreResults);
 $('sort-order').addEventListener('change', () => renderResults(lastSearchResults));
 $('newonly').addEventListener('change', () => renderResults(lastSearchResults));
-['industry', 'location'].forEach((id) =>
-  $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); })
+['industry', 'location', 'company'].forEach((id) =>
+  { if ($(id)) $(id).addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); }); }
 );
+// Company look-up mode: when a company name is typed, Location becomes required and the
+// Industry field + filters are greyed out (not used). Updates live as they type.
+function updateCompanyMode() {
+  const has = !!($('company') && $('company').value.trim());
+  const locEmpty = !($('location') && $('location').value.trim());
+  document.body.classList.toggle('company-mode', has);
+  if ($('industry')) $('industry').disabled = has;
+  document.querySelectorAll('.filters input, .filters select').forEach((el) => { el.disabled = has; });
+  const hint = $('company-hint'); if (hint) hint.classList.toggle('hidden', !(has && locEmpty));
+}
+{ const c = $('company'); if (c) c.addEventListener('input', updateCompanyMode); }
+{ const l = $('location'); if (l) l.addEventListener('input', updateCompanyMode); }
+updateCompanyMode();
 
 let lastSearchParams = null; // {industry, location, filters} so Load more can repeat it
 let lastBatchFull = false;   // was the last batch a full page (more may exist)?
@@ -657,10 +671,17 @@ function searchExcludeIds() {
   return Array.from(new Set(ids.concat(blockedIds)));
 }
 async function runSearch() {
+  const company = ($('company') && $('company').value.trim()) || '';
   const industry = $('industry').value.trim();
   const location = $('location').value.trim();
-  if (!industry || !location) { alert('Please enter both an industry and a location.'); return; }
-  lastSearchParams = { industry, location, filters: currentSearchFilters() };
+  if (company) {
+    // look up a specific business: location is mandatory, industry + filters ignored
+    if (!location) { updateCompanyMode(); if ($('location')) $('location').focus(); return; }
+    lastSearchParams = { company, location, lookup: true, filters: {} };
+  } else {
+    if (!industry || !location) { alert('Please enter both an industry and a location.'); return; }
+    lastSearchParams = { industry, location, filters: currentSearchFilters() };
+  }
   await doSearch(false);
 }
 async function loadMoreResults() { if (lastSearchParams) await doSearch(true); }
@@ -690,8 +711,8 @@ function animateCounts(root) {
 }
 async function doSearch(append) {
   if (!lastSearchParams) return;
-  const { industry, location, filters } = lastSearchParams;
-  const limit = Number($('f-limit').value || 20);
+  const { industry, location, filters, company, lookup } = lastSearchParams;
+  const limit = lookup ? 5 : Number($('f-limit').value || 20); // company look-up: 5 at a time
   let excludeIds = searchExcludeIds();
   if (append) {
     // exclude the ones already shown so Google digs deeper / into nearby areas
@@ -703,13 +724,14 @@ async function doSearch(append) {
   btn.textContent = append ? 'Loading…' : 'Searching…';
   if (!append) {
     $('summary').classList.remove('hidden');
-    $('summary').textContent = `Searching Google for ${industry} in ${location}…`;
+    $('summary').textContent = lookup ? `Looking up ${company} in ${location}…` : `Searching Google for ${industry} in ${location}…`;
     $('results').innerHTML = '';
     $('want-more').classList.add('hidden');
     lastSearchResults = [];
   }
   try {
-    const resp = await fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ industry, location, limit, filters, excludeIds }) });
+    const payload = lookup ? { company, location, limit, excludeIds } : { industry, location, limit, filters, excludeIds };
+    const resp = await fetch('/api/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     const data = await resp.json();
     if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
     if (resp.status === 402) { if ($('paywall')) $('paywall').classList.remove('hidden'); throw new Error('Choose a plan to start searching.'); }
@@ -736,7 +758,11 @@ async function doSearch(append) {
       const expanded = data.expandedLocations || [];
       const areaWord = expanded.length === 1 ? 'area' : 'areas';
       let html;
-      if (results.length === 0) {
+      if (lookup) {
+        html = results.length
+          ? `<div class="search-hero"><div class="sh-head">🔎 Found ${results.length} result${results.length === 1 ? '' : 's'} for "${esc(company)}"</div><div class="sh-sub">in ${esc(primaryLoc)}.${lastBatchFull ? ' Not the one? Load more below.' : ''}</div></div>`
+          : `<div class="search-hero sh-empty"><b>⚠️ No match.</b> Couldn't find "${esc(company)}" in ${esc(primaryLoc)}. Check the spelling, or try the town or city it is actually in.</div>`;
+      } else if (results.length === 0) {
         const areasNote = expanded.length ? `, plus ${expanded.length} nearby ${areaWord} (${esc(expanded.join(', '))}),` : '';
         html = `<div class="search-hero sh-empty"><b>⚠️ No matches.</b> No ${esc(industry)} in ${esc(primaryLoc)}${areasNote} matched your filters (I scanned ${scanned} listings). Try loosening them: set Phone to "Has phone" (not "Mobile only"), or Website to "Any". Well-established businesses (solicitors, accountants, etc.) nearly all have a website, so "No website" + "Mobile only" together often returns nothing.</div>`;
       } else if (expanded.length) {
@@ -1983,6 +2009,8 @@ function deleteRecentSearch(r) {
 }
 function runRecentSearch(r) {
   const f = r.filters || {};
+  if ($('company')) $('company').value = ''; // recent searches are category searches, not look-ups
+  updateCompanyMode();
   $('industry').value = r.industry || '';
   $('location').value = r.location || '';
   $('f-website').value = f.website || 'any';

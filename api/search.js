@@ -51,7 +51,7 @@ const FIELD_MASK = [
   'places.id', 'places.displayName', 'places.formattedAddress',
   'places.nationalPhoneNumber', 'places.internationalPhoneNumber',
   'places.websiteUri', 'places.rating', 'places.userRatingCount',
-  'places.googleMapsUri', 'nextPageToken',
+  'places.googleMapsUri', 'places.primaryTypeDisplayName', 'nextPageToken',
 ].join(',');
 
 // Fallback list of nearby areas for big UK cities, used only if the AI
@@ -112,7 +112,13 @@ module.exports = async (req, res) => {
   body = body || {};
   const industry = String(body.industry || '').trim();
   const location = String(body.location || '').trim();
-  if (!industry || !location) { res.status(400).json({ error: 'Industry and location are required.' }); return; }
+  const company = String(body.company || '').trim();
+  const lookup = !!company; // "look up a specific business" mode: targeted, no auto-expand, no filters
+  if (lookup) {
+    if (!location) { res.status(400).json({ error: 'Location is required when searching by company name.' }); return; }
+  } else if (!industry || !location) {
+    res.status(400).json({ error: 'Industry and location are required.' }); return;
+  }
 
   const key = process.env.GOOGLE_PLACES_API_KEY;
   if (!key) { res.status(503).json({ error: 'GOOGLE_PLACES_API_KEY is not set in Vercel yet.' }); return; }
@@ -126,7 +132,9 @@ module.exports = async (req, res) => {
 
   // how many MATCHING businesses to return; we page through Google (up to its
   // ~60 max) to find them, applying the filters server-side as we go.
-  const want = Math.min(150, Math.max(1, Number(body.limit) || 20));
+  const want = lookup
+    ? Math.min(10, Math.max(1, Number(body.limit) || 5))   // company look-up: 5 at a time
+    : Math.min(150, Math.max(1, Number(body.limit) || 20));
   const filters = body.filters || {};
   const excludeSet = new Set((Array.isArray(body.excludeIds) ? body.excludeIds : []).map(String));
   const services = servicesFor(industry);
@@ -142,7 +150,7 @@ module.exports = async (req, res) => {
     let pageToken = null;
     let added = 0;
     for (let pageNum = 0; pageNum < 3; pageNum++) {
-      const reqBody = { textQuery: `${industry} in ${area}`, pageSize: 20, regionCode: 'GB', languageCode: 'en' };
+      const reqBody = { textQuery: lookup ? `${company} in ${area}` : `${industry} in ${area}`, pageSize: 20, regionCode: 'GB', languageCode: 'en' };
       if (pageToken) reqBody.pageToken = pageToken;
       const r = await fetch('https://places.googleapis.com/v1/places:searchText', {
         method: 'POST',
@@ -165,7 +173,7 @@ module.exports = async (req, res) => {
         const biz = {
           id: p.id,
           name,
-          category,
+          category: lookup ? ((p.primaryTypeDisplayName && p.primaryTypeDisplayName.text) || 'Business') : category,
           industry,
           location: area,
           searchLoc: location, // the core location you typed (area may be an auto-expanded nearby town)
@@ -179,7 +187,7 @@ module.exports = async (req, res) => {
           mapsUrl: p.googleMapsUri || ('https://www.google.com/maps/search/' + encodeURIComponent(name + ' ' + area)),
           brandHue: hueFor(name),
         };
-        if (matchesFilters(biz, filters)) { out.push(biz); added++; }
+        if (lookup || matchesFilters(biz, filters)) { out.push(biz); added++; } // look-up mode ignores filters
       });
       if (out.length >= want) break;       // got enough matches overall
       pageToken = data.nextPageToken || null;
@@ -198,7 +206,7 @@ module.exports = async (req, res) => {
     // If the primary area didn't yield the number asked for, auto-expand to
     // nearby areas (AI-picked) until we hit `want` or run out. Demand-driven: it
     // only digs into more areas when a bigger target needs them (cost scales with want).
-    if (out.length < want) {
+    if (!lookup && out.length < want) { // look-up mode never auto-expands to nearby areas
       const areas = await nearbyAreas(location, 15);
       for (const a of areas) {
         if (out.length >= want) break;

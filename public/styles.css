@@ -1065,3 +1065,14 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 
 /* email-verification source tag (Apollo baseline vs Hunter MX/SMTP re-check) */
 .dd-vcheck { display: inline-block; margin-left: 5px; font-size: 10px; font-weight: 700; padding: 1px 5px; border-radius: 10px; background: rgba(15,182,168,.12); color: #0b7a70; vertical-align: middle; }
+
+/* ---- Company look-up field ---- */
+.company-field { display: block; margin-top: 4px; }
+.company-field > span { display: block; font-size: 15.5px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
+.company-field > span small { font-weight: 600; font-size: 12.5px; }
+.company-field input { width: 100%; box-sizing: border-box; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: #fff; font-size: 15px; }
+.company-hint { display: block; margin-top: 6px; color: #b45309; font-weight: 700; font-size: 13px; }
+/* when a company name is typed, grey out the Industry field + filters (not used) */
+.company-mode #industry { opacity: .45; background: #f2f4f7; cursor: not-allowed; }
+.company-mode .filters { opacity: .5; pointer-events: none; }
+.company-mode .company-field input { border-color: var(--brand); box-shadow: 0 0 0 2px rgba(15,182,168,.15); }
