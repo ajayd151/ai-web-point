@@ -628,7 +628,7 @@ async function batchAddToCallList() {
     await loadCallList();      // refresh cache + tab badge from the server
     renderResults(lastSearchResults); // reflect the ✓ On-call-list state on the cards
   } catch (e) {
-    alert('Could not add to the call list: ' + (e.message || e));
+    { const m = String(e.message || e); if (/limit/i.test(m)) requestMoreAccess('call list (more records)', m); else alert('Could not add to the call list: ' + m); }
   }
   if (btn) { btn.textContent = '📞 Add to call list'; }
   updateBatchBar();
@@ -736,7 +736,7 @@ async function doSearch(append) {
     const data = await resp.json();
     if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
     if (resp.status === 402) { if ($('paywall')) $('paywall').classList.remove('hidden'); throw new Error('Choose a plan to start searching.'); }
-    if (resp.status === 403) throw new Error(data.message || 'Your account does not have permission for this. Ask your admin.');
+    if (resp.status === 403) { requestMoreAccess('running searches', data.message); throw new Error(data.message || 'Your account does not have permission to search. Ask your admin.'); }
     if (!resp.ok) throw new Error(data.error || 'Search failed');
     const results = data.results || [];
     lastBatchFull = results.length >= limit;
@@ -2563,7 +2563,11 @@ const TEAM_PERMS = [
   ['prowl', 'Run Prowl (call intel)'], ['sms', 'Send SMS'], ['emails', 'Send emails'],
   ['callList', 'Add to call list'], ['block', 'Block contacts'],
 ];
-const TEAM_LIMITS = [['searchMax', 'Max results per search'], ['callListMax', 'Max call-list records']];
+const TEAM_LIMITS = [
+  ['searchMax', 'Max results per search (each time)'],
+  ['callListMax', 'Max call-list records (total)'],
+  ['exportPerDay', 'CSV records they can export per day'],
+];
 function limitInputsHTML(limits) {
   const l = limits || {};
   return '<div class="team-limits"><div class="team-limits-title">Usage caps <span class="muted">(leave blank for unlimited)</span></div>' +
@@ -2580,6 +2584,7 @@ function limitSummary(limits) {
   const l = limits || {}; const bits = [];
   if (l.searchMax) bits.push('search ' + l.searchMax);
   if (l.callListMax) bits.push('call list ' + l.callListMax);
+  if (l.exportPerDay) bits.push('export ' + l.exportPerDay + '/day');
   return bits.length ? (' · caps: ' + bits.join(', ')) : '';
 }
 function permCheckboxes(perms, prefix) {
@@ -2600,7 +2605,10 @@ function teamMsg(text, kind) {
 async function loadTeamAdmin() {
   // paint the add-form permission grid once (all ticked by default)
   const grid = document.querySelector('#team-perms-add .team-perms-grid');
-  if (grid && !grid.dataset.painted) { grid.innerHTML = permCheckboxes({}, 'add'); grid.dataset.painted = '1'; }
+  if (grid && !grid.dataset.painted) {
+    const allOff = {}; TEAM_PERMS.forEach(([k]) => { allOff[k] = false; }); // new members start with NOTHING ticked
+    grid.innerHTML = permCheckboxes(allOff, 'add'); grid.dataset.painted = '1';
+  }
   const lim = $('team-limits-add');
   if (lim && !lim.dataset.painted) { lim.innerHTML = limitInputsHTML({}); lim.dataset.painted = '1'; }
   const list = $('team-list'); if (!list) return;
@@ -3592,7 +3600,7 @@ async function addToCallList(b, rec, btn) {
     if (btn) { btn.textContent = '✓ On call list'; btn.classList.add('added'); }
     loadCallList(); // refresh cache + badge from the server in the background
   } catch (e) {
-    alert('Could not add to the call list: ' + (e.message || e));
+    { const m = String(e.message || e); if (/limit/i.test(m)) requestMoreAccess('call list (more records)', m); else alert('Could not add to the call list: ' + m); }
     if (btn) { btn.disabled = false; btn.textContent = '📞 Add to call list'; }
   }
 }
@@ -3638,13 +3646,34 @@ document.querySelectorAll('.leadf-btn').forEach((b) => b.addEventListener('click
 }));
 
 // ---- CSV exports (Leads + Search results) ----
-function downloadCsv(filename, header, rows) {
+async function downloadCsv(filename, header, rows) {
   if (!rows.length) { alert('Nothing to export yet.'); return; }
+  // team members may have a per-day export cap (checked + counted on the server)
+  const acc = window.AIWP_ACCESS || {};
+  if (acc.member) { const ok = await guardExport(rows.length); if (!ok) return; }
   const lines = [header.map(csvCell).join(',')].concat(rows.map((row) => row.map(csvCell).join(',')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
+}
+// Ask the server whether this member may export `rows` records today. Returns true to proceed.
+async function guardExport(rows) {
+  try {
+    const r = await fetch('/api/export-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows: rows }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok) return true;
+    requestMoreAccess('CSV export (per-day records)', d.message || 'You have reached your export limit for today.');
+    return false;
+  } catch (e) { return true; } // network issue: do not block
+}
+// A blocked team member can ask the admin for more access (emails the owner).
+function requestMoreAccess(feature, message) {
+  const ok = window.confirm((message ? message + '\n\n' : '') + 'Send a request to your admin for more access to "' + feature + '"?');
+  if (!ok) return;
+  fetch('/api/request-access', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ feature: feature }) })
+    .then(() => { alert('Request sent. Your admin will review it.'); })
+    .catch(() => { alert('Could not send the request just now, please try again.'); });
 }
 function exportLeadsCsv() {
   const pro = leadsData ? leadsData.prowled : new Set();
