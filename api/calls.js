@@ -9,7 +9,7 @@
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { tenantPrefix } = require('../lib/tenant');
-const { requirePermission } = require('../lib/access');
+const { requirePermission, account } = require('../lib/access');
 
 async function readList(PATH) {
   try {
@@ -52,6 +52,17 @@ module.exports = async (req, res) => {
   // writes when many single adds overlap.
   if (body.add) {
     const items = Array.isArray(body.add) ? body.add : [body.add];
+    const fresh = items.filter((a) => a && a.name && !map[keyFor(a)]); // only genuinely-new ones count toward a cap
+    // team-member call-list cap: they can only build up to their allowed number of records
+    const acct = await account(req);
+    if (acct.member && acct.limits && acct.limits.callListMax) {
+      const mine = Object.values(map).filter((e) => String(e.addedBy || '').toLowerCase() === acct.email).length;
+      if (mine + fresh.length > acct.limits.callListMax) {
+        res.status(403).json({ error: 'limit_reached', message: 'You have reached your call-list limit (' + acct.limits.callListMax + '). Ask your admin to raise it.' });
+        return;
+      }
+    }
+    const who = acct.member ? acct.email : '';
     let added = 0;
     for (const a of items) {
       if (!a || !a.name) continue;
@@ -66,6 +77,7 @@ module.exports = async (req, res) => {
         slug: String(a.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120),
         mapsUrl: String(a.mapsUrl || '').slice(0, 300),
         addedAt: (map[key] && map[key].addedAt) || new Date().toISOString(),
+        addedBy: (map[key] && map[key].addedBy) || who || undefined,
       };
       added++;
     }

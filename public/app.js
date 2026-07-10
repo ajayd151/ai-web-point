@@ -273,6 +273,7 @@ function applyMemberUI(acc) {
   MEMBER_PERM_KEYS.forEach((k) => document.body.classList.toggle('noperm-' + k, isMember && perms[k] === false));
   // the Message button covers SMS + WhatsApp + email, so hide it only when ALL are off
   document.body.classList.toggle('noperm-messaging', isMember && perms.sms === false && perms.emails === false);
+  if ($('member-logged')) $('member-logged').classList.toggle('hidden', !isMember); // always-on "logged" reminder
   if (isMember) maybeShowTeamNotice();
 }
 // One-time-per-session professional-use reminder for team members.
@@ -735,6 +736,7 @@ async function doSearch(append) {
     const data = await resp.json();
     if (resp.status === 401) { setAuthUI(false); throw new Error('Please log in (top of the page) to search.'); }
     if (resp.status === 402) { if ($('paywall')) $('paywall').classList.remove('hidden'); throw new Error('Choose a plan to start searching.'); }
+    if (resp.status === 403) throw new Error(data.message || 'Your account does not have permission for this. Ask your admin.');
     if (!resp.ok) throw new Error(data.error || 'Search failed');
     const results = data.results || [];
     lastBatchFull = results.length >= limit;
@@ -2557,9 +2559,29 @@ async function loadAdminOverview() {
 // Permission keys + labels, kept in sync with PERM_KEYS in lib/access.js.
 const TEAM_PERMS = [
   ['search', 'Run searches'], ['seeLeads', 'See leads'], ['deleteLeads', 'Delete leads'],
-  ['export', 'Export to CSV'], ['mockups', 'Create mockups'], ['sites', 'Generate websites'],
-  ['sms', 'Send SMS'], ['emails', 'Send emails'], ['callList', 'Add to call list'], ['block', 'Block contacts'],
+  ['export', 'Export to CSV'], ['mockups', 'Create mockups'], ['sites', 'Generate websites (Pounce)'],
+  ['prowl', 'Run Prowl (call intel)'], ['sms', 'Send SMS'], ['emails', 'Send emails'],
+  ['callList', 'Add to call list'], ['block', 'Block contacts'],
 ];
+const TEAM_LIMITS = [['searchMax', 'Max results per search'], ['callListMax', 'Max call-list records']];
+function limitInputsHTML(limits) {
+  const l = limits || {};
+  return '<div class="team-limits"><div class="team-limits-title">Usage caps <span class="muted">(leave blank for unlimited)</span></div>' +
+    TEAM_LIMITS.map(([k, label]) =>
+      '<label class="team-lim"><span>' + esc(label) + '</span><input type="number" min="1" data-limit="' + k + '" placeholder="Unlimited" value="' + (l[k] || '') + '" /></label>'
+    ).join('') + '</div>';
+}
+function readLimits(container) {
+  const out = {};
+  TEAM_LIMITS.forEach(([k]) => { const el = container.querySelector('input[data-limit="' + k + '"]'); const n = el ? Number(el.value) : NaN; out[k] = (Number.isFinite(n) && n > 0) ? Math.floor(n) : null; });
+  return out;
+}
+function limitSummary(limits) {
+  const l = limits || {}; const bits = [];
+  if (l.searchMax) bits.push('search ' + l.searchMax);
+  if (l.callListMax) bits.push('call list ' + l.callListMax);
+  return bits.length ? (' · caps: ' + bits.join(', ')) : '';
+}
 function permCheckboxes(perms, prefix) {
   const p = perms || {};
   return TEAM_PERMS.map(([k, label]) =>
@@ -2579,6 +2601,8 @@ async function loadTeamAdmin() {
   // paint the add-form permission grid once (all ticked by default)
   const grid = document.querySelector('#team-perms-add .team-perms-grid');
   if (grid && !grid.dataset.painted) { grid.innerHTML = permCheckboxes({}, 'add'); grid.dataset.painted = '1'; }
+  const lim = $('team-limits-add');
+  if (lim && !lim.dataset.painted) { lim.innerHTML = limitInputsHTML({}); lim.dataset.painted = '1'; }
   const list = $('team-list'); if (!list) return;
   list.innerHTML = '<p class="muted">Loading…</p>';
   try {
@@ -2605,7 +2629,7 @@ function renderTeam(members) {
       '<div class="team-row">' +
         '<div class="team-main">' + (name ? '<b>' + esc(name) + '</b> · ' : '') + '<span class="team-em">' + esc(m.member_email) + '</span>' +
           (susp ? '<span class="team-badge">Suspended</span>' : '<span class="team-badge b-active">Active</span>') +
-          '<div class="team-when muted">' + esc(permSummary(m.permissions)) + ' · added ' + esc(fmtDate(m.created_at)) + '</div></div>' +
+          '<div class="team-when muted">' + esc(permSummary(m.permissions) + limitSummary(m.limits)) + ' · added ' + esc(fmtDate(m.created_at)) + '</div></div>' +
         '<div class="team-acts">' +
           '<button class="linkbtn" data-teamact="editperms">Permissions</button>' +
           (susp ? '<button class="linkbtn" data-teamact="unsuspend">Reactivate</button>'
@@ -2615,7 +2639,8 @@ function renderTeam(members) {
       '</div>' +
       '<div class="team-editperms hidden">' +
         '<div class="team-perms-grid">' + permCheckboxes(m.permissions, 'edit') + '</div>' +
-        '<button class="batch-btn team-saveperms" data-teamact="saveperms">Save permissions</button>' +
+        limitInputsHTML(m.limits) +
+        '<button class="batch-btn team-saveperms" data-teamact="saveperms">Save permissions & caps</button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -2636,9 +2661,11 @@ async function addTeamMember() {
   if (!email) { teamMsg('Enter their email address.', 'err'); return; }
   const permsBox = $('team-perms-add');
   const permissions = permsBox ? readPerms(permsBox) : {};
+  const limBox = $('team-limits-add');
+  const limits = limBox ? readLimits(limBox) : {};
   const btn = $('team-add-btn'); if (btn) btn.disabled = true;
   try {
-    const r = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', firstName: first, lastName: last, email: email, permissions: permissions }) });
+    const r = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', firstName: first, lastName: last, email: email, permissions: permissions, limits: limits }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) { teamMsg(d.error || 'Could not add, please try again.', 'err'); }
     else { $('team-first').value = ''; $('team-last').value = ''; $('team-email').value = ''; teamMsg('Added, and emailed them an invite to set up their account and password.', 'ok'); loadTeamAdmin(); }
@@ -2655,8 +2682,8 @@ async function addTeamMember() {
   if (act === 'editperms') { const box = item.querySelector('.team-editperms'); if (box) box.classList.toggle('hidden'); return; }
   if (act === 'saveperms') {
     const box = item.querySelector('.team-editperms');
-    const ok = await teamAction(email, 'permissions', { permissions: readPerms(box) });
-    if (ok) { teamMsg('Permissions saved.', 'ok'); loadTeamAdmin(); }
+    const ok = await teamAction(email, 'permissions', { permissions: readPerms(box), limits: readLimits(box) });
+    if (ok) { teamMsg('Saved.', 'ok'); loadTeamAdmin(); }
     return;
   }
   if (act === 'remove' && !confirm('Remove ' + email + ' from your team? They lose access to your workspace.')) return;
@@ -3411,7 +3438,7 @@ let callOptimistic = new Set();  // adds made THIS session: blob reads can lag a
 let callsPostChain = Promise.resolve();
 function callsPost(payload) {
   const run = () => fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-    .then(async (r) => { if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.error || 'Failed'); } return r.json(); });
+    .then(async (r) => { if (!r.ok) { const d = await r.json().catch(() => ({})); throw new Error(d.message || d.error || 'Failed'); } return r.json(); });
   const p = callsPostChain.then(run, run);
   callsPostChain = p.catch(() => {});
   return p;

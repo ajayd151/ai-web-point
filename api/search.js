@@ -104,7 +104,7 @@ async function nearbyAreas(location, count) {
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
-  if (!(await requirePaid(req, res))) return; // paywall: needs an active subscription (owner/allow-list comped)
+  const acct = await requirePaid(req, res); if (!acct) return; // paywall: needs an active subscription (owner/allow-list comped)
   if (!(await requirePermission(req, res, 'search'))) return; // team-member permission gate
 
   let body = req.body;
@@ -132,9 +132,11 @@ module.exports = async (req, res) => {
 
   // how many MATCHING businesses to return; we page through Google (up to its
   // ~60 max) to find them, applying the filters server-side as we go.
-  const want = lookup
+  let want = lookup
     ? Math.min(10, Math.max(1, Number(body.limit) || 5))   // company look-up: 5 at a time
     : Math.min(150, Math.max(1, Number(body.limit) || 20));
+  // team-member cap: never return more than their admin allows per search
+  if (acct.member && acct.limits && acct.limits.searchMax) want = Math.min(want, acct.limits.searchMax);
   const filters = body.filters || {};
   const excludeSet = new Set((Array.isArray(body.excludeIds) ? body.excludeIds : []).map(String));
   const services = servicesFor(industry);

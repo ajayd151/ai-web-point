@@ -1135,3 +1135,14 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .tgt-link:hover { text-decoration: underline; }
 .tgt-time { color: var(--muted); white-space: nowrap; font-size: 13px; }
 .tgt-avoid { font-size: 13px; margin-top: 14px; }
+
+/* ---- Team: usage caps + logged badge ---- */
+.team-limits { margin-top: 12px; }
+.team-limits-title { font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 8px; }
+.team-lim { display: inline-flex; flex-direction: column; gap: 4px; margin: 0 16px 8px 0; font-size: 13px; color: var(--ink); }
+.team-lim input { width: 130px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 14px; color: var(--ink); font-family: inherit; }
+.member-logged {
+  position: fixed; right: 16px; bottom: 16px; z-index: 44;
+  background: #15233b; color: #fff; border-radius: 999px; padding: 8px 14px;
+  font-size: 12.5px; font-weight: 700; box-shadow: 0 6px 20px rgba(0,0,0,.25); opacity: .92;
+}

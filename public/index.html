@@ -223,6 +223,9 @@
     </div>
   </div>
 
+  <!-- Persistent reminder for team members that their activity is logged -->
+  <div id="member-logged" class="member-logged hidden" title="Your searches and activity are recorded for your admin">🔒 Activity logged</div>
+
   <!-- Floating "Give feedback" button (bottom-left, shown only when signed in) -->
   <button id="fb-btn" class="fb-btn hidden" type="button" aria-label="Give feedback">💬 Feedback</button>
   <div id="fb-modal" class="modal hidden">
@@ -728,6 +731,7 @@
                 <div class="team-perms-title">What can they do?</div>
                 <div class="team-perms-grid"></div>
               </div>
+              <div id="team-limits-add"></div>
               <button id="team-add-btn" class="batch-btn">Add team member</button>
             </div>
             <p id="team-msg" class="login-msg hidden"></p>

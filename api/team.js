@@ -5,7 +5,7 @@
 //   POST {action:'add', email}   -> add (or re-activate) a member
 //   POST {action:'suspend'|'unsuspend'|'remove', email}
 const { verify, parseCookie } = require('../lib/auth');
-const { account, isComped, PERM_KEYS } = require('../lib/access');
+const { account, isComped, PERM_KEYS, cleanLimits } = require('../lib/access');
 const { listTeamMembers, addTeamMember, setTeamSuspended, setTeamPermissions, removeTeamMember, getUserByEmail } = require('../lib/db');
 const { sendTeamInviteEmail, sendTeamAddedAdminEmail } = require('../lib/email');
 
@@ -45,7 +45,7 @@ module.exports = async (req, res) => {
     if (!firstName || !lastName) { res.status(400).json({ error: 'First name and surname are required.' }); return; }
     // Don't hijack someone who already pays for their own separate subscription.
     try { const u = await getUserByEmail(email); if (u && ['active', 'trialing'].includes(u.status)) { res.status(409).json({ error: 'That email already has its own paid account.' }); return; } } catch (e) { /* ignore */ }
-    const ok = await addTeamMember(owner, email, firstName, lastName, cleanPerms(body.permissions));
+    const ok = await addTeamMember(owner, email, firstName, lastName, cleanPerms(body.permissions), cleanLimits(body.limits));
     if (!ok) { res.status(500).json({ error: 'Could not add, please try again.' }); return; }
     // Email the member an invite (set up account + own password) and notify the admin.
     // MUST await both (Vercel freezes the function after the response). Both fail soft.
@@ -54,7 +54,7 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: true }); return;
   }
   if (action === 'permissions') {
-    const ok = await setTeamPermissions(owner, email, cleanPerms(body.permissions));
+    const ok = await setTeamPermissions(owner, email, cleanPerms(body.permissions), cleanLimits(body.limits));
     if (!ok) { res.status(404).json({ error: 'Member not found.' }); return; }
     res.status(200).json({ ok: true }); return;
   }
