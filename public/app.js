@@ -2703,10 +2703,11 @@ async function loadTeamAdmin() {
 }
 function permSummary(perms) {
   const p = perms || {};
-  const on = TEAM_PERMS.filter(([k]) => p[k] !== false).length;
-  if (on === TEAM_PERMS.length) return 'Full access';
-  if (on === 0) return 'No permissions';
-  return on + ' of ' + TEAM_PERMS.length + ' allowed';
+  const views = TEAM_VIEW_PERMS.filter(([k]) => p[k] !== false).length;
+  const actions = TEAM_ACTION_PERMS.filter(([k]) => p[k] !== false).length;
+  if (views + actions === TEAM_PERMS.length) return 'Full access';
+  if (views + actions === 0) return 'No access yet';
+  return 'Sees ' + views + '/' + TEAM_VIEW_PERMS.length + ' tabs · can do ' + actions + '/' + TEAM_ACTION_PERMS.length;
 }
 function renderTeam(members) {
   const list = $('team-list'); if (!list) return;
