@@ -3588,11 +3588,12 @@ function renderCallList() {
       `<td><button class="ghost sm call-notes">📝 Notes</button></td>` +
       `<td class="w-acts">${(callsData.prowled && callsData.prowled.has(c.key))
         ? '<button class="ghost sm call-prowl intel-ready" title="The intelligence dossier is ready, open it">🐾 View intel ✓</button>'
-        : '<button class="mini rc-prowl call-prowl" title="Gather intelligence on this business before you dial (takes ~30s)">🐾 Prowl</button>'} <button class="ghost sm call-remove" title="Remove from the call list">✕</button>` +
+        : '<button class="mini rc-prowl call-prowl" title="Gather intelligence on this business before you dial (takes ~30s)">🐾 Prowl</button>'} <button class="mini rc-pounce call-pounce" title="Build them an AI website (no need to Prowl first)">🐆 Pounce</button> <button class="ghost sm call-remove" title="Remove from the call list">✕</button>` +
       ((callsData.prowled && callsData.prowled.has(c.key) && callsData.prowledAt[c.key]) ? `<div class="intel-when muted">Prowled ${esc(fmtDateShort(callsData.prowledAt[c.key]))}</div>` : '') + '</td>';
     const lead = { slug: c.key, name: c.name, location: c.location || '', category: c.category || '', phone: c.phone || '', mapsUrl: c.mapsUrl || '' };
     tr.querySelector('.lead-name').addEventListener('click', () => openLead(lead));
     tr.querySelector('.call-prowl').addEventListener('click', () => openProwl(lead));
+    { const pc = tr.querySelector('.call-pounce'); if (pc) pc.addEventListener('click', () => openPounce(lead)); }
     tr.querySelector('.call-status').addEventListener('change', async (ev) => {
       const v = ev.target.value;
       try {

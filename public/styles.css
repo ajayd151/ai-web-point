@@ -976,7 +976,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 /* ---- permission-based hiding (team members only) ---- */
 .noperm-export #export-results, .noperm-export #batch-export, .noperm-export #calls-export, .noperm-export #hot-export { display: none !important; }
 .noperm-mockups .ca-gen { display: none !important; }
-.noperm-sites .hl-pounce { display: none !important; }
+.noperm-sites .hl-pounce, .noperm-sites .call-pounce, .noperm-sites .rc-pounce { display: none !important; }
 .noperm-callList .ca-call, .noperm-callList #batch-addcall { display: none !important; }
 .noperm-block .hl-block { display: none !important; }
 .noperm-messaging .ca-msg, .noperm-messaging .wa { display: none !important; }
