@@ -2,7 +2,10 @@
 // it ('view') or clicks the demo CTA ('cta'). Fired via JS so link-preview
 // crawlers (which don't run JS) don't create false opens; we also filter known
 // bot user-agents server-side as a backstop. Always returns 204 quickly.
-const { recordEvent } = require('../lib/db');
+const { recordEvent, logActivity } = require('../lib/db');
+const { emailOf, accountEmailOf } = require('../lib/tenant');
+
+const CH_LABEL = { w: 'WhatsApp', s: 'SMS', e: 'email' };
 
 // crawlers / link-unfurlers that may execute or fetch, never count these
 const BOT_RE = /bot|crawl|spider|facebookexternalhit|whatsapp|telegram|slackbot|discord|twitterbot|linkedinbot|embedly|preview|pinterest|google-inspectiontool|bingpreview|headless|monitor|uptime|curl|wget|python-requests|axios|node-fetch/i;
@@ -21,6 +24,11 @@ module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (slug && !BOT_RE.test(ua)) {
     try { await recordEvent(slug, event, ua, platform, tpl); } catch (e) { /* fail soft */ }
+    // a 'sent' beacon comes from the OPERATOR's browser (has their cookie): audit who sent it
+    if (event === 'sent') {
+      const actor = emailOf(req);
+      if (actor) { try { await logActivity(actor, accountEmailOf(req), 'message_sent', slug + (platform ? ' via ' + (CH_LABEL[platform] || platform) : '')); } catch (e) { /* fail soft */ } }
+    }
   }
   res.status(204).end();
 };

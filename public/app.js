@@ -2388,10 +2388,64 @@ document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('cl
   document.querySelectorAll('.admin-pane').forEach((p) => p.classList.toggle('hidden', p.id !== 'admin-' + v));
   if (v === 'overview') loadAdminOverview();
   if (v === 'customers') loadCustomers();
+  if (v === 'activity') loadActivityPeople();
   if (v === 'targets') renderTargets();
   if (v === 'feedback') loadFeedbackAdmin();
   if (v === 'team') loadTeamAdmin();
 }));
+
+// ---- Super Admin: per-person Activity report ----
+const ACT_LABELS = {
+  search: ['🔍', 'Searches'], call_add: ['📞', 'Calls added'], call_remove: ['➖', 'Calls removed'],
+  csv_export: ['⬇️', 'CSV exports'], message_sent: ['💬', 'Messages sent'], status_update: ['✏️', 'Status updates'],
+  mockup: ['🖼️', 'Mockups'], pounce: ['🐆', 'Websites (Pounce)'], prowl: ['🐾', 'Prowls'],
+};
+async function loadActivityPeople() {
+  const sel = $('act-person'); if (!sel || sel.dataset.loaded) return;
+  try {
+    const r = await fetch('/api/admin-activity');
+    if (!r.ok) return;
+    const d = await r.json();
+    (d.people || []).forEach((p) => {
+      const o = document.createElement('option');
+      o.value = p.email;
+      o.textContent = (p.name ? p.name + ' · ' : '') + p.email + ' (' + p.type + ')';
+      sel.appendChild(o);
+    });
+    sel.dataset.loaded = '1';
+  } catch (e) { /* ignore */ }
+}
+async function loadActivityReport() {
+  const sel = $('act-person'); const box = $('act-report'); if (!sel || !box) return;
+  const email = sel.value;
+  if (!email) { box.innerHTML = '<p class="muted">Choose a person above to see their activity.</p>'; return; }
+  const days = ($('act-days') && $('act-days').value) || '30';
+  box.innerHTML = '<p class="muted">Loading…</p>';
+  try {
+    const r = await fetch('/api/admin-activity?email=' + encodeURIComponent(email) + '&days=' + encodeURIComponent(days));
+    if (!r.ok) { box.innerHTML = '<p class="muted">Could not load.</p>'; return; }
+    const d = await r.json();
+    renderActivityReport(d.report || { counts: [], recent: [] });
+  } catch (e) { box.innerHTML = '<p class="muted">Network error.</p>'; }
+}
+function renderActivityReport(rep) {
+  const box = $('act-report'); if (!box) return;
+  const counts = {}; (rep.counts || []).forEach((c) => { counts[c.action] = c.n; });
+  const tiles = Object.keys(ACT_LABELS).map((k) => {
+    const meta = ACT_LABELS[k];
+    return '<div class="ov-tile"><div class="ov-ico">' + meta[0] + '</div><div class="ov-num">' + (counts[k] || 0) + '</div><div class="ov-label">' + esc(meta[1]) + '</div></div>';
+  }).join('');
+  const recent = (rep.recent || []);
+  const rows = recent.length
+    ? recent.map((e) => '<tr><td>' + esc(fmtDate(e.ts)) + '</td><td>' + esc((ACT_LABELS[e.action] && ACT_LABELS[e.action][1]) || e.action) + '</td><td>' + esc(e.detail || '') + '</td></tr>').join('')
+    : '<tr><td colspan="3" class="muted" style="padding:14px">No activity in this period.</td></tr>';
+  box.innerHTML = '<div class="ov-stats">' + tiles + '</div>' +
+    '<div class="ov-rev-head" style="margin-top:20px">Recent activity</div>' +
+    '<div class="ov-rev-scroll"><table class="cust-table"><thead><tr><th>When</th><th>Action</th><th>Detail</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+{ const s = $('act-person'); if (s) s.addEventListener('change', loadActivityReport); }
+{ const dd = $('act-days'); if (dd) dd.addEventListener('change', loadActivityReport); }
+{ const rb = $('act-refresh'); if (rb) rb.addEventListener('click', (e) => { e.preventDefault(); loadActivityReport(); }); }
 
 // ---- Super Admin: Who to Target (personal playbook) ----
 // Priority-ordered for July/August: no website + quiet in summer + benefits from a site/reviews
@@ -3648,9 +3702,8 @@ document.querySelectorAll('.leadf-btn').forEach((b) => b.addEventListener('click
 // ---- CSV exports (Leads + Search results) ----
 async function downloadCsv(filename, header, rows) {
   if (!rows.length) { alert('Nothing to export yet.'); return; }
-  // team members may have a per-day export cap (checked + counted on the server)
-  const acc = window.AIWP_ACCESS || {};
-  if (acc.member) { const ok = await guardExport(rows.length); if (!ok) return; }
+  // checks a member's per-day export cap AND records the export for the activity report
+  const ok = await guardExport(rows.length, filename); if (!ok) return;
   const lines = [header.map(csvCell).join(',')].concat(rows.map((row) => row.map(csvCell).join(',')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
@@ -3658,9 +3711,9 @@ async function downloadCsv(filename, header, rows) {
   URL.revokeObjectURL(url);
 }
 // Ask the server whether this member may export `rows` records today. Returns true to proceed.
-async function guardExport(rows) {
+async function guardExport(rows, kind) {
   try {
-    const r = await fetch('/api/export-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows: rows }) });
+    const r = await fetch('/api/export-check', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows: rows, kind: kind || 'CSV' }) });
     const d = await r.json().catch(() => ({}));
     if (r.ok && d.ok) return true;
     requestMoreAccess('CSV export (per-day records)', d.message || 'You have reached your export limit for today.');

@@ -8,8 +8,9 @@
 // POST {remove}  -> remove by key
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
-const { tenantPrefix } = require('../lib/tenant');
+const { tenantPrefix, emailOf, accountEmailOf } = require('../lib/tenant');
 const { requirePermission, account } = require('../lib/access');
+const { logActivity } = require('../lib/db');
 
 async function readList(PATH) {
   try {
@@ -91,5 +92,13 @@ module.exports = async (req, res) => {
 
   try { await put(PATH, JSON.stringify(map), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
   catch (e) { res.status(500).json({ error: 'Could not save the call list.' }); return; }
+  // audit
+  if (body.add) {
+    const items = Array.isArray(body.add) ? body.add : [body.add];
+    const names = items.filter((a) => a && a.name).map((a) => a.name);
+    await logActivity(emailOf(req), accountEmailOf(req), 'call_add', names.slice(0, 5).join(', ') + (names.length > 5 ? ' +' + (names.length - 5) + ' more' : '') + ' (' + names.length + ')');
+  } else if (body.remove) {
+    await logActivity(emailOf(req), accountEmailOf(req), 'call_remove', String(body.remove));
+  }
   res.status(200).json({ ok: true, count: Object.keys(map).length });
 };

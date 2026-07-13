@@ -4,9 +4,10 @@
 // NOTE: Google does not return email addresses, `email` is always null.
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
-const { tenantPrefix, emailOf } = require('../lib/tenant');
+const { tenantPrefix, emailOf, accountEmailOf } = require('../lib/tenant');
 const { requirePaid, requirePermission } = require('../lib/access');
 const { matchesFilters } = require('../lib/filters');
+const { logActivity } = require('../lib/db');
 
 const SERVICE_MAP = {
   plumber: ['Emergency Plumbing', 'Boiler Repairs', 'Bathroom Installs', 'Leak Detection'],
@@ -225,6 +226,9 @@ module.exports = async (req, res) => {
     res.status(502).json({ error: e.message });
     return;
   }
+
+  await logActivity(emailOf(req), accountEmailOf(req), 'search',
+    (lookup ? ('look up "' + company + '"') : (industry + ' in ' + location)) + ' (' + out.length + ' found)');
 
   res.status(200).json({
     results: out.slice(0, want),

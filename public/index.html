@@ -664,6 +664,7 @@
           <div class="admin-menu-title">Admin</div>
           <button class="admin-navbtn active" data-adminview="overview">📊 Overview</button>
           <button class="admin-navbtn" data-adminview="customers">👤 Customers</button>
+          <button class="admin-navbtn" data-adminview="activity">📋 Activity</button>
           <button class="admin-navbtn" data-adminview="targets">🎯 Niche Intel</button>
           <button class="admin-navbtn" data-adminview="feedback">💬 Feedback</button>
           <button class="admin-navbtn" data-adminview="team">👥 Team</button>
@@ -690,6 +691,24 @@
             </div>
             <p class="muted view-sub">Everyone who has signed up, with their plan and status. Click a row to see their details and open their Stripe profile.</p>
             <div id="cust-list" class="cust-list"></div>
+          </div>
+
+          <div id="admin-activity" class="admin-pane hidden">
+            <div class="admin-pane-head">
+              <h2 class="view-title">📋 Activity</h2>
+              <div class="admin-pane-tools">
+                <select id="act-person"><option value="">Choose a person…</option></select>
+                <select id="act-days">
+                  <option value="7">Last 7 days</option>
+                  <option value="30" selected>Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="0">All time</option>
+                </select>
+                <button id="act-refresh" class="linkbtn">↻ Refresh</button>
+              </div>
+            </div>
+            <p class="muted view-sub">Pick a team member or customer to see what they have done: searches, calls added, CSV exports, messages, status updates, mockups, Pounces and Prowls.</p>
+            <div id="act-report"></div>
           </div>
 
           <div id="admin-targets" class="admin-pane hidden">

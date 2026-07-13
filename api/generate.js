@@ -12,7 +12,8 @@ const { put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { humaniseBusinessName } = require('../lib/names');
 const { check, record } = require('../lib/ratelimit');
-const { tenantPrefix, tenantSlug, emailOf } = require('../lib/tenant');
+const { tenantPrefix, tenantSlug, emailOf, accountEmailOf } = require('../lib/tenant');
+const { logActivity } = require('../lib/db');
 const { requirePaid, requirePermission } = require('../lib/access');
 
 // ---- brand ---------------------------------------------------------------
@@ -482,6 +483,7 @@ module.exports = async (req, res) => {
     const imageUrl = `${linkBase}/i/${slug}.png`; // branded, hides the blob host
 
     await record('generate', Date.now(), tenantPrefix(req)); // count the slot only now that it actually worked
+    await logActivity(emailOf(req), accountEmailOf(req), 'mockup', String((business && business.name) || slug));
     res.status(200).json({ imageUrl, viewUrl, id, slug });
   } catch (err) {
     console.error('generate error:', err);

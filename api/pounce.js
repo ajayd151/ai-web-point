@@ -5,7 +5,8 @@
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
-const { tenantPrefix, tenantSlug, emailOf } = require('../lib/tenant');
+const { tenantPrefix, tenantSlug, emailOf, accountEmailOf } = require('../lib/tenant');
+const { logActivity } = require('../lib/db');
 const { requirePaid, requirePermission } = require('../lib/access');
 const { readDossier, gatherDossier } = require('../lib/intel');
 
@@ -296,5 +297,6 @@ module.exports = async (req, res) => {
   };
 
   try { await put(path, JSON.stringify(site), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); } catch (e) { /* ignore */ }
+  await logActivity(emailOf(req), accountEmailOf(req), 'pounce', String((body && body.name) || slug));
   res.status(200).json({ siteUrl, slug, cached: false, heroSource, usedProwl });
 };

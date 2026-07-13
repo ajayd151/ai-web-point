@@ -3,7 +3,8 @@
 // Result is cached in Blob per slug.
 const { verify, parseCookie } = require('../lib/auth');
 const { checkAndRecord } = require('../lib/ratelimit');
-const { tenantPrefix, tenantSlug, emailOf } = require('../lib/tenant');
+const { tenantPrefix, tenantSlug, emailOf, accountEmailOf } = require('../lib/tenant');
+const { logActivity } = require('../lib/db');
 const { requirePaid, requirePermission } = require('../lib/access');
 const { gatherDossier, readDossier } = require('../lib/intel');
 
@@ -40,6 +41,7 @@ module.exports = async (req, res) => {
 
   try {
     const dossier = await gatherDossier({ slug, name, location, category, phone: body.phone || '' });
+    await logActivity(emailOf(req), accountEmailOf(req), 'prowl', String(name || slug));
     res.status(200).json({ dossier, cached: false });
   } catch (e) {
     res.status(500).json({ error: 'Prowl failed to gather intel.' });
