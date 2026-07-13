@@ -265,16 +265,30 @@ async function refreshAccess() {
 // Apply a team member's permissions to the UI: body classes drive CSS that hides the
 // controls they can't use (the server still enforces the important ones). Non-members
 // (owner, paying customers) always have every class cleared = full UI.
-const MEMBER_PERM_KEYS = ['search', 'seeLeads', 'deleteLeads', 'export', 'mockups', 'sites', 'sms', 'emails', 'callList', 'block'];
+const MEMBER_PERM_KEYS = ['search', 'deleteLeads', 'export', 'mockups', 'sites', 'prowl', 'sms', 'emails', 'callList', 'block'];
+// permission key -> nav view name, in the order to fall back to when landing a member
+const MEMBER_TAB_ORDER = [
+  ['search', 'search'], ['viewCallList', 'calls'], ['viewWarmLeads', 'hotleads'], ['viewAllLeads', 'leads'],
+  ['viewWebsites', 'websites'], ['viewEnquiries', 'enquiries'], ['viewPerformance', 'performance'], ['viewTemplates', 'messages'],
+];
 function applyMemberUI(acc) {
   const perms = (acc && acc.perms) || {};
   const isMember = !!(acc && acc.member);
   document.body.classList.toggle('is-team-member', isMember);
   MEMBER_PERM_KEYS.forEach((k) => document.body.classList.toggle('noperm-' + k, isMember && perms[k] === false));
+  // tab visibility: hide nav tabs the member cannot see
+  ['viewTemplates', 'viewPerformance', 'viewWarmLeads', 'viewCallList', 'viewAllLeads', 'viewWebsites', 'viewEnquiries']
+    .forEach((k) => document.body.classList.toggle('noview-' + k, isMember && perms[k] === false));
   // the Message button covers SMS + WhatsApp + email, so hide it only when ALL are off
   document.body.classList.toggle('noperm-messaging', isMember && perms.sms === false && perms.emails === false);
   if ($('member-logged')) $('member-logged').classList.toggle('hidden', !isMember); // always-on "logged" reminder
-  if (isMember) maybeShowTeamNotice();
+  if (isMember) {
+    // land them on a tab they can actually see
+    const allowed = MEMBER_TAB_ORDER.filter(([p]) => perms[p] !== false).map(([, v]) => v);
+    const cur = window.AIWP_VIEW || 'search';
+    if (!allowed.includes(cur) && allowed.length) showView(allowed[0]);
+    maybeShowTeamNotice();
+  }
 }
 // One-time-per-session professional-use reminder for team members.
 function maybeShowTeamNotice() {
@@ -2611,12 +2625,18 @@ async function loadAdminOverview() {
 
 // ---- Super Admin: Team management ----
 // Permission keys + labels, kept in sync with PERM_KEYS in lib/access.js.
-const TEAM_PERMS = [
-  ['search', 'Run searches'], ['seeLeads', 'See leads'], ['deleteLeads', 'Delete leads'],
-  ['export', 'Export to CSV'], ['mockups', 'Create mockups'], ['sites', 'Generate websites (Pounce)'],
-  ['prowl', 'Run Prowl (call intel)'], ['sms', 'Send SMS'], ['emails', 'Send emails'],
-  ['callList', 'Add to call list'], ['block', 'Block contacts'],
+// Two groups: which TABS they can see, and which ACTIONS they can do.
+const TEAM_VIEW_PERMS = [
+  ['viewCallList', 'Call List'], ['viewWarmLeads', 'Warm Leads'], ['viewAllLeads', 'All Leads'],
+  ['viewWebsites', 'Websites'], ['viewEnquiries', 'Enquiries'], ['viewPerformance', 'Performance'],
+  ['viewTemplates', 'Templates'],
 ];
+const TEAM_ACTION_PERMS = [
+  ['search', 'Run searches'], ['mockups', 'Create mockups'], ['sites', 'Generate websites (Pounce)'],
+  ['prowl', 'Run Prowl (call intel)'], ['callList', 'Add to call list'], ['deleteLeads', 'Delete leads'],
+  ['export', 'Export to CSV'], ['sms', 'Send SMS'], ['emails', 'Send emails'], ['block', 'Block contacts'],
+];
+const TEAM_PERMS = TEAM_VIEW_PERMS.concat(TEAM_ACTION_PERMS);
 const TEAM_LIMITS = [
   ['searchMax', 'Max results per search (each time)'],
   ['callListMax', 'Max call-list records (total)'],
@@ -2641,15 +2661,22 @@ function limitSummary(limits) {
   if (l.exportPerDay) bits.push('export ' + l.exportPerDay + '/day');
   return bits.length ? (' · caps: ' + bits.join(', ')) : '';
 }
-function permCheckboxes(perms, prefix) {
+function permBoxes(list, perms) {
   const p = perms || {};
-  return TEAM_PERMS.map(([k, label]) =>
+  return list.map(([k, label]) =>
     '<label class="team-perm"><input type="checkbox" data-perm="' + k + '"' + (p[k] === false ? '' : ' checked') + ' /> ' + esc(label) + '</label>'
   ).join('');
 }
+// The full two-section permission editor (used by the add form + each member's editor).
+function permSectionsHTML(perms) {
+  return '<div class="team-perms-sub">Which tabs can they see?</div>' +
+    '<div class="team-perms-grid">' + permBoxes(TEAM_VIEW_PERMS, perms) + '</div>' +
+    '<div class="team-perms-sub">What can they do?</div>' +
+    '<div class="team-perms-grid">' + permBoxes(TEAM_ACTION_PERMS, perms) + '</div>';
+}
 function readPerms(container) {
   const out = {};
-  TEAM_PERMS.forEach(([k]) => { const cb = container.querySelector('input[data-perm="' + k + '"]'); out[k] = cb ? cb.checked : true; });
+  container.querySelectorAll('input[data-perm]').forEach((cb) => { out[cb.dataset.perm] = cb.checked; });
   return out;
 }
 function teamMsg(text, kind) {
@@ -2657,11 +2684,11 @@ function teamMsg(text, kind) {
   el.textContent = text || ''; el.className = 'login-msg ' + (kind || ''); el.classList.toggle('hidden', !text);
 }
 async function loadTeamAdmin() {
-  // paint the add-form permission grid once (all ticked by default)
-  const grid = document.querySelector('#team-perms-add .team-perms-grid');
-  if (grid && !grid.dataset.painted) {
-    const allOff = {}; TEAM_PERMS.forEach(([k]) => { allOff[k] = false; }); // new members start with NOTHING ticked
-    grid.innerHTML = permCheckboxes(allOff, 'add'); grid.dataset.painted = '1';
+  // paint the add-form permission sections once (new members start with NOTHING ticked)
+  const box = $('team-perms-add');
+  if (box && !box.dataset.painted) {
+    const allOff = {}; TEAM_PERMS.forEach(([k]) => { allOff[k] = false; });
+    box.innerHTML = permSectionsHTML(allOff); box.dataset.painted = '1';
   }
   const lim = $('team-limits-add');
   if (lim && !lim.dataset.painted) { lim.innerHTML = limitInputsHTML({}); lim.dataset.painted = '1'; }
@@ -2700,7 +2727,7 @@ function renderTeam(members) {
         '</div>' +
       '</div>' +
       '<div class="team-editperms hidden">' +
-        '<div class="team-perms-grid">' + permCheckboxes(m.permissions, 'edit') + '</div>' +
+        permSectionsHTML(m.permissions) +
         limitInputsHTML(m.limits) +
         '<button class="batch-btn team-saveperms" data-teamact="saveperms">Save permissions & caps</button>' +
       '</div>' +

@@ -3,10 +3,12 @@
 // so old previews can be reviewed/cleaned up in a later tidy-up session.
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
+const { requirePermission } = require('../lib/access');
 const { ownsSlug } = require('../lib/tenant');
 
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
+  if (!(await requirePermission(req, res, 'viewWebsites'))) return; // team tab-visibility gate
   const host = req.headers['x-forwarded-host'] || req.headers.host;
   const linkBase = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
   try {

@@ -2,6 +2,7 @@
 // Returns their contact details (from the mockup metadata). Login-gated.
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
+const { requirePermission } = require('../lib/access');
 const { hotLeadRows } = require('../lib/db');
 const { ownsSlug } = require('../lib/tenant');
 
@@ -12,6 +13,7 @@ function nameFromSlug(slug) {
 
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
+  if (!(await requirePermission(req, res, 'viewWarmLeads'))) return; // team tab-visibility gate
 
   let blobs = [];
   try { blobs = (await list({ prefix: 'mockups/', limit: 1000 })).blobs || []; } catch (e) { /* ignore */ }

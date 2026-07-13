@@ -2,6 +2,7 @@
 // plain-English insights. Login-gated.
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
+const { requirePermission } = require('../lib/access');
 const { dashboardData } = require('../lib/db');
 const { tenantKey, ownsSlug } = require('../lib/tenant');
 
@@ -27,6 +28,7 @@ function nameFromSlug(slug) {
 
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
+  if (!(await requirePermission(req, res, 'viewPerformance'))) return; // team tab-visibility gate
 
   const days = Math.max(0, parseInt((req.query && req.query.days) || '0', 10) || 0);
   const since = days > 0 ? new Date(Date.now() - days * 86400000).toISOString() : null;

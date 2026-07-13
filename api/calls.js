@@ -34,6 +34,7 @@ module.exports = async (req, res) => {
   const PATH = tenantPrefix(req) + 'calls/_list.json'; // owner -> 'calls/_list.json' (unchanged); other customers -> u/<hash>/calls/_list.json
 
   if (req.method !== 'POST') {
+    if (!(await requirePermission(req, res, 'viewCallList'))) return; // team-member tab-visibility gate
     const map = await readList(PATH);
     const calls = Object.values(map).sort((a, b) => String(b.addedAt || '').localeCompare(String(a.addedAt || '')));
     res.status(200).json({ calls });

@@ -980,7 +980,15 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .noperm-callList .ca-call, .noperm-callList #batch-addcall { display: none !important; }
 .noperm-block .hl-block { display: none !important; }
 .noperm-messaging .ca-msg, .noperm-messaging .wa { display: none !important; }
-.noperm-seeLeads .navbtn[data-view="leads"], .noperm-seeLeads .navbtn[data-view="hotleads"] { display: none !important; }
+/* tab visibility for team members: hide the nav tab they cannot see */
+.noperm-search .navbtn[data-view="search"] { display: none !important; }
+.noview-viewTemplates .navbtn[data-view="messages"] { display: none !important; }
+.noview-viewPerformance .navbtn[data-view="performance"] { display: none !important; }
+.noview-viewWarmLeads .navbtn[data-view="hotleads"] { display: none !important; }
+.noview-viewCallList .navbtn[data-view="calls"] { display: none !important; }
+.noview-viewAllLeads .navbtn[data-view="leads"] { display: none !important; }
+.noview-viewWebsites .navbtn[data-view="websites"] { display: none !important; }
+.noview-viewEnquiries .navbtn[data-view="enquiries"] { display: none !important; }
 
 /* ---- DeepDossier PDF (print-only, one sheet per record) ---- */
 .dd-print { display: none; }
@@ -1166,3 +1174,6 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 #view-calls #calls-statusf:focus,
 #view-calls #calls-sort:focus { outline: none; border-color: var(--brand-dark); box-shadow: 0 0 0 3px rgba(15,182,168,.15); }
 @media (max-width: 560px) { #view-calls .leads-toolbar #calls-search { flex-basis: 100%; max-width: none; } }
+
+.team-perms-sub { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 12px 0 8px; }
+.team-perms-sub:first-child { margin-top: 0; }

@@ -2,10 +2,12 @@
 // so the Leads view can flag each business. Login-gated. Lists blob prefixes once.
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
+const { requirePermission } = require('../lib/access');
 const { ownsSlug } = require('../lib/tenant');
 
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
+  if (!(await requirePermission(req, res, 'viewAllLeads'))) return; // team tab-visibility gate
   const prowled = [];
   const prowledAt = {}; // slug -> when the dossier was last gathered (blob upload date)
   const pounced = [];

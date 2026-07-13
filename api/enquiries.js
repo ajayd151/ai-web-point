@@ -4,9 +4,11 @@
 // GET -> { enquiries: [ {slug, business, name, phone, email, service, message, receivedAt} ] }
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
+const { requirePermission } = require('../lib/access');
 
 module.exports = async (req, res) => {
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please log in first.' }); return; }
+  if (!(await requirePermission(req, res, 'viewEnquiries'))) return; // team tab-visibility gate
   res.setHeader('Cache-Control', 'no-store');
 
   let blobs = [];
