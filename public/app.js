@@ -3549,8 +3549,7 @@ function filteredCalls() {
   if (q) list = list.filter((c) => ((c.name || '') + ' ' + (c.location || '')).toLowerCase().indexOf(q) >= 0);
   return sortCalls(list);
 }
-// Sort order for the Call List (chips still do the status filtering).
-const CALL_STATUS_ORDER = ['', 'no-answer', 'callback', 'contacted', 'interested', 'won', 'not-interested', 'declined', 'invalid-phone', 'lost'];
+// Sort order for the Call List. Status is NOT a sort (no obvious order); the chips filter it.
 function sortCalls(list) {
   const s = ($('calls-sort') && $('calls-sort').value) || 'added-desc';
   const by = (fn) => list.sort(fn);
@@ -3560,7 +3559,6 @@ function sortCalls(list) {
   if (s === 'name-az') return by((a, b) => name(a).localeCompare(name(b)));
   if (s === 'name-za') return by((a, b) => name(b).localeCompare(name(a)));
   if (s === 'location') return by((a, b) => String(a.location || '').toLowerCase().localeCompare(String(b.location || '').toLowerCase()));
-  if (s === 'status') return by((a, b) => CALL_STATUS_ORDER.indexOf(callStatusOf(a)) - CALL_STATUS_ORDER.indexOf(callStatusOf(b)) || added(b).localeCompare(added(a)));
   return by((a, b) => added(b).localeCompare(added(a))); // added-desc (recently added first)
 }
 function updateCallBadge() {
