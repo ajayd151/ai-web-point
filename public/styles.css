@@ -1146,3 +1146,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
   background: #15233b; color: #fff; border-radius: 999px; padding: 8px 14px;
   font-size: 12.5px; font-weight: 700; box-shadow: 0 6px 20px rgba(0,0,0,.25); opacity: .92;
 }
+
+.calls-sort { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: 13px; color: var(--ink); background: #fff; font-family: inherit; }

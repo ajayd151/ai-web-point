@@ -3547,7 +3547,21 @@ function filteredCalls() {
   let list = callsData.calls.slice();
   if (callsFilter !== 'all') list = list.filter((c) => CALL_FILTERS[callsFilter].indexOf(callStatusOf(c)) >= 0);
   if (q) list = list.filter((c) => ((c.name || '') + ' ' + (c.location || '')).toLowerCase().indexOf(q) >= 0);
-  return list;
+  return sortCalls(list);
+}
+// Sort order for the Call List (chips still do the status filtering).
+const CALL_STATUS_ORDER = ['', 'no-answer', 'callback', 'contacted', 'interested', 'won', 'not-interested', 'declined', 'invalid-phone', 'lost'];
+function sortCalls(list) {
+  const s = ($('calls-sort') && $('calls-sort').value) || 'added-desc';
+  const by = (fn) => list.sort(fn);
+  const name = (c) => (humaniseBusinessName(c.name) || c.name || '').toLowerCase();
+  const added = (c) => String(c.addedAt || '');
+  if (s === 'added-asc') return by((a, b) => added(a).localeCompare(added(b)));
+  if (s === 'name-az') return by((a, b) => name(a).localeCompare(name(b)));
+  if (s === 'name-za') return by((a, b) => name(b).localeCompare(name(a)));
+  if (s === 'location') return by((a, b) => String(a.location || '').toLowerCase().localeCompare(String(b.location || '').toLowerCase()));
+  if (s === 'status') return by((a, b) => CALL_STATUS_ORDER.indexOf(callStatusOf(a)) - CALL_STATUS_ORDER.indexOf(callStatusOf(b)) || added(b).localeCompare(added(a)));
+  return by((a, b) => added(b).localeCompare(added(a))); // added-desc (recently added first)
 }
 function updateCallBadge() {
   const el = $('call-count'); if (!el) return;
@@ -3664,6 +3678,7 @@ document.querySelectorAll('#calls-filters .leadf-btn').forEach((b) => b.addEvent
   callsFilter = b.dataset.f; renderCallList();
 }));
 $('calls-search').addEventListener('input', renderCallList);
+{ const cs = $('calls-sort'); if (cs) cs.addEventListener('change', renderCallList); }
 $('calls-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadCallList));
 // Export the visible rows (active filter + search) as a CSV call sheet, incl.
 // each lead's notes count + latest note (fetched from the CRM at export time).
