@@ -1150,16 +1150,19 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .calls-sort { border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; font-size: 13px; color: var(--ink); background: #fff; font-family: inherit; }
 
 /* ---- Call List toolbar: 3 controls on one branded row ---- */
-#view-calls .leads-toolbar #calls-search { flex: 1 1 220px; width: auto; min-width: 160px; }
+#view-calls .leads-toolbar { flex-wrap: wrap; align-items: center; gap: 10px; }
+#view-calls .leads-toolbar #calls-search { flex: 1 1 180px; width: auto; min-width: 140px; max-width: 460px; box-sizing: border-box; }
+#view-calls .leads-toolbar #calls-statusf { flex: 0 0 auto; width: 210px; box-sizing: border-box; }
+#view-calls .leads-toolbar #calls-sort { flex: 0 0 auto; width: 175px; box-sizing: border-box; }
 #view-calls #calls-search,
 #view-calls #calls-statusf,
 #view-calls #calls-sort {
   border: 1.5px solid var(--brand); background: #f1fbfa; color: var(--ink);
   border-radius: 10px; padding: 10px 12px; font: inherit; font-weight: 600;
 }
-#view-calls #calls-statusf, #view-calls #calls-sort { flex: 0 0 auto; cursor: pointer; }
+#view-calls #calls-statusf, #view-calls #calls-sort { cursor: pointer; }
 #view-calls #calls-search::placeholder { color: #5f938e; }
 #view-calls #calls-search:focus,
 #view-calls #calls-statusf:focus,
 #view-calls #calls-sort:focus { outline: none; border-color: var(--brand-dark); box-shadow: 0 0 0 3px rgba(15,182,168,.15); }
-@media (max-width: 640px) { #view-calls .leads-toolbar #calls-search { flex-basis: 100%; } }
+@media (max-width: 560px) { #view-calls .leads-toolbar #calls-search { flex-basis: 100%; max-width: none; } }
