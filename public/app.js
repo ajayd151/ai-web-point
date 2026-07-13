@@ -3545,7 +3545,10 @@ function filteredCalls() {
   if (!callsData) return [];
   const q = ($('calls-search') ? $('calls-search').value : '').toLowerCase().trim();
   let list = callsData.calls.slice();
-  if (callsFilter !== 'all') list = list.filter((c) => CALL_FILTERS[callsFilter].indexOf(callStatusOf(c)) >= 0);
+  if (callsFilter && callsFilter !== 'all') {
+    if (callsFilter === 'tocall') list = list.filter((c) => { const s = callStatusOf(c); return s === '' || s === 'no-answer'; });
+    else { const target = callsFilter === 'new' ? '' : callsFilter; list = list.filter((c) => callStatusOf(c) === target); }
+  }
   if (q) list = list.filter((c) => ((c.name || '') + ' ' + (c.location || '')).toLowerCase().indexOf(q) >= 0);
   return sortCalls(list);
 }
@@ -3572,9 +3575,23 @@ function updateCallBadge() {
   el.classList.toggle('allclear', toCall === 0 && total > 0); // greyed when nothing left to call
   el.classList.toggle('hidden', total === 0);
 }
+// Filter-by-status options (every status individually, plus two handy groups).
+const CALL_STATUS_FILTERS = [
+  ['tocall', 'To call (needs a call)'], ['all', 'All'],
+  ['new', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"],
+  ['callback', 'Call back'], ['interested', 'Interested'], ['won', 'Won, customer'],
+  ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'],
+  ['invalid-phone', 'Invalid phone'], ['lost', 'Lost'],
+];
+function callFilterCount(v) {
+  if (!callsData) return 0;
+  if (v === 'all') return callsData.calls.length;
+  if (v === 'tocall') return callsData.calls.filter((c) => { const s = callStatusOf(c); return s === '' || s === 'no-answer'; }).length;
+  const target = v === 'new' ? '' : v;
+  return callsData.calls.filter((c) => callStatusOf(c) === target).length;
+}
 function renderCallList() {
   const tb = $('calls-rows'); if (!tb || !callsData) return;
-  const counts = { all: callsData.calls.length };
   // headline count so you can see the size of your list at a glance
   const sum = $('calls-summary');
   if (sum) {
@@ -3582,11 +3599,11 @@ function renderCallList() {
     const toCall = callsData.calls.filter((c) => { const st = callStatusOf(c); return st === '' || st === 'no-answer'; }).length;
     sum.textContent = total ? (total + (total === 1 ? ' record' : ' records') + ' · ' + toCall + ' still to call') : '';
   }
-  Object.keys(CALL_FILTERS).forEach((f) => { counts[f] = callsData.calls.filter((c) => CALL_FILTERS[f].indexOf(callStatusOf(c)) >= 0).length; });
-  document.querySelectorAll('#calls-filters .leadf-btn').forEach((b) => {
-    const base = b.textContent.replace(/\s*\(\d+\)\s*$/, '');
-    b.textContent = base + ' (' + (counts[b.dataset.f] || 0) + ')';
-  });
+  // (re)build the Filter-by-status dropdown with live counts, keeping the selection
+  const sf = $('calls-statusf');
+  if (sf) {
+    sf.innerHTML = CALL_STATUS_FILTERS.map(([v, label]) => `<option value="${v}"${v === callsFilter ? ' selected' : ''}>${label} (${callFilterCount(v)})</option>`).join('');
+  }
   const list = filteredCalls();
   if (!list.length) { tb.innerHTML = '<tr><td colspan="5" class="muted" style="padding:14px">Nothing here. Add businesses from the search results with "📞 Add to call list".</td></tr>'; return; }
   tb.innerHTML = '';
@@ -3671,10 +3688,7 @@ async function addToCallList(b, rec, btn) {
     if (btn) { btn.disabled = false; btn.textContent = '📞 Add to call list'; }
   }
 }
-document.querySelectorAll('#calls-filters .leadf-btn').forEach((b) => b.addEventListener('click', () => {
-  document.querySelectorAll('#calls-filters .leadf-btn').forEach((x) => x.classList.toggle('active', x === b));
-  callsFilter = b.dataset.f; renderCallList();
-}));
+{ const sf = $('calls-statusf'); if (sf) sf.addEventListener('change', (e) => { callsFilter = e.target.value; renderCallList(); }); }
 $('calls-search').addEventListener('input', renderCallList);
 { const cs = $('calls-sort'); if (cs) cs.addEventListener('change', renderCallList); }
 $('calls-refresh').addEventListener('click', (e) => refreshFeedback(e.currentTarget, loadCallList));

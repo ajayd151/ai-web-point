@@ -597,14 +597,7 @@
         <p class="muted view-sub">Businesses queued for a phone call, the safest (and warmest) first touch. Add them from search results, then work through the list. Tap a number on your phone to dial.</p>
         <div class="leads-toolbar">
           <input id="calls-search" type="text" placeholder="Search name or location…" />
-          <div class="leads-filters" id="calls-filters">
-            <button class="leadf-btn active" data-f="tocall">📞 To call</button>
-            <button class="leadf-btn" data-f="callback">↩ Call back</button>
-            <button class="leadf-btn" data-f="contacted">✓ Contacted</button>
-            <button class="leadf-btn" data-f="interested">😊 Interested</button>
-            <button class="leadf-btn" data-f="notint">🙅 Not interested</button>
-            <button class="leadf-btn" data-f="all">All</button>
-          </div>
+          <select id="calls-statusf" class="calls-sort" title="Filter by status"></select>
           <select id="calls-sort" class="calls-sort" title="Sort the call list">
             <option value="added-desc">Sort: Recently added</option>
             <option value="added-asc">Oldest first</option>
