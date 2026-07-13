@@ -1146,7 +1146,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 
 /* ---- Team: usage caps + logged badge ---- */
 .team-limits { margin-top: 12px; }
-.team-limits-title { font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 8px; }
+.team-limits-title { font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--brand-dark); margin-bottom: 8px; }
 .team-lim { display: inline-flex; flex-direction: column; gap: 4px; margin: 0 16px 8px 0; font-size: 13px; color: var(--ink); }
 .team-lim input { width: 130px; border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 14px; color: var(--ink); font-family: inherit; }
 .member-logged {
@@ -1175,5 +1175,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 #view-calls #calls-sort:focus { outline: none; border-color: var(--brand-dark); box-shadow: 0 0 0 3px rgba(15,182,168,.15); }
 @media (max-width: 560px) { #view-calls .leads-toolbar #calls-search { flex-basis: 100%; max-width: none; } }
 
-.team-perms-sub { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 12px 0 8px; }
+.team-perms-sub { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--brand-dark); margin: 14px 0 8px; }
 .team-perms-sub:first-child { margin-top: 0; }
