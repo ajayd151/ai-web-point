@@ -2458,14 +2458,39 @@ async function loadActivityPeople() {
     sel.dataset.loaded = '1';
   } catch (e) { /* ignore */ }
 }
+// Work out the from/to (ISO) for the selected time window (local time).
+function actRange() {
+  const v = ($('act-days') && $('act-days').value) || '30';
+  const now = new Date();
+  const startOfDay = (dt) => { const x = new Date(dt); x.setHours(0, 0, 0, 0); return x; };
+  if (v === 'all') return { from: null, to: null };
+  if (v === 'today') return { from: startOfDay(now).toISOString(), to: null };
+  if (v === 'yesterday') { const y = new Date(now); y.setDate(y.getDate() - 1); return { from: startOfDay(y).toISOString(), to: startOfDay(now).toISOString() }; }
+  if (v === 'custom') {
+    const fi = $('act-from') && $('act-from').value; const ti = $('act-to') && $('act-to').value;
+    return {
+      from: fi ? new Date(fi + 'T00:00:00').toISOString() : null,
+      to: ti ? new Date(ti + 'T23:59:59').toISOString() : null,
+    };
+  }
+  const days = Number(v) || 30;
+  return { from: new Date(now.getTime() - days * 86400000).toISOString(), to: null };
+}
+function actUpdateCustomVisibility() {
+  const custom = ($('act-days') && $('act-days').value) === 'custom';
+  ['act-from', 'act-to'].forEach((id) => { if ($(id)) $(id).classList.toggle('hidden', !custom); });
+}
 async function loadActivityReport() {
   const sel = $('act-person'); const box = $('act-report'); if (!sel || !box) return;
   const email = sel.value;
   if (!email) { box.innerHTML = '<p class="muted">Choose a person above to see their activity.</p>'; return; }
-  const days = ($('act-days') && $('act-days').value) || '30';
+  const range = actRange();
   box.innerHTML = '<p class="muted">Loading…</p>';
   try {
-    const r = await fetch('/api/admin-activity?email=' + encodeURIComponent(email) + '&days=' + encodeURIComponent(days));
+    let url = '/api/admin-activity?email=' + encodeURIComponent(email);
+    if (range.from) url += '&from=' + encodeURIComponent(range.from);
+    if (range.to) url += '&to=' + encodeURIComponent(range.to);
+    const r = await fetch(url);
     if (!r.ok) { box.innerHTML = '<p class="muted">Could not load.</p>'; return; }
     const d = await r.json();
     renderActivityReport(d.report || { counts: [], recent: [] });
@@ -2566,7 +2591,9 @@ function renderNotesAnalysis(d) {
 { const s = $('notes-person'); if (s) s.addEventListener('change', loadNotesLog); }
 { const rb = $('notes-refresh'); if (rb) rb.addEventListener('click', (e) => { e.preventDefault(); loadNotesLog(); }); }
 { const s = $('act-person'); if (s) s.addEventListener('change', loadActivityReport); }
-{ const dd = $('act-days'); if (dd) dd.addEventListener('change', loadActivityReport); }
+{ const dd = $('act-days'); if (dd) dd.addEventListener('change', () => { actUpdateCustomVisibility(); if (dd.value === 'custom') return; loadActivityReport(); }); }
+{ const f = $('act-from'); if (f) f.addEventListener('change', loadActivityReport); }
+{ const t = $('act-to'); if (t) t.addEventListener('change', loadActivityReport); }
 { const rb = $('act-refresh'); if (rb) rb.addEventListener('click', (e) => { e.preventDefault(); loadActivityReport(); }); }
 
 // ---- Super Admin: Who to Target (personal playbook) ----

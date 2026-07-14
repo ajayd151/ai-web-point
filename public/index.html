@@ -713,11 +713,16 @@
               <div class="admin-pane-tools">
                 <select id="act-person"><option value="">Choose a person…</option></select>
                 <select id="act-days">
+                  <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
                   <option value="7">Last 7 days</option>
                   <option value="30" selected>Last 30 days</option>
                   <option value="90">Last 90 days</option>
-                  <option value="0">All time</option>
+                  <option value="all">All time</option>
+                  <option value="custom">Custom range…</option>
                 </select>
+                <input id="act-from" type="date" class="act-date hidden" title="From" />
+                <input id="act-to" type="date" class="act-date hidden" title="To" />
                 <button id="act-refresh" class="linkbtn">↻ Refresh</button>
               </div>
             </div>

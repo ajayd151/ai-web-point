@@ -12,8 +12,9 @@ module.exports = async (req, res) => {
   const q = req.query || {};
 
   if (q.email) {
-    const days = Number(q.days) > 0 ? Number(q.days) : null;
-    const report = await activityReport(String(q.email).toLowerCase(), days);
+    const from = q.from ? String(q.from) : null;
+    const to = q.to ? String(q.to) : null;
+    const report = await activityReport(String(q.email).toLowerCase(), from, to);
     res.status(200).json({ report: report || { counts: [], recent: [] } });
     return;
   }
