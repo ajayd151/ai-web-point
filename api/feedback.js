@@ -4,8 +4,8 @@
 // so the review shows who said it and on which plan. Fails soft; never blocks the app.
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
-const { recordFeedback, feedbackList, setFeedbackStatus, deleteFeedback } = require('../lib/db');
-const { sendFeedbackEmail } = require('../lib/email');
+const { recordFeedback, feedbackList, setFeedbackStatus, deleteFeedback, getFeedbackById } = require('../lib/db');
+const { sendFeedbackEmail, sendFeedbackDoneEmail } = require('../lib/email');
 
 const TYPES = ['bug', 'idea', 'question', 'praise', 'other'];
 const IMPORTANCE = ['thought', 'nice', 'important', 'critical'];
@@ -38,6 +38,10 @@ module.exports = async (req, res) => {
     if (body.action === 'status') {
       const ok = await setFeedbackStatus(id, String(body.status || ''));
       if (!ok) { res.status(500).json({ error: 'Could not update.' }); return; }
+      // optional: email the submitter that their suggestion is done (owner clicked "Done & notify")
+      if (body.notify && String(body.status) === 'done') {
+        try { const f = await getFeedbackById(id); if (f && f.email) await sendFeedbackDoneEmail({ to: f.email, message: f.message, url: f.url }); } catch (e) { /* fail soft */ }
+      }
       res.status(200).json({ ok: true }); return;
     }
     if (body.action === 'delete') {

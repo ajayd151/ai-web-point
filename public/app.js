@@ -2914,6 +2914,7 @@ function renderFeedbackAdmin(items) {
       '<div class="fbadm-meta">' + esc(f.email || '(unknown)') + ' · ' + esc(f.plan || '') + ' · page: ' + esc(f.page || '') + '</div>' +
       '<div class="fbadm-actions">' +
         (st !== 'done' ? '<button class="linkbtn" data-fbact="done">✓ Mark done</button>' : '') +
+        (f.email && f.email !== '(unknown)' ? '<button class="linkbtn" data-fbact="done-notify" title="Mark done and email them it is complete">✅ Done &amp; notify</button>' : '') +
         (st !== 'ignored' ? '<button class="linkbtn" data-fbact="ignored">Ignore</button>' : '') +
         (st !== 'new' ? '<button class="linkbtn" data-fbact="new">Reopen</button>' : '') +
         '<button class="linkbtn" disabled title="Coming soon: refine and Run Now">⚙️ Implement (soon)</button>' +
@@ -2923,10 +2924,14 @@ function renderFeedbackAdmin(items) {
   }).join('');
 }
 async function fbAdminAction(id, action) {
-  const body = action === 'delete' ? { action: 'delete', id: id } : { action: 'status', id: id, status: action };
+  let body;
+  if (action === 'delete') body = { action: 'delete', id: id };
+  else if (action === 'done-notify') body = { action: 'status', id: id, status: 'done', notify: true };
+  else body = { action: 'status', id: id, status: action };
   try {
     const r = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     if (!r.ok) { alert('Could not update, please try again.'); return; }
+    if (action === 'done-notify') alert('Marked done and emailed the submitter.');
     loadFeedbackAdmin();
   } catch (e) { alert('Network error, please try again.'); }
 }
@@ -2935,6 +2940,7 @@ async function fbAdminAction(id, action) {
   const item = e.target.closest('.fbadm-item'); if (!item) return;
   const id = Number(item.dataset.id); const act = btn.dataset.fbact;
   if (act === 'delete' && !confirm('Delete this feedback permanently?')) return;
+  if (act === 'done-notify' && !confirm('Mark done and email the submitter that it is complete?')) return;
   fbAdminAction(id, act);
 }); }
 { const f = $('fbadm-filter'); if (f) f.addEventListener('change', loadFeedbackAdmin); }
