@@ -3362,7 +3362,7 @@ function renderLeadStatus(l, dossier, pounce) {
   const bk = q('.lead-block'); if (bk) bk.addEventListener('click', () => confirmBlock(l, () => { $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); }));
   const ub = q('.lead-unblock'); if (ub) ub.addEventListener('click', () => { unblockKey(blockKey(l)); $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); });
 }
-const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"], ['interested', 'Interested'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'], ['invalid-phone', 'Invalid phone'], ['won', 'Won, customer'], ['lost', 'Lost']];
+const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"], ['interested', 'Interested'], ['meeting-booked', 'Meeting booked'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'], ['invalid-phone', 'Invalid phone'], ['won', 'Won, customer'], ['lost', 'Lost']];
 function statusLabel(s) { const f = LEAD_STATUSES.find((x) => x[0] === (s || '')); return f ? f[1] : 'New'; }
 function statusClass(s) { return 'st-' + (s || 'new'); }
 function renderLeadNotes(l, note) {
@@ -3692,7 +3692,7 @@ function updateCallBadge() {
 const CALL_STATUS_FILTERS = [
   ['tocall', 'To call (needs a call)'], ['all', 'All'],
   ['new', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"],
-  ['callback', 'Call back'], ['interested', 'Interested'], ['won', 'Won, customer'],
+  ['callback', 'Call back'], ['interested', 'Interested'], ['meeting-booked', 'Meeting booked'], ['won', 'Won, customer'],
   ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'],
   ['invalid-phone', 'Invalid phone'], ['lost', 'Lost'],
 ];

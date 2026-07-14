@@ -7,7 +7,7 @@ const { verify, parseCookie } = require('../lib/auth');
 const { tenantSlug, emailOf, accountEmailOf } = require('../lib/tenant');
 const { logActivity, recordNote } = require('../lib/db');
 
-const STATUSES = ['contacted', 'no-answer', 'interested', 'callback', 'not-interested', 'declined', 'invalid-phone', 'won', 'lost'];
+const STATUSES = ['contacted', 'no-answer', 'interested', 'meeting-booked', 'callback', 'not-interested', 'declined', 'invalid-phone', 'won', 'lost'];
 
 async function readJson(path) {
   try {
