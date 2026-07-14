@@ -2798,7 +2798,7 @@ function showTeamCred(email, d) {
   if (d && d.tempPassword) {
     box.innerHTML = '<div class="tc-title">✅ Login created for ' + esc(email) + '</div>' +
       '<div class="tc-row">Starting password: <code id="tc-pw">' + esc(d.tempPassword) + '</code> <button id="tc-copy" class="linkbtn" type="button">Copy</button></div>' +
-      '<div class="muted tc-note">Give them their email and this password. They will set their own password when they first sign in. This is shown only once.</div>';
+      '<div class="muted tc-note">We have emailed these login details to them automatically. This copy is shown here once too, in case you want to pass it on directly. They will set their own password on first login.</div>';
   } else if (d && d.accountExisted) {
     box.innerHTML = '<div class="tc-title">✅ Added ' + esc(email) + '</div><div class="muted tc-note">They already had a Site Pounce login, so no new password was made. They sign in with their existing password (or use "Forgot password?").</div>';
   } else {

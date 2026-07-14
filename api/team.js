@@ -64,7 +64,7 @@ module.exports = async (req, res) => {
     const ok = await addTeamMember(owner, email, firstName, lastName, cleanPerms(body.permissions), cleanLimits(body.limits), !!created.ok);
     if (!ok) { res.status(500).json({ error: 'Could not add, please try again.' }); return; }
     // Emails: notify the admin; invite the member (fail soft, awaited for Vercel).
-    await sendTeamInviteEmail({ to: email, firstName: firstName, ownerEmail: owner, hasPassword: !!created.ok });
+    await sendTeamInviteEmail({ to: email, firstName: firstName, ownerEmail: owner, hasPassword: !!created.ok, password: created.ok ? password : null });
     await sendTeamAddedAdminEmail({ adminTo: owner, memberName: (firstName + ' ' + lastName).trim(), memberEmail: email });
     res.status(200).json({ ok: true, tempPassword: created.ok ? password : null, accountExisted: !!created.exists }); return;
   }
