@@ -3159,7 +3159,16 @@ function renderDossier(d, lead) {
 // because the Lead Profile modal can be open underneath.
 function renderProwlNotes(lead) {
   const el = $('prowl-notes'); if (!el || !lead || !lead.slug) return;
-  fetch('/api/note?slug=' + encodeURIComponent(lead.slug)).then((r) => r.json()).catch(() => ({})).then((d) => {
+  // If this business is already on the Call List, use ITS key for status/notes so everything
+  // unifies (the same business can have a different slug in different views).
+  let noteSlug = lead.slug;
+  try {
+    if (callsData && callsData.calls) {
+      const match = callsData.calls.find((c) => normKey(c.name, c.location) === normKey(lead.name, lead.location));
+      if (match && match.key) noteSlug = match.key;
+    }
+  } catch (e) { /* fall back to lead.slug */ }
+  fetch('/api/note?slug=' + encodeURIComponent(noteSlug)).then((r) => r.json()).catch(() => ({})).then((d) => {
     const note = (d && d.note) || {};
     const cur = note.status || '';
     const comments = (note.comments || []).slice().reverse();
@@ -3171,9 +3180,15 @@ function renderProwlNotes(lead) {
       `<div class="ln-log">${comments.length ? comments.map((c) => `<div class="ln-item"><div class="ln-when">${esc(fmtDate(c.at))}${c.by ? " · " + esc(noteAuthor(c.by)) : ""}</div><div class="ln-text">${esc(c.text)}</div></div>`).join('') : '<div class="muted">No notes yet.</div>'}</div></div>`;
     const save = (payload) => {
       const sv = $('pn-saved'); if (sv) sv.textContent = 'Saving…';
-      fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: lead.slug, name: lead.name }, payload)) })
+      fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: noteSlug, name: lead.name }, payload)) })
         .then(() => {
-          if (callsData && payload.status !== undefined) callsData.statuses[lead.slug] = payload.status;
+          if (callsData && payload.status !== undefined) callsData.statuses[noteSlug] = payload.status;
+          // setting a status here = actively working this lead: make sure it's on the Call List
+          // (keyed the same as where the status is stored) so it shows in that subsection
+          if (payload.status && !(callNameKeys && callNameKeys.has(normKey(lead.name, lead.location)))) {
+            const add = { name: lead.name, location: lead.location || '', category: lead.category || '', phone: lead.phone || '', slug: noteSlug || '', mapsUrl: lead.mapsUrl || '' };
+            callsPost({ add: add }).then(() => { callNameKeys.add(normKey(lead.name, lead.location)); loadCallList(); }).catch(() => {});
+          }
           renderProwlNotes(lead);
         })
         .catch(() => { const s3 = $('pn-saved'); if (s3) s3.textContent = '⚠️ Failed'; });
