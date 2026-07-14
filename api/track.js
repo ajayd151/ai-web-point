@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
     // a 'sent' beacon comes from the OPERATOR's browser (has their cookie): audit who sent it
     if (event === 'sent') {
       const actor = emailOf(req);
-      if (actor) { try { await logActivity(actor, accountEmailOf(req), 'message_sent', slug + (platform ? ' via ' + (CH_LABEL[platform] || platform) : '')); } catch (e) { /* fail soft */ } }
+      if (actor) { try { await logActivity(actor, accountEmailOf(req), 'message_sent', slug + (platform ? ' via ' + (CH_LABEL[platform] || platform) : ''), slug); } catch (e) { /* fail soft */ } }
     }
   }
   res.status(204).end();

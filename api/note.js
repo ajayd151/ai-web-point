@@ -45,7 +45,8 @@ module.exports = async (req, res) => {
     }
     data.updatedAt = now;
     await logActivity(author, accountEmailOf(req), 'status_update',
-      (bizName || slug) + (body.status !== undefined ? (' → ' + (body.status || 'cleared')) : '') + (comment ? ' (note added)' : ''));
+      (bizName || slug) + (body.status !== undefined ? (' → ' + (body.status || 'cleared')) : '') + (comment ? ' (note added)' : ''),
+      bizName || slug);
     try { await put(path, JSON.stringify(data), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); } catch (e) { /* ignore */ }
     // keep the lightweight status index up to date
     try {

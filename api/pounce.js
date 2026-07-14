@@ -297,6 +297,6 @@ module.exports = async (req, res) => {
   };
 
   try { await put(path, JSON.stringify(site), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); } catch (e) { /* ignore */ }
-  await logActivity(emailOf(req), accountEmailOf(req), 'pounce', String((body && body.name) || slug));
+  await logActivity(emailOf(req), accountEmailOf(req), 'pounce', String((body && body.name) || slug), String((body && body.name) || slug));
   res.status(200).json({ siteUrl, slug, cached: false, heroSource, usedProwl });
 };

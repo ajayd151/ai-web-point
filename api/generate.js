@@ -483,7 +483,7 @@ module.exports = async (req, res) => {
     const imageUrl = `${linkBase}/i/${slug}.png`; // branded, hides the blob host
 
     await record('generate', Date.now(), tenantPrefix(req)); // count the slot only now that it actually worked
-    await logActivity(emailOf(req), accountEmailOf(req), 'mockup', String((business && business.name) || slug));
+    await logActivity(emailOf(req), accountEmailOf(req), 'mockup', String((business && business.name) || slug), String((business && business.name) || slug));
     res.status(200).json({ imageUrl, viewUrl, id, slug });
   } catch (err) {
     console.error('generate error:', err);

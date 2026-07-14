@@ -2471,12 +2471,27 @@ async function loadActivityReport() {
     renderActivityReport(d.report || { counts: [], recent: [] });
   } catch (e) { box.innerHTML = '<p class="muted">Network error.</p>'; }
 }
+function actGap(min) {
+  if (min == null) return '—';
+  const m = Math.round(min);
+  if (m < 60) return m + 'm';
+  const h = Math.floor(m / 60); const r = m % 60;
+  return h + 'h' + (r ? ' ' + r + 'm' : '');
+}
+// actions where the "unique" count = unique businesses is meaningful
+const ACT_UNIQUE_ACTIONS = { status_update: 1, mockup: 1, pounce: 1, prowl: 1, message_sent: 1 };
 function renderActivityReport(rep) {
   const box = $('act-report'); if (!box) return;
-  const counts = {}; (rep.counts || []).forEach((c) => { counts[c.action] = c.n; });
-  const tiles = Object.keys(ACT_LABELS).map((k) => {
+  const counts = {}; const uniq = {};
+  (rep.counts || []).forEach((c) => { counts[c.action] = c.n; uniq[c.action] = c.uniq; });
+  // headline tiles: unique businesses + pace, then per-action
+  let tiles =
+    ovTile('🏢', (rep.uniqueBusinesses != null ? rep.uniqueBusinesses : 0), 'Unique businesses', 'Distinct prospects worked') +
+    ovTile('⏱️', actGap(rep.avgGapMin), 'Avg gap between clients', 'Time before the next prospect');
+  tiles += Object.keys(ACT_LABELS).map((k) => {
     const meta = ACT_LABELS[k];
-    return '<div class="ov-tile"><div class="ov-ico">' + meta[0] + '</div><div class="ov-num">' + (counts[k] || 0) + '</div><div class="ov-label">' + esc(meta[1]) + '</div></div>';
+    const sub = ACT_UNIQUE_ACTIONS[k] ? ((uniq[k] || 0) + ' unique prospect' + ((uniq[k] === 1) ? '' : 's')) : '';
+    return ovTile(meta[0], (counts[k] || 0), meta[1], sub);
   }).join('');
   const recent = (rep.recent || []);
   const rows = recent.length

@@ -41,7 +41,7 @@ module.exports = async (req, res) => {
 
   try {
     const dossier = await gatherDossier({ slug, name, location, category, phone: body.phone || '' });
-    await logActivity(emailOf(req), accountEmailOf(req), 'prowl', String(name || slug));
+    await logActivity(emailOf(req), accountEmailOf(req), 'prowl', String(name || slug), String(name || slug));
     res.status(200).json({ dossier, cached: false });
   } catch (e) {
     res.status(500).json({ error: 'Prowl failed to gather intel.' });
