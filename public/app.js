@@ -2534,6 +2534,35 @@ function renderNotesLog(notes) {
       '<td style="white-space:pre-wrap">' + esc(n.note || '') + '</td>' +
     '</tr>').join('') + '</tbody></table></div>';
 }
+// AI analysis of all notes (owner-only, on-demand)
+async function runNotesAnalysis() {
+  const btn = $('notes-analyze'); const out = $('notes-ai-out'); if (!out) return;
+  if (btn) { btn.disabled = true; btn.textContent = '🧠 Analysing…'; }
+  out.classList.remove('hidden'); out.innerHTML = '<p class="muted">Reading the notes and thinking…</p>';
+  try {
+    const r = await fetch('/api/notes-analyze?days=30');
+    const d = await r.json().catch(() => ({}));
+    if (d.error) { out.innerHTML = '<p class="muted">' + esc(d.error) + '</p>'; }
+    else if (d.empty) { out.innerHTML = '<p class="muted">No notes in the last 30 days to analyse.</p>'; }
+    else { renderNotesAnalysis(d); }
+  } catch (e) { out.innerHTML = '<p class="muted">Could not analyse just now, please try again.</p>'; }
+  if (btn) { btn.disabled = false; btn.textContent = '🧠 Re-analyse last 30 days'; }
+}
+function renderNotesAnalysis(d) {
+  const out = $('notes-ai-out'); if (!out) return;
+  const a = d.analysis || {};
+  const sec = (icon, title, items) => (items && items.length)
+    ? '<div class="nai-sec"><div class="nai-h">' + icon + ' ' + esc(title) + '</div><ul>' + items.map((x) => '<li>' + x + '</li>').join('') + '</ul></div>' : '';
+  const themes = (a.themes || []).map((t) => esc(t));
+  const objs = (a.objections || []).map((o) => '<b>' + esc(o.objection || '') + '</b> → ' + esc(o.handling || ''));
+  const targ = (a.targeting || []).map((t) => esc(t));
+  const fups = (a.followups || []).map((t) => esc(t));
+  const body = sec('🔁', 'Recurring themes', themes) + sec('🛡️', 'Objections & how to handle', objs) +
+    sec('🎯', 'Targeting tips', targ) + sec('⏰', 'Follow-ups to chase', fups);
+  out.innerHTML = '<div class="nai-meta muted">Based on ' + (d.count || 0) + ' notes, last ' + (d.days || 30) + ' days</div>' +
+    (body || '<p class="muted">No clear patterns found yet, add more notes.</p>');
+}
+{ const b = $('notes-analyze'); if (b) b.addEventListener('click', runNotesAnalysis); }
 { const s = $('notes-person'); if (s) s.addEventListener('change', loadNotesLog); }
 { const rb = $('notes-refresh'); if (rb) rb.addEventListener('click', (e) => { e.preventDefault(); loadNotesLog(); }); }
 { const s = $('act-person'); if (s) s.addEventListener('change', loadActivityReport); }

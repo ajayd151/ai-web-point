@@ -1194,3 +1194,13 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 #prowl-notes .lead-notes-inner { margin: 6px 0 14px; padding: 12px 14px; background: #f7fafb; border: 1px solid var(--line); border-radius: 11px; }
 
 .dos-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 4px 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 13px; }
+
+/* ---- Admin: AI notes analysis ---- */
+.notes-ai { margin: 4px 0 16px; }
+.notes-ai-out { margin-top: 12px; background: #f2fbfa; border: 1px solid var(--brand); border-radius: 12px; padding: 14px 16px; }
+.nai-meta { font-size: 12px; margin-bottom: 10px; }
+.nai-sec { margin-bottom: 12px; }
+.nai-sec:last-child { margin-bottom: 0; }
+.nai-h { font-weight: 800; font-size: 13.5px; color: var(--ink); margin-bottom: 5px; }
+.nai-sec ul { margin: 0; padding-left: 20px; }
+.nai-sec li { font-size: 14px; color: var(--ink); line-height: 1.55; margin-bottom: 3px; }

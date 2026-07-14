@@ -7,9 +7,10 @@ const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
 const { ownsSlug } = require('../lib/tenant');
 
-// Turn a slug back into a readable business name for display.
+// Turn a slug back into a readable business name for display (strip the tenant prefix and
+// the random code suffix mockup slugs carry, e.g. "the-detail-factory-c71c123f").
 function deslug(slug) {
-  let s = String(slug || '').replace(/^[0-9a-f]{16}--/, '').replace(/-/g, ' ').trim();
+  let s = String(slug || '').replace(/^[0-9a-f]{16}--/, '').replace(/-[0-9a-f]{6,12}$/i, '').replace(/-/g, ' ').trim();
   return s.replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
