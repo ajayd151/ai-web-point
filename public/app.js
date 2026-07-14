@@ -2486,6 +2486,7 @@ function renderActivityReport(rep) {
   (rep.counts || []).forEach((c) => { counts[c.action] = c.n; uniq[c.action] = c.uniq; });
   // headline tiles: unique businesses + pace, then per-action
   let tiles =
+    ovTile('🎯', (rep.meetingsBooked != null ? rep.meetingsBooked : 0), 'Meetings booked', 'Prospects moved to Meeting booked') +
     ovTile('🏢', (rep.uniqueBusinesses != null ? rep.uniqueBusinesses : 0), 'Unique businesses', 'Distinct prospects worked') +
     ovTile('⏱️', actGap(rep.avgGapMin), 'Avg gap between clients', 'Time before the next prospect');
   tiles += Object.keys(ACT_LABELS).map((k) => {
@@ -3675,6 +3676,8 @@ function filteredCalls() {
   let list = callsData.calls.slice();
   if (callsFilter && callsFilter !== 'all') {
     if (callsFilter === 'tocall') list = list.filter((c) => { const s = callStatusOf(c); return s === '' || s === 'no-answer'; });
+    else if (callsFilter === 'prowled') list = list.filter((c) => callProwled(c));
+    else if (callsFilter === 'notprowled') list = list.filter((c) => !callProwled(c));
     else { const target = callsFilter === 'new' ? '' : callsFilter; list = list.filter((c) => callStatusOf(c) === target); }
   }
   if (q) list = list.filter((c) => ((c.name || '') + ' ' + (c.location || '')).toLowerCase().indexOf(q) >= 0);
@@ -3706,15 +3709,19 @@ function updateCallBadge() {
 // Filter-by-status options (every status individually, plus two handy groups).
 const CALL_STATUS_FILTERS = [
   ['tocall', 'To call (needs a call)'], ['all', 'All'],
+  ['prowled', '🐾 Already prowled'], ['notprowled', 'Not prowled yet'],
   ['new', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"],
   ['callback', 'Call back'], ['interested', 'Interested'], ['meeting-booked', 'Meeting booked'], ['won', 'Won, customer'],
   ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'],
   ['invalid-phone', 'Invalid phone'], ['lost', 'Lost'],
 ];
+function callProwled(c) { return !!(callsData && callsData.prowled && callsData.prowled.has(c.key)); }
 function callFilterCount(v) {
   if (!callsData) return 0;
   if (v === 'all') return callsData.calls.length;
   if (v === 'tocall') return callsData.calls.filter((c) => { const s = callStatusOf(c); return s === '' || s === 'no-answer'; }).length;
+  if (v === 'prowled') return callsData.calls.filter((c) => callProwled(c)).length;
+  if (v === 'notprowled') return callsData.calls.filter((c) => !callProwled(c)).length;
   const target = v === 'new' ? '' : v;
   return callsData.calls.filter((c) => callStatusOf(c) === target).length;
 }
