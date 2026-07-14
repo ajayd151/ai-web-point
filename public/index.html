@@ -678,6 +678,7 @@
           <button class="admin-navbtn active" data-adminview="overview">📊 Overview</button>
           <button class="admin-navbtn" data-adminview="customers">👤 Customers</button>
           <button class="admin-navbtn" data-adminview="activity">📋 Activity</button>
+          <button class="admin-navbtn" data-adminview="notes">🗒️ Notes</button>
           <button class="admin-navbtn" data-adminview="targets">🎯 Niche Intel</button>
           <button class="admin-navbtn" data-adminview="feedback">💬 Feedback</button>
           <button class="admin-navbtn" data-adminview="team">👥 Team</button>
@@ -722,6 +723,18 @@
             </div>
             <p class="muted view-sub">Pick a team member or customer to see what they have done: searches, calls added, CSV exports, messages, status updates, mockups, Pounces and Prowls.</p>
             <div id="act-report"></div>
+          </div>
+
+          <div id="admin-notes" class="admin-pane hidden">
+            <div class="admin-pane-head">
+              <h2 class="view-title">🗒️ Notes</h2>
+              <div class="admin-pane-tools">
+                <select id="notes-person"><option value="">Everyone</option></select>
+                <button id="notes-refresh" class="linkbtn">↻ Refresh</button>
+              </div>
+            </div>
+            <p class="muted view-sub">Every note anyone on your team has written, newest first, with who wrote it and on which business. Filter by person to see just theirs.</p>
+            <div id="notes-list"></div>
           </div>
 
           <div id="admin-targets" class="admin-pane hidden">

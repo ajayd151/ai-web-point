@@ -5,7 +5,7 @@
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { tenantSlug, emailOf, accountEmailOf } = require('../lib/tenant');
-const { logActivity } = require('../lib/db');
+const { logActivity, recordNote } = require('../lib/db');
 
 const STATUSES = ['contacted', 'no-answer', 'interested', 'callback', 'not-interested', 'declined', 'invalid-phone', 'won', 'lost'];
 
@@ -36,10 +36,16 @@ module.exports = async (req, res) => {
       if (s === '' || STATUSES.indexOf(s) >= 0) { data.status = s; data.statusAt = now; }
     }
     const comment = String(body.comment || '').trim().slice(0, 2000);
-    if (comment) { data.comments = data.comments || []; data.comments.push({ text: comment, at: now }); }
+    const author = emailOf(req);
+    const bizName = String(body.name || '').slice(0, 160);
+    if (comment) {
+      data.comments = data.comments || [];
+      data.comments.push({ text: comment, at: now, by: author }); // author stamped for attribution
+      await recordNote({ account: accountEmailOf(req), author: author, slug: slug, business: bizName, note: comment });
+    }
     data.updatedAt = now;
-    await logActivity(emailOf(req), accountEmailOf(req), 'status_update',
-      slug + (body.status !== undefined ? (' → ' + (body.status || 'cleared')) : '') + (comment ? ' (note added)' : ''));
+    await logActivity(author, accountEmailOf(req), 'status_update',
+      (bizName || slug) + (body.status !== undefined ? (' → ' + (body.status || 'cleared')) : '') + (comment ? ' (note added)' : ''));
     try { await put(path, JSON.stringify(data), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); } catch (e) { /* ignore */ }
     // keep the lightweight status index up to date
     try {

@@ -12,6 +12,8 @@ let selectedResults = new Set(); // keys of search-result cards ticked for a bat
 let renderedResults = [];        // the businesses currently shown (for Select all + batch actions)
 function normKey(name, loc) { return String(name || '').toLowerCase().replace(/[^a-z0-9]/g, '') + '|' + String(loc || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
 function resultKey(b) { return b.id || normKey(b.name, b.location); }
+// Short display name for a note's author email (the part before @).
+function noteAuthor(by) { if (!by) return ''; const s = String(by); return s.indexOf('@') > 0 ? s.slice(0, s.indexOf('@')) : s; }
 let authed = false;
 const $ = (id) => document.getElementById(id);
 
@@ -2429,6 +2431,7 @@ document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('cl
   if (v === 'overview') loadAdminOverview();
   if (v === 'customers') loadCustomers();
   if (v === 'activity') loadActivityPeople();
+  if (v === 'notes') loadNotesLog();
   if (v === 'targets') renderTargets();
   if (v === 'feedback') loadFeedbackAdmin();
   if (v === 'team') loadTeamAdmin();
@@ -2483,6 +2486,40 @@ function renderActivityReport(rep) {
     '<div class="ov-rev-head" style="margin-top:20px">Recent activity</div>' +
     '<div class="ov-rev-scroll"><table class="cust-table"><thead><tr><th>When</th><th>Action</th><th>Detail</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
+// ---- Super Admin: centralised Notes ----
+async function loadNotesLog() {
+  // populate the person filter once (reuse the activity people list)
+  const sel = $('notes-person');
+  if (sel && !sel.dataset.loaded) {
+    try {
+      const r = await fetch('/api/admin-activity');
+      if (r.ok) { const d = await r.json(); (d.people || []).forEach((p) => { const o = document.createElement('option'); o.value = p.email; o.textContent = (p.name ? p.name + ' · ' : '') + p.email; sel.appendChild(o); }); }
+    } catch (e) { /* ignore */ }
+    sel.dataset.loaded = '1';
+  }
+  const box = $('notes-list'); if (!box) return;
+  box.innerHTML = '<p class="muted">Loading…</p>';
+  const who = (sel && sel.value) || '';
+  try {
+    const r = await fetch('/api/notes-log' + (who ? '?email=' + encodeURIComponent(who) : ''));
+    if (!r.ok) { box.innerHTML = '<p class="muted">' + (r.status === 403 ? 'Owner only.' : 'Could not load.') + '</p>'; return; }
+    const d = await r.json();
+    renderNotesLog(d.notes || []);
+  } catch (e) { box.innerHTML = '<p class="muted">Network error.</p>'; }
+}
+function renderNotesLog(notes) {
+  const box = $('notes-list'); if (!box) return;
+  if (!notes.length) { box.innerHTML = '<p class="muted">No notes yet.</p>'; return; }
+  box.innerHTML = '<div class="ov-rev-scroll"><table class="cust-table"><thead><tr><th>When</th><th>Who</th><th>Business</th><th>Note</th></tr></thead><tbody>' +
+    notes.map((n) => '<tr>' +
+      '<td>' + esc(fmtDate(n.ts)) + '</td>' +
+      '<td>' + esc(noteAuthor(n.author)) + '</td>' +
+      '<td>' + esc(n.business || '') + '</td>' +
+      '<td style="white-space:pre-wrap">' + esc(n.note || '') + '</td>' +
+    '</tr>').join('') + '</tbody></table></div>';
+}
+{ const s = $('notes-person'); if (s) s.addEventListener('change', loadNotesLog); }
+{ const rb = $('notes-refresh'); if (rb) rb.addEventListener('click', (e) => { e.preventDefault(); loadNotesLog(); }); }
 { const s = $('act-person'); if (s) s.addEventListener('change', loadActivityReport); }
 { const dd = $('act-days'); if (dd) dd.addEventListener('change', loadActivityReport); }
 { const rb = $('act-refresh'); if (rb) rb.addEventListener('click', (e) => { e.preventDefault(); loadActivityReport(); }); }
@@ -3108,10 +3145,10 @@ function renderProwlNotes(lead) {
       `<select id="pn-status">${LEAD_STATUSES.map((o) => `<option value="${o[0]}"${o[0] === cur ? ' selected' : ''}>${o[1]}</option>`).join('')}</select>` +
       '<span class="ln-saved" id="pn-saved"></span></div>' +
       '<div class="ln-add"><textarea id="pn-comment" rows="2" placeholder="Take notes while you talk, each one is saved with the date + time…"></textarea><button id="pn-add-btn" class="primary sm">Add note</button></div>' +
-      `<div class="ln-log">${comments.length ? comments.map((c) => `<div class="ln-item"><div class="ln-when">${esc(fmtDate(c.at))}</div><div class="ln-text">${esc(c.text)}</div></div>`).join('') : '<div class="muted">No notes yet.</div>'}</div></div>`;
+      `<div class="ln-log">${comments.length ? comments.map((c) => `<div class="ln-item"><div class="ln-when">${esc(fmtDate(c.at))}${c.by ? " · " + esc(noteAuthor(c.by)) : ""}</div><div class="ln-text">${esc(c.text)}</div></div>`).join('') : '<div class="muted">No notes yet.</div>'}</div></div>`;
     const save = (payload) => {
       const sv = $('pn-saved'); if (sv) sv.textContent = 'Saving…';
-      fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: lead.slug }, payload)) })
+      fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: lead.slug, name: lead.name }, payload)) })
         .then(() => {
           if (callsData && payload.status !== undefined) callsData.statuses[lead.slug] = payload.status;
           renderProwlNotes(lead);
@@ -3337,13 +3374,13 @@ function renderLeadNotes(l, note) {
     `<select id="ln-status">${LEAD_STATUSES.map((o) => `<option value="${o[0]}"${o[0] === cur ? ' selected' : ''}>${o[1]}</option>`).join('')}</select>` +
     '<span class="ln-saved" id="ln-saved"></span></div>' +
     '<div class="ln-add"><textarea id="ln-comment" rows="2" placeholder="Add a note (e.g. Called, not interested, already has a website but not on Maps, doing it as a sideline)…"></textarea><button id="ln-add-btn" class="primary sm">Add note</button></div>' +
-    `<div class="ln-log">${comments.length ? comments.map((c) => `<div class="ln-item"><div class="ln-when">${esc(fmtDate(c.at))}</div><div class="ln-text">${esc(c.text)}</div></div>`).join('') : '<div class="muted">No notes yet.</div>'}</div></div>`;
+    `<div class="ln-log">${comments.length ? comments.map((c) => `<div class="ln-item"><div class="ln-when">${esc(fmtDate(c.at))}${c.by ? " · " + esc(noteAuthor(c.by)) : ""}</div><div class="ln-text">${esc(c.text)}</div></div>`).join('') : '<div class="muted">No notes yet.</div>'}</div></div>`;
   $('ln-status').addEventListener('change', (e) => saveNote(l, { status: e.target.value }));
   $('ln-add-btn').addEventListener('click', () => { const text = ($('ln-comment').value || '').trim(); if (text) saveNote(l, { comment: text }); });
 }
 function saveNote(l, payload) {
   const sv = $('ln-saved'); if (sv) sv.textContent = 'Saving…';
-  fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: l.slug }, payload)) })
+  fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: l.slug, name: l.name }, payload)) })
     .then((r) => r.json()).then((d) => {
       renderLeadNotes(l, (d && d.note) || {});
       const s2 = $('ln-saved'); if (s2) { s2.textContent = '✓ Saved'; setTimeout(() => { if ($('ln-saved')) $('ln-saved').textContent = ''; }, 1500); }
@@ -3733,7 +3770,7 @@ function renderCallList() {
         const d = await (await fetch('/api/note?slug=' + encodeURIComponent(c.key))).json();
         const com = (d.note && d.note.comments) || [];
         listEl.innerHTML = com.length
-          ? com.slice().reverse().map((x) => `<div class="call-note"><span class="muted">${esc(fmtDate(x.at))}</span> ${esc(x.text)}</div>`).join('')
+          ? com.slice().reverse().map((x) => `<div class="call-note"><span class="muted">${esc(fmtDate(x.at))}${x.by ? ' · ' + esc(noteAuthor(x.by)) : ''}</span> ${esc(x.text)}</div>`).join('')
           : '<span class="muted">No notes yet.</span>';
       } catch (e) { listEl.textContent = 'Could not load notes.'; }
     });
@@ -3741,10 +3778,10 @@ function renderCallList() {
       const ta = nr.querySelector('textarea');
       const text = ta.value.trim(); if (!text) return;
       try {
-        await fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: c.key, comment: text }) });
+        await fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: c.key, name: c.name, comment: text }) });
         ta.value = '';
         const listEl = nr.querySelector('.call-notes-list');
-        listEl.innerHTML = `<div class="call-note"><span class="muted">just now</span> ${esc(text)}</div>` + listEl.innerHTML.replace('No notes yet.', '');
+        listEl.innerHTML = `<div class="call-note"><span class="muted">just now · ${esc(noteAuthor((window.AIWP_ACCESS && window.AIWP_ACCESS.email) || ''))}</span> ${esc(text)}</div>` + listEl.innerHTML.replace('No notes yet.', '');
       } catch (e) { alert('Could not save the note.'); }
     });
   });
