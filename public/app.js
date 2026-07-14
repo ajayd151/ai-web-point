@@ -257,9 +257,9 @@ async function refreshAccess() {
   if (paid) {
     loadServerMockups(); loadHotLeads(); loadCallList(); // saved mockups + warm-lead / call-list badges + card states
   }
-  // resume a plan the user picked before signing up (works whether or not they have access yet:
-  // a brand-new signup has no plan, so this sends them straight to Stripe checkout)
-  try { var pt = localStorage.getItem('aiwp_pending_tier'); if (pt) { localStorage.removeItem('aiwp_pending_tier'); startCheckout(pt); } } catch (e) {}
+  // resume a plan the user picked before signing up, but NEVER for someone who already has
+  // access (a team member or existing subscriber must not be pushed into paying).
+  try { var pt = localStorage.getItem('aiwp_pending_tier'); if (pt) { localStorage.removeItem('aiwp_pending_tier'); if (!paid) startCheckout(pt); } } catch (e) {}
 }
 
 // Apply a team member's permissions to the UI: body classes drive CSS that hides the
