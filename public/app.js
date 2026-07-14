@@ -3135,12 +3135,13 @@ function renderDossier(d, lead) {
   const contact = `<div class="dos-contact"><div class="dos-cline">${phone ? '📞 <b>' + esc(phone) + '</b>' : '<span class="muted">No phone on file</span>'}${loc ? ' · ' + esc(loc) : ''}</div><div class="dos-acts">${cActs}</div></div>`;
   $('prowl-body').innerHTML =
     contact +
+    `<div class="dos-top"><span class="muted">🐾 Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-rerun" class="ghost sm" title="Gather fresh, current info (uses a Prowl credit)">↻ Re-run for the latest</button></div>` +
     '<div id="prowl-notes"></div>' + // notes/status at the TOP, right under the contact line
     `<div class="dos-rep">⭐ Google: <b>${g.reviews}</b> reviews at <b>${g.rating}★</b>${g.mapsUrl ? ' · <a href="' + esc(g.mapsUrl) + '" target="_blank" rel="noopener">📍 Maps</a>' : ''}${g.website ? '' : ' · <b>no website</b>'}${d.reputationSummary ? ', ' + esc(d.reputationSummary) : ''}</div>` +
     opener + strengths + weak + ammo + objections +
     compTable + services +
     `<div class="dos-snap">${snapshot}</div>` +
-    `<div class="dos-foot"><span class="muted">Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-pounce" class="primary sm">🐆 Pounce, build their website</button> <button id="prowl-rerun" class="ghost">↻ Re-run</button></div>`;
+    `<div class="dos-foot"><button id="prowl-pounce" class="primary sm">🐆 Pounce, build their website</button></div>`;
   const rr = $('prowl-rerun');
   if (rr) rr.addEventListener('click', () => { startProwlProgress(); prowlFetch(lead, true).then(({ j }) => renderDossier(j.dossier || {}, lead)).catch(() => {}); });
   const pb = $('prowl-pounce');

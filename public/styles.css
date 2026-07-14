@@ -1192,3 +1192,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .pwchange-card .primary { width: 100%; }
 
 #prowl-notes .lead-notes-inner { margin: 6px 0 14px; padding: 12px 14px; background: #f7fafb; border: 1px solid var(--line); border-radius: 11px; }
+
+.dos-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 4px 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 13px; }
