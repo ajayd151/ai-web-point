@@ -1190,3 +1190,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .pwchange-card .block > span { display: block; font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 5px; }
 .pwchange-card input { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 15px; color: var(--ink); }
 .pwchange-card .primary { width: 100%; }
+
+#prowl-notes .lead-notes-inner { margin: 6px 0 14px; padding: 12px 14px; background: #f7fafb; border: 1px solid var(--line); border-radius: 11px; }
