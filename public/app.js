@@ -2897,8 +2897,10 @@ async function loadFeedbackAdmin() {
 }
 const FB_TYPE = { idea: 'Idea', bug: 'Bug', question: 'Question', praise: 'Praise', other: 'Other' };
 const FB_IMP = { thought: 'Just a thought', nice: 'Nice to have', important: 'Important', critical: 'Critical' };
+let fbItems = [];
 function renderFeedbackAdmin(items) {
   const list = $('fbadm-list'); if (!list) return;
+  fbItems = items || [];
   if (!items.length) { list.innerHTML = '<p class="muted">Nothing here.</p>'; return; }
   list.innerHTML = items.map((f) => {
     const st = f.admin_status || 'new';
@@ -2917,6 +2919,7 @@ function renderFeedbackAdmin(items) {
         (f.email && f.email !== '(unknown)' ? '<button class="linkbtn" data-fbact="done-notify" title="Mark done and email them it is complete">✅ Done &amp; notify</button>' : '') +
         (st !== 'ignored' ? '<button class="linkbtn" data-fbact="ignored">Ignore</button>' : '') +
         (st !== 'new' ? '<button class="linkbtn" data-fbact="new">Reopen</button>' : '') +
+        '<button class="linkbtn" data-fbact="copy" title="Copy a full, ready-to-paste report">📋 Copy for Claude</button>' +
         '<button class="linkbtn" disabled title="Coming soon: refine and Run Now">⚙️ Implement (soon)</button>' +
         '<button class="linkbtn fbadm-del" data-fbact="delete">Delete</button>' +
       '</div>' +
@@ -2941,8 +2944,31 @@ async function fbAdminAction(id, action) {
   const id = Number(item.dataset.id); const act = btn.dataset.fbact;
   if (act === 'delete' && !confirm('Delete this feedback permanently?')) return;
   if (act === 'done-notify' && !confirm('Mark done and email the submitter that it is complete?')) return;
+  if (act === 'copy') { copyFeedbackReport(id, btn); return; }
   fbAdminAction(id, act);
 }); }
+function copyFeedbackReport(id, btn) {
+  const f = (fbItems || []).find((x) => Number(x.id) === Number(id)); if (!f) return;
+  const lines = [
+    'SITE POUNCE FEEDBACK',
+    'Type: ' + (FB_TYPE[f.type] || f.type || 'Other') + ' · Importance: ' + (FB_IMP[f.importance] || f.importance || ''),
+    'From: ' + (f.email || '(unknown)') + '  (plan: ' + (f.plan || 'none') + ', account: ' + (f.acct_status || 'n/a') + ')',
+    'Page: ' + (f.page || '(unknown)'),
+    (f.url ? 'URL: ' + f.url : ''),
+    'When: ' + fmtDate(f.created),
+    (f.ua ? 'Browser: ' + f.ua : ''),
+    '',
+    'Message:',
+    f.message || '',
+  ].filter((x) => x !== null && x !== undefined && x !== '');
+  const text = lines.join('\n');
+  const done = () => { if (btn) { const t = btn.textContent; btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = t; }, 1400); } };
+  try { navigator.clipboard.writeText(text).then(done, () => fallbackCopy(text, done)); } catch (e) { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, done) {
+  try { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); if (done) done(); }
+  catch (e) { alert('Could not copy automatically. Here it is:\n\n' + text); }
+}
 { const f = $('fbadm-filter'); if (f) f.addEventListener('change', loadFeedbackAdmin); }
 { const rb = $('fbadm-refresh'); if (rb) rb.addEventListener('click', (e) => { e.preventDefault(); loadFeedbackAdmin(); }); }
 document.querySelectorAll('.dash-rbtn').forEach((b) => b.addEventListener('click', () => {
