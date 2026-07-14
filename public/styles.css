@@ -1177,3 +1177,15 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 
 .team-perms-sub { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--brand-dark); margin: 14px 0 8px; }
 .team-perms-sub:first-child { margin-top: 0; }
+
+/* ---- Team: new-member credentials + forced password change ---- */
+.team-newcred { margin-top: 12px; background: #f2fbfa; border: 1px solid var(--brand); border-radius: 11px; padding: 13px 15px; }
+.tc-title { font-weight: 800; color: var(--ink); font-size: 14.5px; }
+.tc-row { margin: 8px 0 4px; font-size: 14px; color: var(--ink); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tc-row code { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 15px; font-weight: 700; letter-spacing: .5px; }
+.tc-note { font-size: 12.5px; margin-top: 4px; }
+.pwchange-card { width: 440px; }
+.pwchange-card .block { margin-bottom: 12px; }
+.pwchange-card .block > span { display: block; font-weight: 700; font-size: 13px; color: var(--ink); margin-bottom: 5px; }
+.pwchange-card input { width: 100%; box-sizing: border-box; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 15px; color: var(--ink); }
+.pwchange-card .primary { width: 100%; }

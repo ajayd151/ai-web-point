@@ -8,6 +8,16 @@ const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped, PERM_KEYS, cleanLimits } = require('../lib/access');
 const { listTeamMembers, addTeamMember, setTeamSuspended, setTeamPermissions, removeTeamMember, getUserByEmail } = require('../lib/db');
 const { sendTeamInviteEmail, sendTeamAddedAdminEmail } = require('../lib/email');
+const { createClerkUser } = require('../lib/clerkadmin');
+const crypto = require('crypto');
+
+// Readable random starting password (no ambiguous chars).
+function genPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  const buf = crypto.randomBytes(14);
+  let out = ''; for (let i = 0; i < 14; i++) out += chars[buf[i] % chars.length];
+  return out;
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -45,13 +55,18 @@ module.exports = async (req, res) => {
     if (!firstName || !lastName) { res.status(400).json({ error: 'First name and surname are required.' }); return; }
     // Don't hijack someone who already pays for their own separate subscription.
     try { const u = await getUserByEmail(email); if (u && ['active', 'trialing'].includes(u.status)) { res.status(409).json({ error: 'That email already has its own paid account.' }); return; } } catch (e) { /* ignore */ }
-    const ok = await addTeamMember(owner, email, firstName, lastName, cleanPerms(body.permissions), cleanLimits(body.limits));
+    // Create their login so they can just SIGN IN (no separate signup). A generated
+    // starting password is returned to the owner once; the member is forced to change
+    // it on first login (must_change).
+    const password = genPassword();
+    let created = { ok: false };
+    try { created = await createClerkUser({ email: email, firstName: firstName, lastName: lastName, password: password }); } catch (e) { created = { error: 'failed' }; }
+    const ok = await addTeamMember(owner, email, firstName, lastName, cleanPerms(body.permissions), cleanLimits(body.limits), !!created.ok);
     if (!ok) { res.status(500).json({ error: 'Could not add, please try again.' }); return; }
-    // Email the member an invite (set up account + own password) and notify the admin.
-    // MUST await both (Vercel freezes the function after the response). Both fail soft.
-    await sendTeamInviteEmail({ to: email, firstName: firstName, ownerEmail: owner });
+    // Emails: notify the admin; invite the member (fail soft, awaited for Vercel).
+    await sendTeamInviteEmail({ to: email, firstName: firstName, ownerEmail: owner, hasPassword: !!created.ok });
     await sendTeamAddedAdminEmail({ adminTo: owner, memberName: (firstName + ' ' + lastName).trim(), memberEmail: email });
-    res.status(200).json({ ok: true }); return;
+    res.status(200).json({ ok: true, tempPassword: created.ok ? password : null, accountExisted: !!created.exists }); return;
   }
   if (action === 'permissions') {
     const ok = await setTeamPermissions(owner, email, cleanPerms(body.permissions), cleanLimits(body.limits));

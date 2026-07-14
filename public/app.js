@@ -287,9 +287,35 @@ function applyMemberUI(acc) {
     const allowed = MEMBER_TAB_ORDER.filter(([p]) => perms[p] !== false).map(([, v]) => v);
     const cur = window.AIWP_VIEW || 'search';
     if (!allowed.includes(cur) && allowed.length) showView(allowed[0]);
+    maybeForcePasswordChange(acc);
     maybeShowTeamNotice();
   }
 }
+// Force a team member on a starting password to set their own on first login.
+function maybeForcePasswordChange(acc) {
+  if (!(acc && acc.member && acc.mustChange)) return;
+  const m = $('pwchange-modal'); if (m) m.classList.remove('hidden');
+}
+{ const b = $('pw-save'); if (b) b.addEventListener('click', async () => {
+  const cur = ($('pw-current') && $('pw-current').value) || '';
+  const nw = ($('pw-new') && $('pw-new').value) || '';
+  const cf = ($('pw-confirm') && $('pw-confirm').value) || '';
+  const msg = (t, k) => { const e = $('pw-msg'); if (e) { e.textContent = t || ''; e.className = 'login-msg ' + (k || ''); e.classList.toggle('hidden', !t); } };
+  if (!cur || !nw) { msg('Please fill in all fields.', 'err'); return; }
+  if (nw.length < 8) { msg('Your new password must be at least 8 characters.', 'err'); return; }
+  if (nw !== cf) { msg('The new passwords do not match.', 'err'); return; }
+  if (!(window.Clerk && window.Clerk.user)) { msg('Sign-in is still loading, please try again in a moment.', 'err'); return; }
+  b.disabled = true; msg('Saving...', '');
+  try {
+    await window.Clerk.user.updatePassword({ currentPassword: cur, newPassword: nw, signOutOfOtherSessions: false });
+    try { await fetch('/api/password-changed', { method: 'POST' }); } catch (e) {}
+    msg('Password updated.', 'ok');
+    setTimeout(() => { if ($('pwchange-modal')) $('pwchange-modal').classList.add('hidden'); refreshAccess(); }, 800);
+  } catch (e) {
+    msg((e && e.errors && e.errors[0] && (e.errors[0].longMessage || e.errors[0].message)) || 'Could not update. Check your current (starting) password.', 'err');
+  }
+  b.disabled = false;
+}); }
 // One-time-per-session professional-use reminder for team members.
 function maybeShowTeamNotice() {
   try { if (sessionStorage.getItem('aiwp_team_notice')) return; } catch (e) {}
@@ -2758,9 +2784,31 @@ async function addTeamMember() {
     const r = await fetch('/api/team', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'add', firstName: first, lastName: last, email: email, permissions: permissions, limits: limits }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) { teamMsg(d.error || 'Could not add, please try again.', 'err'); }
-    else { $('team-first').value = ''; $('team-last').value = ''; $('team-email').value = ''; teamMsg('Added, and emailed them an invite to set up their account and password.', 'ok'); loadTeamAdmin(); }
+    else {
+      const addedEmail = email;
+      $('team-first').value = ''; $('team-last').value = ''; $('team-email').value = '';
+      teamMsg('', ''); showTeamCred(addedEmail, d); loadTeamAdmin();
+    }
   } catch (e) { teamMsg('Network error, please try again.', 'err'); }
   if (btn) btn.disabled = false;
+}
+// Show the new member's login credentials once (starting password), after adding them.
+function showTeamCred(email, d) {
+  const box = $('team-newcred'); if (!box) return;
+  if (d && d.tempPassword) {
+    box.innerHTML = '<div class="tc-title">✅ Login created for ' + esc(email) + '</div>' +
+      '<div class="tc-row">Starting password: <code id="tc-pw">' + esc(d.tempPassword) + '</code> <button id="tc-copy" class="linkbtn" type="button">Copy</button></div>' +
+      '<div class="muted tc-note">Give them their email and this password. They will set their own password when they first sign in. This is shown only once.</div>';
+  } else if (d && d.accountExisted) {
+    box.innerHTML = '<div class="tc-title">✅ Added ' + esc(email) + '</div><div class="muted tc-note">They already had a Site Pounce login, so no new password was made. They sign in with their existing password (or use "Forgot password?").</div>';
+  } else {
+    box.innerHTML = '<div class="tc-title">✅ Added ' + esc(email) + '</div><div class="muted tc-note">Emailed them an invite to sign up and set their own password.</div>';
+  }
+  box.classList.remove('hidden');
+  const cp = $('tc-copy'); if (cp) cp.addEventListener('click', () => {
+    const pw = ($('tc-pw') && $('tc-pw').textContent) || '';
+    try { navigator.clipboard.writeText(pw); cp.textContent = 'Copied ✓'; } catch (e) {}
+  });
 }
 { const b = $('team-add-btn'); if (b) b.addEventListener('click', addTeamMember); }
 { const i = $('team-email'); if (i) i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addTeamMember(); } }); }

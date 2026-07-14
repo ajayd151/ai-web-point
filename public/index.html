@@ -210,6 +210,19 @@
   </div>
 
   <!-- Professional-use notice, shown once per session to team members -->
+  <!-- Mandatory: a team member on a starting password sets their own on first login -->
+  <div id="pwchange-modal" class="modal hidden">
+    <div class="modal-card pwchange-card">
+      <h2>Set your own password</h2>
+      <p class="muted">You are signed in with a starting password from your admin. Please set your own password to continue.</p>
+      <label class="block"><span>Current (starting) password</span><input id="pw-current" type="password" autocomplete="current-password" /></label>
+      <label class="block"><span>New password</span><input id="pw-new" type="password" autocomplete="new-password" /></label>
+      <label class="block"><span>Confirm new password</span><input id="pw-confirm" type="password" autocomplete="new-password" /></label>
+      <button id="pw-save" class="primary">Save new password</button>
+      <p id="pw-msg" class="login-msg hidden"></p>
+    </div>
+  </div>
+
   <div id="team-notice" class="modal hidden">
     <div class="modal-card team-notice-card">
       <h2>Welcome to the team workspace</h2>
@@ -754,6 +767,7 @@
               <button id="team-add-btn" class="batch-btn">Add team member</button>
             </div>
             <p id="team-msg" class="login-msg hidden"></p>
+            <div id="team-newcred" class="team-newcred hidden"></div>
             <div id="team-list" class="team-list"></div>
             <p class="muted team-note">After you add someone, they go to sitepounce.com and sign up with that exact email, then they are straight into your shared workspace. Server actions (searching, mockups, websites, call list) are enforced; the rest are hidden in their app.</p>
           </div>

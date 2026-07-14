@@ -13,6 +13,7 @@ module.exports = async (req, res) => {
     status: a.status,
     member: !!a.member,   // true = a team member (restricted by permissions)
     perms: a.perms || {}, // permission map, used by the UI to hide what they can't do
+    mustChange: !!a.mustChange, // team member must set their own password on first login
     deepdossier: canDeepDossier(a.email), // private MVP: gates the hidden DeepDossier nav button
   });
 };
