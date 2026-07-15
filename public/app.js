@@ -2599,7 +2599,10 @@ function renderActivityReport(rep) {
     if (k === 'call_add') {
       const times = counts[k] || 0;
       const added = (rep.businessesAdded != null ? rep.businessesAdded : 0);
-      return ovTile(meta[0], added, 'Records added', 'added ' + times + ' time' + (times === 1 ? '' : 's'));
+      const dup = (rep.duplicatesSkipped != null ? rep.duplicatesSkipped : 0);
+      // duplicates only get counted from the fix onwards, so say nothing rather than imply zero
+      const s = 'added ' + times + ' time' + (times === 1 ? '' : 's') + (dup ? (' · ' + dup + ' already on list') : '');
+      return ovTile(meta[0], added, 'Records added', s);
     }
     return ovTile(meta[0], (counts[k] || 0), meta[1], sub);
   }).join('');

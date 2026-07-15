@@ -49,10 +49,12 @@ module.exports = async (req, res) => {
   if (body.remove && !(await requirePermission(req, res, 'deleteLeads'))) return;
   const map = await readList(PATH);
 
-  // Names of the records this request ACTUALLY added, i.e. excluding any already on the list.
-  // The audit log uses these, not everything that was submitted: re-adding a business that is
-  // already there is a no-op, so counting it would overstate how much work was done.
+  // Names of the records this request ACTUALLY added, i.e. excluding any already on the list, plus
+  // how many were skipped as duplicates. The audit log records both: counting the submitted total
+  // would overstate the work, but the skipped count is worth keeping, it shows when the same search
+  // is being added over and over.
   let freshNames = [];
+  let skipped = 0;
 
   // `add` may be a single business OR an array (batch add from the search page).
   // Merging them all in this ONE read-modify-write avoids the blob race that loses
@@ -61,6 +63,7 @@ module.exports = async (req, res) => {
     const items = Array.isArray(body.add) ? body.add : [body.add];
     const fresh = items.filter((a) => a && a.name && !map[keyFor(a)]); // only genuinely-new ones count toward a cap
     freshNames = fresh.map((a) => a.name);
+    skipped = items.filter((a) => a && a.name).length - freshNames.length; // already on the list
     // team-member call-list cap: they can only build up to their allowed number of records
     const acct = await account(req);
     if (acct.member && acct.limits && acct.limits.callListMax) {
@@ -99,13 +102,15 @@ module.exports = async (req, res) => {
 
   try { await put(PATH, JSON.stringify(map), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
   catch (e) { res.status(500).json({ error: 'Could not save the call list.' }); return; }
-  // audit. Only log the records that were genuinely new: a batch where everything was already on
-  // the list added nothing, so it should not appear as work in the Activity report.
+  // audit. The detail always ends with the number ACTUALLY added in brackets, which is what the
+  // Activity report sums. `meta` carries the duplicate count alongside it, so a batch that added
+  // nothing still tells the story rather than vanishing.
   if (body.add) {
-    if (freshNames.length) {
-      await logActivity(emailOf(req), accountEmailOf(req), 'call_add',
-        freshNames.slice(0, 5).join(', ') + (freshNames.length > 5 ? ' +' + (freshNames.length - 5) + ' more' : '') + ' (' + freshNames.length + ')');
-    }
+    const dup = skipped ? (', ' + skipped + ' already on the list') : '';
+    const detail = freshNames.length
+      ? (freshNames.slice(0, 5).join(', ') + (freshNames.length > 5 ? ' +' + (freshNames.length - 5) + ' more' : '') + dup + ' (' + freshNames.length + ')')
+      : ('Nothing new, all ' + skipped + ' already on the list (0)');
+    await logActivity(emailOf(req), accountEmailOf(req), 'call_add', detail, null, { added: freshNames.length, skipped: skipped });
   } else if (body.remove) {
     await logActivity(emailOf(req), accountEmailOf(req), 'call_remove', String(body.remove));
   }
