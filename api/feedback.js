@@ -40,7 +40,10 @@ module.exports = async (req, res) => {
       if (!ok) { res.status(500).json({ error: 'Could not update.' }); return; }
       // optional: email the submitter that their suggestion is done (owner clicked "Done & notify")
       if (body.notify && String(body.status) === 'done') {
-        try { const f = await getFeedbackById(id); if (f && f.email) await sendFeedbackDoneEmail({ to: f.email, message: f.message, url: f.url }); } catch (e) { /* fail soft */ }
+        // `note` is what the owner typed in the prompt: the "what to do next" instructions, shown
+        // highlighted at the top of their email. Optional.
+        const note = String(body.note || '').trim().slice(0, 1200);
+        try { const f = await getFeedbackById(id); if (f && f.email) await sendFeedbackDoneEmail({ to: f.email, message: f.message, url: f.url, note: note }); } catch (e) { /* fail soft */ }
       }
       res.status(200).json({ ok: true }); return;
     }

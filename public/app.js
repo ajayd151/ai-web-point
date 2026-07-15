@@ -3100,10 +3100,10 @@ function renderFeedbackAdmin(items) {
     '</div>';
   }).join('');
 }
-async function fbAdminAction(id, action) {
+async function fbAdminAction(id, action, note) {
   let body;
   if (action === 'delete') body = { action: 'delete', id: id };
-  else if (action === 'done-notify') body = { action: 'status', id: id, status: 'done', notify: true };
+  else if (action === 'done-notify') body = { action: 'status', id: id, status: 'done', notify: true, note: note || '' };
   else body = { action: 'status', id: id, status: action };
   try {
     const r = await fetch('/api/feedback', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -3117,8 +3117,19 @@ async function fbAdminAction(id, action) {
   const item = e.target.closest('.fbadm-item'); if (!item) return;
   const id = Number(item.dataset.id); const act = btn.dataset.fbact;
   if (act === 'delete' && !confirm('Delete this feedback permanently?')) return;
-  if (act === 'done-notify' && !confirm('Mark done and email the submitter that it is complete?')) return;
   if (act === 'copy') { copyFeedbackReport(id, btn); return; }
+  if (act === 'done-notify') {
+    // Telling someone it is fixed is not much use without telling them what to do about it.
+    // Whatever is typed here is shown as a highlighted "What to do next" block in their email.
+    const note = prompt(
+      'What should they do or know? This goes in the email as a highlighted "What to do next" box.\n\n' +
+      'Leave blank to just tell them it is done.',
+      'Please hard-refresh the page first (Ctrl+Shift+R on Windows), then check a lead you know you wrote notes on. If anything is still missing, reply with the business name and roughly when you wrote it.'
+    );
+    if (note === null) return; // cancelled
+    fbAdminAction(id, act, note.trim());
+    return;
+  }
   fbAdminAction(id, act);
 }); }
 function copyFeedbackReport(id, btn) {
