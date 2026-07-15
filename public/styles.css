@@ -1334,3 +1334,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .acst-row { grid-template-columns: 150px 1fr 34px 42px; }
 .acst-p { font-size: 12px; font-weight: 700; color: #6b7a90; text-align: right; }
 @media (max-width: 640px) { .acst-row { grid-template-columns: 104px 1fr 28px 38px; } }
+/* total row under the status breakdown */
+.acst-total { margin-top: 3px; padding-top: 8px; border-top: 2px solid #e4eaf1; }
+.acst-total .acst-l, .acst-total .acst-n, .acst-total .acst-p { font-weight: 800; color: #15233b; }
+.acst-total .acst-track { background: transparent; }

@@ -2705,7 +2705,14 @@ function actCharts(rep) {
           '<div class="acst-n">' + u + '</div>' +
           '<div class="acst-p">' + pct + '%</div>' +
           '</div>';
-      }).join('') + '</div>' +
+      }).join('') +
+      '<div class="acst-row acst-total">' +
+        '<div class="acst-l">Total</div>' +
+        '<div class="acst-track"></div>' +
+        '<div class="acst-n">' + total + '</div>' +
+        '<div class="acst-p">100%</div>' +
+      '</div>' +
+      '</div>' +
       '</div>';
   }
 
