@@ -49,12 +49,18 @@ module.exports = async (req, res) => {
   if (body.remove && !(await requirePermission(req, res, 'deleteLeads'))) return;
   const map = await readList(PATH);
 
+  // Names of the records this request ACTUALLY added, i.e. excluding any already on the list.
+  // The audit log uses these, not everything that was submitted: re-adding a business that is
+  // already there is a no-op, so counting it would overstate how much work was done.
+  let freshNames = [];
+
   // `add` may be a single business OR an array (batch add from the search page).
   // Merging them all in this ONE read-modify-write avoids the blob race that loses
   // writes when many single adds overlap.
   if (body.add) {
     const items = Array.isArray(body.add) ? body.add : [body.add];
     const fresh = items.filter((a) => a && a.name && !map[keyFor(a)]); // only genuinely-new ones count toward a cap
+    freshNames = fresh.map((a) => a.name);
     // team-member call-list cap: they can only build up to their allowed number of records
     const acct = await account(req);
     if (acct.member && acct.limits && acct.limits.callListMax) {
@@ -93,11 +99,13 @@ module.exports = async (req, res) => {
 
   try { await put(PATH, JSON.stringify(map), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
   catch (e) { res.status(500).json({ error: 'Could not save the call list.' }); return; }
-  // audit
+  // audit. Only log the records that were genuinely new: a batch where everything was already on
+  // the list added nothing, so it should not appear as work in the Activity report.
   if (body.add) {
-    const items = Array.isArray(body.add) ? body.add : [body.add];
-    const names = items.filter((a) => a && a.name).map((a) => a.name);
-    await logActivity(emailOf(req), accountEmailOf(req), 'call_add', names.slice(0, 5).join(', ') + (names.length > 5 ? ' +' + (names.length - 5) + ' more' : '') + ' (' + names.length + ')');
+    if (freshNames.length) {
+      await logActivity(emailOf(req), accountEmailOf(req), 'call_add',
+        freshNames.slice(0, 5).join(', ') + (freshNames.length > 5 ? ' +' + (freshNames.length - 5) + ' more' : '') + ' (' + freshNames.length + ')');
+    }
   } else if (body.remove) {
     await logActivity(emailOf(req), accountEmailOf(req), 'call_remove', String(body.remove));
   }
