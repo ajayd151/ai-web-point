@@ -4,8 +4,12 @@
 // LIVE by default. Set DIGEST_LIVE=0 to pause it (it then only ever emails the owner), which is
 // the kill switch if the wording ever needs rechecking.
 //
-// Vercel cron is UTC, so we fire at 07:00 and 08:00 UTC and let the London-hour guard pick the
-// right one (07:00 UTC in BST, 08:00 UTC in GMT). That way it is always 8am UK.
+// Vercel cron is UTC, so we fire hourly across the morning and let the London-hour guard decide
+// which invocations do work. That way 8am UK is correct in both BST and GMT.
+//
+// 8am is the real send. 10am and midday are CATCH-UP passes: if the 8am run failed for someone
+// (SendGrid blip, AI timeout, DB wobble) they were never marked as sent, so the catch-up picks
+// them up. Anyone already sent is skipped by the same-day guard, so nobody can ever get two.
 //
 // The owner can also fire it by hand while signed in (?force=1), which is how the very first send
 // was done and how a missed morning can be re-run.
@@ -36,9 +40,11 @@ module.exports = async (req, res) => {
 
   const q = req.query || {};
   const now = new Date();
-  // Only the 8am-London firing does the work (the other UTC firing exits quietly).
-  if (londonHour(now) !== 8 && !q.force) {
-    res.status(200).json({ skipped: 'not 8am London', londonHour: londonHour(now) });
+  // 8am is the send. 10am and midday only mop up anyone the 8am run failed to reach.
+  const DIGEST_HOURS = [8, 10, 12];
+  const hour = londonHour(now);
+  if (!DIGEST_HOURS.includes(hour) && !q.force) {
+    res.status(200).json({ skipped: 'not a digest hour', londonHour: hour });
     return;
   }
 
@@ -53,7 +59,7 @@ module.exports = async (req, res) => {
   try { actors = await activeActors(w.from, w.to); } catch (e) { actors = []; }
   if (!live) actors = actors.filter((a) => String(a.actor).toLowerCase() === owner);
 
-  const out = { day: day, covering: w.label, live: live, dryRun: dry, considered: actors.length, sent: 0, recipients: [], skipped: [] };
+  const out = { day: day, covering: w.label, live: live, dryRun: dry, pass: (hour === 8 ? 'main' : 'catch-up'), londonHour: hour, considered: actors.length, sent: 0, failed: 0, recipients: [], skipped: [] };
 
   for (const a of actors) {
     const email = String(a.actor).toLowerCase();
@@ -73,12 +79,16 @@ module.exports = async (req, res) => {
       }
       // await the send (never fire-and-forget on Vercel, the function freezes)
       const ok = await sendDailyDigestEmail({ to: email, firstName: firstName, digest: digest });
+      // Only mark as sent when SendGrid really accepted it. A failure stays unmarked so the
+      // catch-up pass tries again later this morning.
       if (ok) { await bumpDailyUsage(email, 'digest', 1, day); out.sent++; out.recipients.push({ email: email, name: firstName, activities: digest.total, meetingsBooked: digest.meetingsBooked }); }
-      else out.skipped.push({ email: email, why: 'send failed' });
+      else { out.failed++; out.skipped.push({ email: email, why: 'send failed, will retry on the catch-up pass' }); }
     } catch (e) {
-      out.skipped.push({ email: email, why: 'error' });
+      out.failed++;
+      out.skipped.push({ email: email, why: 'error, will retry on the catch-up pass' });
     }
   }
 
+  if (out.failed) console.error('Daily Insights: ' + out.failed + ' send(s) failed on the ' + out.pass + ' pass, covering ' + w.label);
   res.status(200).json(out);
 };
