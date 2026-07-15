@@ -2593,7 +2593,14 @@ function renderActivityReport(rep) {
     ovTile('⏱️', actGap(rep.avgGapMin), 'Avg gap between clients', 'Time before the next prospect');
   tiles += Object.keys(ACT_LABELS).map((k) => {
     const meta = ACT_LABELS[k];
-    const sub = ACT_UNIQUE_ACTIONS[k] ? ((uniq[k] || 0) + ' unique prospect' + ((uniq[k] === 1) ? '' : 's')) : '';
+    let sub = ACT_UNIQUE_ACTIONS[k] ? ((uniq[k] || 0) + ' unique prospect' + ((uniq[k] === 1) ? '' : 's')) : '';
+    // "Calls added" is logged once per BATCH, so the row count is how many times they hit Add, not
+    // how many businesses went on the list. Show the businesses, and the batches underneath.
+    if (k === 'call_add') {
+      const batches = counts[k] || 0;
+      const added = (rep.businessesAdded != null ? rep.businessesAdded : 0);
+      return ovTile(meta[0], added, meta[1], 'in ' + batches + ' batch' + (batches === 1 ? '' : 'es'));
+    }
     return ovTile(meta[0], (counts[k] || 0), meta[1], sub);
   }).join('');
   const recent = (rep.recent || []);
