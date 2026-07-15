@@ -3421,22 +3421,57 @@ function renderDossier(d, lead) {
   if (pb) pb.addEventListener('click', () => { $('prowl-modal').classList.add('hidden'); openPounce(lead); });
   renderProwlNotes(lead); // status + timestamped notes right in the dossier (take notes while you call)
 }
+// ---- one note key per business, whichever screen you are on -------------------------------
+// The same business can be keyed differently in different views: the Call List uses its own key
+// (the slug if it had one, else name-location), while Prowl and the Lead Profile use the lead's
+// slug. When those disagree, a note written on one screen was invisible on the other, which is
+// what made notes look "hit and miss". Everything resolves through here now.
+async function noteKeyFor(lead) {
+  if (!lead) return '';
+  try {
+    // The Call List MUST be loaded or the key silently diverges. This used to be best-effort,
+    // so the key depended on whether the list happened to have loaded yet.
+    if (!callsData) await loadCallList();
+    if (callsData && callsData.calls) {
+      const m = callsData.calls.find((c) => normKey(c.name, c.location) === normKey(lead.name, lead.location));
+      if (m && m.key) return m.key;
+    }
+  } catch (e) { /* fall through to the lead's own slug */ }
+  return lead.slug || '';
+}
+
+// Read a business's notes from EVERY key it might have been saved under and merge them, so notes
+// written before the keys were unified are visible again rather than stranded. Writes always go
+// to the one canonical key from noteKeyFor().
+async function fetchNoteMerged(keys) {
+  const uniq = Array.from(new Set((keys || []).filter(Boolean)));
+  if (!uniq.length) return { status: '', statusAt: '', comments: [] };
+  const docs = await Promise.all(uniq.map((k) => fetch('/api/note?slug=' + encodeURIComponent(k))
+    .then((r) => r.json()).catch(() => ({}))));
+  const notes = docs.map((d) => (d && d.note) || {});
+  const comments = []; const seen = new Set();
+  notes.forEach((n) => (n.comments || []).forEach((c) => {
+    const id = (c.at || '') + '|' + (c.text || '');
+    if (seen.has(id)) return; // the same note can come back from both keys
+    seen.add(id); comments.push(c);
+  }));
+  comments.sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')));
+  // status: the canonical key's wins, unless another key holds a more recent one
+  let status = notes[0].status || ''; let statusAt = notes[0].statusAt || '';
+  notes.slice(1).forEach((n) => {
+    if (n.status && String(n.statusAt || '') > String(statusAt || '')) { status = n.status; statusAt = n.statusAt; }
+  });
+  return { status: status, statusAt: statusAt, comments: comments };
+}
+
 // CRM block inside the Prowl popup: same /api/note store as the Lead Profile and
 // Call List, so a status or note made mid-call shows everywhere. Own ids (pn-*)
 // because the Lead Profile modal can be open underneath.
-function renderProwlNotes(lead) {
+async function renderProwlNotes(lead) {
   const el = $('prowl-notes'); if (!el || !lead || !lead.slug) return;
-  // If this business is already on the Call List, use ITS key for status/notes so everything
-  // unifies (the same business can have a different slug in different views).
-  let noteSlug = lead.slug;
-  try {
-    if (callsData && callsData.calls) {
-      const match = callsData.calls.find((c) => normKey(c.name, c.location) === normKey(lead.name, lead.location));
-      if (match && match.key) noteSlug = match.key;
-    }
-  } catch (e) { /* fall back to lead.slug */ }
-  fetch('/api/note?slug=' + encodeURIComponent(noteSlug)).then((r) => r.json()).catch(() => ({})).then((d) => {
-    const note = (d && d.note) || {};
+  const noteSlug = (await noteKeyFor(lead)) || lead.slug;
+  {
+    const note = await fetchNoteMerged([noteSlug, lead.slug]);
     const cur = note.status || '';
     const comments = (note.comments || []).slice().reverse();
     el.innerHTML = '<div class="lead-notes-inner"><h3 class="ln-h">📝 Status & call notes</h3>' +
@@ -3462,7 +3497,7 @@ function renderProwlNotes(lead) {
     };
     const st = $('pn-status'); if (st) st.addEventListener('change', (e) => save({ status: e.target.value }));
     const ab = $('pn-add-btn'); if (ab) ab.addEventListener('click', () => { const t = ($('pn-comment').value || '').trim(); if (t) save({ comment: t }); });
-  });
+  }
 }
 
 // ---- 🐆 Pounce: build a real 1-page website for the lead ----
@@ -3685,14 +3720,17 @@ function renderLeadNotes(l, note) {
   $('ln-status').addEventListener('change', (e) => saveNote(l, { status: e.target.value }));
   $('ln-add-btn').addEventListener('click', () => { const text = ($('ln-comment').value || '').trim(); if (text) saveNote(l, { comment: text }); });
 }
-function saveNote(l, payload) {
+async function saveNote(l, payload) {
   const sv = $('ln-saved'); if (sv) sv.textContent = 'Saving…';
-  fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: l.slug, name: l.name }, payload)) })
-    .then((r) => r.json()).then((d) => {
-      renderLeadNotes(l, (d && d.note) || {});
-      const s2 = $('ln-saved'); if (s2) { s2.textContent = '✓ Saved'; setTimeout(() => { if ($('ln-saved')) $('ln-saved').textContent = ''; }, 1500); }
-      if (leadsData && payload.status !== undefined) { leadsData.statuses = leadsData.statuses || {}; if (payload.status) leadsData.statuses[l.slug] = payload.status; else delete leadsData.statuses[l.slug]; try { renderLeads(); } catch (e) { /* ignore */ } }
-    }).catch(() => { const s3 = $('ln-saved'); if (s3) s3.textContent = '⚠️ Failed'; });
+  // write to the SAME key the Call List and Prowl use, or the note lands somewhere the other
+  // screens never look
+  const key = (await noteKeyFor(l)) || l.slug;
+  try {
+    await fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: key, name: l.name }, payload)) });
+    renderLeadNotes(l, await fetchNoteMerged([key, l.slug]));
+    const s2 = $('ln-saved'); if (s2) { s2.textContent = '✓ Saved'; setTimeout(() => { if ($('ln-saved')) $('ln-saved').textContent = ''; }, 1500); }
+    if (leadsData && payload.status !== undefined) { leadsData.statuses = leadsData.statuses || {}; if (payload.status) leadsData.statuses[l.slug] = payload.status; else delete leadsData.statuses[l.slug]; try { renderLeads(); } catch (e) { /* ignore */ } }
+  } catch (e) { const s3 = $('ln-saved'); if (s3) s3.textContent = '⚠️ Failed'; }
 }
 function openLead(biz) {
   const l = leadFromAny(biz);
@@ -3702,8 +3740,10 @@ function openLead(biz) {
   $('lead-modal').classList.remove('hidden');
   $('lead-body').innerHTML = renderLeadShell(l) + '<div id="lead-status" class="lead-status"><span class="spinner sm"></span> Checking Prowl & website…</div><div id="lead-notes"></div>';
   const peek = (url) => fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: l.slug, peek: true }) }).then((r) => r.json()).catch(() => ({}));
-  const getNote = fetch('/api/note?slug=' + encodeURIComponent(l.slug)).then((r) => r.json()).catch(() => ({}));
-  Promise.all([peek('/api/prowl'), peek('/api/pounce'), getNote]).then(([pr, pc, nt]) => { renderLeadStatus(l, pr && pr.dossier, pc); renderLeadNotes(l, (nt && nt.note) || {}); });
+  // read notes from the Call List key as well as this lead's slug, so anything written on
+  // another screen still shows here
+  const getNote = noteKeyFor(l).then((key) => fetchNoteMerged([key || l.slug, l.slug])).catch(() => ({ status: '', comments: [] }));
+  Promise.all([peek('/api/prowl'), peek('/api/pounce'), getNote]).then(([pr, pc, nt]) => { renderLeadStatus(l, pr && pr.dossier, pc); renderLeadNotes(l, nt || {}); });
 }
 // clickable business names → lead profile (dashboard activity table)
 $('dash-body').addEventListener('click', (e) => { const n = e.target.closest('.lead-name'); if (n) openLead({ slug: n.dataset.slug, name: n.dataset.name }); });
@@ -4080,7 +4120,8 @@ function renderCallList() {
       if (open) return;
       const listEl = nr.querySelector('.call-notes-list');
       try {
-        const d = await (await fetch('/api/note?slug=' + encodeURIComponent(c.key))).json();
+        // c.key is canonical, but older notes may sit under the lead's own slug, so read both
+        const d = { note: await fetchNoteMerged([c.key, c.slug]) };
         const com = (d.note && d.note.comments) || [];
         listEl.innerHTML = com.length
           ? com.slice().reverse().map((x) => `<div class="call-note"><span class="muted">${esc(fmtDate(x.at))}${x.by ? ' · ' + esc(noteAuthor(x.by)) : ''}</span> ${esc(x.text)}</div>`).join('')
@@ -4127,7 +4168,9 @@ async function exportCallsCsv() {
   if (btn) { btn.disabled = true; btn.textContent = 'Exporting…'; }
   let notes = [];
   try {
-    notes = await Promise.all(list.map((c) => fetch('/api/note?slug=' + encodeURIComponent(c.key)).then((r) => r.json()).catch(() => ({}))));
+    // same merge as the on-screen notes, so the export cannot disagree with what you can see
+    // (fetchNoteMerged de-duplicates the keys, so this is one request unless they differ)
+    notes = await Promise.all(list.map((c) => fetchNoteMerged([c.key, c.slug]).then((n) => ({ note: n })).catch(() => ({}))));
   } catch (e) { notes = []; }
   const header = ['Business', 'Location', 'Category', 'Phone', 'Status', 'Added', 'Prowled', 'Prowled on', 'Notes count', 'Latest note', 'Google Maps'];
   const rows = list.map((c, i) => {
