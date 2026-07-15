@@ -1247,3 +1247,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .dig-praise { font-size:13px; color:#fff; background:rgba(15,182,168,.18); border-left:3px solid #0FB6A8; padding:8px 11px; border-radius:0 8px 8px 0; margin-top:12px; line-height:1.5; }
 .dig-f { font-size:12.5px; color:#15233B; line-height:1.6; margin-bottom:6px; padding-left:13px; position:relative; }
 .dig-f:before { content:"•"; color:#0FB6A8; font-weight:800; position:absolute; left:0; }
+.dig-next { font-size:12px; color:#15233B; line-height:1.6; margin-top:5px; background:#fff; border-radius:7px; padding:6px 9px; }
+.dig-next b { color:#0FB6A8; }
+.dig-ask { font-size:12px; color:#15233B; line-height:1.6; margin-top:4px; }
+.dig-ask b { color:#0FB6A8; }

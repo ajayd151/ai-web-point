@@ -3084,13 +3084,15 @@ async function loadDigest() {
         h += '<div class="dig-ins-t2">My advice for today</div>';
         ins.advice.forEach((a, i) => {
           h += '<div class="dig-i"><div class="dig-i-t">' + (i + 1) + '. ' + esc(a.advice || '') + '</div>' +
-            (a.why ? '<div class="dig-i-s"><b>Why:</b> ' + esc(a.why) + '</div>' : '') + '</div>';
+            (a.why ? '<div class="dig-i-s"><b>Why:</b> ' + esc(a.why) + '</div>' : '') +
+            (a.nextStep ? '<div class="dig-next"><b>Next step:</b> ' + esc(a.nextStep) + '</div>' : '') + '</div>';
         });
       }
       if (ins.objections.length) {
         h += '<div class="dig-ins-t2">Objections you heard, and how to handle them</div>';
         ins.objections.forEach((o) => {
-          h += '<div class="dig-o"><div class="dig-o-t">“' + esc(o.objection || '') + '”</div><div class="dig-o-h">' + esc(o.handling || '') + '</div></div>';
+          h += '<div class="dig-o"><div class="dig-o-t">“' + esc(o.objection || '') + '”</div><div class="dig-o-h">' + esc(o.handling || '') + '</div>' +
+            (o.ask ? '<div class="dig-ask"><b>Then ask:</b> “' + esc(o.ask) + '”</div>' : '') + '</div>';
         });
       }
       h += '</div>';
