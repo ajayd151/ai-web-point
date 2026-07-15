@@ -2625,7 +2625,12 @@ function actBar(label, uniq, total, maxU, maxT, opts) {
   const hT = maxT > 0 ? Math.round((total / maxT) * 100) : 0;
   const empty = (!total && !uniq);
   const tip = label + ': ' + uniq + ' business' + (uniq === 1 ? '' : 'es') + ', ' + total + ' action' + (total === 1 ? '' : 's');
+  // Value above each bar: businesses in teal, total actions in grey beneath it. Blank on an empty
+  // hour, so a row of zeros does not drown out the real numbers.
+  const val = empty ? '' :
+    '<span class="acht-vu">' + uniq + '</span>' + (total !== uniq ? '<span class="acht-vt">' + total + '</span>' : '');
   return '<div class="acht-col' + (empty && o.inSpan ? ' gap' : '') + '" title="' + esc(tip) + '">' +
+    '<div class="acht-v">' + val + '</div>' +
     '<div class="acht-bars">' +
       '<div class="acht-t" style="height:' + hT + '%"></div>' +
       '<div class="acht-u" style="height:' + hU + '%"></div>' +
