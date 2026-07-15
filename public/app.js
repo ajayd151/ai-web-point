@@ -2597,9 +2597,9 @@ function renderActivityReport(rep) {
     // "Calls added" is logged once per BATCH, so the row count is how many times they hit Add, not
     // how many businesses went on the list. Show the businesses, and the batches underneath.
     if (k === 'call_add') {
-      const batches = counts[k] || 0;
+      const times = counts[k] || 0;
       const added = (rep.businessesAdded != null ? rep.businessesAdded : 0);
-      return ovTile(meta[0], added, meta[1], 'in ' + batches + ' batch' + (batches === 1 ? '' : 'es'));
+      return ovTile(meta[0], added, 'Records added', 'added ' + times + ' time' + (times === 1 ? '' : 's'));
     }
     return ovTile(meta[0], (counts[k] || 0), meta[1], sub);
   }).join('');
