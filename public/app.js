@@ -3073,15 +3073,23 @@ async function loadDigest() {
       });
       h += '</tbody></table>';
     }
-    if (d.insights && (d.insights.insights.length || d.insights.objections.length)) {
-      h += '<div class="dig-ins"><div class="dig-ins-t">Your top insights, from your own notes</div>';
-      d.insights.insights.forEach((it, i) => {
-        h += '<div class="dig-i"><div class="dig-i-t">' + (i + 1) + '. ' + esc(it.insight || '') + '</div>' +
-          (it.suggestion ? '<div class="dig-i-s"><b>Try today:</b> ' + esc(it.suggestion) + '</div>' : '') + '</div>';
-      });
-      if (d.insights.objections.length) {
+    const ins = d.insights;
+    if (ins && (ins.found.length || ins.advice.length || ins.objections.length)) {
+      h += '<div class="dig-ins">';
+      if (ins.found.length) {
+        h += '<div class="dig-ins-t">' + (ins.scope === 'day' ? ('What I found in your notes from ' + esc(w.name)) : 'What I found in your recent notes') + '</div>';
+        ins.found.forEach((f) => { h += '<div class="dig-f">' + esc(f) + '</div>'; });
+      }
+      if (ins.advice.length) {
+        h += '<div class="dig-ins-t2">My advice for today</div>';
+        ins.advice.forEach((a, i) => {
+          h += '<div class="dig-i"><div class="dig-i-t">' + (i + 1) + '. ' + esc(a.advice || '') + '</div>' +
+            (a.why ? '<div class="dig-i-s"><b>Why:</b> ' + esc(a.why) + '</div>' : '') + '</div>';
+        });
+      }
+      if (ins.objections.length) {
         h += '<div class="dig-ins-t2">Objections you heard, and how to handle them</div>';
-        d.insights.objections.forEach((o) => {
+        ins.objections.forEach((o) => {
           h += '<div class="dig-o"><div class="dig-o-t">“' + esc(o.objection || '') + '”</div><div class="dig-o-h">' + esc(o.handling || '') + '</div></div>';
         });
       }

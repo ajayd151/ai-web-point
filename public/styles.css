@@ -1245,3 +1245,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 @media (max-width: 640px) { .dig-tiles { grid-template-columns:1fr; } .dig-vs { width:auto; } }
 .dig-brand { font-size:11px; font-weight:800; color:#0FB6A8; letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px; }
 .dig-praise { font-size:13px; color:#fff; background:rgba(15,182,168,.18); border-left:3px solid #0FB6A8; padding:8px 11px; border-radius:0 8px 8px 0; margin-top:12px; line-height:1.5; }
+.dig-f { font-size:12.5px; color:#15233B; line-height:1.6; margin-bottom:6px; padding-left:13px; position:relative; }
+.dig-f:before { content:"•"; color:#0FB6A8; font-weight:800; position:absolute; left:0; }
