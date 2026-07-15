@@ -497,22 +497,53 @@ function startClerk() {
 }
 
 let _clerkSyncing = false;
+let _clerkKey = '';      // the user+session we last synced
+let _clerkCookieAt = 0;  // when we last refreshed the app cookie
+// Our cookie lasts 12 hours, so topping it up every half hour is far more than enough.
+const COOKIE_REFRESH_MS = 30 * 60 * 1000;
+
+// Clerk refreshes its session token roughly every MINUTE and fires its listener each time. That
+// used to re-run the whole sign-in path on every tick, and refreshAccess() re-renders the app
+// (including the call list), so anything being typed was wiped about once a minute.
+// Now a tick where nothing actually changed does nothing at all: we only re-render on a real
+// sign-in or a change of identity, and only re-issue the cookie when it is getting old.
 async function syncClerk() {
   if (!window.Clerk) return;
-  if (!window.Clerk.user) { setAuthUI(false); return; }
+  if (!window.Clerk.user) { _clerkKey = ''; _clerkCookieAt = 0; setAuthUI(false); return; }
   if (_clerkSyncing) return;
+
+  const key = window.Clerk.user.id + ':' + ((window.Clerk.session && window.Clerk.session.id) || '');
+  const sameUser = (key === _clerkKey);
+  const cookieFresh = (Date.now() - _clerkCookieAt) < COOKIE_REFRESH_MS;
+  if (authed && sameUser && cookieFresh) return; // routine token refresh, leave the page alone
+
   _clerkSyncing = true;
   try {
     const token = await window.Clerk.session.getToken();
     const r = await fetch('/api/clerk-session', { method: 'POST', headers: { Authorization: 'Bearer ' + token } });
-    if (r.ok) { showLoginMsg('', ''); setAuthUI(true); }
+    if (r.ok) {
+      _clerkKey = key;
+      _clerkCookieAt = Date.now();
+      showLoginMsg('', '');
+      // Re-render ONLY when this is a real sign-in or the person changed. A cookie top-up for the
+      // same person must not disturb what they are doing.
+      if (!authed || !sameUser) setAuthUI(true);
+      else authed = true;
+    }
     else if (r.status === 403) {
+      // genuinely not allowed: this one really does mean sign out
       setAuthUI(false);
       const d = await r.json().catch(() => ({}));
       alert('Your account' + (d.email ? ' (' + d.email + ')' : '') + ' is not enabled yet. We are onboarding accounts gradually, please check back soon.');
       try { window.Clerk.signOut(); } catch (e) {}
-    } else { setAuthUI(false); showLoginMsg('Sign-in could not be completed, please try again.', 'err'); }
-  } catch (e) { setAuthUI(false); }
+    } else if (!(authed && sameUser)) {
+      setAuthUI(false); showLoginMsg('Sign-in could not be completed, please try again.', 'err');
+    }
+    // else: a failed cookie top-up for someone already working. Leave them alone and try again on
+    // the next tick, rather than throwing them out to the gate mid-task over a blip.
+  } catch (e) {
+    if (!(authed && sameUser)) setAuthUI(false);
+  }
   finally { _clerkSyncing = false; }
 }
 
