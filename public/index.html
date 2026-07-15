@@ -700,12 +700,12 @@
           <div id="admin-customers" class="admin-pane hidden">
             <div class="admin-pane-head">
               <h2 class="view-title">👤 Customers</h2>
-              <div class="admin-pane-tools">
-                <input id="cust-search" type="text" placeholder="Search name or email…" />
-                <button id="cust-refresh" class="linkbtn">↻ Refresh</button>
-              </div>
             </div>
             <p class="muted view-sub">Everyone who has signed up, with their plan and status. Click a row to see their details and open their Stripe profile.</p>
+            <div class="admin-pane-tools pane-tools-below">
+              <input id="cust-search" type="text" placeholder="Search name or email…" />
+              <button id="cust-refresh" class="linkbtn">↻ Refresh</button>
+            </div>
             <div id="cust-list" class="cust-list"></div>
           </div>
 
@@ -735,12 +735,12 @@
           <div id="admin-notes" class="admin-pane hidden">
             <div class="admin-pane-head">
               <h2 class="view-title">🗒️ Notes</h2>
-              <div class="admin-pane-tools">
-                <select id="notes-person"><option value="">Everyone</option></select>
-                <button id="notes-refresh" class="linkbtn">↻ Refresh</button>
-              </div>
             </div>
             <p class="muted view-sub">Every note anyone on your team has written, newest first, with who wrote it and on which business. Filter by person to see just theirs.</p>
+            <div class="admin-pane-tools pane-tools-below">
+              <select id="notes-person"><option value="">Everyone</option></select>
+              <button id="notes-refresh" class="linkbtn">↻ Refresh</button>
+            </div>
             <div class="notes-ai">
               <button id="notes-analyze" class="batch-btn">🧠 Analyse last 30 days with AI</button>
               <div id="notes-ai-out" class="notes-ai-out hidden"></div>
@@ -757,17 +757,17 @@
           <div id="admin-feedback" class="admin-pane hidden">
             <div class="admin-pane-head">
               <h2 class="view-title">💬 Feedback</h2>
-              <div class="admin-pane-tools">
-                <select id="fbadm-filter">
-                  <option value="open">Open (new)</option>
-                  <option value="all">All</option>
-                  <option value="done">Done</option>
-                  <option value="ignored">Ignored</option>
-                </select>
-                <button id="fbadm-refresh" class="linkbtn">↻ Refresh</button>
-              </div>
             </div>
             <p class="muted view-sub">Every message sent via the in-app feedback button. Mark items done or ignored, or delete them.</p>
+            <div class="admin-pane-tools pane-tools-below">
+              <select id="fbadm-filter">
+                <option value="open">Open (new)</option>
+                <option value="all">All</option>
+                <option value="done">Done</option>
+                <option value="ignored">Ignored</option>
+              </select>
+              <button id="fbadm-refresh" class="linkbtn">↻ Refresh</button>
+            </div>
             <div id="fbadm-list" class="fbadm-list"></div>
           </div>
 
