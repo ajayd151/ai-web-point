@@ -2436,7 +2436,75 @@ document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('cl
   if (v === 'targets') renderTargets();
   if (v === 'feedback') loadFeedbackAdmin();
   if (v === 'team') loadTeamAdmin();
+  if (v === 'limits') loadLimitsAdmin();
 }));
+
+// ---- Admin > Limits: per-person usage caps, so they can be changed here instead of in Vercel ----
+const LIM_LABELS = { search: '🔍 Searches', generate: '🖼️ Mockups', pounce: '🐆 Websites', prowl: '🐾 Lead research', grammar: '✏️ Grammar fixes' };
+let limData = null;
+async function loadLimitsAdmin() {
+  const box = $('lim-body'); if (!box) return;
+  box.innerHTML = '<p class="muted">Loading...</p>';
+  try {
+    const r = await fetch('/api/admin-limits');
+    const j = await r.json();
+    if (j.error) { box.innerHTML = '<p class="muted">' + esc(j.error) + '</p>'; return; }
+    limData = j;
+    const sub = $('lim-sub');
+    if (sub) sub.textContent = 'How many of each action a person can do per rolling ' + j.windowHours + ' hours. Each person has their own allowance, so one busy day cannot lock anyone else out. Leave a box blank to use the default.';
+    renderLimits();
+  } catch (e) { box.innerHTML = '<p class="muted">Could not load limits.</p>'; }
+}
+function renderLimits() {
+  const box = $('lim-body'); if (!box || !limData) return;
+  const kinds = limData.kinds || [];
+  let h = '<table class="lim-table"><thead><tr><th>Person</th>' +
+    kinds.map((k) => '<th>' + esc(LIM_LABELS[k] || k) + '<span class="lim-def">default ' + (limData.defaults[k]) + '</span></th>').join('') +
+    '<th></th></tr></thead><tbody>';
+  (limData.people || []).forEach((p) => {
+    h += '<tr data-lim-email="' + esc(p.email) + '">' +
+      '<td class="lim-who"><b>' + esc(p.name || p.email) + '</b>' + (p.name ? '<span class="lim-em">' + esc(p.email) + '</span>' : '') +
+      '<span class="lim-type">' + esc(p.type) + '</span></td>' +
+      kinds.map((k) => {
+        const v = (p.limits && p.limits[k] != null) ? p.limits[k] : '';
+        return '<td><input class="lim-in" type="number" min="0" step="1" data-kind="' + esc(k) + '" value="' + esc(String(v)) + '" placeholder="' + (limData.defaults[k]) + '" /></td>';
+      }).join('') +
+      '<td><button class="linkbtn lim-save">Save</button></td></tr>';
+  });
+  h += '</tbody></table>';
+  box.innerHTML = h;
+  box.querySelectorAll('.lim-save').forEach((b) => b.addEventListener('click', () => saveLimitRow(b.closest('tr'))));
+}
+async function saveLimitRow(tr) {
+  if (!tr) return;
+  const email = tr.dataset.limEmail;
+  const limits = {};
+  tr.querySelectorAll('.lim-in').forEach((i) => { limits[i.dataset.kind] = i.value === '' ? null : i.value; });
+  const btn = tr.querySelector('.lim-save');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  try {
+    const r = await fetch('/api/admin-limits', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, limits: limits }),
+    });
+    const j = await r.json();
+    if (j.error) { limMsg(j.error, true); }
+    else {
+      limMsg('Saved for ' + email + '. It applies to their next action.', false);
+      const p = (limData.people || []).find((x) => x.email === email);
+      if (p) p.limits = j.limits || {};
+    }
+  } catch (e) { limMsg('Could not save, please try again.', true); }
+  if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+}
+function limMsg(text, bad) {
+  const m = $('lim-msg'); if (!m) return;
+  m.textContent = text;
+  m.classList.remove('hidden');
+  m.classList.toggle('bad', !!bad);
+  setTimeout(() => { m.classList.add('hidden'); }, 4000);
+}
+{ const b = $('lim-refresh'); if (b) b.addEventListener('click', (e) => { e.preventDefault(); loadLimitsAdmin(); }); }
 
 // ---- Super Admin: per-person Activity report ----
 const ACT_LABELS = {

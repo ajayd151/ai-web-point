@@ -683,6 +683,7 @@
           <button class="admin-navbtn" data-adminview="targets">🎯 Niche Intel</button>
           <button class="admin-navbtn" data-adminview="feedback">💬 Feedback</button>
           <button class="admin-navbtn" data-adminview="team">👥 Team</button>
+          <button class="admin-navbtn" data-adminview="limits">🚦 Limits</button>
           <!-- more admin sections get added here -->
         </aside>
         <section class="admin-content">
@@ -793,6 +794,17 @@
             <div id="team-newcred" class="team-newcred hidden"></div>
             <div id="team-list" class="team-list"></div>
             <p class="muted team-note">After you add someone, they go to sitepounce.com and sign up with that exact email, then they are straight into your shared workspace. Server actions (searching, mockups, websites, call list) are enforced; the rest are hidden in their app.</p>
+          </div>
+
+          <div id="admin-limits" class="admin-pane hidden">
+            <div class="admin-pane-head">
+              <h2 class="view-title">🚦 Limits</h2>
+              <button id="lim-refresh" class="linkbtn">↻ Refresh</button>
+            </div>
+            <p class="muted view-sub" id="lim-sub">How many searches, mockups, websites and lead research runs each person can do in a rolling window. Each person has their own allowance, so one busy day cannot lock anyone else out. Leave a box blank to use the default.</p>
+            <div id="lim-msg" class="login-msg hidden"></div>
+            <div id="lim-body" class="lim-body"></div>
+            <p class="muted team-note">These are cost guards: searches call the Google Places API and mockups and websites call the AI image service, so every one of them costs real money. Raise them as far as you need, just know your bill follows.</p>
           </div>
         </section>
       </div>

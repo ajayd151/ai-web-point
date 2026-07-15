@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
     clearTimeout(t);
     const d = await r.json().catch(() => ({}));
     const out = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-    if (out && out.trim()) { await record('grammar', Date.now(), tenantPrefix(req)); res.status(200).json({ text: out.trim() }); return; }
+    if (out && out.trim()) { await record('grammar', Date.now(), tenantPrefix(req), emailOf(req)); res.status(200).json({ text: out.trim() }); return; }
   } catch (e) { /* fall through to original */ }
   res.status(200).json({ text });
 };
