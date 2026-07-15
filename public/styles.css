@@ -1266,3 +1266,6 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .lim-in { width: 76px; padding: 6px 8px; border: 1px solid #d8e0ea; border-radius: 7px; font-size: 14px; text-align: center; }
 .lim-in:focus { outline: 0; border-color: #0fb6a8; }
 #lim-msg.bad { color: #b91c1c; }
+.lim-used { display: block; font-size: 10.5px; color: #6b7a90; margin-top: 3px; text-align: center; white-space: nowrap; }
+.lim-used.near { color: #b45309; font-weight: 700; }
+.lim-used.out { color: #b91c1c; font-weight: 800; }

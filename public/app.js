@@ -2467,7 +2467,13 @@ function renderLimits() {
       '<span class="lim-type">' + esc(p.type) + '</span></td>' +
       kinds.map((k) => {
         const v = (p.limits && p.limits[k] != null) ? p.limits[k] : '';
-        return '<td><input class="lim-in" type="number" min="0" step="1" data-kind="' + esc(k) + '" value="' + esc(String(v)) + '" placeholder="' + (limData.defaults[k]) + '" /></td>';
+        const cap = (v === '' ? limData.defaults[k] : Number(v));
+        const used = (p.used && p.used[k]) || 0;
+        // colour the usage as it gets close, so a near-empty allowance is obvious at a glance
+        const pct = cap > 0 ? (used / cap) : 0;
+        const cls = pct >= 1 ? 'out' : (pct >= 0.8 ? 'near' : '');
+        return '<td><input class="lim-in" type="number" min="0" step="1" data-kind="' + esc(k) + '" value="' + esc(String(v)) + '" placeholder="' + (limData.defaults[k]) + '" />' +
+          '<span class="lim-used ' + cls + '">' + used + ' / ' + cap + ' used</span></td>';
       }).join('') +
       '<td><button class="linkbtn lim-save">Save</button></td></tr>';
   });
@@ -2493,6 +2499,7 @@ async function saveLimitRow(tr) {
       limMsg('Saved for ' + email + '. It applies to their next action.', false);
       const p = (limData.people || []).find((x) => x.email === email);
       if (p) p.limits = j.limits || {};
+      renderLimits(); // redraw so the "used / cap" figures reflect the new cap
     }
   } catch (e) { limMsg('Could not save, please try again.', true); }
   if (btn) { btn.disabled = false; btn.textContent = 'Save'; }

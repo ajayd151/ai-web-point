@@ -4,9 +4,9 @@
 //         "use the default", which is why blanks are stored as absent rather than zero.
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
-const { ownerEmail } = require('../lib/tenant');
+const { ownerEmail, tenantPrefixFor } = require('../lib/tenant');
 const { listTeamMembers, listUsers, listRateLimits, setRateLimits, logActivity } = require('../lib/db');
-const { globalLimit, WINDOW_HOURS, RATE_KINDS } = require('../lib/ratelimit');
+const { globalLimit, usageByPerson, personKey, WINDOW_HOURS, RATE_KINDS } = require('../lib/ratelimit');
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -59,11 +59,24 @@ module.exports = async (req, res) => {
     if (map[e]) map[e].limits = r.limits || {};
   });
 
+  const people = Object.values(map);
+
+  // How much of the current window each person has used. A team member's usage lives under the
+  // OWNER's prefix (they share the workspace), so resolve them there rather than to a prefix of
+  // their own, which would always read zero.
+  const isTeam = (p) => p.type === 'Team' || p.type === 'Team (suspended)' || p.type === 'You';
+  const prefixOf = (p) => (isTeam(p) ? '' : tenantPrefixFor(p.email));
+  const now = Date.now();
+  const wanted = Array.from(new Set(people.map(prefixOf)));
+  const usage = {};
+  await Promise.all(wanted.map(async (pre) => { usage[pre] = await usageByPerson(pre, now); }));
+  people.forEach((p) => { p.used = (usage[prefixOf(p)] || {})[personKey(p.email)] || {}; });
+
   const defaults = {};
   RATE_KINDS.forEach((k) => { defaults[k] = globalLimit(k); });
 
   res.status(200).json({
-    people: Object.values(map),
+    people: people,
     kinds: RATE_KINDS,
     defaults: defaults,
     windowHours: WINDOW_HOURS,

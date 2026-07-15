@@ -27,24 +27,49 @@
     },
     "api/digest.js": {
       "maxDuration": 30
+    },
+    "api/admin-limits.js": {
+      "maxDuration": 30
     }
   },
   "crons": [
-    { "path": "/api/cron-digest", "schedule": "0 7-12 * * 1-5" }
+    {
+      "path": "/api/cron-digest",
+      "schedule": "0 7-12 * * 1-5"
+    }
   ],
   "rewrites": [
-    { "source": "/v/:slug", "destination": "/api/view?slug=:slug" },
-    { "source": "/i/:slug", "destination": "/api/img?slug=:slug" },
-    { "source": "/s/:slug", "destination": "/api/site?slug=:slug" }
+    {
+      "source": "/v/:slug",
+      "destination": "/api/view?slug=:slug"
+    },
+    {
+      "source": "/i/:slug",
+      "destination": "/api/img?slug=:slug"
+    },
+    {
+      "source": "/s/:slug",
+      "destination": "/api/site?slug=:slug"
+    }
   ],
   "headers": [
     {
       "source": "/(index.html)?",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     },
     {
       "source": "/:file(app.js|styles.css|data.js)",
-      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
     }
   ]
 }
