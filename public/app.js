@@ -2619,80 +2619,100 @@ const ACT_UNIQUE_ACTIONS = { status_update: 1, mockup: 1, pounce: 1, prowl: 1, m
 //     start, a long lunch, an early finish.
 //  2. By day, so a quiet day stands out at a glance.
 // Both plot unique businesses worked (the meaningful number) with total activity behind it.
-function actBar(label, uniq, total, maxU, maxT, opts) {
+// One column = one hour (or day), with a separate bar per series side by side, each showing its
+// own value. Series that are all zero across the chart are dropped rather than drawn as a row of
+// empty slots.
+const ACT_SERIES = [
+  { key: 'uniq', label: 'Unique businesses', cls: 'sU' },
+  { key: 'n', label: 'All actions', cls: 'sT' },
+  { key: 'updates', label: 'Status updates', cls: 'sS' },
+];
+function actGroup(label, row, series, max, opts) {
   const o = opts || {};
-  const hU = maxU > 0 ? Math.round((uniq / maxU) * 100) : 0;
-  const hT = maxT > 0 ? Math.round((total / maxT) * 100) : 0;
-  const empty = (!total && !uniq);
-  const tip = label + ': ' + uniq + ' business' + (uniq === 1 ? '' : 'es') + ', ' + total + ' action' + (total === 1 ? '' : 's');
-  // Value above each bar: businesses in teal, total actions in grey beneath it. Blank on an empty
-  // hour, so a row of zeros does not drown out the real numbers.
-  const val = empty ? '' :
-    '<span class="acht-vu">' + uniq + '</span>' + (total !== uniq ? '<span class="acht-vt">' + total + '</span>' : '');
+  const empty = !series.some((s) => (row[s.key] || 0) > 0);
+  const tip = label + ' · ' + series.map((s) => (row[s.key] || 0) + ' ' + s.label.toLowerCase()).join(', ');
+  const bars = series.map((s) => {
+    const v = row[s.key] || 0;
+    const h = max > 0 ? Math.round((v / max) * 100) : 0;
+    return '<div class="acht-b ' + s.cls + '">' +
+      '<span class="acht-n">' + (v || '') + '</span>' +
+      '<i style="height:' + h + '%"></i>' +
+      '</div>';
+  }).join('');
   return '<div class="acht-col' + (empty && o.inSpan ? ' gap' : '') + '" title="' + esc(tip) + '">' +
-    '<div class="acht-v">' + val + '</div>' +
-    '<div class="acht-bars">' +
-      '<div class="acht-t" style="height:' + hT + '%"></div>' +
-      '<div class="acht-u" style="height:' + hU + '%"></div>' +
-    '</div>' +
-    '<div class="acht-x">' + esc(o.tick ? label : '') + '</div>' +
+    '<div class="acht-bars">' + bars + '</div>' +
+    '<div class="acht-x">' + esc(label) + '</div>' +
     '</div>';
+}
+function actLegend(series) {
+  return '<div class="acht-key">' + series.map((s) => '<span><i class="' + s.cls + '"></i> ' + esc(s.label) + '</span>').join('') + '</div>';
 }
 function actCharts(rep) {
   const byHour = rep.byHour || [];
   const byDay = rep.byDay || [];
+  const byStatus = rep.byStatus || [];
   if (!byHour.length && !byDay.length) return '';
 
-  // ---- hour of day ----
+  // ---- hour of day: every hour 00 to 23, so the shape of the day is honest ----
   const H = {}; byHour.forEach((r) => { H[Number(r.hour)] = r; });
-  const hoursWithWork = Object.keys(H).map(Number);
-  // show the working span they actually use (padded), not a flat 00-23 that is mostly empty
-  const lo = Math.max(0, Math.min(8, ...(hoursWithWork.length ? hoursWithWork : [8])) - 1);
-  const hi = Math.min(23, Math.max(18, ...(hoursWithWork.length ? hoursWithWork : [18])) + 1);
-  let maxU = 0; let maxT = 0;
-  byHour.forEach((r) => { maxU = Math.max(maxU, r.uniq || 0); maxT = Math.max(maxT, r.n || 0); });
-  // Only an empty hour BETWEEN their first and last action is a real gap. An empty hour before
-  // they started or after they finished is just outside their day, not a hole in it.
-  const worked = hoursWithWork.filter((h) => (H[h].n || 0) > 0);
+  const hours = []; for (let h = 0; h < 24; h++) hours.push(H[h] || { hour: h, uniq: 0, n: 0, updates: 0 });
+  // drop a series that is zero everywhere rather than draw an empty slot in every column
+  const hSeries = ACT_SERIES.filter((s) => hours.some((r) => (r[s.key] || 0) > 0));
+  let hMax = 0; hours.forEach((r) => hSeries.forEach((s) => { hMax = Math.max(hMax, r[s.key] || 0); }));
+  const worked = hours.filter((r) => (r.n || 0) > 0).map((r) => r.hour);
   const firstH = worked.length ? Math.min(...worked) : null;
   const lastH = worked.length ? Math.max(...worked) : null;
   const gaps = [];
   if (firstH != null) for (let h = firstH; h <= lastH; h++) { if (!H[h] || !H[h].n) gaps.push(h); }
-  let hCols = '';
-  for (let h = lo; h <= hi; h++) {
-    const r = H[h] || { uniq: 0, n: 0 };
-    hCols += actBar(String(h).padStart(2, '0'), r.uniq || 0, r.n || 0, maxU, maxT,
-      { tick: (h % 3 === 0), inSpan: (firstH != null && h > firstH && h < lastH) });
-  }
+  const hCols = hours.map((r) => actGroup(String(r.hour).padStart(2, '0'), r, hSeries, hMax,
+    { inSpan: (firstH != null && r.hour > firstH && r.hour < lastH) })).join('');
+  const hh = (h) => String(h).padStart(2, '0') + ':00';
   const gapNote = gaps.length
-    ? ('Quiet hours between ' + String(firstH).padStart(2, '0') + ':00 and ' + String(lastH).padStart(2, '0') + ':59: ' + gaps.map((h) => String(h).padStart(2, '0') + ':00').join(', '))
-    : (firstH != null ? ('Worked solidly from ' + String(firstH).padStart(2, '0') + ':00 to ' + String(lastH).padStart(2, '0') + ':59, no gaps.') : '');
+    ? ('Quiet hours between ' + hh(firstH) + ' and ' + hh(lastH) + ': ' + gaps.map(hh).join(', '))
+    : (firstH != null ? ('Worked solidly from ' + hh(firstH) + ' to ' + String(lastH).padStart(2, '0') + ':59, no gaps.') : '');
 
   // ---- by day ----
-  let dMaxU = 0; let dMaxT = 0;
-  byDay.forEach((r) => { dMaxU = Math.max(dMaxU, r.uniq || 0); dMaxT = Math.max(dMaxT, r.n || 0); });
-  const every = Math.max(1, Math.ceil(byDay.length / 12)); // keep the x labels readable
-  const dCols = byDay.map((r, i) => {
+  const dSeries = ACT_SERIES.filter((s) => byDay.some((r) => (r[s.key] || 0) > 0));
+  let dMax = 0; byDay.forEach((r) => dSeries.forEach((s) => { dMax = Math.max(dMax, r[s.key] || 0); }));
+  const dCols = byDay.map((r) => {
     const d = new Date(r.day + 'T12:00:00');
     const lbl = isNaN(d) ? String(r.day) : (d.getDate() + ' ' + d.toLocaleString('en-GB', { month: 'short' }));
-    return actBar(lbl, r.uniq || 0, r.n || 0, dMaxU, dMaxT, { tick: (i % every === 0) });
+    return actGroup(lbl, r, dSeries, dMax, {});
   }).join('');
 
-  const legend = '<div class="acht-key">' +
-    '<span><i class="k-u"></i> Unique businesses</span><span><i class="k-t"></i> All actions</span></div>';
+  // ---- by status ----
+  let stHtml = '';
+  if (byStatus.length) {
+    const stMax = Math.max.apply(null, byStatus.map((r) => r.uniq || 0));
+    const total = byStatus.reduce((a, r) => a + (r.uniq || 0), 0);
+    stHtml = '<div class="acht-card">' +
+      '<div class="acht-head"><div class="ov-rev-head">By status</div></div>' +
+      '<p class="muted acht-sub">Where they moved businesses to. ' + total + ' status change' + (total === 1 ? '' : 's') + ' in this period.</p>' +
+      '<div class="acst">' + byStatus.map((r) => {
+        const lbl = (LEAD_STATUSES.find((o) => o[0] === r.status) || [null, r.status || 'Cleared'])[1];
+        const w = stMax > 0 ? Math.round(((r.uniq || 0) / stMax) * 100) : 0;
+        return '<div class="acst-row" title="' + esc(lbl + ': ' + (r.uniq || 0) + ' businesses, ' + (r.n || 0) + ' changes') + '">' +
+          '<div class="acst-l">' + esc(lbl) + '</div>' +
+          '<div class="acst-track"><i class="st-' + esc(r.status || 'cleared') + '" style="width:' + Math.max(w, 2) + '%"></i></div>' +
+          '<div class="acst-n">' + (r.uniq || 0) + '</div>' +
+          '</div>';
+      }).join('') + '</div>' +
+      '</div>';
+  }
 
   return '<div class="acht-wrap">' +
     '<div class="acht-card">' +
-      '<div class="acht-head"><div class="ov-rev-head">Hour by hour</div>' + legend + '</div>' +
-      '<p class="muted acht-sub">Pooled across the whole period, in UK time. This is where the gaps show up.</p>' +
-      '<div class="acht">' + hCols + '</div>' +
+      '<div class="acht-head"><div class="ov-rev-head">Hour by hour</div>' + actLegend(hSeries) + '</div>' +
+      '<p class="muted acht-sub">Every hour of the day, pooled across the period, in UK time. This is where the gaps show up.</p>' +
+      '<div class="acht acht-24">' + hCols + '</div>' +
       (gapNote ? '<p class="acht-note">' + esc(gapNote) + '</p>' : '') +
     '</div>' +
     (byDay.length > 1 ? ('<div class="acht-card">' +
-      '<div class="acht-head"><div class="ov-rev-head">Day by day</div>' + legend + '</div>' +
+      '<div class="acht-head"><div class="ov-rev-head">Day by day</div>' + actLegend(dSeries) + '</div>' +
       '<p class="muted acht-sub">A short bar is a quiet day. Nothing at all means they did not work that day.</p>' +
       '<div class="acht">' + dCols + '</div>' +
     '</div>') : '') +
+    stHtml +
     '</div>';
 }
 function renderActivityReport(rep) {

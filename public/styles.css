@@ -1295,3 +1295,34 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .acht-v { height: 26px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; line-height: 1.15; }
 .acht-vu { font-size: 11px; font-weight: 800; color: #0b7d74; }
 .acht-vt { font-size: 9.5px; font-weight: 700; color: #93a3b6; }
+
+/* ---- grouped bars: one bar per series, every value printed ---- */
+.acht { height: 168px; align-items: stretch; gap: 4px; }
+.acht-24 { gap: 2px; min-width: 900px; } /* all 24 hours: scroll rather than squash */
+.acht-col { justify-content: flex-end; }
+.acht-bars { align-items: flex-end; gap: 2px; width: 100%; }
+.acht-b { flex: 1 1 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; }
+.acht-b i { display: block; width: 100%; border-radius: 3px 3px 0 0; min-height: 1px; }
+.acht-n { font-size: 9.5px; font-weight: 800; line-height: 1.1; margin-bottom: 2px; color: #64748b; }
+.acht-b.sU i { background: #0fb6a8; } .acht-b.sU .acht-n { color: #0b7d74; }
+.acht-b.sT i { background: #c7d7e6; } .acht-b.sT .acht-n { color: #7b8ea3; }
+.acht-b.sS i { background: #f0a83c; } .acht-b.sS .acht-n { color: #b45309; }
+.acht-key i.sU { background: #0fb6a8; } .acht-key i.sT { background: #c7d7e6; } .acht-key i.sS { background: #f0a83c; }
+.acht-col.gap .acht-bars { background: repeating-linear-gradient(90deg, #fde8e8 0 4px, transparent 4px 8px); border-radius: 3px; }
+
+/* ---- by status ---- */
+.acst { display: grid; gap: 7px; }
+.acst-row { display: grid; grid-template-columns: 150px 1fr 34px; align-items: center; gap: 10px; }
+.acst-l { font-size: 13px; color: #15233b; font-weight: 600; }
+.acst-track { background: #f1f5f9; border-radius: 6px; height: 16px; overflow: hidden; }
+.acst-track i { display: block; height: 100%; border-radius: 6px; background: #0fb6a8; }
+.acst-track i.st-meeting-booked { background: #4338ca; }
+.acst-track i.st-appointment-link-sent { background: #0e7490; }
+.acst-track i.st-interested { background: #047857; }
+.acst-track i.st-not-interested, .acst-track i.st-declined { background: #dc7b7b; }
+.acst-track i.st-no-answer { background: #a78bda; }
+.acst-track i.st-callback { background: #e0a33c; }
+.acst-track i.st-won { background: #15803d; }
+.acst-track i.st-lost, .acst-track i.st-invalid-phone { background: #94a3b8; }
+.acst-n { font-size: 14px; font-weight: 800; color: #15233b; text-align: right; }
+@media (max-width: 640px) { .acst-row { grid-template-columns: 110px 1fr 30px; } }
