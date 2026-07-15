@@ -1251,3 +1251,4 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .dig-next b { color:#0FB6A8; }
 .dig-ask { font-size:12px; color:#15233B; line-height:1.6; margin-top:4px; }
 .dig-ask b { color:#0FB6A8; }
+.lchip.st-appointment-link-sent { background: #ecfeff; color: #0e7490; border-color: #a5f3fc; }

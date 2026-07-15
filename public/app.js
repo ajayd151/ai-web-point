@@ -2512,7 +2512,8 @@ function renderActivityReport(rep) {
   (rep.counts || []).forEach((c) => { counts[c.action] = c.n; uniq[c.action] = c.uniq; });
   // headline tiles: unique businesses + pace, then per-action
   let tiles =
-    ovTile('🎯', (rep.meetingsBooked != null ? rep.meetingsBooked : 0), 'Meetings booked', 'Prospects moved to Meeting booked') +
+    ovTile('🎯', (rep.meetingsBooked != null ? rep.meetingsBooked : 0), 'Appointments booked', 'Prospects moved to Appointment booked') +
+    ovTile('🔗', (rep.linksSent != null ? rep.linksSent : 0), 'Appointment links sent', 'Prospects moved to Appointment link sent') +
     ovTile('🏢', (rep.uniqueBusinesses != null ? rep.uniqueBusinesses : 0), 'Unique businesses', 'Distinct prospects worked') +
     ovTile('⏱️', actGap(rep.avgGapMin), 'Avg gap between clients', 'Time before the next prospect');
   tiles += Object.keys(ACT_LABELS).map((k) => {
@@ -3064,7 +3065,7 @@ async function loadDigest() {
       '<div class="dig-tiles">' +
       '<div class="dig-tile"><div class="dig-n">' + d.total + '</div><div class="dig-l">Activities</div>' + digMove(d.total, d.prevTotal, w.cname) + '</div>' +
       '<div class="dig-tile"><div class="dig-n">' + d.uniqueBusinesses + '</div><div class="dig-l">Businesses worked</div>' + digMove(d.uniqueBusinesses, d.prevUniqueBusinesses, w.cname) + '</div>' +
-      '<div class="dig-tile' + (d.meetingsBooked ? ' win' : '') + '"><div class="dig-n">' + d.meetingsBooked + '</div><div class="dig-l">Meetings booked</div>' + digMove(d.meetingsBooked, d.prevMeetingsBooked, w.cname) + '</div>' +
+      '<div class="dig-tile' + (d.meetingsBooked ? ' win' : '') + '"><div class="dig-n">' + d.meetingsBooked + '</div><div class="dig-l">Appointments booked</div>' + digMove(d.meetingsBooked, d.prevMeetingsBooked, w.cname) + '</div>' +
       '</div>';
     if (d.rows && d.rows.length) {
       h += '<table class="dig-table"><tbody>';
@@ -3550,7 +3551,9 @@ function renderLeadStatus(l, dossier, pounce) {
   const bk = q('.lead-block'); if (bk) bk.addEventListener('click', () => confirmBlock(l, () => { $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); }));
   const ub = q('.lead-unblock'); if (ub) ub.addEventListener('click', () => { unblockKey(blockKey(l)); $('lead-modal').classList.add('hidden'); refreshLeadSurfaces(); });
 }
-const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"], ['interested', 'Interested'], ['meeting-booked', 'Meeting booked'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'], ['invalid-phone', 'Invalid phone'], ['won', 'Won, customer'], ['lost', 'Lost']];
+// 'meeting-booked' displays as "Appointment booked" (GoHighLevel wording). The internal value is
+// deliberately unchanged so past activity_log rows and notes still match, same as 'declined'.
+const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"], ['interested', 'Interested'], ['appointment-link-sent', 'Appointment link sent'], ['meeting-booked', 'Appointment booked'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'], ['invalid-phone', 'Invalid phone'], ['won', 'Won, customer'], ['lost', 'Lost']];
 function statusLabel(s) { const f = LEAD_STATUSES.find((x) => x[0] === (s || '')); return f ? f[1] : 'New'; }
 function statusClass(s) { return 'st-' + (s || 'new'); }
 function renderLeadNotes(l, note) {
@@ -3883,7 +3886,7 @@ const CALL_STATUS_FILTERS = [
   ['tocall', 'To call (needs a call)'], ['all', 'All'],
   ['prowled', '🐾 Already prowled'], ['notprowled', 'Not prowled yet'],
   ['new', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"],
-  ['callback', 'Call back'], ['interested', 'Interested'], ['meeting-booked', 'Meeting booked'], ['won', 'Won, customer'],
+  ['callback', 'Call back'], ['interested', 'Interested'], ['appointment-link-sent', 'Appointment link sent'], ['meeting-booked', 'Appointment booked'], ['won', 'Won, customer'],
   ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'],
   ['invalid-phone', 'Invalid phone'], ['lost', 'Lost'],
 ];
