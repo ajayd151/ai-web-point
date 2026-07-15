@@ -1206,3 +1206,42 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .nai-sec li { font-size: 14px; color: var(--ink); line-height: 1.55; margin-bottom: 3px; }
 
 .act-date { border: 1px solid var(--line); border-radius: 8px; padding: 6px 9px; font-size: 13px; color: var(--ink); font-family: inherit; }
+
+/* ---- morning summary card (mirrors the 8am digest email) ---- */
+.digest { background:#fff; border:1px solid #E4EAF1; border-radius:16px; overflow:hidden; margin-bottom:16px; }
+.digest.hidden { display:none; }
+.dig-head { background:#15233B; padding:18px 20px; }
+.dig-hi { font-size:20px; font-weight:800; color:#fff; }
+.dig-sub { font-size:14px; color:#9DB0C9; margin-top:3px; }
+.dig-sub b { color:#0FB6A8; }
+.dig-hours { margin:14px 16px 4px; background:#EAFBF9; border-radius:12px; padding:12px 14px; font-size:14px; color:#15233B; line-height:1.6; }
+.dig-teal { color:#0FB6A8; }
+.dig-mut { color:#6B7A90; font-size:12px; }
+.dig-tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; padding:10px 16px 4px; }
+.dig-tile { background:#F4F7FA; border-radius:12px; padding:14px 10px; text-align:center; }
+.dig-tile.win { background:#EAFBF9; }
+.dig-n { font-size:30px; font-weight:800; color:#15233B; line-height:1.1; }
+.dig-l { font-size:11px; font-weight:700; color:#6B7A90; text-transform:uppercase; letter-spacing:.04em; margin:5px 0 4px; }
+.dig-chip { display:inline-block; font-size:11px; font-weight:700; }
+.dig-chip.up { color:#17A673; }
+.dig-chip.down { color:#E0913A; }
+.dig-chip.level { color:#6B7A90; }
+.dig-table { width:calc(100% - 32px); margin:12px 16px 4px; border:1px solid #E4EAF1; border-radius:12px; border-collapse:separate; border-spacing:0; overflow:hidden; }
+.dig-table td { padding:10px 12px; font-size:14px; color:#15233B; border-top:1px solid #E4EAF1; }
+.dig-table tr:first-child td { border-top:0; }
+.dig-table tr:nth-child(even) td { background:#FBFCFE; }
+.dig-num { text-align:right; font-weight:800; font-size:16px; width:60px; }
+.dig-vs { text-align:right; width:170px; }
+.dig-ins { margin:14px 16px 18px; background:#FFF8EC; border-radius:12px; padding:14px 16px; }
+.dig-ins-t, .dig-ins-t2 { font-size:14px; font-weight:800; color:#15233B; margin-bottom:9px; }
+.dig-ins-t2 { margin-top:12px; }
+.dig-i { margin-bottom:10px; }
+.dig-i-t { font-size:13px; font-weight:700; color:#15233B; line-height:1.5; }
+.dig-i-s { font-size:12px; color:#6B7A90; line-height:1.6; margin-top:2px; }
+.dig-i-s b { color:#0FB6A8; }
+.dig-o { margin-bottom:9px; padding-left:9px; border-left:3px solid #0FB6A8; }
+.dig-o-t { font-size:12px; font-weight:700; color:#15233B; }
+.dig-o-h { font-size:12px; color:#6B7A90; line-height:1.6; margin-top:1px; }
+@media (max-width: 640px) { .dig-tiles { grid-template-columns:1fr; } .dig-vs { width:auto; } }
+.dig-brand { font-size:11px; font-weight:800; color:#0FB6A8; letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px; }
+.dig-praise { font-size:13px; color:#fff; background:rgba(15,182,168,.18); border-left:3px solid #0FB6A8; padding:8px 11px; border-radius:0 8px 8px 0; margin-top:12px; line-height:1.5; }

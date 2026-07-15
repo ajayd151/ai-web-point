@@ -2097,6 +2097,7 @@ function showView(name) {
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'deepdossier') ddShowPane('search'); // always open on the search sub-tab
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
+  if (name === 'performance') loadDigest(); // the same morning summary the 8am email sends
   if (name === 'messages') { renderBlocked(); updateWaToday(); }
   if (name === 'leads') loadLeads();
   if (name === 'websites') loadWebsites();
@@ -3033,6 +3034,63 @@ document.querySelectorAll('.dash-rbtn').forEach((b) => b.addEventListener('click
   loadDashboard(currentDashDays);
 }));
 $('dash-csv').addEventListener('click', () => { if (lastDashboard) exportDashboardCsv(lastDashboard.rows || []); });
+
+// ---- morning summary card (mirrors the 8am digest email, same builder server-side) ----
+let digestLoaded = false;
+// Up is celebrated. Down stays factual and calm (no alarm colour), to match the email tone.
+function digMove(now, prev, cname) {
+  const d = (Number(now) || 0) - (Number(prev) || 0);
+  if (d > 0) return '<span class="dig-chip up">▲ ' + d + ' more than ' + esc(cname) + '</span>';
+  if (d < 0) return '<span class="dig-chip level">' + Math.abs(d) + ' fewer than ' + esc(cname) + '</span>';
+  return '<span class="dig-chip level">same as ' + esc(cname) + '</span>';
+}
+async function loadDigest() {
+  const box = $('digest-card');
+  if (!box || digestLoaded) return;
+  digestLoaded = true;
+  try {
+    const r = await fetch('/api/digest');
+    const j = await r.json();
+    const d = j && j.digest;
+    if (!d || d.empty) { box.classList.add('hidden'); return; }
+    const w = d.window;
+    let h = '<div class="dig-head">' +
+      '<div class="dig-brand">💡 Daily Insights</div>' +
+      '<div class="dig-hi">Good morning</div>' +
+      '<div class="dig-sub">Here is how <b>' + esc(w.label) + '</b> went for you.</div>' +
+      (d.praise ? '<div class="dig-praise">' + esc(d.praise) + '</div>' : '') +
+      '</div>' +
+      '<div class="dig-hours">You started at <b>' + esc(d.start || '') + '</b> and your last activity was <b>' + esc(d.end || '') + '</b>, so you were on it for <b class="dig-teal">' + esc(d.hoursLabel) + '</b>. <span class="dig-mut">(' + esc(w.cname) + ': ' + esc(d.prevHoursLabel) + ')</span></div>' +
+      '<div class="dig-tiles">' +
+      '<div class="dig-tile"><div class="dig-n">' + d.total + '</div><div class="dig-l">Activities</div>' + digMove(d.total, d.prevTotal, w.cname) + '</div>' +
+      '<div class="dig-tile"><div class="dig-n">' + d.uniqueBusinesses + '</div><div class="dig-l">Businesses worked</div>' + digMove(d.uniqueBusinesses, d.prevUniqueBusinesses, w.cname) + '</div>' +
+      '<div class="dig-tile' + (d.meetingsBooked ? ' win' : '') + '"><div class="dig-n">' + d.meetingsBooked + '</div><div class="dig-l">Meetings booked</div>' + digMove(d.meetingsBooked, d.prevMeetingsBooked, w.cname) + '</div>' +
+      '</div>';
+    if (d.rows && d.rows.length) {
+      h += '<table class="dig-table"><tbody>';
+      d.rows.forEach((r2) => {
+        h += '<tr><td>' + esc(r2.label) + '</td><td class="dig-num">' + r2.n + '</td><td class="dig-vs">' + digMove(r2.n, r2.prev, w.cname) + '</td></tr>';
+      });
+      h += '</tbody></table>';
+    }
+    if (d.insights && (d.insights.insights.length || d.insights.objections.length)) {
+      h += '<div class="dig-ins"><div class="dig-ins-t">Your top insights, from your own notes</div>';
+      d.insights.insights.forEach((it, i) => {
+        h += '<div class="dig-i"><div class="dig-i-t">' + (i + 1) + '. ' + esc(it.insight || '') + '</div>' +
+          (it.suggestion ? '<div class="dig-i-s"><b>Try today:</b> ' + esc(it.suggestion) + '</div>' : '') + '</div>';
+      });
+      if (d.insights.objections.length) {
+        h += '<div class="dig-ins-t2">Objections you heard, and how to handle them</div>';
+        d.insights.objections.forEach((o) => {
+          h += '<div class="dig-o"><div class="dig-o-t">“' + esc(o.objection || '') + '”</div><div class="dig-o-h">' + esc(o.handling || '') + '</div></div>';
+        });
+      }
+      h += '</div>';
+    }
+    box.innerHTML = h;
+    box.classList.remove('hidden');
+  } catch (e) { box.classList.add('hidden'); }
+}
 
 async function loadDashboard(days) {
   if (days == null) days = currentDashDays;
