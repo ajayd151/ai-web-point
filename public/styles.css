@@ -1271,3 +1271,22 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .lim-used.out { color: #b91c1c; font-weight: 800; }
 /* Toolbar sitting under the title + intro line rather than beside the title. */
 .admin-pane-tools.pane-tools-below { flex-wrap: wrap; margin: 0 0 18px; }
+
+/* ---- Activity charts (hour by hour / day by day) ---- */
+.acht-wrap { display: grid; gap: 16px; margin-top: 20px; }
+.acht-card { background: #fff; border: 1px solid #e4eaf1; border-radius: 14px; padding: 14px 16px 10px; }
+.acht-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.acht-sub { margin: 2px 0 12px; font-size: 12.5px; }
+.acht-key { display: flex; gap: 14px; font-size: 11.5px; color: #6b7a90; font-weight: 700; }
+.acht-key span { display: inline-flex; align-items: center; gap: 5px; }
+.acht-key i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.acht-key .k-u { background: #0fb6a8; }
+.acht-key .k-t { background: #d7e3ee; }
+.acht { display: flex; align-items: flex-end; gap: 3px; height: 132px; overflow-x: auto; padding-bottom: 2px; }
+.acht-col { flex: 1 1 0; min-width: 16px; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.acht-bars { position: relative; width: 100%; flex: 1; display: flex; align-items: flex-end; justify-content: center; }
+.acht-t { position: absolute; bottom: 0; width: 100%; background: #d7e3ee; border-radius: 4px 4px 0 0; min-height: 1px; }
+.acht-u { position: relative; width: 62%; background: #0fb6a8; border-radius: 4px 4px 0 0; min-height: 0; }
+.acht-col.gap .acht-bars:after { content: ""; position: absolute; inset: auto 0 0 0; height: 3px; background: repeating-linear-gradient(90deg, #f0b4b4 0 4px, transparent 4px 8px); border-radius: 2px; }
+.acht-x { font-size: 10px; color: #8494a8; margin-top: 5px; height: 12px; white-space: nowrap; }
+.acht-note { margin: 10px 0 4px; font-size: 12.5px; color: #b45309; font-weight: 600; }

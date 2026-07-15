@@ -2612,6 +2612,84 @@ function actGap(min) {
 }
 // actions where the "unique" count = unique businesses is meaningful
 const ACT_UNIQUE_ACTIONS = { status_update: 1, mockup: 1, pounce: 1, prowl: 1, message_sent: 1 };
+
+// ---- Activity charts: where the work actually happened, and where the gaps are ----------
+// Plain CSS bars, no chart library, to match the rest of the stack. Two views:
+//  1. By hour of day, pooled across the window. This is the one that shows the gaps: a late
+//     start, a long lunch, an early finish.
+//  2. By day, so a quiet day stands out at a glance.
+// Both plot unique businesses worked (the meaningful number) with total activity behind it.
+function actBar(label, uniq, total, maxU, maxT, opts) {
+  const o = opts || {};
+  const hU = maxU > 0 ? Math.round((uniq / maxU) * 100) : 0;
+  const hT = maxT > 0 ? Math.round((total / maxT) * 100) : 0;
+  const empty = (!total && !uniq);
+  const tip = label + ': ' + uniq + ' business' + (uniq === 1 ? '' : 'es') + ', ' + total + ' action' + (total === 1 ? '' : 's');
+  return '<div class="acht-col' + (empty && o.inSpan ? ' gap' : '') + '" title="' + esc(tip) + '">' +
+    '<div class="acht-bars">' +
+      '<div class="acht-t" style="height:' + hT + '%"></div>' +
+      '<div class="acht-u" style="height:' + hU + '%"></div>' +
+    '</div>' +
+    '<div class="acht-x">' + esc(o.tick ? label : '') + '</div>' +
+    '</div>';
+}
+function actCharts(rep) {
+  const byHour = rep.byHour || [];
+  const byDay = rep.byDay || [];
+  if (!byHour.length && !byDay.length) return '';
+
+  // ---- hour of day ----
+  const H = {}; byHour.forEach((r) => { H[Number(r.hour)] = r; });
+  const hoursWithWork = Object.keys(H).map(Number);
+  // show the working span they actually use (padded), not a flat 00-23 that is mostly empty
+  const lo = Math.max(0, Math.min(8, ...(hoursWithWork.length ? hoursWithWork : [8])) - 1);
+  const hi = Math.min(23, Math.max(18, ...(hoursWithWork.length ? hoursWithWork : [18])) + 1);
+  let maxU = 0; let maxT = 0;
+  byHour.forEach((r) => { maxU = Math.max(maxU, r.uniq || 0); maxT = Math.max(maxT, r.n || 0); });
+  // Only an empty hour BETWEEN their first and last action is a real gap. An empty hour before
+  // they started or after they finished is just outside their day, not a hole in it.
+  const worked = hoursWithWork.filter((h) => (H[h].n || 0) > 0);
+  const firstH = worked.length ? Math.min(...worked) : null;
+  const lastH = worked.length ? Math.max(...worked) : null;
+  const gaps = [];
+  if (firstH != null) for (let h = firstH; h <= lastH; h++) { if (!H[h] || !H[h].n) gaps.push(h); }
+  let hCols = '';
+  for (let h = lo; h <= hi; h++) {
+    const r = H[h] || { uniq: 0, n: 0 };
+    hCols += actBar(String(h).padStart(2, '0'), r.uniq || 0, r.n || 0, maxU, maxT,
+      { tick: (h % 3 === 0), inSpan: (firstH != null && h > firstH && h < lastH) });
+  }
+  const gapNote = gaps.length
+    ? ('Quiet hours between ' + String(firstH).padStart(2, '0') + ':00 and ' + String(lastH).padStart(2, '0') + ':59: ' + gaps.map((h) => String(h).padStart(2, '0') + ':00').join(', '))
+    : (firstH != null ? ('Worked solidly from ' + String(firstH).padStart(2, '0') + ':00 to ' + String(lastH).padStart(2, '0') + ':59, no gaps.') : '');
+
+  // ---- by day ----
+  let dMaxU = 0; let dMaxT = 0;
+  byDay.forEach((r) => { dMaxU = Math.max(dMaxU, r.uniq || 0); dMaxT = Math.max(dMaxT, r.n || 0); });
+  const every = Math.max(1, Math.ceil(byDay.length / 12)); // keep the x labels readable
+  const dCols = byDay.map((r, i) => {
+    const d = new Date(r.day + 'T12:00:00');
+    const lbl = isNaN(d) ? String(r.day) : (d.getDate() + ' ' + d.toLocaleString('en-GB', { month: 'short' }));
+    return actBar(lbl, r.uniq || 0, r.n || 0, dMaxU, dMaxT, { tick: (i % every === 0) });
+  }).join('');
+
+  const legend = '<div class="acht-key">' +
+    '<span><i class="k-u"></i> Unique businesses</span><span><i class="k-t"></i> All actions</span></div>';
+
+  return '<div class="acht-wrap">' +
+    '<div class="acht-card">' +
+      '<div class="acht-head"><div class="ov-rev-head">Hour by hour</div>' + legend + '</div>' +
+      '<p class="muted acht-sub">Pooled across the whole period, in UK time. This is where the gaps show up.</p>' +
+      '<div class="acht">' + hCols + '</div>' +
+      (gapNote ? '<p class="acht-note">' + esc(gapNote) + '</p>' : '') +
+    '</div>' +
+    (byDay.length > 1 ? ('<div class="acht-card">' +
+      '<div class="acht-head"><div class="ov-rev-head">Day by day</div>' + legend + '</div>' +
+      '<p class="muted acht-sub">A short bar is a quiet day. Nothing at all means they did not work that day.</p>' +
+      '<div class="acht">' + dCols + '</div>' +
+    '</div>') : '') +
+    '</div>';
+}
 function renderActivityReport(rep) {
   const box = $('act-report'); if (!box) return;
   const counts = {}; const uniq = {};
@@ -2642,6 +2720,7 @@ function renderActivityReport(rep) {
     ? recent.map((e) => '<tr><td>' + esc(fmtDate(e.ts)) + '</td><td>' + esc((ACT_LABELS[e.action] && ACT_LABELS[e.action][1]) || e.action) + '</td><td>' + esc(e.detail || '') + '</td></tr>').join('')
     : '<tr><td colspan="3" class="muted" style="padding:14px">No activity in this period.</td></tr>';
   box.innerHTML = '<div class="ov-stats">' + tiles + '</div>' +
+    actCharts(rep) +
     '<div class="ov-rev-head" style="margin-top:20px">Recent activity</div>' +
     '<div class="ov-rev-scroll"><table class="cust-table"><thead><tr><th>When</th><th>Action</th><th>Detail</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
