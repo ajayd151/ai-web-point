@@ -1326,3 +1326,11 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .acst-track i.st-lost, .acst-track i.st-invalid-phone { background: #94a3b8; }
 .acst-n { font-size: 14px; font-weight: 800; color: #15233b; text-align: right; }
 @media (max-width: 640px) { .acst-row { grid-template-columns: 110px 1fr 30px; } }
+
+/* hour chart now spans the working day only, so it fits without a wide scroll */
+.acht-24 { min-width: 0; gap: 4px; }
+.acht-24 .acht-col { min-width: 40px; }
+/* status: value + share of the period */
+.acst-row { grid-template-columns: 150px 1fr 34px 42px; }
+.acst-p { font-size: 12px; font-weight: 700; color: #6b7a90; text-align: right; }
+@media (max-width: 640px) { .acst-row { grid-template-columns: 104px 1fr 28px 38px; } }

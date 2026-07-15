@@ -2653,7 +2653,7 @@ function actCharts(rep) {
   const byStatus = rep.byStatus || [];
   if (!byHour.length && !byDay.length) return '';
 
-  // ---- hour of day: every hour 00 to 23, so the shape of the day is honest ----
+  // ---- hour of day ----
   const H = {}; byHour.forEach((r) => { H[Number(r.hour)] = r; });
   const hours = []; for (let h = 0; h < 24; h++) hours.push(H[h] || { hour: h, uniq: 0, n: 0, updates: 0 });
   // drop a series that is zero everywhere rather than draw an empty slot in every column
@@ -2664,7 +2664,10 @@ function actCharts(rep) {
   const lastH = worked.length ? Math.max(...worked) : null;
   const gaps = [];
   if (firstH != null) for (let h = firstH; h <= lastH; h++) { if (!H[h] || !H[h].n) gaps.push(h); }
-  const hCols = hours.map((r) => actGroup(String(r.hour).padStart(2, '0'), r, hSeries, hMax,
+  // Show an hour either side of the work rather than a full 00-23 that is mostly dead space.
+  const lo = (firstH != null) ? Math.max(0, firstH - 1) : 8;
+  const hi = (lastH != null) ? Math.min(23, lastH + 1) : 18;
+  const hCols = hours.slice(lo, hi + 1).map((r) => actGroup(String(r.hour).padStart(2, '0'), r, hSeries, hMax,
     { inSpan: (firstH != null && r.hour > firstH && r.hour < lastH) })).join('');
   const hh = (h) => String(h).padStart(2, '0') + ':00';
   const gapNote = gaps.length
@@ -2683,18 +2686,24 @@ function actCharts(rep) {
   // ---- by status ----
   let stHtml = '';
   if (byStatus.length) {
-    const stMax = Math.max.apply(null, byStatus.map((r) => r.uniq || 0));
-    const total = byStatus.reduce((a, r) => a + (r.uniq || 0), 0);
+    // sort on what we actually SHOW (unique businesses). The query orders by total changes, so
+    // without this the bars can read out of order.
+    const st = byStatus.slice().sort((a, b) => (b.uniq || 0) - (a.uniq || 0));
+    const stMax = Math.max.apply(null, st.map((r) => r.uniq || 0));
+    const total = st.reduce((a, r) => a + (r.uniq || 0), 0);
     stHtml = '<div class="acht-card">' +
       '<div class="acht-head"><div class="ov-rev-head">By status</div></div>' +
-      '<p class="muted acht-sub">Where they moved businesses to. ' + total + ' status change' + (total === 1 ? '' : 's') + ' in this period.</p>' +
-      '<div class="acst">' + byStatus.map((r) => {
+      '<p class="muted acht-sub">Where they moved businesses to. ' + total + ' business' + (total === 1 ? '' : 'es') + ' moved in this period.</p>' +
+      '<div class="acst">' + st.map((r) => {
         const lbl = (LEAD_STATUSES.find((o) => o[0] === r.status) || [null, r.status || 'Cleared'])[1];
-        const w = stMax > 0 ? Math.round(((r.uniq || 0) / stMax) * 100) : 0;
-        return '<div class="acst-row" title="' + esc(lbl + ': ' + (r.uniq || 0) + ' businesses, ' + (r.n || 0) + ' changes') + '">' +
+        const u = r.uniq || 0;
+        const w = stMax > 0 ? Math.round((u / stMax) * 100) : 0;
+        const pct = total > 0 ? Math.round((u / total) * 100) : 0;
+        return '<div class="acst-row" title="' + esc(lbl + ': ' + u + ' businesses (' + pct + '% of the period), ' + (r.n || 0) + ' changes') + '">' +
           '<div class="acst-l">' + esc(lbl) + '</div>' +
           '<div class="acst-track"><i class="st-' + esc(r.status || 'cleared') + '" style="width:' + Math.max(w, 2) + '%"></i></div>' +
-          '<div class="acst-n">' + (r.uniq || 0) + '</div>' +
+          '<div class="acst-n">' + u + '</div>' +
+          '<div class="acst-p">' + pct + '%</div>' +
           '</div>';
       }).join('') + '</div>' +
       '</div>';
