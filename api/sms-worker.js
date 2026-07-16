@@ -4,7 +4,7 @@
 // Sends only happen inside working hours (Mon-Fri, 09:00-17:59 UK) and inside the daily 'sms'
 // cap from Admin > Limits. Without Twilio keys, mockups still build but sends wait, so a campaign
 // can be prepared before the account exists.
-const { dueCampaigns, itemsInState, setItem, setCampaignStatus } = require('../lib/smsdb');
+const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent } = require('../lib/smsdb');
 const { sendSms, smsConfigured } = require('../lib/sms');
 const { sign } = require('../lib/auth');
 const { ownerEmail } = require('../lib/tenant');
@@ -70,6 +70,21 @@ module.exports = async (req, res) => {
   const day = todayKey(new Date(now));
   const out = { campaigns: 0, mockups: 0, sent: 0, failed: 0, held: [] };
 
+  // Auto link sends first: someone said YES and their delay is up. These are warm replies to a
+  // conversation THEY continued, so they go regardless of working hours and outside the cold cap.
+  if (smsConfigured()) {
+    const due = await dueLinkSends(new Date(now).toISOString(), 15);
+    for (const it of due) {
+      const msg = renderMessage(it.link_message || 'Here it is: {link}', it);
+      const r = await sendSms(it.phone, msg, base);
+      if (r.ok) {
+        await markLinkSent(it.id, r.sid);
+        await logActivity(it.created_by || owner, owner, 'message_sent', it.name + ' (mockup link after YES)', it.name);
+        out.linked = (out.linked || 0) + 1;
+      } else { out.held.push('link send failed: ' + r.error); }
+    }
+  }
+
   const campaigns = await dueCampaigns(new Date(now).toISOString());
   for (const c of campaigns) {
     out.campaigns++;
@@ -97,7 +112,7 @@ module.exports = async (req, res) => {
     const ready = await itemsInState(c.id, 'ready', Math.min(SENDS_PER_TICK, room));
     for (const it of ready) {
       const msg = renderMessage(c.message, it);
-      const r = await sendSms(it.phone, msg);
+      const r = await sendSms(it.phone, msg, base);
       if (r.ok) {
         await setItem(it.id, { state: 'sent', sid: r.sid });
         await bumpDailyUsage(c.created_by || owner, 'sms', 1, day);
@@ -109,7 +124,8 @@ module.exports = async (req, res) => {
       }
     }
 
-    // finished? every item is in a terminal state and none are pending/ready
+    // finished? every item is in a terminal state and none are pending/ready. Ask-mode links
+    // are handled by dueLinkSends above even after the campaign is done.
     const stillPending = (await itemsInState(c.id, 'pending', 1)).length;
     const stillReady = (await itemsInState(c.id, 'ready', 1)).length;
     if (!stillPending && !stillReady) await setCampaignStatus(c.id, 'done');

@@ -837,9 +837,21 @@
                 <span class="muted sms-hint">These match the search criteria stamped on each record (🏷️). Old records only have a tag, so the website/ratings filters skip them.</span>
               </div>
               <div class="sms-msg-row">
+                <select id="smsb-mode">
+                  <option value="ask" selected>Ask first, auto-send the link on a YES (recommended)</option>
+                  <option value="link">Send the mockup link straight away</option>
+                </select>
                 <select id="smsb-tpl"><option value="">Start from a template…</option></select>
                 <textarea id="smsb-msg" rows="3" placeholder="Hi {business}, we built a quick homepage design for you, have a look: {link}"></textarea>
-                <p class="muted sms-hint">{business} = their name, {industry} = their tag (e.g. salons), {link} = their mockup (required). "Reply STOP to opt out" is added automatically.</p>
+                <p class="muted sms-hint" id="smsb-msg-hint">{business} = their name, {industry} = their tag. Ask-first: NO {link} in this first message, it goes in the follow-up below. "Reply STOP to opt out" is added automatically.</p>
+                <div id="smsb-linkwrap">
+                  <textarea id="smsb-linkmsg" rows="2" placeholder="Brilliant. Here is the design we made for {business}: {link}  If you like it, reply CALL and we will walk you through it."></textarea>
+                  <div class="sms-when" style="margin:8px 0 0">
+                    <label>Auto-send the follow-up</label>
+                    <input id="smsb-delay" type="number" min="0" max="1440" value="1" style="width:70px" />
+                    <span class="muted sms-hint">minute(s) after a positive reply. Goes any time of day, they just replied.</span>
+                  </div>
+                </div>
               </div>
               <div class="sms-when">
                 <label>Send from</label>
@@ -852,6 +864,10 @@
               </div>
               <div id="smsb-out" class="sms-out hidden"></div>
             </div>
+
+            <div class="ov-rev-head" style="margin-top:22px">📞 Ready to call</div>
+            <p class="muted view-sub">Replied positively, so the door is open. Post-mockup yeses first, they have SEEN it and still said yes.</p>
+            <div id="sms-callnow"><p class="muted">Nobody yet.</p></div>
 
             <div class="ov-rev-head" style="margin-top:22px">Campaigns</div>
             <div id="sms-campaigns"><p class="muted">Loading…</p></div>

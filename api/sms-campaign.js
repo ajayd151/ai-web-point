@@ -7,7 +7,7 @@ const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
 const { ukMobile, smsConfigured } = require('../lib/sms');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, listInbound } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, listInbound, readyToCall } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -76,6 +76,7 @@ module.exports = async (req, res) => {
     res.status(200).json({
       campaigns: await listCampaigns(),
       replies: await listInbound(100),
+      callNow: await readyToCall(50),
       twilioReady: smsConfigured(),
     });
     return;
@@ -100,9 +101,15 @@ module.exports = async (req, res) => {
   }
 
   if (action === 'create') {
+    const mode = body.mode === 'ask' ? 'ask' : 'link';
     const message = String(body.message || '').trim().slice(0, 480);
+    const linkMessage = String(body.linkMessage || '').trim().slice(0, 480);
     if (!message) { res.status(400).json({ error: 'Write the message first.' }); return; }
-    if (message.indexOf('{link}') < 0) { res.status(400).json({ error: 'The message must contain {link}, that is where the mockup goes.' }); return; }
+    if (mode === 'link' && message.indexOf('{link}') < 0) { res.status(400).json({ error: 'The message must contain {link}, that is where the mockup goes.' }); return; }
+    if (mode === 'ask') {
+      if (message.indexOf('{link}') >= 0) { res.status(400).json({ error: 'Ask-first mode: the FIRST message must not contain {link}, the link goes in the follow-up.' }); return; }
+      if (!linkMessage || linkMessage.indexOf('{link}') < 0) { res.status(400).json({ error: 'Write the auto-send follow-up, and it must contain {link}.' }); return; }
+    }
     const a = await buildAudience(body.filters);
     if (!a.items.length) { res.status(400).json({ error: 'Nobody matches those criteria.' }); return; }
     const when = body.scheduleAt ? new Date(body.scheduleAt) : new Date();
@@ -114,6 +121,9 @@ module.exports = async (req, res) => {
       filters: body.filters || {},
       scheduleAt: when.toISOString(),
       items: a.items,
+      mode: mode,
+      linkMessage: linkMessage,
+      linkDelayMin: body.linkDelayMin,
     });
     if (!id) { res.status(500).json({ error: 'Could not save the campaign.' }); return; }
     res.status(200).json({ ok: true, id: id, count: a.items.length, skipped: a.skipped });

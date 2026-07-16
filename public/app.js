@@ -2515,6 +2515,18 @@ async function loadSmsAdmin() {
         if (t && $('smsb-msg')) $('smsb-msg').value = t.body || '';
       });
     }
+    const md = $('smsb-mode');
+    if (md) {
+      const syncMode = () => {
+        const ask = md.value === 'ask';
+        const w = $('smsb-linkwrap'); if (w) w.classList.toggle('hidden', !ask);
+        const h = $('smsb-msg-hint');
+        if (h) h.textContent = ask
+          ? '{business} = their name, {industry} = their tag. Ask-first: NO {link} in this first message, it goes in the follow-up below. "Reply STOP to opt out" is added automatically.'
+          : '{business} = their name, {industry} = their tag, {link} = their mockup (required). "Reply STOP to opt out" is added automatically.';
+      };
+      md.addEventListener('change', syncMode); syncMode();
+    }
     const pv = $('smsb-preview'); if (pv) pv.addEventListener('click', smsPreview);
     const cr = $('smsb-create'); if (cr) cr.addEventListener('click', smsCreate);
     const rf = $('sms-refresh'); if (rf) rf.addEventListener('click', (e) => { e.preventDefault(); loadSmsAdmin(); });
@@ -2541,6 +2553,7 @@ async function loadSmsAdmin() {
     }
     renderSmsCampaigns(d.campaigns || []);
     renderSmsReplies(d.replies || []);
+    renderSmsCallNow(d.callNow || []);
   } catch (e) { /* leave as is */ }
 }
 async function smsPreview() {
@@ -2563,13 +2576,22 @@ async function smsPreview() {
 async function smsCreate() {
   if (!smsPreviewOk) { alert('Preview the audience first, so you can see who this goes to.'); return; }
   const msg = ($('smsb-msg') && $('smsb-msg').value || '').trim();
+  const mode = ($('smsb-mode') && $('smsb-mode').value) || 'ask';
+  const linkMsg = ($('smsb-linkmsg') && $('smsb-linkmsg').value || '').trim();
   if (!msg) { alert('Write the message first.'); return; }
-  if (msg.indexOf('{link}') < 0) { alert('The message needs {link} in it, that is where their mockup goes.'); return; }
+  if (mode === 'link' && msg.indexOf('{link}') < 0) { alert('The message needs {link} in it, that is where their mockup goes.'); return; }
+  if (mode === 'ask') {
+    if (msg.indexOf('{link}') >= 0) { alert('Ask-first mode: take {link} OUT of the first message. It goes in the follow-up box, sent automatically when they say yes.'); return; }
+    if (!linkMsg || linkMsg.indexOf('{link}') < 0) { alert('Write the auto-send follow-up too, with {link} in it.'); return; }
+  }
   const whenRaw = ($('smsb-when') && $('smsb-when').value) || '';
   const body = {
     action: 'create',
     name: ($('smsb-name') && $('smsb-name').value) || '',
     message: msg,
+    mode: mode,
+    linkMessage: linkMsg,
+    linkDelayMin: Number(($('smsb-delay') && $('smsb-delay').value) || 1),
     filters: smsFilters(),
     scheduleAt: whenRaw ? new Date(whenRaw).toISOString() : '',
   };
@@ -2590,7 +2612,9 @@ function renderSmsCampaigns(rows) {
   if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet.</p>'; return; }
   el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Campaign</th><th>Status</th><th>Progress</th><th>Sends from</th><th></th></tr></thead><tbody>' +
     rows.map((c) => {
-      const prog = (c.sent || 0) + ' sent / ' + (c.total || 0) + (c.failed ? (' · ' + c.failed + ' failed') : '');
+      const prog = (c.sent || 0) + (c.linked ? ('+' + c.linked + '🔗') : '') + ' sent / ' + (c.total || 0) +
+        ' · ' + (c.delivered || 0) + ' delivered' + (c.failed ? (' · ' + c.failed + ' failed') : '') +
+        ' · ✅ ' + (c.positive || 0) + ' · ❌ ' + (c.negative || 0) + (c.hot ? (' · 🔥 ' + c.hot + ' hot') : '');
       const act = c.status === 'running' || c.status === 'scheduled'
         ? '<button class="linkbtn" data-smsact="pause" data-id="' + c.id + '">Pause</button> <button class="linkbtn" data-smsact="cancel" data-id="' + c.id + '">Cancel</button>'
         : (c.status === 'paused' ? '<button class="linkbtn" data-smsact="resume" data-id="' + c.id + '">Resume</button> <button class="linkbtn" data-smsact="cancel" data-id="' + c.id + '">Cancel</button>' : '');
@@ -2604,11 +2628,28 @@ function renderSmsCampaigns(rows) {
     loadSmsAdmin();
   }));
 }
+function renderSmsCallNow(rows) {
+  const el = $('sms-callnow'); if (!el) return;
+  if (!rows.length) { el.innerHTML = '<p class="muted">Nobody yet. Positive repliers appear here automatically.</p>'; return; }
+  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Business</th><th>Stage</th><th>Call</th><th>Mockup</th></tr></thead><tbody>' +
+    rows.map((r) => {
+      const stage = r.post_reply === 'positive' ? '🔥 Yes AFTER seeing the mockup' : (r.link_sent_at ? 'Sent the mockup, awaiting reply' : '✅ Said yes to seeing it');
+      return '<tr><td><b>' + esc(r.name || '') + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span></td>' +
+        '<td>' + stage + '</td>' +
+        '<td>' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞 ' + esc(r.phone) + '</a>' : '') + '</td>' +
+        '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
 function renderSmsReplies(rows) {
   const el = $('sms-replies'); if (!el) return;
   if (!rows.length) { el.innerHTML = '<p class="muted">No replies yet.</p>'; return; }
-  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>When</th><th>From</th><th>Message</th></tr></thead><tbody>' +
-    rows.map((r) => '<tr><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.from_phone || '') + '</span>') : esc(r.from_phone || '')) + '</td><td>' + esc(r.body || '') + '</td></tr>').join('') +
+  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>When</th><th>From</th><th>Message</th><th>Read as</th></tr></thead><tbody>' +
+    rows.map((r) => {
+      const v = r.verdict === 'positive' ? '<span class="sms-v pos">✅ positive</span>'
+        : (r.verdict === 'negative' ? '<span class="sms-v neg">❌ negative</span>'
+        : (r.verdict === 'stop' ? '<span class="sms-v neg">🚫 STOP</span>' : '<span class="sms-v">–</span>'));
+      return '<tr><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.from_phone || '') + '</span>') : esc(r.from_phone || '')) + '</td><td>' + esc(r.body || '') + '</td><td>' + v + '</td></tr>';
+    }).join('') +
     '</tbody></table></div>';
 }
 
