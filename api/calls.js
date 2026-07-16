@@ -21,6 +21,14 @@ async function readList(PATH) {
   return {};
 }
 
+// A "business" whose name is just a phone number is a junk listing (Google has plenty). They
+// clog the call list and can never be greeted by name, so they are refused at the door and the
+// sweep below clears out any already in.
+function looksLikePhone(name) {
+  const d = String(name || '').replace(/[\s\-().]/g, '');
+  return /^(\+?44|0)\d{9,10}$/.test(d);
+}
+
 function keyFor(a) {
   const slug = String(a.slug || '').replace(/[^a-z0-9-]/gi, '');
   if (slug) return slug;
@@ -75,8 +83,10 @@ module.exports = async (req, res) => {
     }
     const who = acct.member ? acct.email : '';
     let added = 0;
+    let junk = 0;
     for (const a of items) {
       if (!a || !a.name) continue;
+      if (looksLikePhone(a.name)) { junk++; continue; } // junk listing, never admitted
       const key = keyFor(a);
       // the search criteria that found this record (tag = the industry term). Kept for
       // retargeting: "text every business tagged salons in London that had no website".
@@ -104,9 +114,19 @@ module.exports = async (req, res) => {
       };
       added++;
     }
-    if (!added) { res.status(400).json({ error: 'Nothing to add.' }); return; }
+    if (!added) { res.status(400).json({ error: junk ? ('Nothing added: ' + junk + ' junk record' + (junk === 1 ? '' : 's') + ' (name is just a phone number).') : 'Nothing to add.' }); return; }
   } else if (body.remove) {
     delete map[String(body.remove)];
+  } else if (body.sweep) {
+    // clear out junk records already on the list: name is just a phone number
+    const goners = Object.values(map).filter((c) => c && looksLikePhone(c.name));
+    if (!goners.length) { res.status(200).json({ ok: true, removed: 0 }); return; }
+    goners.forEach((c) => { delete map[c.key]; });
+    try { await put(PATH, JSON.stringify(map), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
+    catch (e) { res.status(500).json({ error: 'Could not save the sweep.' }); return; }
+    await logActivity(emailOf(req), accountEmailOf(req), 'call_remove', 'Sweep: ' + goners.length + ' junk records (name was a phone number)');
+    res.status(200).json({ ok: true, removed: goners.length });
+    return;
   } else if (body.retag) {
     // one-off backfill: records that pre-date tagging get their Google category as the tag,
     // which is the best signal we still have (the original search terms were never stored)

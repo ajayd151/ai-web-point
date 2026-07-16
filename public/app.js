@@ -2577,6 +2577,13 @@ async function loadSmsAdmin() {
     const pv = $('smsb-preview'); if (pv) pv.addEventListener('click', smsPreview);
     const cr = $('smsb-create'); if (cr) cr.addEventListener('click', smsCreate);
     const rf = $('sms-refresh'); if (rf) rf.addEventListener('click', (e) => { e.preventDefault(); loadSmsAdmin(); });
+    const sw = $('sms-sweep'); if (sw) sw.addEventListener('click', async () => {
+      if (!confirm('Remove every call-list record whose name is just a phone number? Their notes stay, but the records go.')) return;
+      sw.disabled = true; sw.textContent = 'Sweeping…';
+      try { const d = await (await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sweep: 1 }) })).json();
+        alert('Removed ' + (d.removed != null ? d.removed : 0) + ' junk record' + (d.removed === 1 ? '' : 's') + '.'); loadCallList(); } catch (e) { alert('Could not sweep, try again.'); }
+      sw.disabled = false; sw.textContent = '🧹 Sweep junk records';
+    });
     // one-off: backfill tags on records that pre-date tagging (uses their Google category)
     const tg = $('sms-retag'); if (tg) tg.addEventListener('click', async () => {
       tg.disabled = true; tg.textContent = 'Tagging…';
