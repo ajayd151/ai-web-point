@@ -2625,7 +2625,7 @@ async function smsPreview() {
       : d.estMockups + ' fresh mockup' + (d.estMockups === 1 ? '' : 's') + ' will be generated (AI image cost), plus ' + d.count + ' text' + (d.count === 1 ? '' : 's') + ' (~4p each).';
     out.innerHTML = '<div class="sms-count"><b>' + d.count + '</b> business' + (d.count === 1 ? '' : 'es') + ' will get this.</div>' +
       '<div class="sms-est">' + estLine + '</div>' +
-      '<div class="muted sms-skip">Skipped: ' + (sk.noMobile || 0) + ' no mobile number · ' + (sk.alreadyMessaged || 0) + ' already texted · ' + (sk.optedOut || 0) + ' opted out</div>' +
+      '<div class="muted sms-skip">Skipped: ' + (sk.noMobile || 0) + ' no mobile number · ' + (sk.alreadyMessaged || 0) + ' already texted · ' + (sk.optedOut || 0) + ' opted out' + (sk.deadNumber ? ' · ' + sk.deadNumber + ' dead numbers (Twilio-checked)' : '') + '</div>' +
       ((d.sample || []).length ? ('<div class="sms-sample">' + d.sample.map((s) => esc(s.name) + ' <span class="muted">(' + esc(s.location || '') + ')</span>').join(' · ') + (d.count > d.sample.length ? ' <span class="muted">+ ' + (d.count - d.sample.length) + ' more</span>' : '') + '</div>') : '');
     smsPreviewOk = d.count > 0;
     const c = $('smsb-create'); if (c) c.disabled = !smsPreviewOk;

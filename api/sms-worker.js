@@ -5,7 +5,8 @@
 // cap from Admin > Limits. Without Twilio keys, mockups still build but sends wait, so a campaign
 // can be prepared before the account exists.
 const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged } = require('../lib/smsdb');
-const { sendSms, smsConfigured } = require('../lib/sms');
+const { sendSms, smsConfigured, lookupPhone } = require('../lib/sms');
+const { list, put } = require('@vercel/blob');
 const { sign } = require('../lib/auth');
 const { ownerEmail } = require('../lib/tenant');
 const { getDailyUsage, bumpDailyUsage, logActivity } = require('../lib/db');
@@ -14,6 +15,7 @@ const { londonHour, todayKey } = require('../lib/digest');
 const { humaniseBusinessName } = require('../lib/names');
 
 const MOCKUPS_PER_TICK = 2;  // each is a slow AI image, and the function has 300s
+const LOOKUPS_PER_TICK = 20; // phone validation, ~0.8p each, each number only ever checked once
 const SENDS_PER_TICK = 10;   // ~120/hour ceiling, gentle on carrier filtering
 
 function isCron(req) {
@@ -26,6 +28,55 @@ function workingHours(now) {
   const day = new Date(now).getUTCDay(); // cheap weekend check; hour check is London-aware
   const h = londonHour(new Date(now));
   return day >= 1 && day <= 5 && h >= 9 && h < 18;
+}
+
+async function readJson(path) {
+  try {
+    const { blobs } = await list({ prefix: path });
+    const b = blobs.find((x) => x.pathname === path);
+    if (b) return await (await fetch(b.url + '?t=' + Date.now())).json();
+  } catch (e) { /* none */ }
+  return null;
+}
+// Rolling phone validation: every call-list number gets ONE Twilio Lookup, results cached in
+// their own blob (calls/_phonecheck.json) so this never contends with the list itself (blob
+// writes race). Dead numbers get the CRM status 'invalid-phone' when they had no status yet, so
+// they drop straight into the existing Invalid-phone bucket nobody wastes dialling time on.
+async function validatePhones(base) {
+  const calls = (await readJson('calls/_list.json')) || {};
+  const chk = (await readJson('calls/_phonecheck.json')) || {};
+  const todo = Object.values(calls).filter((c) => c && c.phone && !chk[c.key]).slice(0, LOOKUPS_PER_TICK);
+  if (!todo.length) return 0;
+  let idx = null; // notes index, loaded only if something is actually invalid
+  for (const c of todo) {
+    // to E.164: works for landlines too, the whole list gets checked, not just mobiles
+    const digits = String(c.phone).replace(/[^0-9+]/g, '');
+    const e164 = digits.startsWith('+') ? digits
+      : (digits.startsWith('00') ? ('+' + digits.slice(2))
+      : (digits.startsWith('0') ? ('+44' + digits.slice(1)) : ('+44' + digits)));
+    const r = await lookupPhone(e164);
+    if (!r.checked) { chk[c.key] = { at: new Date().toISOString(), error: 1 }; continue; }
+    chk[c.key] = { valid: !!r.valid, type: r.type || '', at: new Date().toISOString() };
+    if (!r.valid) {
+      try {
+        if (!idx) idx = (await readJson('notes/_index.json')) || {};
+        if (!idx[c.key] || !idx[c.key].status) {
+          const now = new Date().toISOString();
+          const notePath = 'notes/' + c.key + '.json';
+          const nd = (await readJson(notePath)) || { slug: c.key, status: '', statusAt: '', comments: [] };
+          nd.status = 'invalid-phone'; nd.statusAt = now;
+          (nd.comments = nd.comments || []).push({ text: '📵 Twilio says this number is not in service.', at: now, by: 'sms' });
+          await put(notePath, JSON.stringify(nd), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+          idx[c.key] = { status: 'invalid-phone', at: now };
+        }
+      } catch (e) { /* the check itself is recorded regardless */ }
+    }
+  }
+  try {
+    if (idx) await put('notes/_index.json', JSON.stringify(idx), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+    await put('calls/_phonecheck.json', JSON.stringify(chk), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+  } catch (e) { /* next tick retries the same batch */ }
+  return todo.length;
 }
 
 // Generate one mockup by calling our own /api/generate with a server-minted owner cookie.
@@ -105,6 +156,9 @@ module.exports = async (req, res) => {
       } else { out.held.push('link send failed: ' + r.error); }
     }
   }
+
+  // rolling phone validation (one lookup per number, ever)
+  if (smsConfigured()) { try { out.checked = await validatePhones(base); } catch (e) { /* next tick */ } }
 
   // One nudge each for non-responders whose window is up. Still a cold-ish touch, so it obeys
   // working hours and the daily cap, and each recipient only ever gets one.

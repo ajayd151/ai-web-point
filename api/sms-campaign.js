@@ -23,6 +23,7 @@ async function buildAudience(filters) {
   const f = filters || {};
   const calls = (await readJson('calls/_list.json')) || {};
   const idx = (await readJson('notes/_index.json')) || {};
+  const chk = (await readJson('calls/_phonecheck.json')) || {}; // Twilio Lookup verdicts
   const already = await sentKeys();
   const optout = await optoutSet();
   const wantCat = String(f.category || '').trim().toLowerCase();
@@ -36,7 +37,7 @@ async function buildAudience(filters) {
   const rFrom = Number.isFinite(Number(f.critRatingsFrom)) && f.critRatingsFrom !== '' && f.critRatingsFrom != null ? Number(f.critRatingsFrom) : null;
   const rTo = Number.isFinite(Number(f.critRatingsTo)) && f.critRatingsTo !== '' && f.critRatingsTo != null ? Number(f.critRatingsTo) : null;
 
-  const out = []; const skipped = { noMobile: 0, optedOut: 0, alreadyMessaged: 0, filtered: 0 };
+  const out = []; const skipped = { noMobile: 0, optedOut: 0, alreadyMessaged: 0, filtered: 0, deadNumber: 0 };
   for (const c of Object.values(calls)) {
     if (!c || !c.name) continue;
     const st = (idx[c.key] && idx[c.key].status) || '';
@@ -56,6 +57,7 @@ async function buildAudience(filters) {
     if (wantStatus === 'new' ? st !== '' : (wantStatus !== 'any' && st !== wantStatus)) { skipped.filtered++; continue; }
     const mob = ukMobile(c.phone);
     if (!mob) { skipped.noMobile++; continue; }
+    if (chk[c.key] && chk[c.key].valid === false) { skipped.deadNumber++; continue; } // Twilio says not in service
     if (optout.has(mob)) { skipped.optedOut++; continue; }
     if (notMessaged && already.has(c.key)) { skipped.alreadyMessaged++; continue; }
     out.push({ key: c.key, name: c.name, location: c.location || '', category: c.tag || c.category || '', phone: mob });
