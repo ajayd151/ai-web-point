@@ -110,6 +110,10 @@ module.exports = async (req, res) => {
       if (message.indexOf('{link}') >= 0) { res.status(400).json({ error: 'Ask-first mode: the FIRST message must not contain {link}, the link goes in the follow-up.' }); return; }
       if (!linkMessage || linkMessage.indexOf('{link}') < 0) { res.status(400).json({ error: 'Write the auto-send follow-up, and it must contain {link}.' }); return; }
     }
+    const nudgeMessage = String(body.nudgeMessage || '').trim().slice(0, 480);
+    if (nudgeMessage && mode === 'ask' && nudgeMessage.indexOf('{link}') >= 0) {
+      res.status(400).json({ error: 'The nudge goes to people who have not said yes, so it cannot contain {link} in ask-first mode.' }); return;
+    }
     const a = await buildAudience(body.filters);
     if (!a.items.length) { res.status(400).json({ error: 'Nobody matches those criteria.' }); return; }
     const when = body.scheduleAt ? new Date(body.scheduleAt) : new Date();
@@ -124,6 +128,8 @@ module.exports = async (req, res) => {
       mode: mode,
       linkMessage: linkMessage,
       linkDelayMin: body.linkDelayMin,
+      nudgeMessage: nudgeMessage,
+      nudgeHours: body.nudgeHours,
     });
     if (!id) { res.status(500).json({ error: 'Could not save the campaign.' }); return; }
     res.status(200).json({ ok: true, id: id, count: a.items.length, skipped: a.skipped });

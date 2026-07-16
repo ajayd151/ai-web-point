@@ -853,6 +853,14 @@
                   </div>
                 </div>
               </div>
+              <div class="sms-msg-row">
+                <textarea id="smsb-nudgemsg" rows="2" placeholder="Optional nudge if they do not reply, e.g. No rush {business}, just checking you saw this. Happy to send the design over whenever suits."></textarea>
+                <div class="sms-when" style="margin:8px 0 0">
+                  <label>Send the nudge after</label>
+                  <input id="smsb-nudgehrs" type="number" min="1" max="168" value="24" style="width:70px" />
+                  <span class="muted sms-hint">hour(s) of silence. One nudge only, ever. Leave the message blank for no nudge.</span>
+                </div>
+              </div>
               <div class="sms-when">
                 <label>Send from</label>
                 <input id="smsb-when" type="datetime-local" />

@@ -2650,6 +2650,8 @@ async function smsCreate() {
     mode: mode,
     linkMessage: linkMsg,
     linkDelayMin: Number(($('smsb-delay') && $('smsb-delay').value) || 1),
+    nudgeMessage: ($('smsb-nudgemsg') && $('smsb-nudgemsg').value || '').trim(),
+    nudgeHours: Number(($('smsb-nudgehrs') && $('smsb-nudgehrs').value) || 24),
     filters: smsFilters(),
     scheduleAt: whenRaw ? new Date(whenRaw).toISOString() : '',
   };
@@ -2672,7 +2674,7 @@ function renderSmsCampaigns(rows) {
     rows.map((c) => {
       const prog = (c.sent || 0) + (c.linked ? ('+' + c.linked + '🔗') : '') + ' sent / ' + (c.total || 0) +
         ' · ' + (c.delivered || 0) + ' delivered' + (c.failed ? (' · ' + c.failed + ' failed') : '') +
-        ' · ✅ ' + (c.positive || 0) + ' · ❌ ' + (c.negative || 0) + (c.hot ? (' · 🔥 ' + c.hot + ' hot') : '');
+        ' · ✅ ' + (c.positive || 0) + ' · ❌ ' + (c.negative || 0) + (c.hot ? (' · 🔥 ' + c.hot + ' hot') : '') + (c.nudged ? (' · 👋 ' + c.nudged + ' nudged') : '');
       const act = c.status === 'running' || c.status === 'scheduled'
         ? '<button class="linkbtn" data-smsact="pause" data-id="' + c.id + '">Pause</button> <button class="linkbtn" data-smsact="cancel" data-id="' + c.id + '">Cancel</button>'
         : (c.status === 'paused' ? '<button class="linkbtn" data-smsact="resume" data-id="' + c.id + '">Resume</button> <button class="linkbtn" data-smsact="cancel" data-id="' + c.id + '">Cancel</button>' : '');

@@ -4,7 +4,7 @@
 // Sends only happen inside working hours (Mon-Fri, 09:00-17:59 UK) and inside the daily 'sms'
 // cap from Admin > Limits. Without Twilio keys, mockups still build but sends wait, so a campaign
 // can be prepared before the account exists.
-const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent } = require('../lib/smsdb');
+const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged } = require('../lib/smsdb');
 const { sendSms, smsConfigured } = require('../lib/sms');
 const { sign } = require('../lib/auth');
 const { ownerEmail } = require('../lib/tenant');
@@ -103,6 +103,25 @@ module.exports = async (req, res) => {
         await logActivity(it.created_by || owner, owner, 'message_sent', it.name + ' (mockup link after YES)', it.name);
         out.linked = (out.linked || 0) + 1;
       } else { out.held.push('link send failed: ' + r.error); }
+    }
+  }
+
+  // One nudge each for non-responders whose window is up. Still a cold-ish touch, so it obeys
+  // working hours and the daily cap, and each recipient only ever gets one.
+  if (smsConfigured() && workingHours(now)) {
+    const nudges = await dueNudges(SENDS_PER_TICK);
+    for (const it of nudges) {
+      const who = it.created_by || owner;
+      const cap = await limitFor('sms', who);
+      const used = await getDailyUsage(who, 'sms', day);
+      if (used >= cap) { out.held.push('nudges held, daily cap'); break; }
+      const r = await sendSms(it.phone, renderMessage(it.nudge_message, it), base);
+      if (r.ok) {
+        await markNudged(it.id);
+        await bumpDailyUsage(who, 'sms', 1, day);
+        await logActivity(who, owner, 'message_sent', it.name + ' (nudge, no reply after ask)', it.name);
+        out.nudged = (out.nudged || 0) + 1;
+      } else { await markNudged(it.id); out.held.push('nudge failed: ' + r.error); }
     }
   }
 
