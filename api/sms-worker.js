@@ -52,9 +52,13 @@ async function generateMockup(base, item) {
 }
 
 function renderMessage(template, item) {
+  const biz = humaniseBusinessName(item.name) || item.name;
   let msg = String(template || '')
-    .split('{business}').join(humaniseBusinessName(item.name) || item.name)
+    .split('{business}').join(biz)
+    .split('{name}').join(biz)                       // templates written for WhatsApp use {name}
     .split('{industry}').join(item.category || 'business')
+    .split('{category}').join(item.category || 'business')
+    .split('{location}').join(item.location || 'your area')
     .split('{link}').join(item.view_url || '');
   if (!/stop/i.test(msg)) msg += '\nReply STOP to opt out';
   return msg.slice(0, 640);

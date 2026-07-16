@@ -2510,7 +2510,22 @@ async function loadSmsAdmin() {
     const tp = $('smsb-tpl');
     if (tp) {
       try { firstTemplates().forEach((t) => { const o = document.createElement('option'); o.value = t.id; o.textContent = t.name; tp.appendChild(o); }); } catch (e) {}
+      const nw = document.createElement('option'); nw.value = '__new'; nw.textContent = '➕ Create new template…'; tp.appendChild(nw);
       tp.addEventListener('change', () => {
+        if (tp.value === '__new') {
+          // save whatever is in the message box as a reusable template, no trip to the Templates tab
+          const body = ($('smsb-msg') && $('smsb-msg').value || '').trim();
+          if (!body) { alert('Write the message first, then save it as a template.'); tp.value = ''; return; }
+          const nm = prompt('Name for the new template (e.g. Salons ask-first):');
+          if (!nm || !nm.trim()) { tp.value = ''; return; }
+          const st = loadSettings();
+          const v = (Number(st.tplSeq) || 0) + 1;
+          const id = 'tpl' + v;
+          patchSettings({ waTemplates: st.waTemplates.concat([{ id: id, name: nm.trim().slice(0, 60), body: body }]), tplSeq: v });
+          const o = document.createElement('option'); o.value = id; o.textContent = nm.trim().slice(0, 60);
+          tp.insertBefore(o, nw); tp.value = id;
+          return;
+        }
         const t = firstTemplateById(tp.value);
         if (t && $('smsb-msg')) $('smsb-msg').value = t.body || '';
       });
