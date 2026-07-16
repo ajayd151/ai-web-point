@@ -45,10 +45,24 @@ module.exports = async (req, res) => {
       data.comments.push({ text: comment, at: now, by: author }); // author stamped for attribution
       await recordNote({ account: accountEmailOf(req), author: author, slug: slug, business: bizName, note: comment });
     }
+    // The contact person at the business (first/last/email/phone). Merged field by field so
+    // saving a phone never wipes an email saved earlier. This is what a CRM sync (GoHighLevel)
+    // will push, so it lives on the same record as the notes.
+    if (body.contact && typeof body.contact === 'object') {
+      const clean = {};
+      ['firstName', 'lastName', 'email', 'phone'].forEach((k) => {
+        if (body.contact[k] !== undefined) clean[k] = String(body.contact[k] || '').trim().slice(0, 120);
+      });
+      data.contact = Object.assign({}, data.contact || {}, clean);
+      data.contactAt = now;
+    }
     data.updatedAt = now;
-    await logActivity(author, accountEmailOf(req), 'status_update',
-      (bizName || slug) + (body.status !== undefined ? (' → ' + (body.status || 'cleared')) : '') + (comment ? ' (note added)' : ''),
-      bizName || slug);
+    // A contact-only save is not a status update, logging it would pollute the activity report.
+    if (body.status !== undefined || comment) {
+      await logActivity(author, accountEmailOf(req), 'status_update',
+        (bizName || slug) + (body.status !== undefined ? (' → ' + (body.status || 'cleared')) : '') + (comment ? ' (note added)' : ''),
+        bizName || slug);
+    }
     try { await put(path, JSON.stringify(data), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); } catch (e) { /* ignore */ }
     // keep the lightweight status index up to date
     try {

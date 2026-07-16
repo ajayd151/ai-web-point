@@ -30,6 +30,9 @@
     },
     "api/admin-limits.js": {
       "maxDuration": 30
+    },
+    "api/niche-intel.js": {
+      "maxDuration": 60
     }
   },
   "crons": [

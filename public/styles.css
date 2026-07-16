@@ -1338,3 +1338,28 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .acst-total { margin-top: 3px; padding-top: 8px; border-top: 2px solid #e4eaf1; }
 .acst-total .acst-l, .acst-total .acst-n, .acst-total .acst-p { font-weight: 800; color: #15233b; }
 .acst-total .acst-track { background: transparent; }
+
+/* ---- contact person block (notes areas, GHL-ready) ---- */
+.ct { margin: 10px 0 12px; background: #f7fafc; border: 1px solid #e4eaf1; border-radius: 10px; padding: 10px 12px; }
+.ct-t { font-size: 12px; font-weight: 800; color: #15233b; margin-bottom: 8px; }
+.ct-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+.ct-grid input { border: 1px solid #d8e0ea; border-radius: 7px; padding: 7px 9px; font-size: 13px; font-family: inherit; background: #fff; }
+.ct-grid input:focus { outline: 0; border-color: #0fb6a8; }
+.ct-foot { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.ct-msg { font-size: 12px; color: #0b7d74; font-weight: 700; }
+@media (max-width: 560px) { .ct-grid { grid-template-columns: 1fr; } }
+
+/* ---- Notes Intelligence (Niche Intel, live half) ---- */
+.ni { background: #fff; border: 1px solid #e4eaf1; border-radius: 14px; padding: 14px 16px; }
+.ni-table td { font-size: 13.5px; }
+.ni-thin td { color: #8494a8; }
+.ni-note { font-size: 11px; color: #b45309; font-weight: 700; }
+.ni-foot { font-size: 12px; margin-top: 8px; }
+.ni-ai-out { margin-top: 14px; background: #fff8ec; border-radius: 10px; padding: 13px 15px; }
+.ni-ai-t, .ni-ai-t2 { font-size: 14px; font-weight: 800; color: #15233b; margin-bottom: 9px; }
+.ni-ai-t2 { margin-top: 12px; }
+.ni-v { margin-bottom: 10px; }
+.ni-v-i { font-size: 13px; font-weight: 800; color: #0b7d74; }
+.ni-v-t { font-size: 13px; color: #15233b; line-height: 1.5; }
+.ni-v-e { font-size: 12px; color: #6b7a90; line-height: 1.5; font-style: italic; }
+.ni-adv { font-size: 13px; color: #15233b; line-height: 1.7; }

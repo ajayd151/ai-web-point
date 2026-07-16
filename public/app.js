@@ -2861,8 +2861,21 @@ const TARGET_INDUSTRIES = [
 ];
 const TARGET_AVOID = 'gardeners/landscapers, roofers, builders, exterior decorators, window cleaners, removals/man-and-van, fencing, air-con installers';
 function renderTargets() {
-  const box = $('target-list'); if (!box || box.dataset.painted) return;
+  const box = $('target-list'); if (!box) return;
+  if (!box.dataset.painted) paintTargets(box);
+  loadNotesIntel(); // your own numbers refresh every visit; the playbook only paints once
+}
+function paintTargets(box) {
   box.innerHTML =
+    // what YOUR data says, before the generic playbook
+    '<div class="ni">' +
+      '<div class="acht-head"><div class="ov-rev-head">📈 Notes Intelligence, from your own calls</div>' +
+      '<button id="ni-ai" class="linkbtn">🧠 What do my notes say?</button></div>' +
+      '<p class="muted view-sub">Which industries are actually engaging when your team calls, based on your call list and the statuses you have set. The playbook below is the theory; this is your reality.</p>' +
+      '<div id="ni-live"><p class="muted">Loading your numbers…</p></div>' +
+      '<div id="ni-ai-out" class="ni-ai-out hidden"></div>' +
+    '</div>' +
+    '<div class="ov-rev-head" style="margin:22px 0 10px">The playbook</div>' +
     '<div class="tgt-tip">🔥 Start with the top 3 (heating trades in their off-season), they have the strongest "you are quiet, here is more work" hook.</div>' +
     '<div class="tgt-scroll"><table class="tgt-table"><thead><tr><th>#</th><th>Industry</th><th>Why now</th><th>Best time to reach</th></tr></thead><tbody>' +
     TARGET_INDUSTRIES.map((t, i) =>
@@ -2873,6 +2886,49 @@ function renderTargets() {
     ).join('') + '</tbody></table></div>' +
     '<p class="muted tgt-avoid"><b>Avoid in summer (full diaries):</b> ' + esc(TARGET_AVOID) + '.</p>';
   box.dataset.painted = '1';
+  const b = $('ni-ai'); if (b) b.addEventListener('click', () => loadNotesIntel(true));
+}
+// The live half of Niche Intel: your own engagement per industry, and optionally what the AI
+// reads in the team's notes.
+async function loadNotesIntel(withAi) {
+  const el = $('ni-live'); if (!el) return;
+  const aiOut = $('ni-ai-out');
+  if (withAi && aiOut) { aiOut.classList.remove('hidden'); aiOut.innerHTML = '<p class="muted"><span class="spinner sm"></span> Reading your notes…</p>'; }
+  try {
+    const r = await fetch('/api/niche-intel' + (withAi ? '?ai=1' : ''));
+    const d = await r.json();
+    if (d.error) { el.innerHTML = '<p class="muted">' + esc(d.error) + '</p>'; return; }
+    const rows = d.rows || [];
+    if (!rows.length) { el.innerHTML = '<p class="muted">No outcomes yet. Set statuses on your call list and this fills itself in.</p>'; return; }
+    el.innerHTML = '<div class="tgt-scroll"><table class="tgt-table ni-table"><thead><tr>' +
+      '<th>Industry</th><th>Worked</th><th>Outcomes</th><th>Engaged</th><th>Appointments / Won</th><th>Engagement</th></tr></thead><tbody>' +
+      rows.map((o) =>
+        '<tr' + (o.thin ? ' class="ni-thin"' : '') + '>' +
+        '<td><a href="#" class="tgt-link" data-term="' + esc(o.category) + '">' + esc(o.category) + ' →</a></td>' +
+        '<td>' + o.worked + '</td><td>' + o.outcomes + '</td><td>' + o.engaged + '</td><td>' + o.wins + '</td>' +
+        '<td><b>' + o.rate + '%</b>' + (o.thin ? ' <span class="ni-note">too few to trust yet</span>' : '') + '</td>' +
+        '</tr>').join('') +
+      '</tbody></table></div>' +
+      '<p class="muted ni-foot">Engagement = interested, call back, link sent, appointment booked or won, as a share of businesses given any outcome. Industries with under 3 outcomes sit at the bottom until there is enough to judge.</p>';
+    if (withAi && aiOut) {
+      const ai = d.ai;
+      if (!ai || (!(ai.verdicts || []).length && !(ai.advice || []).length)) {
+        aiOut.innerHTML = '<p class="muted">Not enough in the notes yet for a useful read. Keep taking notes on calls and try again.</p>';
+        return;
+      }
+      let h = '<div class="ni-ai-t">🧠 What your notes say</div>';
+      (ai.verdicts || []).forEach((v) => {
+        h += '<div class="ni-v"><div class="ni-v-i">' + esc(v.industry || '') + '</div>' +
+          '<div class="ni-v-t">' + esc(v.verdict || '') + '</div>' +
+          (v.evidence ? '<div class="ni-v-e">' + esc(v.evidence) + '</div>' : '') + '</div>';
+      });
+      if ((ai.advice || []).length) {
+        h += '<div class="ni-ai-t2">Where to spend the calling time</div>';
+        ai.advice.forEach((a) => { h += '<div class="ni-adv">• ' + esc(a) + '</div>'; });
+      }
+      aiOut.innerHTML = h;
+    }
+  } catch (e) { el.innerHTML = '<p class="muted">Could not load your numbers just now.</p>'; }
 }
 { const l = $('target-list'); if (l) l.addEventListener('click', (e) => {
   const a = e.target.closest('.tgt-link'); if (!a) return;
@@ -3592,7 +3648,45 @@ async function fetchNoteMerged(keys) {
   notes.slice(1).forEach((n) => {
     if (n.status && String(n.statusAt || '') > String(statusAt || '')) { status = n.status; statusAt = n.statusAt; }
   });
-  return { status: status, statusAt: statusAt, comments: comments };
+  // contact: first non-empty one wins (canonical key first)
+  let contact = null;
+  notes.forEach((n) => { if (!contact && n.contact && Object.keys(n.contact).some((k) => n.contact[k])) contact = n.contact; });
+  return { status: status, statusAt: statusAt, comments: comments, contact: contact };
+}
+
+// ---- the contact person block (first name, surname, email, phone) --------------------------
+// Shown wherever notes are taken. Pre-filled with whatever we already hold (a saved contact, or
+// the business's own phone as a starting point). This is the record a GoHighLevel sync will push.
+function contactHtml(prefix, contact, fallbackPhone) {
+  const c = contact || {};
+  const v = (x) => esc(String(x || ''));
+  return '<div class="ct"><div class="ct-t">👤 Contact person</div>' +
+    '<div class="ct-grid">' +
+    '<input id="' + prefix + '-first" type="text" placeholder="First name" autocomplete="off" value="' + v(c.firstName) + '" />' +
+    '<input id="' + prefix + '-last" type="text" placeholder="Last name" autocomplete="off" value="' + v(c.lastName) + '" />' +
+    '<input id="' + prefix + '-email" type="email" placeholder="Email" autocomplete="off" value="' + v(c.email) + '" />' +
+    '<input id="' + prefix + '-phone" type="tel" placeholder="Phone" autocomplete="off" value="' + v(c.phone || fallbackPhone) + '" />' +
+    '</div>' +
+    '<div class="ct-foot"><button id="' + prefix + '-save" class="ghost sm">Save contact</button><span id="' + prefix + '-msg" class="ct-msg"></span></div>' +
+    '</div>';
+}
+// slugOf is async so each surface can resolve its canonical key at save time.
+function bindContactSave(prefix, slugOf, bizName) {
+  const b = $(prefix + '-save'); if (!b) return;
+  b.addEventListener('click', async () => {
+    const val = (id) => (($(prefix + '-' + id) && $(prefix + '-' + id).value) || '').trim();
+    const m = $(prefix + '-msg');
+    if (m) m.textContent = 'Saving…';
+    try {
+      const slug = await slugOf();
+      if (!slug) throw new Error('no slug');
+      await fetch('/api/note', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug: slug, name: bizName, contact: { firstName: val('first'), lastName: val('last'), email: val('email'), phone: val('phone') } }),
+      });
+      if (m) { m.textContent = '✓ Saved'; setTimeout(() => { if (m) m.textContent = ''; }, 1600); }
+    } catch (e) { if (m) m.textContent = '⚠️ Failed, try again'; }
+  });
 }
 
 // CRM block inside the Prowl popup: same /api/note store as the Lead Profile and
@@ -3609,8 +3703,10 @@ async function renderProwlNotes(lead) {
       '<div class="ln-row"><label>Status</label>' +
       `<select id="pn-status">${LEAD_STATUSES.map((o) => `<option value="${o[0]}"${o[0] === cur ? ' selected' : ''}>${o[1]}</option>`).join('')}</select>` +
       '<span class="ln-saved" id="pn-saved"></span></div>' +
+      contactHtml('pn-ct', note.contact, lead.phone) +
       '<div class="ln-add"><textarea id="pn-comment" rows="2" placeholder="Take notes while you talk, each one is saved with the date + time…"></textarea><button id="pn-add-btn" class="primary sm">Add note</button></div>' +
       `<div class="ln-log">${comments.length ? comments.map((c) => `<div class="ln-item"><div class="ln-when">${esc(fmtDate(c.at))}${c.by ? " · " + esc(noteAuthor(c.by)) : ""}</div><div class="ln-text">${esc(c.text)}</div></div>`).join('') : '<div class="muted">No notes yet.</div>'}</div></div>`;
+    bindContactSave('pn-ct', async () => noteSlug, lead.name);
     const save = (payload) => {
       const sv = $('pn-saved'); if (sv) sv.textContent = 'Saving…';
       fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ slug: noteSlug, name: lead.name }, payload)) })
@@ -3846,10 +3942,12 @@ function renderLeadNotes(l, note) {
     '<div class="ln-row"><label>Status</label>' +
     `<select id="ln-status">${LEAD_STATUSES.map((o) => `<option value="${o[0]}"${o[0] === cur ? ' selected' : ''}>${o[1]}</option>`).join('')}</select>` +
     '<span class="ln-saved" id="ln-saved"></span></div>' +
+    contactHtml('ln-ct', note.contact, l.phone) +
     '<div class="ln-add"><textarea id="ln-comment" rows="2" placeholder="Add a note (e.g. Called, not interested, already has a website but not on Maps, doing it as a sideline)…"></textarea><button id="ln-add-btn" class="primary sm">Add note</button></div>' +
     `<div class="ln-log">${comments.length ? comments.map((c) => `<div class="ln-item"><div class="ln-when">${esc(fmtDate(c.at))}${c.by ? " · " + esc(noteAuthor(c.by)) : ""}</div><div class="ln-text">${esc(c.text)}</div></div>`).join('') : '<div class="muted">No notes yet.</div>'}</div></div>`;
   $('ln-status').addEventListener('change', (e) => saveNote(l, { status: e.target.value }));
   $('ln-add-btn').addEventListener('click', () => { const text = ($('ln-comment').value || '').trim(); if (text) saveNote(l, { comment: text }); });
+  bindContactSave('ln-ct', async () => ((await noteKeyFor(l)) || l.slug), l.name);
 }
 async function saveNote(l, payload) {
   const sv = $('ln-saved'); if (sv) sv.textContent = 'Saving…';
@@ -4243,7 +4341,7 @@ function renderCallList() {
     // expandable notes row (timestamped, shared with the Lead Profile CRM)
     const nr = document.createElement('tr');
     nr.className = 'call-notes-row hidden';
-    nr.innerHTML = `<td colspan="5"><div class="call-notes-box"><div class="call-notes-list muted">Loading notes…</div><div class="call-notes-add"><textarea rows="2" placeholder="e.g. Spoke to Dave, send the mockup link and ring back Friday…"></textarea><button class="primary btn sm">Save note</button></div></div></td>`;
+    nr.innerHTML = `<td colspan="5"><div class="call-notes-box"><div class="call-notes-contact"></div><div class="call-notes-list muted">Loading notes…</div><div class="call-notes-add"><textarea rows="2" placeholder="e.g. Spoke to Dave, send the mockup link and ring back Friday…"></textarea><button class="primary btn sm">Save note</button></div></div></td>`;
     tb.appendChild(nr);
     tr.querySelector('.call-notes').addEventListener('click', async () => {
       const open = !nr.classList.contains('hidden');
@@ -4254,6 +4352,13 @@ function renderCallList() {
         // c.key is canonical, but older notes may sit under the lead's own slug, so read both
         const d = { note: await fetchNoteMerged([c.key, c.slug]) };
         const com = (d.note && d.note.comments) || [];
+        // contact person for this business (pre-filled from what we already hold)
+        const ctEl = nr.querySelector('.call-notes-contact');
+        if (ctEl) {
+          const pfx = 'cct-' + c.key; // per-row ids so rows cannot collide
+          ctEl.innerHTML = contactHtml(pfx, d.note && d.note.contact, c.phone);
+          bindContactSave(pfx, async () => c.key, c.name);
+        }
         listEl.innerHTML = com.length
           ? com.slice().reverse().map((x) => `<div class="call-note"><span class="muted">${esc(fmtDate(x.at))}${x.by ? ' · ' + esc(noteAuthor(x.by)) : ''}</span> ${esc(x.text)}</div>`).join('')
           : '<span class="muted">No notes yet.</span>';
