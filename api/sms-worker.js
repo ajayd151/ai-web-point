@@ -33,13 +33,14 @@ function workingHours(now) {
 async function generateMockup(base, item) {
   const cookie = 'aiwp=' + encodeURIComponent(sign(ownerEmail(), Date.now()));
   const business = { name: item.name, location: item.location, category: item.category, phones: item.phone ? [item.phone] : [] };
+  // 'auto' marks the mockup as machine-made in the activity log (reporting splits man vs machine)
   const ctrl = new AbortController();
   const to = setTimeout(() => ctrl.abort(), 170000);
   try {
     const r = await fetch(base + '/api/generate', {
       method: 'POST', signal: ctrl.signal,
       headers: { 'Content-Type': 'application/json', Cookie: cookie },
-      body: JSON.stringify({ business: business }),
+      body: JSON.stringify({ business: business, auto: true }),
     });
     clearTimeout(to);
     const d = await r.json().catch(() => ({}));
@@ -74,11 +75,27 @@ module.exports = async (req, res) => {
   const day = todayKey(new Date(now));
   const out = { campaigns: 0, mockups: 0, sent: 0, failed: 0, held: [] };
 
-  // Auto link sends first: someone said YES and their delay is up. These are warm replies to a
-  // conversation THEY continued, so they go regardless of working hours and outside the cold cap.
+  // Mockups are only generated AFTER a positive reply (no credits burned on the uninterested),
+  // so a YES may wait one extra tick while its mockup builds. These warm follow-ups go first,
+  // any time of day and outside the cold cap: they are replies to a conversation THEY continued.
+  let genBudget = MOCKUPS_PER_TICK;
   if (smsConfigured()) {
     const due = await dueLinkSends(new Date(now).toISOString(), 15);
     for (const it of due) {
+      if (!it.view_url) {
+        if (genBudget <= 0) { out.held.push('mockup queue full, ' + it.name + ' next tick'); continue; }
+        genBudget--;
+        const g = await generateMockup(base, it);
+        if (!g.ok) {
+          // one retry next tick, then give up and tell the owner rather than ghosting a YES
+          if (it.error) { await setItem(it.id, { state: 'failed', error: g.error }); out.failed++; }
+          else await setItem(it.id, { error: g.error });
+          continue;
+        }
+        await setItem(it.id, { slug: g.slug, viewUrl: g.viewUrl });
+        it.view_url = g.viewUrl;
+        out.mockups++;
+      }
       const msg = renderMessage(it.link_message || 'Here it is: {link}', it);
       const r = await sendSms(it.phone, msg, base);
       if (r.ok) {
@@ -93,16 +110,25 @@ module.exports = async (req, res) => {
   for (const c of campaigns) {
     out.campaigns++;
 
-    // 1. build mockups (allowed at any hour, it costs nothing socially)
-    const pending = await itemsInState(c.id, 'pending', MOCKUPS_PER_TICK);
-    for (const it of pending) {
-      const g = await generateMockup(base, it);
-      if (g.ok) { await setItem(it.id, { state: 'ready', slug: g.slug, viewUrl: g.viewUrl }); out.mockups++; }
-      else {
-        // one retry on the next tick, then give up on this recipient
-        if (it.error) { await setItem(it.id, { state: 'failed', error: g.error }); out.failed++; }
-        else await setItem(it.id, { error: g.error });
+    // 1. build mockups upfront ONLY for link mode (the link goes in the first text). Ask mode
+    // holds fire: the mockup is generated after a YES, so no credits die on the uninterested.
+    if (c.mode !== 'ask') {
+      const pending = await itemsInState(c.id, 'pending', genBudget);
+      for (const it of pending) {
+        if (genBudget <= 0) break;
+        genBudget--;
+        const g = await generateMockup(base, it);
+        if (g.ok) { await setItem(it.id, { state: 'ready', slug: g.slug, viewUrl: g.viewUrl }); out.mockups++; }
+        else {
+          // one retry on the next tick, then give up on this recipient
+          if (it.error) { await setItem(it.id, { state: 'failed', error: g.error }); out.failed++; }
+          else await setItem(it.id, { error: g.error });
+        }
       }
+    } else {
+      // ask mode: pending items are simply ready to be asked
+      const pend = await itemsInState(c.id, 'pending', SENDS_PER_TICK);
+      for (const it of pend) await setItem(it.id, { state: 'ready' });
     }
 
     // 2. send (working hours + Twilio + daily cap only)

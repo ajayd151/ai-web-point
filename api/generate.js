@@ -483,7 +483,8 @@ module.exports = async (req, res) => {
     const imageUrl = `${linkBase}/i/${slug}.png`; // branded, hides the blob host
 
     await record('generate', Date.now(), tenantPrefix(req), emailOf(req)); // count the slot only now that it actually worked
-    await logActivity(emailOf(req), accountEmailOf(req), 'mockup', String((business && business.name) || slug), String((business && business.name) || slug));
+    // campaign-generated mockups are marked so reporting can split man vs machine
+    await logActivity(emailOf(req), accountEmailOf(req), 'mockup', String((business && business.name) || slug) + (body.auto ? ' (auto)' : ''), String((business && business.name) || slug), body.auto ? { auto: 1 } : undefined);
     res.status(200).json({ imageUrl, viewUrl, id, slug });
   } catch (err) {
     console.error('generate error:', err);

@@ -2580,8 +2580,12 @@ async function smsPreview() {
     const d = await r.json();
     if (d.error) { out.innerHTML = '<p class="muted">' + esc(d.error) + '</p>'; return; }
     const sk = d.skipped || {};
+    const askMode = (($('smsb-mode') && $('smsb-mode').value) || 'ask') === 'ask';
+    const estLine = askMode
+      ? 'Mockups are only generated for POSITIVE replies, so image cost follows interest, not sends. Texts: ' + d.count + ' (~4p each) plus one more per yes.'
+      : d.estMockups + ' fresh mockup' + (d.estMockups === 1 ? '' : 's') + ' will be generated (AI image cost), plus ' + d.count + ' text' + (d.count === 1 ? '' : 's') + ' (~4p each).';
     out.innerHTML = '<div class="sms-count"><b>' + d.count + '</b> business' + (d.count === 1 ? '' : 'es') + ' will get this.</div>' +
-      '<div class="sms-est">' + d.estMockups + ' fresh mockup' + (d.estMockups === 1 ? '' : 's') + ' will be generated (AI image cost), plus ' + d.count + ' text' + (d.count === 1 ? '' : 's') + ' (~4p each).</div>' +
+      '<div class="sms-est">' + estLine + '</div>' +
       '<div class="muted sms-skip">Skipped: ' + (sk.noMobile || 0) + ' no mobile number · ' + (sk.alreadyMessaged || 0) + ' already texted · ' + (sk.optedOut || 0) + ' opted out</div>' +
       ((d.sample || []).length ? ('<div class="sms-sample">' + d.sample.map((s) => esc(s.name) + ' <span class="muted">(' + esc(s.location || '') + ')</span>').join(' · ') + (d.count > d.sample.length ? ' <span class="muted">+ ' + (d.count - d.sample.length) + ' more</span>' : '') + '</div>') : '');
     smsPreviewOk = d.count > 0;
@@ -2951,6 +2955,11 @@ function renderActivityReport(rep) {
       // duplicates only get counted from the fix onwards, so say nothing rather than imply zero
       const s = 'added ' + times + ' time' + (times === 1 ? '' : 's') + (dup ? (' · ' + dup + ' already on list') : '');
       return ovTile(meta[0], added, 'Records added', s);
+    }
+    if (k === 'mockup') {
+      const auto = (rep.mockupsAuto != null ? rep.mockupsAuto : 0);
+      const tot = counts[k] || 0;
+      sub = (sub ? sub + ' · ' : '') + (auto ? ((tot - auto) + ' manual · ' + auto + ' auto') : 'all manual');
     }
     return ovTile(meta[0], (counts[k] || 0), meta[1], sub);
   }).join('');
