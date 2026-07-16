@@ -2494,6 +2494,9 @@ function smsFilters() {
     location: ($('smsb-loc') && $('smsb-loc').value) || '',
     status: ($('smsb-status') && $('smsb-status').value) || 'any',
     notMessaged: !!($('smsb-notmsg') && $('smsb-notmsg').checked),
+    foundWebsite: ($('smsb-site') && $('smsb-site').value) || 'any',
+    critRatingsFrom: ($('smsb-rfrom') && $('smsb-rfrom').value) || null,
+    critRatingsTo: ($('smsb-rto') && $('smsb-rto').value) || null,
     max: Number(($('smsb-max') && $('smsb-max').value) || 50),
   };
 }
@@ -2523,7 +2526,7 @@ async function loadSmsAdmin() {
       tg.disabled = false; tg.textContent = '🏷️ Tag existing records';
     });
     // any filter change invalidates the preview, so you cannot schedule blind
-    ['smsb-cat', 'smsb-loc', 'smsb-status', 'smsb-max', 'smsb-notmsg'].forEach((id) => {
+    ['smsb-cat', 'smsb-loc', 'smsb-status', 'smsb-max', 'smsb-notmsg', 'smsb-site', 'smsb-rfrom', 'smsb-rto'].forEach((id) => {
       const el = $(id); if (el) el.addEventListener('input', () => { smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true; });
     });
   }

@@ -826,6 +826,16 @@
                 <input id="smsb-max" type="number" min="1" max="200" value="50" title="Maximum recipients" />
                 <label class="sms-check"><input id="smsb-notmsg" type="checkbox" checked /> Skip anyone already texted</label>
               </div>
+              <div class="sms-grid sms-grid2">
+                <select id="smsb-site" title="The website filter used by the search that found them">
+                  <option value="any">Found with: any website filter</option>
+                  <option value="none">Found with: No website</option>
+                  <option value="has">Found with: Has website</option>
+                </select>
+                <input id="smsb-rfrom" type="number" min="0" placeholder="Search ratings from…" title="Only records found by a search whose ratings filter overlaps this range" />
+                <input id="smsb-rto" type="number" min="0" placeholder="Search ratings to…" />
+                <span class="muted sms-hint">These match the search criteria stamped on each record (🏷️). Old records only have a tag, so the website/ratings filters skip them.</span>
+              </div>
               <div class="sms-msg-row">
                 <select id="smsb-tpl"><option value="">Start from a template…</option></select>
                 <textarea id="smsb-msg" rows="3" placeholder="Hi {business}, we built a quick homepage design for you, have a look: {link}"></textarea>

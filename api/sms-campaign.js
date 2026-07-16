@@ -30,14 +30,29 @@ async function buildAudience(filters) {
   const wantStatus = String(f.status || 'any'); // 'any' | 'new' | a status value
   const notMessaged = f.notMessaged !== false;  // default ON: do not text the same business twice
   const max = Math.min(Math.max(Number(f.max) || 50, 1), 200);
+  // criteria the record was FOUND with (stamped by search, or backfilled): website filter used
+  // ('any' | 'none' = found via the No-website filter | 'has'), and the search's ratings range
+  const wantSite = String(f.foundWebsite || 'any');
+  const rFrom = Number.isFinite(Number(f.critRatingsFrom)) && f.critRatingsFrom !== '' && f.critRatingsFrom != null ? Number(f.critRatingsFrom) : null;
+  const rTo = Number.isFinite(Number(f.critRatingsTo)) && f.critRatingsTo !== '' && f.critRatingsTo != null ? Number(f.critRatingsTo) : null;
 
   const out = []; const skipped = { noMobile: 0, optedOut: 0, alreadyMessaged: 0, filtered: 0 };
   for (const c of Object.values(calls)) {
     if (!c || !c.name) continue;
     const st = (idx[c.key] && idx[c.key].status) || '';
+    const crit = c.crit || {};
     // the tag (search industry term) and the Google category both count as the industry
     if (wantCat && (String(c.tag || '') + ' ' + String(c.category || '')).toLowerCase().indexOf(wantCat) < 0) { skipped.filtered++; continue; }
-    if (wantLoc && String(c.location || '').toLowerCase().indexOf(wantLoc) < 0) { skipped.filtered++; continue; }
+    // location matches the record's own location OR the search location that found it
+    if (wantLoc && (String(c.location || '') + ' ' + String(crit.location || '')).toLowerCase().indexOf(wantLoc) < 0) { skipped.filtered++; continue; }
+    if (wantSite !== 'any' && String(crit.website || '') !== wantSite) { skipped.filtered++; continue; }
+    // ratings: the search range that found this record must overlap the range asked for
+    if (rFrom != null || rTo != null) {
+      if (crit.ratingsFrom == null && crit.ratingsTo == null) { skipped.filtered++; continue; }
+      const cFrom = crit.ratingsFrom != null ? Number(crit.ratingsFrom) : 0;
+      const cTo = crit.ratingsTo != null ? Number(crit.ratingsTo) : Infinity;
+      if ((rTo != null && cFrom > rTo) || (rFrom != null && cTo < rFrom)) { skipped.filtered++; continue; }
+    }
     if (wantStatus === 'new' ? st !== '' : (wantStatus !== 'any' && st !== wantStatus)) { skipped.filtered++; continue; }
     const mob = ukMobile(c.phone);
     if (!mob) { skipped.noMobile++; continue; }
