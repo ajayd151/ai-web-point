@@ -811,7 +811,7 @@
           <div id="admin-sms" class="admin-pane hidden">
             <div class="admin-pane-head">
               <h2 class="view-title">📣 SMS campaigns</h2>
-              <button id="sms-refresh" class="linkbtn">↻ Refresh</button>
+              <button id="sms-retag" class="linkbtn" title="Backfill a 🏷️ tag onto old call-list records from their Google category">🏷️ Tag existing records</button> <button id="sms-refresh" class="linkbtn">↻ Refresh</button>
             </div>
             <p class="muted view-sub">Pick who gets it with search criteria, we generate a fresh mockup for each business and text them the link on your schedule. Replies land below, in their notes, and in your inbox.</p>
             <div id="sms-twilio-note" class="sms-note hidden"></div>
@@ -820,7 +820,7 @@
               <div class="ov-rev-head">New campaign</div>
               <div class="sms-grid">
                 <input id="smsb-name" type="text" placeholder="Campaign name (e.g. Eyebrows Manchester July)" />
-                <input id="smsb-cat" type="text" placeholder="Industry contains… (e.g. beauty)" />
+                <input id="smsb-cat" type="text" placeholder="Industry / tag contains… (e.g. salons)" />
                 <input id="smsb-loc" type="text" placeholder="Location contains… (e.g. Manchester)" />
                 <select id="smsb-status"></select>
                 <input id="smsb-max" type="number" min="1" max="200" value="50" title="Maximum recipients" />
@@ -829,7 +829,7 @@
               <div class="sms-msg-row">
                 <select id="smsb-tpl"><option value="">Start from a template…</option></select>
                 <textarea id="smsb-msg" rows="3" placeholder="Hi {business}, we built a quick homepage design for you, have a look: {link}"></textarea>
-                <p class="muted sms-hint">{business} = their name, {link} = their mockup (required). "Reply STOP to opt out" is added automatically.</p>
+                <p class="muted sms-hint">{business} = their name, {industry} = their tag (e.g. salons), {link} = their mockup (required). "Reply STOP to opt out" is added automatically.</p>
               </div>
               <div class="sms-when">
                 <label>Send from</label>

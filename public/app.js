@@ -689,11 +689,11 @@ async function batchAddToCallList() {
   const btn = $('batch-addcall');
   if (!list.length) { alert('Those are already on your call list.'); return; }
   if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
-  const adds = list.map((b) => ({
+  const adds = list.map((b) => (Object.assign({
     name: b.name, location: b.location || '', category: b.category || '',
     phone: (b.phones && b.phones[0]) || b.phone || '', placeId: b.id || b.placeId || '',
     slug: (recentIndex.get(normKey(b.name, b.location)) || {}).id || b.slug || '', mapsUrl: b.mapsUrl || '',
-  }));
+  }, searchCrit())));
   try {
     await callsPost({ add: adds }); // one serialized write for the whole batch
     adds.forEach((a) => { callKeys.add(callKeyFor(a)); callNameKeys.add(normKey(a.name, a.location)); callOptimistic.add(normKey(a.name, a.location)); });
@@ -728,6 +728,21 @@ function updateCompanyMode() {
 updateCompanyMode();
 
 let lastSearchParams = null; // {industry, location, filters} so Load more can repeat it
+
+// The search that FOUND a business is gold for retargeting, so it rides along onto the call
+// list: the industry term becomes the record's 🏷️ tag ("salons"), and the location + filters
+// (website / phone / ratings) are kept as `crit`. Old records pre-date this, Admin > SMS has a
+// one-off "Tag existing records" that backfills their tag from the Google category.
+function searchCrit() {
+  const p = lastSearchParams || {};
+  if (!p.industry && !p.location) return {};
+  const f = p.filters || {};
+  const crit = { industry: p.industry || '', location: p.location || '', website: f.website || '', phone: f.phone || '', email: f.email || '', company: f.company || '' };
+  if (f.ratingsFrom != null) crit.ratingsFrom = f.ratingsFrom;
+  if (f.ratingsTo != null) crit.ratingsTo = f.ratingsTo;
+  return { tag: String(p.industry || '').trim().toLowerCase(), crit: crit };
+}
+
 let lastBatchFull = false;   // was the last batch a full page (more may exist)?
 function currentSearchFilters() {
   const starBuckets = Array.from(document.querySelectorAll('.f-star:checked')).map((c) => Number(c.value));
@@ -2500,6 +2515,13 @@ async function loadSmsAdmin() {
     const pv = $('smsb-preview'); if (pv) pv.addEventListener('click', smsPreview);
     const cr = $('smsb-create'); if (cr) cr.addEventListener('click', smsCreate);
     const rf = $('sms-refresh'); if (rf) rf.addEventListener('click', (e) => { e.preventDefault(); loadSmsAdmin(); });
+    // one-off: backfill tags on records that pre-date tagging (uses their Google category)
+    const tg = $('sms-retag'); if (tg) tg.addEventListener('click', async () => {
+      tg.disabled = true; tg.textContent = 'Tagging…';
+      try { const d = await (await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ retag: 1 }) })).json();
+        alert('Tagged ' + (d.tagged != null ? d.tagged : 'existing') + ' records from their category.'); } catch (e) { alert('Could not tag, try again.'); }
+      tg.disabled = false; tg.textContent = '🏷️ Tag existing records';
+    });
     // any filter change invalidates the preview, so you cannot schedule blind
     ['smsb-cat', 'smsb-loc', 'smsb-status', 'smsb-max', 'smsb-notmsg'].forEach((id) => {
       const el = $(id); if (el) el.addEventListener('input', () => { smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true; });
@@ -4432,7 +4454,8 @@ function renderCallList() {
     const st = callStatusOf(c);
     const tr = document.createElement('tr');
     const opts = LEAD_STATUSES.map(([v, l]) => `<option value="${esc(v)}"${v === st ? ' selected' : ''}>${esc(l)}</option>`).join('');
-    tr.innerHTML = `<td><button class="lead-name">${esc(humaniseBusinessName(c.name) || c.name)}</button><div class="muted st-area">📍 ${esc(c.location || '')}${c.category ? ' · ' + esc(c.category) : ''}</div></td>` +
+    const critBits = c.crit ? [c.crit.industry, c.crit.location, c.crit.website === 'none' ? 'no website' : c.crit.website, c.crit.phone, (c.crit.ratingsFrom != null || c.crit.ratingsTo != null) ? ('ratings ' + (c.crit.ratingsFrom != null ? c.crit.ratingsFrom : '0') + '-' + (c.crit.ratingsTo != null ? c.crit.ratingsTo : 'any')) : ''].filter(Boolean).join(' · ') : '';
+    tr.innerHTML = `<td title="${critBits ? 'Found by: ' + esc(critBits) : ''}"><button class="lead-name">${esc(humaniseBusinessName(c.name) || c.name)}</button><div class="muted st-area">${c.tag ? '<span class="call-tag">🏷️ ' + esc(c.tag) + '</span> ' : ''}📍 ${esc(c.location || '')}${c.category ? ' · ' + esc(c.category) : ''}</div></td>` +
       `<td>${c.phone ? `<a class="call-tel" href="tel:${esc(String(c.phone).replace(/[^\d+]/g, ''))}">📞 ${esc(c.phone)}</a>` : '<span class="muted">No phone</span>'}</td>` +
       `<td><select class="call-status leads-statusf">${opts}</select></td>` +
       `<td><button class="ghost sm call-notes">📝 Notes</button></td>` +
@@ -4504,7 +4527,7 @@ function renderCallList() {
 }
 async function addToCallList(b, rec, btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
-  const add = { name: b.name, location: b.location || '', category: b.category || '', phone: (b.phones && b.phones[0]) || b.phone || '', placeId: b.id || b.placeId || '', slug: rec ? rec.id : (b.slug || ''), mapsUrl: b.mapsUrl || '' };
+  const add = Object.assign({ name: b.name, location: b.location || '', category: b.category || '', phone: (b.phones && b.phones[0]) || b.phone || '', placeId: b.id || b.placeId || '', slug: rec ? rec.id : (b.slug || ''), mapsUrl: b.mapsUrl || '' }, searchCrit());
   try {
     await callsPost({ add }); // serialized, so rapid adds can't overwrite each other
     callKeys.add(callKeyFor(add));

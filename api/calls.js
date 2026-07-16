@@ -78,6 +78,16 @@ module.exports = async (req, res) => {
     for (const a of items) {
       if (!a || !a.name) continue;
       const key = keyFor(a);
+      // the search criteria that found this record (tag = the industry term). Kept for
+      // retargeting: "text every business tagged salons in London that had no website".
+      // Preserved on re-add so a context-free add (e.g. from Prowl) never wipes them.
+      let crit;
+      if (a.crit && typeof a.crit === 'object') {
+        crit = {};
+        ['industry', 'location', 'website', 'phone', 'email', 'company'].forEach((k) => { if (a.crit[k]) crit[k] = String(a.crit[k]).slice(0, 80); });
+        ['ratingsFrom', 'ratingsTo'].forEach((k) => { const n = Number(a.crit[k]); if (Number.isFinite(n)) crit[k] = n; });
+        if (!Object.keys(crit).length) crit = undefined;
+      }
       map[key] = {
         key,
         name: String(a.name || '').slice(0, 120),
@@ -87,6 +97,8 @@ module.exports = async (req, res) => {
         placeId: String(a.placeId || '').slice(0, 80),
         slug: String(a.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120),
         mapsUrl: String(a.mapsUrl || '').slice(0, 300),
+        tag: String(a.tag || '').trim().toLowerCase().slice(0, 60) || (map[key] && map[key].tag) || undefined,
+        crit: crit || (map[key] && map[key].crit) || undefined,
         addedAt: (map[key] && map[key].addedAt) || new Date().toISOString(),
         addedBy: (map[key] && map[key].addedBy) || who || undefined,
       };
@@ -95,6 +107,18 @@ module.exports = async (req, res) => {
     if (!added) { res.status(400).json({ error: 'Nothing to add.' }); return; }
   } else if (body.remove) {
     delete map[String(body.remove)];
+  } else if (body.retag) {
+    // one-off backfill: records that pre-date tagging get their Google category as the tag,
+    // which is the best signal we still have (the original search terms were never stored)
+    let n = 0;
+    Object.values(map).forEach((c) => {
+      if (c && !c.tag && c.category) { c.tag = String(c.category).trim().toLowerCase().slice(0, 60); n++; }
+    });
+    if (!n) { res.status(200).json({ ok: true, tagged: 0 }); return; }
+    try { await put(PATH, JSON.stringify(map), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
+    catch (e) { res.status(500).json({ error: 'Could not save the tags.' }); return; }
+    res.status(200).json({ ok: true, tagged: n });
+    return;
   } else {
     res.status(400).json({ error: 'Nothing to do.' });
     return;

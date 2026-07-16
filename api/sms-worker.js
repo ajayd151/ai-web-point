@@ -54,6 +54,7 @@ async function generateMockup(base, item) {
 function renderMessage(template, item) {
   let msg = String(template || '')
     .split('{business}').join(humaniseBusinessName(item.name) || item.name)
+    .split('{industry}').join(item.category || 'business')
     .split('{link}').join(item.view_url || '');
   if (!/stop/i.test(msg)) msg += '\nReply STOP to opt out';
   return msg.slice(0, 640);

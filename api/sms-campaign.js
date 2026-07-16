@@ -35,14 +35,15 @@ async function buildAudience(filters) {
   for (const c of Object.values(calls)) {
     if (!c || !c.name) continue;
     const st = (idx[c.key] && idx[c.key].status) || '';
-    if (wantCat && String(c.category || '').toLowerCase().indexOf(wantCat) < 0) { skipped.filtered++; continue; }
+    // the tag (search industry term) and the Google category both count as the industry
+    if (wantCat && (String(c.tag || '') + ' ' + String(c.category || '')).toLowerCase().indexOf(wantCat) < 0) { skipped.filtered++; continue; }
     if (wantLoc && String(c.location || '').toLowerCase().indexOf(wantLoc) < 0) { skipped.filtered++; continue; }
     if (wantStatus === 'new' ? st !== '' : (wantStatus !== 'any' && st !== wantStatus)) { skipped.filtered++; continue; }
     const mob = ukMobile(c.phone);
     if (!mob) { skipped.noMobile++; continue; }
     if (optout.has(mob)) { skipped.optedOut++; continue; }
     if (notMessaged && already.has(c.key)) { skipped.alreadyMessaged++; continue; }
-    out.push({ key: c.key, name: c.name, location: c.location || '', category: c.category || '', phone: mob });
+    out.push({ key: c.key, name: c.name, location: c.location || '', category: c.tag || c.category || '', phone: mob });
     if (out.length >= max) break;
   }
   return { items: out, skipped: skipped };
