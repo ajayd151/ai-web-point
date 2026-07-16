@@ -2468,7 +2468,124 @@ document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('cl
   if (v === 'feedback') loadFeedbackAdmin();
   if (v === 'team') loadTeamAdmin();
   if (v === 'limits') loadLimitsAdmin();
+  if (v === 'sms') loadSmsAdmin();
 }));
+
+// ---- Admin > SMS campaigns ----------------------------------------------------------------
+let smsPreviewOk = false;
+function smsFilters() {
+  return {
+    category: ($('smsb-cat') && $('smsb-cat').value) || '',
+    location: ($('smsb-loc') && $('smsb-loc').value) || '',
+    status: ($('smsb-status') && $('smsb-status').value) || 'any',
+    notMessaged: !!($('smsb-notmsg') && $('smsb-notmsg').checked),
+    max: Number(($('smsb-max') && $('smsb-max').value) || 50),
+  };
+}
+async function loadSmsAdmin() {
+  // one-time wiring
+  const st = $('smsb-status');
+  if (st && !st.dataset.loaded) {
+    st.innerHTML = '<option value="any">Any status</option><option value="new">New (no status)</option>' +
+      LEAD_STATUSES.filter((o) => o[0]).map((o) => '<option value="' + o[0] + '">' + o[1] + '</option>').join('');
+    st.dataset.loaded = '1';
+    const tp = $('smsb-tpl');
+    if (tp) {
+      try { firstTemplates().forEach((t) => { const o = document.createElement('option'); o.value = t.id; o.textContent = t.name; tp.appendChild(o); }); } catch (e) {}
+      tp.addEventListener('change', () => {
+        const t = firstTemplateById(tp.value);
+        if (t && $('smsb-msg')) $('smsb-msg').value = t.body || '';
+      });
+    }
+    const pv = $('smsb-preview'); if (pv) pv.addEventListener('click', smsPreview);
+    const cr = $('smsb-create'); if (cr) cr.addEventListener('click', smsCreate);
+    const rf = $('sms-refresh'); if (rf) rf.addEventListener('click', (e) => { e.preventDefault(); loadSmsAdmin(); });
+    // any filter change invalidates the preview, so you cannot schedule blind
+    ['smsb-cat', 'smsb-loc', 'smsb-status', 'smsb-max', 'smsb-notmsg'].forEach((id) => {
+      const el = $(id); if (el) el.addEventListener('input', () => { smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true; });
+    });
+  }
+  try {
+    const r = await fetch('/api/sms-campaign');
+    const d = await r.json();
+    if (d.error) { const el = $('sms-campaigns'); if (el) el.innerHTML = '<p class="muted">' + esc(d.error) + '</p>'; return; }
+    const note = $('sms-twilio-note');
+    if (note) {
+      note.classList.toggle('hidden', !!d.twilioReady);
+      if (!d.twilioReady) note.textContent = '⚠️ Twilio is not connected yet. Campaigns can be built and mockups will generate, but no texts go out until the Twilio keys are added in Vercel. Ask Claude for the sign-up steps.';
+    }
+    renderSmsCampaigns(d.campaigns || []);
+    renderSmsReplies(d.replies || []);
+  } catch (e) { /* leave as is */ }
+}
+async function smsPreview() {
+  const out = $('smsb-out'); if (!out) return;
+  out.classList.remove('hidden');
+  out.innerHTML = '<p class="muted"><span class="spinner sm"></span> Checking who matches…</p>';
+  try {
+    const r = await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'preview', filters: smsFilters() }) });
+    const d = await r.json();
+    if (d.error) { out.innerHTML = '<p class="muted">' + esc(d.error) + '</p>'; return; }
+    const sk = d.skipped || {};
+    out.innerHTML = '<div class="sms-count"><b>' + d.count + '</b> business' + (d.count === 1 ? '' : 'es') + ' will get this.</div>' +
+      '<div class="sms-est">' + d.estMockups + ' fresh mockup' + (d.estMockups === 1 ? '' : 's') + ' will be generated (AI image cost), plus ' + d.count + ' text' + (d.count === 1 ? '' : 's') + ' (~4p each).</div>' +
+      '<div class="muted sms-skip">Skipped: ' + (sk.noMobile || 0) + ' no mobile number · ' + (sk.alreadyMessaged || 0) + ' already texted · ' + (sk.optedOut || 0) + ' opted out</div>' +
+      ((d.sample || []).length ? ('<div class="sms-sample">' + d.sample.map((s) => esc(s.name) + ' <span class="muted">(' + esc(s.location || '') + ')</span>').join(' · ') + (d.count > d.sample.length ? ' <span class="muted">+ ' + (d.count - d.sample.length) + ' more</span>' : '') + '</div>') : '');
+    smsPreviewOk = d.count > 0;
+    const c = $('smsb-create'); if (c) c.disabled = !smsPreviewOk;
+  } catch (e) { out.innerHTML = '<p class="muted">Could not preview just now.</p>'; }
+}
+async function smsCreate() {
+  if (!smsPreviewOk) { alert('Preview the audience first, so you can see who this goes to.'); return; }
+  const msg = ($('smsb-msg') && $('smsb-msg').value || '').trim();
+  if (!msg) { alert('Write the message first.'); return; }
+  if (msg.indexOf('{link}') < 0) { alert('The message needs {link} in it, that is where their mockup goes.'); return; }
+  const whenRaw = ($('smsb-when') && $('smsb-when').value) || '';
+  const body = {
+    action: 'create',
+    name: ($('smsb-name') && $('smsb-name').value) || '',
+    message: msg,
+    filters: smsFilters(),
+    scheduleAt: whenRaw ? new Date(whenRaw).toISOString() : '',
+  };
+  if (!confirm('Schedule this campaign? Mockups start generating straight away; texts go out ' + (whenRaw ? 'from your chosen time' : 'as soon as the worker runs') + ', Mon-Fri 9-6 UK.')) return;
+  const b = $('smsb-create'); if (b) { b.disabled = true; b.textContent = 'Scheduling…'; }
+  try {
+    const r = await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json();
+    if (d.error) alert(d.error);
+    else { alert('Scheduled. ' + d.count + ' recipients.'); const o = $('smsb-out'); if (o) o.classList.add('hidden'); }
+    loadSmsAdmin();
+  } catch (e) { alert('Could not schedule, please try again.'); }
+  if (b) { b.textContent = 'Schedule campaign'; b.disabled = true; }
+  smsPreviewOk = false;
+}
+function renderSmsCampaigns(rows) {
+  const el = $('sms-campaigns'); if (!el) return;
+  if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet.</p>'; return; }
+  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Campaign</th><th>Status</th><th>Progress</th><th>Sends from</th><th></th></tr></thead><tbody>' +
+    rows.map((c) => {
+      const prog = (c.sent || 0) + ' sent / ' + (c.total || 0) + (c.failed ? (' · ' + c.failed + ' failed') : '');
+      const act = c.status === 'running' || c.status === 'scheduled'
+        ? '<button class="linkbtn" data-smsact="pause" data-id="' + c.id + '">Pause</button> <button class="linkbtn" data-smsact="cancel" data-id="' + c.id + '">Cancel</button>'
+        : (c.status === 'paused' ? '<button class="linkbtn" data-smsact="resume" data-id="' + c.id + '">Resume</button> <button class="linkbtn" data-smsact="cancel" data-id="' + c.id + '">Cancel</button>' : '');
+      return '<tr><td><b>' + esc(c.name || ('#' + c.id)) + '</b><span class="muted" style="display:block;font-size:11px">by ' + esc(noteAuthor(c.created_by || '')) + '</span></td>' +
+        '<td>' + esc(c.status) + (c.note ? ('<span class="muted" style="display:block;font-size:11px">' + esc(c.note) + '</span>') : '') + '</td>' +
+        '<td>' + prog + '</td><td>' + esc(fmtDate(c.schedule_at)) + '</td><td>' + act + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+  el.querySelectorAll('[data-smsact]').forEach((b) => b.addEventListener('click', async () => {
+    if (b.dataset.smsact === 'cancel' && !confirm('Cancel this campaign? Unsent texts will never go.')) return;
+    await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: b.dataset.smsact, id: Number(b.dataset.id) }) });
+    loadSmsAdmin();
+  }));
+}
+function renderSmsReplies(rows) {
+  const el = $('sms-replies'); if (!el) return;
+  if (!rows.length) { el.innerHTML = '<p class="muted">No replies yet.</p>'; return; }
+  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>When</th><th>From</th><th>Message</th></tr></thead><tbody>' +
+    rows.map((r) => '<tr><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.from_phone || '') + '</span>') : esc(r.from_phone || '')) + '</td><td>' + esc(r.body || '') + '</td></tr>').join('') +
+    '</tbody></table></div>';
+}
 
 // ---- Admin > Limits: per-person usage caps, so they can be changed here instead of in Vercel ----
 const LIM_LABELS = { search: '🔍 Searches', generate: '🖼️ Mockups', pounce: '🐆 Websites', prowl: '🐾 Lead research', grammar: '✏️ Grammar fixes', sms: '📱 SMS / day' };

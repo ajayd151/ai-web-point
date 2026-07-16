@@ -1370,3 +1370,23 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 /* column-header definitions on hover */
 .ni-th { cursor: help; }
 .ni-th:not(:first-child) { border-bottom: 1px dotted #9aa7b8; }
+
+/* ---- Admin > SMS campaigns ---- */
+.sms-note { background: #fff8ec; border: 1px solid #f3d9a8; border-left: 5px solid #e0913a; border-radius: 10px; padding: 11px 14px; font-size: 13px; color: #15233b; margin-bottom: 14px; font-weight: 600; }
+.sms-build { background: #fff; border: 1px solid #e4eaf1; border-radius: 14px; padding: 14px 16px; }
+.sms-grid { display: grid; grid-template-columns: 2fr 1.5fr 1.5fr 1.4fr 80px auto; gap: 8px; align-items: center; margin: 10px 0; }
+.sms-grid input[type=text], .sms-grid input[type=number], .sms-grid select { border: 1px solid #d8e0ea; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
+.sms-check { font-size: 12.5px; color: #15233b; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
+.sms-msg-row select { border: 1px solid #d8e0ea; border-radius: 8px; padding: 7px 10px; font-size: 13px; margin-bottom: 7px; }
+.sms-msg-row textarea { width: 100%; border: 1px solid #d8e0ea; border-radius: 8px; padding: 9px 11px; font-size: 13.5px; font-family: inherit; box-sizing: border-box; }
+.sms-hint { font-size: 12px; margin: 5px 0 0; }
+.sms-when { display: flex; align-items: center; gap: 10px; margin: 12px 0; flex-wrap: wrap; }
+.sms-when label { font-size: 13px; font-weight: 700; color: #15233b; }
+.sms-when input { border: 1px solid #d8e0ea; border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit; }
+.sms-actions { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
+.sms-out { margin-top: 12px; background: #f4f7fa; border-radius: 10px; padding: 12px 14px; }
+.sms-count { font-size: 16px; color: #15233b; }
+.sms-est { font-size: 13px; color: #b45309; font-weight: 600; margin-top: 4px; }
+.sms-skip { font-size: 12px; margin-top: 4px; }
+.sms-sample { font-size: 12.5px; color: #15233b; margin-top: 8px; line-height: 1.7; }
+@media (max-width: 860px) { .sms-grid { grid-template-columns: 1fr 1fr; } }

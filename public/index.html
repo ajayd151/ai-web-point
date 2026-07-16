@@ -684,6 +684,7 @@
           <button class="admin-navbtn" data-adminview="feedback">💬 Feedback</button>
           <button class="admin-navbtn" data-adminview="team">👥 Team</button>
           <button class="admin-navbtn" data-adminview="limits">🚦 Limits</button>
+          <button class="admin-navbtn" data-adminview="sms">📣 SMS</button>
           <!-- more admin sections get added here -->
         </aside>
         <section class="admin-content">
@@ -805,6 +806,48 @@
             <div id="lim-msg" class="login-msg hidden"></div>
             <div id="lim-body" class="lim-body"></div>
             <p class="muted team-note">These are cost guards: searches call the Google Places API and mockups and websites call the AI image service, so every one of them costs real money. Raise them as far as you need, just know your bill follows.</p>
+          </div>
+
+          <div id="admin-sms" class="admin-pane hidden">
+            <div class="admin-pane-head">
+              <h2 class="view-title">📣 SMS campaigns</h2>
+              <button id="sms-refresh" class="linkbtn">↻ Refresh</button>
+            </div>
+            <p class="muted view-sub">Pick who gets it with search criteria, we generate a fresh mockup for each business and text them the link on your schedule. Replies land below, in their notes, and in your inbox.</p>
+            <div id="sms-twilio-note" class="sms-note hidden"></div>
+
+            <div class="sms-build">
+              <div class="ov-rev-head">New campaign</div>
+              <div class="sms-grid">
+                <input id="smsb-name" type="text" placeholder="Campaign name (e.g. Eyebrows Manchester July)" />
+                <input id="smsb-cat" type="text" placeholder="Industry contains… (e.g. beauty)" />
+                <input id="smsb-loc" type="text" placeholder="Location contains… (e.g. Manchester)" />
+                <select id="smsb-status"></select>
+                <input id="smsb-max" type="number" min="1" max="200" value="50" title="Maximum recipients" />
+                <label class="sms-check"><input id="smsb-notmsg" type="checkbox" checked /> Skip anyone already texted</label>
+              </div>
+              <div class="sms-msg-row">
+                <select id="smsb-tpl"><option value="">Start from a template…</option></select>
+                <textarea id="smsb-msg" rows="3" placeholder="Hi {business}, we built a quick homepage design for you, have a look: {link}"></textarea>
+                <p class="muted sms-hint">{business} = their name, {link} = their mockup (required). "Reply STOP to opt out" is added automatically.</p>
+              </div>
+              <div class="sms-when">
+                <label>Send from</label>
+                <input id="smsb-when" type="datetime-local" />
+                <span class="muted sms-hint">Leave blank = start now. Sends only go Mon-Fri, 9am-6pm UK, dripped gently.</span>
+              </div>
+              <div class="sms-actions">
+                <button id="smsb-preview" class="ghost">👀 Preview audience</button>
+                <button id="smsb-create" class="batch-btn" disabled>Schedule campaign</button>
+              </div>
+              <div id="smsb-out" class="sms-out hidden"></div>
+            </div>
+
+            <div class="ov-rev-head" style="margin-top:22px">Campaigns</div>
+            <div id="sms-campaigns"><p class="muted">Loading…</p></div>
+
+            <div class="ov-rev-head" style="margin-top:22px">Replies</div>
+            <div id="sms-replies"><p class="muted">No replies yet.</p></div>
           </div>
         </section>
       </div>
