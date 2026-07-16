@@ -38,8 +38,10 @@ async function buildAudience(filters) {
   const rTo = Number.isFinite(Number(f.critRatingsTo)) && f.critRatingsTo !== '' && f.critRatingsTo != null ? Number(f.critRatingsTo) : null;
 
   const out = []; const skipped = { noMobile: 0, optedOut: 0, alreadyMessaged: 0, filtered: 0, deadNumber: 0 };
+  let scanned = 0;
   for (const c of Object.values(calls)) {
     if (!c || !c.name) continue;
+    scanned++;
     const st = (idx[c.key] && idx[c.key].status) || '';
     const crit = c.crit || {};
     // the tag (search industry term) and the Google category both count as the industry
@@ -63,7 +65,7 @@ async function buildAudience(filters) {
     out.push({ key: c.key, name: c.name, location: c.location || '', category: c.tag || c.category || '', phone: mob });
     if (out.length >= max) break;
   }
-  return { items: out, skipped: skipped };
+  return { items: out, skipped: skipped, scanned: scanned };
 }
 
 module.exports = async (req, res) => {
@@ -93,6 +95,7 @@ module.exports = async (req, res) => {
     const a = await buildAudience(body.filters);
     res.status(200).json({
       count: a.items.length,
+      scanned: a.scanned,
       skipped: a.skipped,
       sample: a.items.slice(0, 12),
       // rough money: every recipient gets a freshly generated mockup + one SMS segment

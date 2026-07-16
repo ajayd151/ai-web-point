@@ -2645,6 +2645,16 @@ async function smsPreview() {
     const d = await r.json();
     if (d.error) { out.innerHTML = '<p class="muted">' + esc(d.error) + '</p>'; return; }
     const sk = d.skipped || {};
+    // a zero result explains itself: where did every record fall out?
+    if (!d.count) {
+      out.innerHTML = '<div class="sms-count"><b>0</b> match. Of ' + (d.scanned || 0) + ' records scanned: ' +
+        (sk.filtered || 0) + ' did not fit the criteria · ' + (sk.noMobile || 0) + ' no UK mobile · ' +
+        (sk.alreadyMessaged || 0) + ' already texted · ' + (sk.optedOut || 0) + ' opted out · ' + (sk.deadNumber || 0) + ' dead numbers.' +
+        '</div><div class="muted sms-skip">Tip: the industry box matches the 🏷️ tag and Google category, not the business name. If your old records are untagged, click "🏷️ Tag existing records" above, then try again. And remember SMS needs a MOBILE (07...) number, landline-only businesses never qualify.</div>';
+      smsPreviewOk = false;
+      const c0 = $('smsb-create'); if (c0) c0.disabled = true;
+      return;
+    }
     const askMode = (($('smsb-mode') && $('smsb-mode').value) || 'ask') === 'ask';
     const estLine = askMode
       ? 'Mockups are only generated for POSITIVE replies, so image cost follows interest, not sends. Texts: ' + d.count + ' (~4p each) plus one more per yes.'
