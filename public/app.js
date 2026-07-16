@@ -2591,10 +2591,15 @@ async function loadSmsAdmin() {
         alert('Tagged ' + (d.tagged != null ? d.tagged : 'existing') + ' records from their category.'); } catch (e) { alert('Could not tag, try again.'); }
       tg.disabled = false; tg.textContent = '🏷️ Tag existing records';
     });
-    // any filter change invalidates the preview, so you cannot schedule blind
+    // any filter change invalidates the preview, so you cannot schedule blind, and kicks off a
+    // debounced LIVE COUNT so you can see the audience size while you type
     ['smsb-cat', 'smsb-loc', 'smsb-status', 'smsb-max', 'smsb-notmsg', 'smsb-site', 'smsb-rfrom', 'smsb-rto'].forEach((id) => {
-      const el = $(id); if (el) el.addEventListener('input', () => { smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true; });
+      const el = $(id); if (el) el.addEventListener('input', () => {
+        smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
+        smsLiveCount();
+      });
     });
+    smsLiveCount(); // initial count with the default (empty) criteria
   }
   try {
     const r = await fetch('/api/sms-campaign');
@@ -2610,6 +2615,27 @@ async function loadSmsAdmin() {
     renderSmsCallNow(d.callNow || []);
   } catch (e) { /* leave as is */ }
 }
+// live audience count, debounced so it fires when you pause typing, not on every keystroke
+let _smsCountTimer = null; let _smsCountSeq = 0;
+function smsLiveCount() {
+  const el = $('smsb-count'); if (!el) return;
+  clearTimeout(_smsCountTimer);
+  el.textContent = 'Counting…';
+  _smsCountTimer = setTimeout(async () => {
+    const seq = ++_smsCountSeq;
+    try {
+      const r = await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'preview', filters: smsFilters() }) });
+      const d = await r.json();
+      if (seq !== _smsCountSeq) return; // a newer count is already running, drop this stale one
+      if (d.error) { el.textContent = ''; return; }
+      const sk = d.skipped || {};
+      const skTotal = (sk.noMobile || 0) + (sk.alreadyMessaged || 0) + (sk.optedOut || 0) + (sk.deadNumber || 0);
+      el.innerHTML = '<b>' + d.count + '</b> record' + (d.count === 1 ? '' : 's') + ' match' + (d.count === 1 ? 'es' : '') +
+        (skTotal ? ' <span class="muted">(' + skTotal + ' more excluded: no mobile, already texted, opted out or dead number)</span>' : '');
+    } catch (e) { if (seq === _smsCountSeq) el.textContent = ''; }
+  }, 600);
+}
+
 async function smsPreview() {
   const out = $('smsb-out'); if (!out) return;
   out.classList.remove('hidden');

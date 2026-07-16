@@ -1399,3 +1399,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .sms-v.pos { color: #15803d; }
 .sms-v.neg { color: #b91c1c; }
 #smsb-nudgemsg { width: 100%; border: 1px solid #d8e0ea; border-radius: 8px; padding: 9px 11px; font-size: 13.5px; font-family: inherit; box-sizing: border-box; }
+.sms-livecount { font-size: 13.5px; margin: 2px 0 10px; color: #15233b; }
+.sms-livecount b { color: #0b7d74; font-size: 16px; }
