@@ -33,12 +33,22 @@
     },
     "api/niche-intel.js": {
       "maxDuration": 60
+    },
+    "api/sms-worker.js": {
+      "maxDuration": 300
+    },
+    "api/sms-campaign.js": {
+      "maxDuration": 60
     }
   },
   "crons": [
     {
       "path": "/api/cron-digest",
       "schedule": "0 7-12 * * 1-5"
+    },
+    {
+      "path": "/api/sms-worker",
+      "schedule": "*/5 * * * *"
     }
   ],
   "rewrites": [

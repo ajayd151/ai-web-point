@@ -2471,7 +2471,7 @@ document.querySelectorAll('.admin-navbtn').forEach((b) => b.addEventListener('cl
 }));
 
 // ---- Admin > Limits: per-person usage caps, so they can be changed here instead of in Vercel ----
-const LIM_LABELS = { search: '🔍 Searches', generate: '🖼️ Mockups', pounce: '🐆 Websites', prowl: '🐾 Lead research', grammar: '✏️ Grammar fixes' };
+const LIM_LABELS = { search: '🔍 Searches', generate: '🖼️ Mockups', pounce: '🐆 Websites', prowl: '🐾 Lead research', grammar: '✏️ Grammar fixes', sms: '📱 SMS / day' };
 let limData = null;
 async function loadLimitsAdmin() {
   const box = $('lim-body'); if (!box) return;
