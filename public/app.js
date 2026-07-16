@@ -2630,7 +2630,9 @@ function smsLiveCount() {
       if (d.error) { el.textContent = ''; return; }
       const sk = d.skipped || {};
       const skTotal = (sk.noMobile || 0) + (sk.alreadyMessaged || 0) + (sk.optedOut || 0) + (sk.deadNumber || 0);
-      el.innerHTML = '<b>' + d.count + '</b> record' + (d.count === 1 ? '' : 's') + ' match' + (d.count === 1 ? 'es' : '') +
+      const m = (d.matched != null ? d.matched : d.count);
+      el.innerHTML = '<b>' + m + '</b> record' + (m === 1 ? '' : 's') + ' match' + (m === 1 ? 'es' : '') +
+        (d.capped ? ' <span class="muted">· this campaign takes the first ' + d.count + ' (max per campaign is 200, run it again for the rest)</span>' : '') +
         (skTotal ? ' <span class="muted">(' + skTotal + ' more excluded: no mobile, already texted, opted out or dead number)</span>' : '');
     } catch (e) { if (seq === _smsCountSeq) el.textContent = ''; }
   }, 600);
@@ -2659,7 +2661,8 @@ async function smsPreview() {
     const estLine = askMode
       ? 'Mockups are only generated for POSITIVE replies, so image cost follows interest, not sends. Texts: ' + d.count + ' (~4p each) plus one more per yes.'
       : d.estMockups + ' fresh mockup' + (d.estMockups === 1 ? '' : 's') + ' will be generated (AI image cost), plus ' + d.count + ' text' + (d.count === 1 ? '' : 's') + ' (~4p each).';
-    out.innerHTML = '<div class="sms-count"><b>' + d.count + '</b> business' + (d.count === 1 ? '' : 'es') + ' will get this.</div>' +
+    const capNote = d.capped ? ' <span class="muted">(' + d.matched + ' match in total, a campaign sends to at most 200; the "already texted" skip makes the next run pick up where this one stops)</span>' : '';
+    out.innerHTML = '<div class="sms-count"><b>' + d.count + '</b> business' + (d.count === 1 ? '' : 'es') + ' will get this.' + capNote + '</div>' +
       '<div class="sms-est">' + estLine + '</div>' +
       '<div class="muted sms-skip">Skipped: ' + (sk.noMobile || 0) + ' no mobile number · ' + (sk.alreadyMessaged || 0) + ' already texted · ' + (sk.optedOut || 0) + ' opted out' + (sk.deadNumber ? ' · ' + sk.deadNumber + ' dead numbers (Twilio-checked)' : '') + '</div>' +
       ((d.sample || []).length ? ('<div class="sms-sample">' + d.sample.map((s) => esc(s.name) + ' <span class="muted">(' + esc(s.location || '') + ')</span>').join(' · ') + (d.count > d.sample.length ? ' <span class="muted">+ ' + (d.count - d.sample.length) + ' more</span>' : '') + '</div>') : '');

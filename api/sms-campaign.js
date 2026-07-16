@@ -38,7 +38,7 @@ async function buildAudience(filters) {
   const rTo = Number.isFinite(Number(f.critRatingsTo)) && f.critRatingsTo !== '' && f.critRatingsTo != null ? Number(f.critRatingsTo) : null;
 
   const out = []; const skipped = { noMobile: 0, optedOut: 0, alreadyMessaged: 0, filtered: 0, deadNumber: 0 };
-  let scanned = 0;
+  let scanned = 0; let matched = 0;
   for (const c of Object.values(calls)) {
     if (!c || !c.name) continue;
     scanned++;
@@ -62,10 +62,11 @@ async function buildAudience(filters) {
     if (chk[c.key] && chk[c.key].valid === false) { skipped.deadNumber++; continue; } // Twilio says not in service
     if (optout.has(mob)) { skipped.optedOut++; continue; }
     if (notMessaged && already.has(c.key)) { skipped.alreadyMessaged++; continue; }
-    out.push({ key: c.key, name: c.name, location: c.location || '', category: c.tag || c.category || '', phone: mob });
-    if (out.length >= max) break;
+    // keep counting past the cap so the true audience size is known, only the campaign is capped
+    matched++;
+    if (out.length < max) out.push({ key: c.key, name: c.name, location: c.location || '', category: c.tag || c.category || '', phone: mob });
   }
-  return { items: out, skipped: skipped, scanned: scanned };
+  return { items: out, skipped: skipped, scanned: scanned, matched: matched };
 }
 
 module.exports = async (req, res) => {
@@ -95,6 +96,8 @@ module.exports = async (req, res) => {
     const a = await buildAudience(body.filters);
     res.status(200).json({
       count: a.items.length,
+      matched: a.matched,
+      capped: a.matched > a.items.length,
       scanned: a.scanned,
       skipped: a.skipped,
       sample: a.items.slice(0, 12),
