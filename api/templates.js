@@ -41,8 +41,22 @@ module.exports = async (req, res) => {
   })).filter((t) => t.id && t.body) : null;
   if (!tpls || !tpls.length) { res.status(400).json({ error: 'No templates given.' }); return; }
   try {
-    await put(path, JSON.stringify({ waTemplates: tpls, tplSeq: Number(body.tplSeq) || 0, updatedAt: new Date().toISOString() }),
+    // THE RULE, enforced centrally now templates are shared: a locked template's message is
+    // immutable (that is what keeps per-template open rates honest), and a locked template can
+    // never be deleted, or its stats would point at nothing. Renames are allowed; a changed body
+    // on a locked id is silently kept as the locked original. Duplicate to make a new version.
+    const cur = (await readJson(path)) || {};
+    const lockedById = {};
+    (Array.isArray(cur.waTemplates) ? cur.waTemplates : []).forEach((t) => { if (t && t.locked && t.id) lockedById[t.id] = t; });
+    const merged = tpls.map((t) => {
+      const lk = lockedById[t.id];
+      if (!lk) return t;
+      return { id: lk.id, name: t.name || lk.name, body: lk.body, v: lk.v, locked: true }; // rename ok, body immutable
+    });
+    Object.values(lockedById).forEach((lk) => { if (!merged.some((t) => t.id === lk.id)) merged.push(lk); }); // deletion of locked = ignored
+    const seq = Math.max(Number(body.tplSeq) || 0, Number(cur.tplSeq) || 0);
+    await put(path, JSON.stringify({ waTemplates: merged, tplSeq: seq, updatedAt: new Date().toISOString() }),
       { access: 'public', contentType: 'application/json', addRandomSuffix: false });
-    res.status(200).json({ ok: true, count: tpls.length });
+    res.status(200).json({ ok: true, count: merged.length });
   } catch (e) { res.status(500).json({ error: 'Could not save the templates.' }); }
 };
