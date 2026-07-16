@@ -2900,8 +2900,17 @@ async function loadNotesIntel(withAi) {
     if (d.error) { el.innerHTML = '<p class="muted">' + esc(d.error) + '</p>'; return; }
     const rows = d.rows || [];
     if (!rows.length) { el.innerHTML = '<p class="muted">No outcomes yet. Set statuses on your call list and this fills itself in.</p>'; return; }
+    // hover any column header for what it means, so nobody has to ask
+    const TH = [
+      ['Industry', 'The Google category on the call list record. Click one to search for more of them.'],
+      ['Worked', 'Businesses in this industry on your call list. On the list, not necessarily called yet.'],
+      ['Outcomes', 'Businesses given any status at all (Contacted, Doesn’t answer, Interested, Not interested...). The ones where we know what happened.'],
+      ['Engaged', 'Currently Interested, Call back, Appointment link sent, Appointment booked or Won. Still in the conversation.'],
+      ['Appointments / Won', 'Currently Appointment booked or Won. The strongest subset of Engaged.'],
+      ['Engagement', 'Engaged as a share of Outcomes: of the businesses we reached a decision on, how many are still in play. Ignores the not-yet-called, so a barely started industry is not punished.'],
+    ];
     el.innerHTML = '<div class="tgt-scroll"><table class="tgt-table ni-table"><thead><tr>' +
-      '<th>Industry</th><th>Worked</th><th>Outcomes</th><th>Engaged</th><th>Appointments / Won</th><th>Engagement</th></tr></thead><tbody>' +
+      TH.map((h) => '<th class="ni-th" title="' + esc(h[1]) + '">' + esc(h[0]) + '</th>').join('') + '</tr></thead><tbody>' +
       rows.map((o) =>
         '<tr' + (o.thin ? ' class="ni-thin"' : '') + '>' +
         '<td><a href="#" class="tgt-link" data-term="' + esc(o.category) + '">' + esc(o.category) + ' →</a></td>' +

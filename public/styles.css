@@ -1363,3 +1363,6 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .ni-v-t { font-size: 13px; color: #15233b; line-height: 1.5; }
 .ni-v-e { font-size: 12px; color: #6b7a90; line-height: 1.5; font-style: italic; }
 .ni-adv { font-size: 13px; color: #15233b; line-height: 1.7; }
+/* column-header definitions on hover */
+.ni-th { cursor: help; }
+.ni-th:not(:first-child) { border-bottom: 1px dotted #9aa7b8; }
