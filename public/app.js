@@ -59,6 +59,37 @@ function patchSettings(partial) {
   let cur = {};
   try { cur = JSON.parse(localStorage.getItem('aiwp_settings') || '{}'); } catch (e) {}
   try { localStorage.setItem('aiwp_settings', JSON.stringify(Object.assign({}, cur, partial))); } catch (e) {}
+  // templates are SHARED across the workspace: any edit is pushed to the server copy too.
+  // Serialised through a chain so rapid edits cannot arrive out of order (blob = last write wins).
+  if (partial && (partial.waTemplates || partial.tplSeq != null)) pushTemplatesToServer();
+}
+let _tplChain = Promise.resolve();
+function pushTemplatesToServer() {
+  if (!authed) return; // pre-login edits sync on the next pull/push cycle
+  const s = loadSettings();
+  _tplChain = _tplChain.then(() => fetch('/api/templates', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ waTemplates: s.waTemplates, tplSeq: s.tplSeq }),
+  })).catch(() => { /* offline edit still lives locally; next edit retries */ });
+}
+// On sign-in: the server copy wins. If the server has none yet (first run after this feature),
+// this device's templates are pushed up as the starting shared set.
+async function pullTemplatesFromServer() {
+  try {
+    const r = await fetch('/api/templates');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (Array.isArray(d.waTemplates) && d.waTemplates.length) {
+      let cur = {};
+      try { cur = JSON.parse(localStorage.getItem('aiwp_settings') || '{}'); } catch (e) {}
+      cur.waTemplates = d.waTemplates;
+      cur.tplSeq = Math.max(Number(d.tplSeq) || 0, Number(cur.tplSeq) || 0);
+      try { localStorage.setItem('aiwp_settings', JSON.stringify(cur)); } catch (e) {}
+      try { if ($('tpl-select')) renderTemplateManager(); } catch (e) { /* pane not open */ }
+    } else {
+      pushTemplatesToServer(); // seed the shared set from this device
+    }
+  } catch (e) { /* keep local */ }
 }
 function firstTemplates() { return loadSettings().waTemplates; }
 function activeFirstTemplate() { const s = loadSettings(); return s.waTemplates.find((t) => t.id === s.lastTemplateId) || s.waTemplates[0]; }
@@ -258,6 +289,7 @@ async function refreshAccess() {
   applyMemberUI(acc);
   if (paid) {
     loadServerMockups(); loadHotLeads(); loadCallList(); // saved mockups + warm-lead / call-list badges + card states
+    pullTemplatesFromServer(); // shared templates: server copy wins over this device's cache
   }
   // resume a plan the user picked before signing up, but NEVER for someone who already has
   // access (a team member or existing subscriber must not be pushed into paying).
