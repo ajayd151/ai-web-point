@@ -2809,15 +2809,26 @@ function renderCapRow(dailyCap, capExtra) {
     : ('Daily cap <strong>' + base + '</strong>');
   el.innerHTML = '<span class="cap-label">📈 ' + label + '</span>'
     + '<button class="cap-boost" type="button" onclick="smsBoostToday(this)">＋ Send 50 more today</button>'
+    + (extra > 0 ? '<button class="cap-undo" type="button" onclick="smsResetBoost(this)" title="Remove today\'s boost, back to ' + base + '">↺ Undo boost</button>' : '')
     + '<span class="cap-note muted">today only · stops at 8pm, back to ' + base + ' at 8am tomorrow</span>';
 }
 async function smsBoostToday(b) {
+  if (!confirm('Add 50 more sends to TODAY only? This raises how many texts go out today (it resets to normal tomorrow).')) return;
   if (b) { b.disabled = true; b.textContent = 'Adding…'; }
   try {
     const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'boostToday', step: 50 }) })).json();
     if (d && d.ok) loadSmsAdmin();
     else { if (b) { b.disabled = false; b.textContent = '＋ Send 50 more today'; } alert((d && d.error) || 'Could not raise the cap.'); }
   } catch (e) { if (b) { b.disabled = false; b.textContent = '＋ Send 50 more today'; } }
+}
+async function smsResetBoost(b) {
+  if (!confirm('Remove today\'s boost and go back to the normal cap? Texts already sent cannot be recalled, but no further extra ones will go out.')) return;
+  if (b) { b.disabled = true; b.textContent = 'Undoing…'; }
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'resetBoost' }) })).json();
+    if (d && d.ok) loadSmsAdmin();
+    else { if (b) { b.disabled = false; b.textContent = '↺ Undo boost'; } alert((d && d.error) || 'Could not undo.'); }
+  } catch (e) { if (b) { b.disabled = false; b.textContent = '↺ Undo boost'; } }
 }
 // Manual override of the STOP-rate auto-pause (the "Resume now" button in the paused banner).
 async function smsResumeCold() {

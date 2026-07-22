@@ -1515,3 +1515,6 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .hourly-chart { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
 .hourly-lbl { font-size: 11px; color: #94a3b8; flex: 0 0 66px; padding-top: 22px; }
 .hourly-chart svg { flex: 1; min-width: 0; background: #fff; border: 1px solid #eef2f7; border-radius: 8px; }
+.cap-undo { appearance: none; border: 1px solid #cbd5e1; background: #fff; color: #475569; font-size: 13px; font-weight: 700; padding: 6px 11px; border-radius: 8px; cursor: pointer; }
+.cap-undo:hover { background: #f1f5f9; }
+.cap-undo:disabled { opacity: .6; cursor: default; }

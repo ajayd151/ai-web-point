@@ -149,6 +149,15 @@ module.exports = async (req, res) => {
     return;
   }
 
+  if (action === 'resetBoost') {
+    // undo today's cap boost: stamp today with extra 0 so the worker ignores it from the next tick.
+    const day = todayKey(new Date());
+    try { await put('sms/_capboost.json', JSON.stringify({ day: day, extra: 0, by: acct.email, at: new Date().toISOString() }), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
+    catch (e) { res.status(500).json({ error: 'Could not undo the boost.' }); return; }
+    res.status(200).json({ ok: true });
+    return;
+  }
+
   if (action === 'resumeCold') {
     // manual override of the STOP-rate auto-pause: clear the brake so the next worker tick resumes
     // cold sends (it re-evaluates the rate against the current threshold straight away).
