@@ -26,10 +26,31 @@ function isCron(req) {
   const secret = process.env.CRON_SECRET;
   return !!secret && String((req.headers && req.headers.authorization) || '') === 'Bearer ' + secret;
 }
-function workingHours(now) {
-  const day = new Date(now).getUTCDay(); // cheap weekend check; hour check is London-aware
+// Send window: Mon to Fri, 08:00 to 20:00 UK by default (catch the morning commute, catch the
+// evening read). Override with SMS_SEND_FROM_HOUR / SMS_SEND_TO_HOUR.
+const SEND_FROM = Math.max(0, Math.min(23, Number(process.env.SMS_SEND_FROM_HOUR) || 8));
+const SEND_TO = Math.max(SEND_FROM + 1, Math.min(24, Number(process.env.SMS_SEND_TO_HOUR) || 20));
+function londonHM(now) {
+  const f = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date(now));
+  const h = Number((f.find((p) => p.type === 'hour') || {}).value || 0);
+  const m = Number((f.find((p) => p.type === 'minute') || {}).value || 0);
+  return { h: h, m: m };
+}
+function inSendWindow(now) {
+  const day = new Date(now).getUTCDay(); // weekend check (Sat=6, Sun=0)
+  if (day === 0 || day === 6) return false;
   const h = londonHour(new Date(now));
-  return day >= 1 && day <= 5 && h >= 9 && h < 18;
+  return h >= SEND_FROM && h < SEND_TO;
+}
+// How much of the day's allowance should be USED UP by now, so the sends drip evenly across the
+// window rather than firing the whole cap in the first 20 minutes. Also lets us later learn which
+// send-times get the best replies, because sends are spread across the hours instead of bunched.
+function paceRoom(cap, used, now) {
+  if (!inSendWindow(now)) return 0;
+  const t = londonHM(now);
+  const frac = Math.min(1, Math.max(0, ((t.h - SEND_FROM) + t.m / 60) / (SEND_TO - SEND_FROM)));
+  const allowedByNow = Math.min(cap, Math.ceil(cap * frac) + 1); // +1 so a tiny cap still starts
+  return Math.max(0, allowedByNow - used);
 }
 
 async function readJson(path) {
@@ -162,15 +183,15 @@ module.exports = async (req, res) => {
   // rolling phone validation (one lookup per number, ever)
   if (smsConfigured()) { try { out.checked = await validatePhones(base); } catch (e) { /* next tick */ } }
 
-  // One nudge each for non-responders whose window is up. Still a cold-ish touch, so it obeys
-  // working hours and the daily cap, and each recipient only ever gets one.
-  if (smsConfigured() && workingHours(now)) {
+  // One nudge each for non-responders whose window is up. Still a cold-ish touch, so it obeys the
+  // send window, the daily cap AND the pacing, and each recipient only ever gets one.
+  if (smsConfigured() && inSendWindow(now)) {
     const nudges = await dueNudges(SENDS_PER_TICK);
     for (const it of nudges) {
       const who = it.created_by || owner;
       const cap = await limitFor('sms', who);
       const used = await getDailyUsage(who, 'sms', day);
-      if (used >= cap) { out.held.push('nudges held, daily cap'); break; }
+      if (paceRoom(cap, used, now) <= 0) { out.held.push('nudges held, pacing/cap'); break; }
       const r = await sendSms(it.phone, renderMessage(it.nudge_message, it), base);
       if (r.ok) {
         await markNudged(it.id);
@@ -220,13 +241,14 @@ module.exports = async (req, res) => {
       for (const it of pend) await setItem(it.id, { state: 'ready' });
     }
 
-    // 2. send (working hours + Twilio + daily cap only)
+    // 2. send: inside the window, under the daily cap, AND paced so the allowance spreads across
+    // the day instead of firing all at once
     if (!smsConfigured()) { out.held.push('Twilio keys not set yet'); continue; }
-    if (!workingHours(now)) { out.held.push('outside working hours'); continue; }
+    if (!inSendWindow(now)) { out.held.push('outside send window'); continue; }
     const cap = await limitFor('sms', c.created_by || owner);
     const used = await getDailyUsage(c.created_by || owner, 'sms', day);
-    const room = Math.max(0, cap - used);
-    if (!room) { out.held.push('daily cap reached (' + cap + ')'); continue; }
+    const room = paceRoom(cap, used, now);
+    if (!room) { out.held.push(used >= cap ? ('daily cap reached (' + cap + ')') : 'paced, more later today'); continue; }
 
     const ready = await itemsInState(c.id, 'ready', Math.min(SENDS_PER_TICK, room));
     for (const it of ready) {
