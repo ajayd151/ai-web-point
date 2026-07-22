@@ -4,7 +4,8 @@
 // Sends only happen inside working hours (Mon-Fri, 09:00-17:59 UK) and inside the daily 'sms'
 // cap from Admin > Limits. Without Twilio keys, mockups still build but sends wait, so a campaign
 // can be prepared before the account exists.
-const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged } = require('../lib/smsdb');
+const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, campaignKeys, addItemsToCampaign } = require('../lib/smsdb');
+const { buildAudience } = require('../lib/smsaudience');
 const { sendSms, smsConfigured, lookupPhone } = require('../lib/sms');
 const { list, put } = require('@vercel/blob');
 const { sign } = require('../lib/auth');
@@ -16,6 +17,7 @@ const { humaniseBusinessName } = require('../lib/names');
 
 const MOCKUPS_PER_TICK = 2;  // each is a slow AI image, and the function has 300s
 const LOOKUPS_PER_TICK = 20; // phone validation, ~0.8p each, each number only ever checked once
+const TOPUP_PER_TICK = 50;   // evergreen: new matching records pulled into a campaign per tick
 const SENDS_PER_TICK = 10;   // ~120/hour ceiling, gentle on carrier filtering
 
 function isCron(req) {
@@ -183,6 +185,20 @@ module.exports = async (req, res) => {
   for (const c of campaigns) {
     out.campaigns++;
 
+    // Evergreen: pull in any NEW records that now match this campaign's criteria and queue them.
+    // buildAudience already excludes anyone ever messaged, opted out or dead; excludeKeys stops
+    // re-adding records already in this campaign. So the same criteria keep working forever.
+    if (c.evergreen) {
+      try {
+        const have = await campaignKeys(c.id);
+        const fresh = await buildAudience(c.filters || {}, { excludeKeys: have, max: TOPUP_PER_TICK });
+        if (fresh.items && fresh.items.length) {
+          const added = await addItemsToCampaign(c.id, fresh.items);
+          out.toppedUp = (out.toppedUp || 0) + added;
+        }
+      } catch (e) { out.held.push('topup failed for ' + c.id); }
+    }
+
     // 1. build mockups upfront ONLY for link mode (the link goes in the first text). Ask mode
     // holds fire: the mockup is generated after a YES, so no credits die on the uninterested.
     if (c.mode !== 'ask') {
@@ -231,7 +247,8 @@ module.exports = async (req, res) => {
     // are handled by dueLinkSends above even after the campaign is done.
     const stillPending = (await itemsInState(c.id, 'pending', 1)).length;
     const stillReady = (await itemsInState(c.id, 'ready', 1)).length;
-    if (!stillPending && !stillReady) await setCampaignStatus(c.id, 'done');
+    // an evergreen campaign never finishes: it waits for the next matching record
+    if (!c.evergreen && !stillPending && !stillReady) await setCampaignStatus(c.id, 'done');
   }
 
   res.status(200).json(out);

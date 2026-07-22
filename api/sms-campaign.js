@@ -7,67 +7,8 @@ const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
 const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
+const { buildAudience } = require('../lib/smsaudience');
 const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, listInbound, readyToCall } = require('../lib/smsdb');
-
-async function readJson(path) {
-  try {
-    const { blobs } = await list({ prefix: path });
-    const b = blobs.find((x) => x.pathname === path);
-    if (b) return await (await fetch(b.url + '?t=' + Date.now())).json();
-  } catch (e) { /* none */ }
-  return null;
-}
-
-// The one place the audience rules live.
-async function buildAudience(filters) {
-  const f = filters || {};
-  const calls = (await readJson('calls/_list.json')) || {};
-  const idx = (await readJson('notes/_index.json')) || {};
-  const chk = (await readJson('calls/_phonecheck.json')) || {}; // Twilio Lookup verdicts
-  const already = await sentKeys();
-  const optout = await optoutSet();
-  const wantCat = String(f.category || '').trim().toLowerCase();
-  const wantLoc = String(f.location || '').trim().toLowerCase();
-  const wantStatus = String(f.status || 'any'); // 'any' | 'new' | a status value
-  const notMessaged = f.notMessaged !== false;  // default ON: do not text the same business twice
-  const max = Math.min(Math.max(Number(f.max) || 50, 1), 200);
-  // criteria the record was FOUND with (stamped by search, or backfilled): website filter used
-  // ('any' | 'none' = found via the No-website filter | 'has'), and the search's ratings range
-  const wantSite = String(f.foundWebsite || 'any');
-  const rFrom = Number.isFinite(Number(f.critRatingsFrom)) && f.critRatingsFrom !== '' && f.critRatingsFrom != null ? Number(f.critRatingsFrom) : null;
-  const rTo = Number.isFinite(Number(f.critRatingsTo)) && f.critRatingsTo !== '' && f.critRatingsTo != null ? Number(f.critRatingsTo) : null;
-
-  const out = []; const skipped = { noMobile: 0, optedOut: 0, alreadyMessaged: 0, filtered: 0, deadNumber: 0 };
-  let scanned = 0; let matched = 0;
-  for (const c of Object.values(calls)) {
-    if (!c || !c.name) continue;
-    scanned++;
-    const st = (idx[c.key] && idx[c.key].status) || '';
-    const crit = c.crit || {};
-    // the tag (search industry term) and the Google category both count as the industry
-    if (wantCat && (String(c.tag || '') + ' ' + String(c.category || '')).toLowerCase().indexOf(wantCat) < 0) { skipped.filtered++; continue; }
-    // location matches the record's own location OR the search location that found it
-    if (wantLoc && (String(c.location || '') + ' ' + String(crit.location || '')).toLowerCase().indexOf(wantLoc) < 0) { skipped.filtered++; continue; }
-    if (wantSite !== 'any' && String(crit.website || '') !== wantSite) { skipped.filtered++; continue; }
-    // ratings: the search range that found this record must overlap the range asked for
-    if (rFrom != null || rTo != null) {
-      if (crit.ratingsFrom == null && crit.ratingsTo == null) { skipped.filtered++; continue; }
-      const cFrom = crit.ratingsFrom != null ? Number(crit.ratingsFrom) : 0;
-      const cTo = crit.ratingsTo != null ? Number(crit.ratingsTo) : Infinity;
-      if ((rTo != null && cFrom > rTo) || (rFrom != null && cTo < rFrom)) { skipped.filtered++; continue; }
-    }
-    if (wantStatus === 'new' ? st !== '' : (wantStatus !== 'any' && st !== wantStatus)) { skipped.filtered++; continue; }
-    const mob = ukMobile(c.phone);
-    if (!mob) { skipped.noMobile++; continue; }
-    if (chk[c.key] && chk[c.key].valid === false) { skipped.deadNumber++; continue; } // Twilio says not in service
-    if (optout.has(mob)) { skipped.optedOut++; continue; }
-    if (notMessaged && already.has(c.key)) { skipped.alreadyMessaged++; continue; }
-    // keep counting past the cap so the true audience size is known, only the campaign is capped
-    matched++;
-    if (out.length < max) out.push({ key: c.key, name: c.name, location: c.location || '', category: c.tag || c.category || '', phone: mob });
-  }
-  return { items: out, skipped: skipped, scanned: scanned, matched: matched };
-}
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
@@ -118,6 +59,7 @@ module.exports = async (req, res) => {
       if (message.indexOf('{link}') >= 0) { res.status(400).json({ error: 'Ask-first mode: the FIRST message must not contain {link}, the link goes in the follow-up.' }); return; }
       if (!linkMessage || linkMessage.indexOf('{link}') < 0) { res.status(400).json({ error: 'Write the auto-send follow-up, and it must contain {link}.' }); return; }
     }
+    const evergreen = !!body.evergreen;
     const nudgeMessage = String(body.nudgeMessage || '').trim().slice(0, 480);
     if (nudgeMessage && mode === 'ask' && nudgeMessage.indexOf('{link}') >= 0) {
       res.status(400).json({ error: 'The nudge goes to people who have not said yes, so it cannot contain {link} in ask-first mode.' }); return;
@@ -138,6 +80,7 @@ module.exports = async (req, res) => {
       linkDelayMin: body.linkDelayMin,
       nudgeMessage: nudgeMessage,
       nudgeHours: body.nudgeHours,
+      evergreen: evergreen,
     });
     if (!id) { res.status(500).json({ error: 'Could not save the campaign.' }); return; }
     res.status(200).json({ ok: true, id: id, count: a.items.length, skipped: a.skipped });
