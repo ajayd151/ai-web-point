@@ -1424,3 +1424,23 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .sms-test input { border: 1px solid #d8e0ea; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
 .sms-ever { margin-top: 8px; }
 .sms-ever-badge { display: inline-block; font-size: 10.5px; font-weight: 800; color: #0b7d74; background: #e9fbf9; border: 1px solid #b8ece8; border-radius: 6px; padding: 0 6px; margin-left: 6px; vertical-align: middle; }
+
+/* ---- SMS builder: roomy, labelled, stepped ---- */
+.sms-build { background: #fff; border: 1px solid #e4eaf1; border-radius: 14px; padding: 18px 20px; }
+.smsf-section { border-top: 1px solid #eef2f7; margin-top: 18px; padding-top: 16px; }
+.smsf-section:first-of-type { border-top: 0; margin-top: 6px; padding-top: 0; }
+.smsf-step { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 800; color: #15233b; margin-bottom: 14px; }
+.smsf-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: #0fb6a8; color: #fff; font-size: 12px; font-weight: 800; }
+.smsf-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px 14px; margin-bottom: 12px; }
+.smsf, .smsf-full { display: flex; flex-direction: column; gap: 5px; }
+.smsf-full { margin-bottom: 4px; }
+.smsf-lbl { font-size: 12px; font-weight: 700; color: #5b6472; }
+.smsf input, .smsf select, .smsf-full input, .smsf-full textarea, .smsf-full select, .smsf-sub textarea { width: 100%; box-sizing: border-box; border: 1px solid #d8e0ea; border-radius: 8px; padding: 9px 11px; font-size: 14px; font-family: inherit; background: #fff; }
+.smsf input:focus, .smsf select:focus, .smsf-full input:focus, .smsf-full textarea:focus, .smsf-full select:focus, .smsf-sub textarea:focus { outline: 0; border-color: #0fb6a8; }
+.smsf-sub { margin-top: 14px; padding-left: 12px; border-left: 3px solid #eef2f7; display: flex; flex-direction: column; gap: 6px; }
+.smsf-inline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #15233b; }
+.smsf-inline input[type=number] { width: 72px; border: 1px solid #d8e0ea; border-radius: 8px; padding: 7px 9px; font-size: 13px; font-family: inherit; }
+.smsf-inline input[type=datetime-local] { border: 1px solid #d8e0ea; border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit; }
+.sms-build .sms-check { margin-top: 4px; font-size: 13px; }
+.sms-build .sms-livecount { margin: 12px 0 0; }
+.sms-build .sms-actions { margin-top: 20px; }

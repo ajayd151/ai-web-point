@@ -823,57 +823,68 @@
             </div>
 
             <div class="sms-build">
-              <div class="ov-rev-head">New campaign</div>
-              <div class="sms-grid">
-                <input id="smsb-name" type="text" placeholder="Campaign name (e.g. Eyebrows Manchester July)" />
-                <input id="smsb-cat" type="text" placeholder="Industry / tag contains… (e.g. salons)" />
-                <input id="smsb-loc" type="text" placeholder="Location contains… (e.g. Manchester)" />
-                <select id="smsb-status"></select>
-                <input id="smsb-max" type="number" min="1" placeholder="All matches" title="Max recipients. Leave blank to text everyone who matches (they still go out at your daily cap, not all at once)." />
+              <div class="smsf-full">
+                <label class="smsf-lbl">Campaign name</label>
+                <input id="smsb-name" type="text" placeholder="e.g. Eyebrows Manchester, July" />
+              </div>
+
+              <!-- STEP 1: audience -->
+              <div class="smsf-section">
+                <div class="smsf-step"><span class="smsf-num">1</span> Who gets it</div>
+                <div class="smsf-row">
+                  <div class="smsf"><label class="smsf-lbl">Industry / tag</label><input id="smsb-cat" type="text" placeholder="e.g. salons" /></div>
+                  <div class="smsf"><label class="smsf-lbl">Location</label><input id="smsb-loc" type="text" placeholder="e.g. Manchester" /></div>
+                  <div class="smsf"><label class="smsf-lbl">Status</label><select id="smsb-status"></select></div>
+                </div>
+                <div class="smsf-row">
+                  <div class="smsf"><label class="smsf-lbl">Found with</label><select id="smsb-site" title="The website filter used by the search that found them">
+                    <option value="any">Any website filter</option>
+                    <option value="none">No website</option>
+                    <option value="has">Has website</option>
+                  </select></div>
+                  <div class="smsf"><label class="smsf-lbl">Search ratings from</label><input id="smsb-rfrom" type="number" min="0" placeholder="any" /></div>
+                  <div class="smsf"><label class="smsf-lbl">to</label><input id="smsb-rto" type="number" min="0" placeholder="any" /></div>
+                  <div class="smsf"><label class="smsf-lbl">Max recipients</label><input id="smsb-max" type="number" min="1" placeholder="All matches" title="Leave blank to text everyone who matches. They still go out at your daily cap, not all at once." /></div>
+                </div>
                 <label class="sms-check"><input id="smsb-notmsg" type="checkbox" checked /> Skip anyone already texted</label>
+                <p class="muted sms-hint">Website and ratings match the search criteria stamped on each record (🏷️). Old records only have a tag, so those two filters skip them.</p>
+                <div id="smsb-count" class="sms-livecount muted">Fill in the criteria and the match count shows here.</div>
               </div>
-              <div class="sms-grid sms-grid2">
-                <select id="smsb-site" title="The website filter used by the search that found them">
-                  <option value="any">Found with: any website filter</option>
-                  <option value="none">Found with: No website</option>
-                  <option value="has">Found with: Has website</option>
-                </select>
-                <input id="smsb-rfrom" type="number" min="0" placeholder="Search ratings from…" title="Only records found by a search whose ratings filter overlaps this range" />
-                <input id="smsb-rto" type="number" min="0" placeholder="Search ratings to…" />
-                <span class="muted sms-hint">These match the search criteria stamped on each record (🏷️). Old records only have a tag, so the website/ratings filters skip them.</span>
-              </div>
-              <div id="smsb-count" class="sms-livecount muted">Type your criteria and the match count appears here.</div>
-              <div class="sms-msg-row">
-                <select id="smsb-mode">
-                  <option value="ask" selected>Ask first, auto-send the link on a YES (recommended)</option>
-                  <option value="link">Send the mockup link straight away</option>
-                </select>
-                <select id="smsb-tpl"><option value="">Start from a template…</option></select>
-                <textarea id="smsb-msg" rows="3" placeholder="Hi {business}, we built a quick homepage design for you, have a look: {link}"></textarea>
-                <p class="muted sms-hint" id="smsb-msg-hint">{business} = their name, {industry} = their tag. Ask-first: NO {link} in this first message, it goes in the follow-up below. "Reply STOP to opt out" is added automatically.</p>
-                <div id="smsb-linkwrap">
+
+              <!-- STEP 2: message -->
+              <div class="smsf-section">
+                <div class="smsf-step"><span class="smsf-num">2</span> What you say</div>
+                <div class="smsf-row">
+                  <div class="smsf"><label class="smsf-lbl">Approach</label><select id="smsb-mode">
+                    <option value="ask" selected>Ask first, auto-send the link on a YES (recommended)</option>
+                    <option value="link">Send the mockup link straight away</option>
+                  </select></div>
+                  <div class="smsf"><label class="smsf-lbl">Start from a template</label><select id="smsb-tpl"><option value="">Blank</option></select></div>
+                </div>
+                <div class="smsf-full">
+                  <label class="smsf-lbl">First message</label>
+                  <textarea id="smsb-msg" rows="3" placeholder="Hi {business}, we put together a quick homepage design for you. Want me to text you the link?"></textarea>
+                  <p class="muted sms-hint" id="smsb-msg-hint">{business} = their name, {industry} = their tag. Ask-first: NO {link} in this first message, it goes in the follow-up below. "Reply STOP to opt out" is added automatically.</p>
+                </div>
+                <div id="smsb-linkwrap" class="smsf-sub">
+                  <label class="smsf-lbl">Follow-up sent automatically on a YES</label>
                   <textarea id="smsb-linkmsg" rows="2" placeholder="Brilliant. Here is the design we made for {business}: {link}  If you like it, reply CALL and we will walk you through it."></textarea>
-                  <div class="sms-when" style="margin:8px 0 0">
-                    <label>Auto-send the follow-up</label>
-                    <input id="smsb-delay" type="number" min="0" max="1440" value="1" style="width:70px" />
-                    <span class="muted sms-hint">minute(s) after a positive reply. Goes any time of day, they just replied.</span>
-                  </div>
+                  <div class="smsf-inline"><span>Send</span> <input id="smsb-delay" type="number" min="0" max="1440" value="1" /> <span class="muted">minute(s) after their yes (goes any time of day, they just replied).</span></div>
+                </div>
+                <div class="smsf-sub">
+                  <label class="smsf-lbl">Nudge if they go quiet <span class="muted">(optional)</span></label>
+                  <textarea id="smsb-nudgemsg" rows="2" placeholder="No rush {business}, just checking you saw this. Happy to send the design over whenever suits."></textarea>
+                  <div class="smsf-inline"><span>Send after</span> <input id="smsb-nudgehrs" type="number" min="1" max="168" value="24" /> <span class="muted">hour(s) of silence. One nudge only, ever. Leave blank for none.</span></div>
                 </div>
               </div>
-              <div class="sms-msg-row">
-                <textarea id="smsb-nudgemsg" rows="2" placeholder="Optional nudge if they do not reply, e.g. No rush {business}, just checking you saw this. Happy to send the design over whenever suits."></textarea>
-                <div class="sms-when" style="margin:8px 0 0">
-                  <label>Send the nudge after</label>
-                  <input id="smsb-nudgehrs" type="number" min="1" max="168" value="24" style="width:70px" />
-                  <span class="muted sms-hint">hour(s) of silence. One nudge only, ever. Leave the message blank for no nudge.</span>
-                </div>
+
+              <!-- STEP 3: when -->
+              <div class="smsf-section">
+                <div class="smsf-step"><span class="smsf-num">3</span> When it goes</div>
+                <div class="smsf-inline"><span>Start from</span> <input id="smsb-when" type="datetime-local" /> <span class="muted">blank = now. Sends only Mon-Fri, 8am-8pm UK, spread through the day.</span></div>
+                <label class="sms-check sms-ever"><input id="smsb-evergreen" type="checkbox" /> ♻️ Keep running forever, auto-text NEW records that later match these criteria</label>
               </div>
-              <div class="sms-when">
-                <label>Send from</label>
-                <input id="smsb-when" type="datetime-local" />
-                <span class="muted sms-hint">Leave blank = start now. Sends only go Mon-Fri, 8am-8pm UK, spread evenly through the day (never overnight or at weekends).</span>
-              </div>
-              <label class="sms-check sms-ever"><input id="smsb-evergreen" type="checkbox" /> ♻️ Keep running forever, auto-text NEW records that later match these criteria</label>
+
               <div class="sms-actions">
                 <button id="smsb-preview" class="ghost">👀 Preview audience</button>
                 <button id="smsb-create" class="batch-btn" disabled>Schedule campaign</button>
