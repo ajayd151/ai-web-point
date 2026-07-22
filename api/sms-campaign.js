@@ -8,6 +8,8 @@ const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
 const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
 const { buildAudience } = require('../lib/smsaudience');
+const { limitFor } = require('../lib/ratelimit');
+const { todayKey } = require('../lib/digest');
 const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, listInbound, readyToCall } = require('../lib/smsdb');
 
 async function readJson(path) {
@@ -37,6 +39,10 @@ module.exports = async (req, res) => {
     const oc = await optoutCounts();
     const brake = (await readJson('sms/_breaker.json')) || {};
     const brakeActive = brake.until && new Date(brake.until).getTime() > Date.now();
+    const day = todayKey(new Date());
+    const boost = (await readJson('sms/_capboost.json')) || {};
+    const capExtra = (boost.day === day && Number(boost.extra) > 0) ? Number(boost.extra) : 0;
+    const dailyCap = await limitFor('sms', acct.email);
     res.status(200).json({
       campaigns: await listCampaigns(),
       replies: await listInbound(100),
@@ -45,6 +51,8 @@ module.exports = async (req, res) => {
       stopCount: oc.reply,            // STOP texts, the number carriers police
       linkOptouts: oc.link,           // soft opt-outs (a tap on the link) - proof it works
       brake: brakeActive ? { paused: true, until: brake.until, rate: brake.rate, stops: brake.stops, sent: brake.sent } : { paused: false },
+      dailyCap: dailyCap,
+      capExtra: capExtra,
       twilioReady: smsConfigured(),
     });
     return;
@@ -117,6 +125,20 @@ module.exports = async (req, res) => {
     const r = await sendSms(mob, 'Site Pounce test: your SMS is working. Reply anything and it will show in Admin > SMS. Reply STOP to opt out.', base);
     if (r.ok) res.status(200).json({ ok: true });
     else res.status(200).json({ error: 'Twilio refused it: ' + (r.error || 'unknown') });
+    return;
+  }
+
+  if (action === 'boostToday') {
+    // one-day-only bump to today's send cap. Cumulative (tap twice for +100), capped so a stuck
+    // finger cannot blast, and stamped with today's date so it evaporates tomorrow by itself.
+    const day = todayKey(new Date());
+    const cur = (await readJson('sms/_capboost.json')) || {};
+    const base = (cur.day === day && Number(cur.extra) > 0) ? Number(cur.extra) : 0;
+    const step = Math.min(Math.max(Number(body.step) || 50, 1), 100);
+    const extra = Math.min(base + step, 400);
+    try { await put('sms/_capboost.json', JSON.stringify({ day: day, extra: extra, by: acct.email, at: new Date().toISOString() }), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
+    catch (e) { res.status(500).json({ error: 'Could not raise today\'s cap.' }); return; }
+    res.status(200).json({ ok: true, extra: extra });
     return;
   }
 

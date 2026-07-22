@@ -1500,3 +1500,11 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .sms-tools .linkbtn { font-size: 15px; }
 .brake-resume { appearance: none; border: 1px solid #d97706; background: #fff; color: #b45309; font-size: 13px; font-weight: 700; padding: 5px 11px; border-radius: 8px; cursor: pointer; margin-left: 4px; white-space: nowrap; }
 .brake-resume:hover { background: #fff7ed; }
+
+/* SMS daily-cap row */
+.sms-caprow { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 16px; }
+.cap-label { font-size: 14px; color: #334155; }
+.cap-boost { appearance: none; border: 1px solid #14b8a6; background: #f0fdfa; color: #0f766e; font-size: 13px; font-weight: 700; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+.cap-boost:hover { background: #ccfbf1; }
+.cap-boost:disabled { opacity: .6; cursor: default; }
+.cap-note { font-size: 12px; }

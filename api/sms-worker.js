@@ -91,6 +91,12 @@ async function readJson(path) {
   } catch (e) { /* none */ }
   return null;
 }
+// A one-day-only bump to the daily send cap (the "send more today" button). It carries the day it
+// was set for, so it is ignored automatically tomorrow, it can never quietly become the standing cap.
+async function todayCapExtra(day) {
+  const b = (await readJson('sms/_capboost.json')) || {};
+  return (b.day === day && Number(b.extra) > 0) ? Number(b.extra) : 0;
+}
 // Rolling phone validation: every call-list number gets ONE Twilio Lookup, results cached in
 // their own blob (calls/_phonecheck.json) so this never contends with the list itself (blob
 // writes race). Dead numbers get the CRM status 'invalid-phone' when they had no status yet, so
@@ -224,6 +230,7 @@ module.exports = async (req, res) => {
   const base = process.env.APP_BASE_URL || 'https://www.sitepounce.com';
   const owner = ownerEmail();
   const day = todayKey(new Date(now));
+  const capExtra = await todayCapExtra(day); // one-day-only boost to the daily cap
   const out = { campaigns: 0, mockups: 0, sent: 0, failed: 0, held: [] };
 
   // Auto STOP-rate safety-brake, evaluated once per tick. When paused, only COLD sends (openers +
@@ -280,7 +287,7 @@ module.exports = async (req, res) => {
     const nudges = await dueNudges(SENDS_PER_TICK);
     for (const it of nudges) {
       const who = it.created_by || owner;
-      const cap = await limitFor('sms', who);
+      const cap = (await limitFor('sms', who)) + capExtra;
       const used = await getDailyUsage(who, 'sms', day);
       if (paceRoom(cap, used, now) <= 0) { out.held.push('nudges held, pacing/cap'); break; }
       const r = await sendSms(it.phone, renderMessage(it.nudge_message, it, base), base);
@@ -339,7 +346,7 @@ module.exports = async (req, res) => {
     if (!smsConfigured()) { out.held.push('Twilio keys not set yet'); continue; }
     if (brake.paused) { continue; } // STOP-rate brake: hold cold openers (already logged above)
     if (!inSendWindow(now)) { out.held.push('outside send window'); continue; }
-    const cap = await limitFor('sms', c.created_by || owner);
+    const cap = (await limitFor('sms', c.created_by || owner)) + capExtra;
     const used = await getDailyUsage(c.created_by || owner, 'sms', day);
     const room = paceRoom(cap, used, now);
     if (!room) { out.held.push(used >= cap ? ('daily cap reached (' + cap + ')') : 'paced, more later today'); continue; }

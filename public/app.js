@@ -2710,6 +2710,7 @@ async function loadSmsAdmin() {
       note.classList.toggle('hidden', !!d.twilioReady);
       if (!d.twilioReady) note.textContent = '⚠️ Twilio is not connected yet. Campaigns can be built and mockups will generate, but no texts go out until the Twilio keys are added in Vercel. Ask Claude for the sign-up steps.';
     }
+    renderCapRow(d.dailyCap != null ? d.dailyCap : 100, d.capExtra || 0);
     renderSmsStats(d.campaigns || [], d.readyCount || 0, d.stopCount || 0, d.linkOptouts || 0, d.brake || null);
     renderSmsCampaigns(d.campaigns || []);
     renderSmsReplies(d.replies || []);
@@ -2741,6 +2742,28 @@ function smsLiveCount() {
 }
 
 let _enrichTimer = null;
+// Daily-cap row on the Analytics tab: shows the standing cap + any one-day boost, with a button
+// to add more just for today (it auto-expires at midnight).
+function renderCapRow(dailyCap, capExtra) {
+  const el = $('sms-caprow'); if (!el) return;
+  const base = Number(dailyCap) || 0;
+  const extra = Number(capExtra) || 0;
+  const total = base + extra;
+  const label = extra > 0
+    ? ('Daily cap <strong>' + base + '</strong> ＋<strong>' + extra + '</strong> today = <strong>' + total + '</strong>')
+    : ('Daily cap <strong>' + base + '</strong>');
+  el.innerHTML = '<span class="cap-label">📈 ' + label + '</span>'
+    + '<button class="cap-boost" type="button" onclick="smsBoostToday(this)">＋ Send 50 more today</button>'
+    + '<span class="cap-note muted">today only, resets tomorrow</span>';
+}
+async function smsBoostToday(b) {
+  if (b) { b.disabled = true; b.textContent = 'Adding…'; }
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'boostToday', step: 50 }) })).json();
+    if (d && d.ok) loadSmsAdmin();
+    else { if (b) { b.disabled = false; b.textContent = '＋ Send 50 more today'; } alert((d && d.error) || 'Could not raise the cap.'); }
+  } catch (e) { if (b) { b.disabled = false; b.textContent = '＋ Send 50 more today'; } }
+}
 // Manual override of the STOP-rate auto-pause (the "Resume now" button in the paused banner).
 async function smsResumeCold() {
   if (!confirm('Resume cold sending now, overriding the auto-pause? Only do this if you are happy with the current STOP rate.')) return;
