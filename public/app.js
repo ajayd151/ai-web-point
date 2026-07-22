@@ -2680,6 +2680,7 @@ async function loadSmsAdmin() {
       note.classList.toggle('hidden', !!d.twilioReady);
       if (!d.twilioReady) note.textContent = '⚠️ Twilio is not connected yet. Campaigns can be built and mockups will generate, but no texts go out until the Twilio keys are added in Vercel. Ask Claude for the sign-up steps.';
     }
+    renderSmsStats(d.campaigns || [], d.readyCount || 0);
     renderSmsCampaigns(d.campaigns || []);
     renderSmsReplies(d.replies || []);
     renderSmsCallNow(d.callNow || []);
@@ -2816,6 +2817,28 @@ async function smsCreate() {
   } catch (e) { alert('Could not schedule, please try again.'); }
   if (b) { b.textContent = 'Schedule campaign'; b.disabled = true; }
   smsPreviewOk = false;
+}
+function renderSmsStats(rows, readyCount) {
+  const el = $('sms-stats'); if (!el) return;
+  if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet, stats appear once one is running.</p>'; return; }
+  const t = { total: 0, sent: 0, linked: 0, delivered: 0, failed: 0, positive: 0, negative: 0, hot: 0, nudged: 0 };
+  rows.forEach((c) => { Object.keys(t).forEach((k) => { t[k] += Number(c[k]) || 0; }); });
+  const remaining = Math.max(0, t.total - t.sent - t.failed);
+  const replied = t.positive + t.negative;
+  const noReply = Math.max(0, t.sent - replied);
+  const tiles =
+    ovTile('📤', t.sent, 'Sent', t.total + ' in total') +
+    ovTile('✅', t.delivered, 'Delivered', t.sent ? Math.round((t.delivered / t.sent) * 100) + '% of sent' : '') +
+    ovTile('⏳', remaining, 'Left to send', 'queued for later') +
+    ovTile('👍', t.positive, 'Positive replies', t.hot ? (t.hot + ' after the mockup') : '') +
+    ovTile('👎', t.negative, 'Negative replies', '') +
+    ovTile('🤫', noReply, 'No reply yet', t.nudged ? (t.nudged + ' nudged') : '') +
+    ovTile('📞', readyCount || 0, 'Ready to call', 'waiting for you');
+  // reply-breakdown bar (of everyone we have texted)
+  const seg = (n, cls, label) => { const pct = t.sent ? (n / t.sent * 100) : 0; return pct > 0 ? '<div class="smsbar-seg ' + cls + '" style="width:' + pct + '%" title="' + label + ': ' + n + '"></div>' : ''; };
+  const bar = t.sent ? ('<div class="smsbar">' + seg(t.positive, 'pos', 'Positive') + seg(t.negative, 'neg', 'Negative') + seg(noReply, 'none', 'No reply yet') + '</div>' +
+    '<div class="smsbar-key"><span><i class="pos"></i> Positive ' + t.positive + '</span><span><i class="neg"></i> Negative ' + t.negative + '</span><span><i class="none"></i> No reply ' + noReply + '</span></div>') : '';
+  el.innerHTML = '<div class="ov-stats">' + tiles + '</div>' + bar;
 }
 function renderSmsCampaigns(rows) {
   const el = $('sms-campaigns'); if (!el) return;
