@@ -3041,6 +3041,11 @@ function renderActivityReport(rep) {
       const tot = counts[k] || 0;
       sub = (sub ? sub + ' · ' : '') + (auto ? ((tot - auto) + ' manual · ' + auto + ' auto') : 'all manual');
     }
+    if (k === 'prowl') {
+      const miniN = (rep.prowlsMini != null ? rep.prowlsMini : 0);
+      const totP = counts[k] || 0;
+      sub = (sub ? sub + ' · ' : '') + (miniN ? ((totP - miniN) + ' full · ' + miniN + ' mini (no AI credit)') : 'all full');
+    }
     return ovTile(meta[0], (counts[k] || 0), meta[1], sub);
   }).join('');
   const recent = (rep.recent || []);
