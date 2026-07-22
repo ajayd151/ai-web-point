@@ -2601,6 +2601,21 @@ async function loadSmsAdmin() {
       smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
     }));
     const cb = $('smsb-count-btn'); if (cb) cb.addEventListener('click', (e) => { e.preventDefault(); smsLiveCount(); });
+    // "Tidy" grammar-fixes a message while protecting the {placeholders} from being altered
+    document.querySelectorAll('#admin-sms .smsf-tidy').forEach((b) => b.addEventListener('click', async () => {
+      const wrap = b.closest('.smsf-tags'); if (!wrap) return;
+      const ta = $(wrap.dataset.target); if (!ta || !ta.value.trim()) return;
+      const orig = ta.value; const toks = [];
+      const prot = orig.replace(/\{[a-z]+\}/gi, (m) => { toks.push(m); return '[[U' + (toks.length - 1) + ']]'; });
+      const old = b.textContent; b.disabled = true; b.textContent = '…';
+      try {
+        const d = await (await fetch('/api/grammar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: prot }) })).json();
+        let out = (d && d.text) || prot;
+        out = out.replace(/\[\[U(\d+)\]\]/g, (m, i) => toks[Number(i)] != null ? toks[Number(i)] : m);
+        ta.value = out; smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
+      } catch (e) { /* leave as is */ }
+      b.disabled = false; b.textContent = old;
+    }));
     const sg = $('smsb-suggest'); if (sg) sg.addEventListener('click', async () => {
       const first = ($('smsb-msg') && $('smsb-msg').value || '').trim();
       const m = $('smsb-suggest-msg');

@@ -1461,3 +1461,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .smsf-suggest { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
 #smsb-suggest { background: #eef2ff; color: #4338ca; border-color: #c7d2fe; font-weight: 700; }
 #smsb-suggest:hover { background: #e0e7ff; }
+.smsf-tidy { border: 1px solid #f3d9a8; background: #fff8ec; color: #b45309; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-left: 4px; }
+.smsf-tidy:hover { background: #fdeecb; }
