@@ -1420,3 +1420,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .dos-rev:first-of-type { border-top: 0; }
 .dos-rev-s { color: #f0a83c; font-size: 12px; }
 @media (max-width: 560px) { .pc-cards { grid-template-columns: 1fr; } }
+.sms-test { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #fff; border: 1px solid #e4eaf1; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px; }
+.sms-test input { border: 1px solid #d8e0ea; border-radius: 8px; padding: 8px 10px; font-size: 13px; font-family: inherit; }

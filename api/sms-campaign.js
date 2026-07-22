@@ -6,7 +6,7 @@
 const { list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
-const { ukMobile, smsConfigured } = require('../lib/sms');
+const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
 const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, listInbound, readyToCall } = require('../lib/smsdb');
 
 async function readJson(path) {
@@ -141,6 +141,17 @@ module.exports = async (req, res) => {
     });
     if (!id) { res.status(500).json({ error: 'Could not save the campaign.' }); return; }
     res.status(200).json({ ok: true, id: id, count: a.items.length, skipped: a.skipped });
+    return;
+  }
+
+  if (action === 'test') {
+    if (!smsConfigured()) { res.status(400).json({ error: 'Twilio keys are not set yet.' }); return; }
+    const mob = ukMobile(body.phone);
+    if (!mob) { res.status(400).json({ error: 'That is not a valid UK mobile (07... or +447...).' }); return; }
+    const base = process.env.APP_BASE_URL || 'https://www.sitepounce.com';
+    const r = await sendSms(mob, 'Site Pounce test: your SMS is working. Reply anything and it will show in Admin > SMS. Reply STOP to opt out.', base);
+    if (r.ok) res.status(200).json({ ok: true });
+    else res.status(200).json({ error: 'Twilio refused it: ' + (r.error || 'unknown') });
     return;
   }
 

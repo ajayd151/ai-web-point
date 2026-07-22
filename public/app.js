@@ -2577,6 +2577,14 @@ async function loadSmsAdmin() {
     const pv = $('smsb-preview'); if (pv) pv.addEventListener('click', smsPreview);
     const cr = $('smsb-create'); if (cr) cr.addEventListener('click', smsCreate);
     const rf = $('sms-refresh'); if (rf) rf.addEventListener('click', (e) => { e.preventDefault(); loadSmsAdmin(); });
+    const ts = $('smst-send'); if (ts) ts.addEventListener('click', async () => {
+      const ph = ($('smst-phone') && $('smst-phone').value || '').trim();
+      const m = $('smst-msg'); if (m) m.textContent = 'Sending…';
+      try {
+        const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'test', phone: ph }) })).json();
+        if (m) m.textContent = d.ok ? '✓ Sent, check your phone' : (d.error || 'Failed');
+      } catch (e) { if (m) m.textContent = 'Failed, try again'; }
+    });
     const sw = $('sms-sweep'); if (sw) sw.addEventListener('click', async () => {
       if (!confirm('Remove every call-list record whose name is just a phone number? Their notes stay, but the records go.')) return;
       sw.disabled = true; sw.textContent = 'Sweeping…';
