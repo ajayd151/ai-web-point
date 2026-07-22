@@ -2820,7 +2820,7 @@ async function smsCreate() {
 function renderSmsCampaigns(rows) {
   const el = $('sms-campaigns'); if (!el) return;
   if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet.</p>'; return; }
-  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Campaign</th><th>Status</th><th>Progress</th><th>Sends from</th><th></th></tr></thead><tbody>' +
+  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Campaign</th><th>Type</th><th>Status</th><th>Progress</th><th>Sends from</th><th></th></tr></thead><tbody>' +
     rows.map((c) => {
       const prog = (c.sent || 0) + (c.linked ? ('+' + c.linked + '🔗') : '') + ' sent / ' + (c.total || 0) +
         ' · ' + (c.delivered || 0) + ' delivered' + (c.failed ? (' · ' + c.failed + ' failed') : '') +
@@ -2828,7 +2828,9 @@ function renderSmsCampaigns(rows) {
       const act = c.status === 'running' || c.status === 'scheduled'
         ? '<button class="linkbtn" data-smsact="pause" data-id="' + c.id + '">Pause</button> <button class="linkbtn" data-smsact="cancel" data-id="' + c.id + '">Cancel</button>'
         : (c.status === 'paused' ? '<button class="linkbtn" data-smsact="resume" data-id="' + c.id + '">Resume</button> <button class="linkbtn" data-smsact="cancel" data-id="' + c.id + '">Cancel</button>' : '');
-      return '<tr><td><b>' + esc(c.name || ('#' + c.id)) + '</b>' + (c.evergreen ? ' <span class="sms-ever-badge" title="Keeps auto-texting new matching records">♻️ always on</span>' : '') + '<span class="muted" style="display:block;font-size:11px">by ' + esc(noteAuthor(c.created_by || '')) + '</span></td>' +
+      const typeCell = c.evergreen ? '<span class="sms-type ever" title="Keeps auto-texting new records that later match the criteria">♻️ Always-on</span>' : '<span class="sms-type oneoff">One-off</span>';
+      return '<tr><td><b>' + esc(c.name || ('#' + c.id)) + '</b><span class="muted" style="display:block;font-size:11px">by ' + esc(noteAuthor(c.created_by || '')) + '</span></td>' +
+        '<td>' + typeCell + '</td>' +
         '<td>' + esc(c.status) + (c.note ? ('<span class="muted" style="display:block;font-size:11px">' + esc(c.note) + '</span>') : '') + '</td>' +
         '<td>' + prog + '</td><td>' + esc(fmtDate(c.schedule_at)) + '</td><td>' + act + '</td></tr>';
     }).join('') + '</tbody></table></div>';

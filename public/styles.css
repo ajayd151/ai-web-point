@@ -1467,3 +1467,6 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
    their label onto the next line. Keep the tick next to its text. */
 .sms-check { white-space: normal; align-items: flex-start; }
 .sms-check input[type="checkbox"] { width: 16px; height: 16px; flex: 0 0 auto; margin: 2px 0 0; padding: 0; }
+.sms-type { display: inline-block; font-size: 11px; font-weight: 800; border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+.sms-type.ever { color: #0b7d74; background: #e9fbf9; border: 1px solid #b8ece8; }
+.sms-type.oneoff { color: #6b7a90; background: #f1f5f9; border: 1px solid #dbe3ec; }
