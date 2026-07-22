@@ -2822,7 +2822,7 @@ function renderSmsCampaigns(rows) {
   if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet.</p>'; return; }
   el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Campaign</th><th>Type</th><th>Status</th><th>Progress</th><th>Sends from</th><th></th></tr></thead><tbody>' +
     rows.map((c) => {
-      const prog = (c.sent || 0) + (c.linked ? ('+' + c.linked + '🔗') : '') + ' sent / ' + (c.total || 0) +
+      const prog = '<b>' + (c.sent || 0) + '</b>' + (c.linked ? ('+' + c.linked + '🔗') : '') + ' sent / ' + (c.total || 0) +
         ' · ' + (c.delivered || 0) + ' delivered' + (c.failed ? (' · ' + c.failed + ' failed') : '') +
         ' · ✅ ' + (c.positive || 0) + ' · ❌ ' + (c.negative || 0) + (c.hot ? (' · 🔥 ' + c.hot + ' hot') : '') + (c.nudged ? (' · 👋 ' + c.nudged + ' nudged') : '');
       const act = c.status === 'running' || c.status === 'scheduled'
@@ -4990,6 +4990,9 @@ function updateTabTitle() {
 document.addEventListener('visibilitychange', updateTabTitle);
 setInterval(() => { if (authed) loadHotLeads(); }, 180000); // refresh the count every 3 min so it catches new ones while you're away
 setInterval(() => { if (authed) refreshSmsReady(); }, 180000); // green SMS-ready badge kept fresh
+// while the SMS pane is open, live-refresh the campaigns / replies / ready-to-call every 20s so
+// the sent count climbs in front of you without a manual refresh
+setInterval(() => { const p = document.getElementById('admin-sms'); if (authed && p && !p.classList.contains('hidden')) loadSmsAdmin(); }, 20000);
 function dowName(d) { return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d] || ''; }
 function fmtHourClient(h) { const a = h < 12 ? 'a' : 'p'; const hr = h % 12 === 0 ? 12 : h % 12; return hr + a; }
 function dashBars(items, labelFn, valFn, highlightMax) {
