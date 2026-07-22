@@ -2545,6 +2545,18 @@ function smsFilters() {
     max: ($('smsb-max') && $('smsb-max').value) || '',   // blank = everyone who matches
   };
 }
+// Little count badges on the maintenance buttons: how many records each one would touch.
+async function loadCallCounts() {
+  try {
+    const d = await (await fetch('/api/calls?counts=1')).json();
+    const c = (d && d.counts) || {};
+    const set = (id, base, n) => { const b = $(id); if (b) b.innerHTML = base + (n != null ? ' <span class="btn-badge">' + n + '</span>' : ''); };
+    set('sms-retag', '🏷️ Tag existing records', c.tag);
+    set('sms-sweep', '🧹 Sweep junk records', c.junk);
+    set('sms-deldnd', '🚫 Delete DND records', c.dnd);
+  } catch (e) { /* leave the plain labels */ }
+}
+
 async function loadSmsAdmin() {
   // one-time wiring
   const st = $('smsb-status');
@@ -2651,21 +2663,21 @@ async function loadSmsAdmin() {
       dd.disabled = true; dd.textContent = 'Deleting…';
       try { const d = await (await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deleteDnd: 1 }) })).json();
         alert('Removed ' + (d.removed != null ? d.removed : 0) + ' Do-Not-Contact record' + (d.removed === 1 ? '' : 's') + '.'); loadCallList(); } catch (e) { alert('Could not delete, try again.'); }
-      dd.disabled = false; dd.textContent = '🚫 Delete DND records';
+      dd.disabled = false; dd.textContent = '🚫 Delete DND records'; loadCallCounts();
     });
     const sw = $('sms-sweep'); if (sw) sw.addEventListener('click', async () => {
       if (!confirm('Remove every call-list record whose name is just a phone number? Their notes stay, but the records go.')) return;
       sw.disabled = true; sw.textContent = 'Sweeping…';
       try { const d = await (await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sweep: 1 }) })).json();
         alert('Removed ' + (d.removed != null ? d.removed : 0) + ' junk record' + (d.removed === 1 ? '' : 's') + '.'); loadCallList(); } catch (e) { alert('Could not sweep, try again.'); }
-      sw.disabled = false; sw.textContent = '🧹 Sweep junk records';
+      sw.disabled = false; sw.textContent = '🧹 Sweep junk records'; loadCallCounts();
     });
     // one-off: backfill tags on records that pre-date tagging (uses their Google category)
     const tg = $('sms-retag'); if (tg) tg.addEventListener('click', async () => {
       tg.disabled = true; tg.textContent = 'Tagging…';
       try { const d = await (await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ retag: 1 }) })).json();
         alert('Tagged ' + (d.tagged != null ? d.tagged : 'existing') + ' records from their category.'); } catch (e) { alert('Could not tag, try again.'); }
-      tg.disabled = false; tg.textContent = '🏷️ Tag existing records';
+      tg.disabled = false; tg.textContent = '🏷️ Tag existing records'; loadCallCounts();
     });
     // any filter change invalidates the preview, so you cannot schedule blind, and kicks off a
     // debounced LIVE COUNT so you can see the audience size while you type
@@ -2678,6 +2690,7 @@ async function loadSmsAdmin() {
     smsLiveCount(); // initial count with the default (empty) criteria
   }
   loadEnrich();
+  loadCallCounts();
   try {
     const r = await fetch('/api/sms-campaign');
     const d = await r.json();

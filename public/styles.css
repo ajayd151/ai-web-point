@@ -1486,3 +1486,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .ov-tile.stoprate.bad { background: #fef2f2; border-color: #f5b5b5; } .ov-tile.stoprate.bad .ov-num { color: #b91c1c; }
 .brake-banner { background: #fff4e5; border: 1px solid #f5c98b; color: #92400e; border-radius: 10px; padding: 11px 14px; margin: 0 0 14px; font-size: 14px; line-height: 1.5; }
 .brake-banner strong { font-weight: 700; }
+.btn-badge { display: inline-block; min-width: 18px; padding: 0 6px; margin-left: 2px; border-radius: 9px; background: #e2e8f0; color: #334155; font-size: 12px; font-weight: 700; line-height: 18px; text-align: center; vertical-align: 1px; }
+#sms-deldnd .btn-badge { background: #fde8e8; color: #b91c1c; }

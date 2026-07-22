@@ -44,6 +44,19 @@ module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     if (!(await requirePermission(req, res, 'viewCallList'))) return; // team-member tab-visibility gate
     const map = await readList(PATH);
+    // ?counts=1 -> just how many records each maintenance button would affect (for the little badges)
+    if (req.query && req.query.counts) {
+      const idx = await readList('notes/_index.json');
+      let tag = 0, junk = 0, dnd = 0;
+      Object.values(map).forEach((c) => {
+        if (!c) return;
+        if (looksLikePhone(c.name)) junk++;
+        if (!c.tag && c.category) tag++;
+        if (idx[c.key] && idx[c.key].status === 'dnd') dnd++;
+      });
+      res.status(200).json({ counts: { tag: tag, junk: junk, dnd: dnd } });
+      return;
+    }
     const calls = Object.values(map).sort((a, b) => String(b.addedAt || '').localeCompare(String(a.addedAt || '')));
     res.status(200).json({ calls });
     return;
