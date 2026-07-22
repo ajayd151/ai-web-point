@@ -2588,6 +2588,7 @@ async function loadSmsAdmin() {
       const pos = s0 + tag.length; ta.focus(); try { ta.setSelectionRange(pos, pos); } catch (err) {}
       smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
     }));
+    const cb = $('smsb-count-btn'); if (cb) cb.addEventListener('click', (e) => { e.preventDefault(); smsLiveCount(); });
     const pv = $('smsb-preview'); if (pv) pv.addEventListener('click', smsPreview);
     const cr = $('smsb-create'); if (cr) cr.addEventListener('click', smsCreate);
     const rf = $('sms-refresh'); if (rf) rf.addEventListener('click', (e) => { e.preventDefault(); loadSmsAdmin(); });
