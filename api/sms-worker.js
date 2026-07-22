@@ -25,7 +25,7 @@ const SENDS_PER_TICK = 10;   // ~120/hour ceiling, gentle on carrier filtering
 // pause for a cooldown so the 24h volume drops and the number cools off. Measured over a rolling
 // window so it recovers by itself. All three are env-overridable.
 const STOP_WINDOW_HOURS = Math.max(1, Number(process.env.SMS_STOP_WINDOW_HOURS) || 24); // look-back for the rate
-const STOP_TRIP_PCT = Math.max(0.5, Number(process.env.SMS_STOP_TRIP_PCT) || 3);        // trip at this STOP-rate %
+const STOP_TRIP_PCT = Math.max(0.5, Number(process.env.SMS_STOP_TRIP_PCT) || 7);        // trip at this STOP-rate % (temporarily 7 per user 2026-07-22; 3-4 is the healthier long-term line)
 const STOP_MIN_SENT = Math.max(1, Number(process.env.SMS_STOP_MIN_SENT) || 40);         // ...but only once enough have been sent
 const STOP_COOLDOWN_HOURS = Math.max(1, Number(process.env.SMS_STOP_COOLDOWN_HOURS) || 24); // how long cold sends stay paused
 // Read/trip/clear the brake. Returns { paused, until, rate, stops, sent, reason }. State lives in

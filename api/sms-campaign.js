@@ -3,7 +3,7 @@
 // POST action=preview -> who matches, with counts and a cost estimate. Nothing is saved.
 // POST action=create  -> snapshot the audience into a campaign for the worker to run.
 // POST action=pause|resume|cancel, GET -> campaigns + replies, GET ?id= -> one campaign's items.
-const { list } = require('@vercel/blob');
+const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
 const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
@@ -117,6 +117,15 @@ module.exports = async (req, res) => {
     const r = await sendSms(mob, 'Site Pounce test: your SMS is working. Reply anything and it will show in Admin > SMS. Reply STOP to opt out.', base);
     if (r.ok) res.status(200).json({ ok: true });
     else res.status(200).json({ error: 'Twilio refused it: ' + (r.error || 'unknown') });
+    return;
+  }
+
+  if (action === 'resumeCold') {
+    // manual override of the STOP-rate auto-pause: clear the brake so the next worker tick resumes
+    // cold sends (it re-evaluates the rate against the current threshold straight away).
+    try { await put('sms/_breaker.json', JSON.stringify({ clearedAt: new Date().toISOString(), clearedBy: acct.email }), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
+    catch (e) { res.status(500).json({ error: 'Could not lift the pause.' }); return; }
+    res.status(200).json({ ok: true });
     return;
   }
 

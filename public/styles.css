@@ -1498,3 +1498,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .sms-tab .navbadge { margin-left: 2px; }
 .sms-tools { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
 .sms-tools .linkbtn { font-size: 15px; }
+.brake-resume { appearance: none; border: 1px solid #d97706; background: #fff; color: #b45309; font-size: 13px; font-weight: 700; padding: 5px 11px; border-radius: 8px; cursor: pointer; margin-left: 4px; white-space: nowrap; }
+.brake-resume:hover { background: #fff7ed; }

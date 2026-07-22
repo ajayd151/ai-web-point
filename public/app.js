@@ -2741,6 +2741,12 @@ function smsLiveCount() {
 }
 
 let _enrichTimer = null;
+// Manual override of the STOP-rate auto-pause (the "Resume now" button in the paused banner).
+async function smsResumeCold() {
+  if (!confirm('Resume cold sending now, overriding the auto-pause? Only do this if you are happy with the current STOP rate.')) return;
+  try { await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'resumeCold' }) }); } catch (e) { /* refresh will show if it held */ }
+  loadSmsAdmin();
+}
 function setSmsReadyBadge(n) {
   n = Number(n) || 0;
   const txt = n > 99 ? '99+' : String(n);
@@ -2891,7 +2897,8 @@ function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake) {
     const r = brake.rate != null ? brake.rate : (t.sent ? Math.round((Number(stopCount) || 0) / t.sent * 1000) / 10 : 0);
     banner = '<div class="brake-banner">⏸️ <strong>Cold sending auto-paused</strong> · STOP rate hit ' + esc(String(r)) + '%'
       + (brake.stops != null ? ' (' + brake.stops + '/' + brake.sent + ' in the last 24h)' : '')
-      + '. New openers and nudges resume <strong>' + esc(when) + '</strong>. Replies and warm follow-ups still go out.</div>';
+      + '. New openers and nudges resume <strong>' + esc(when) + '</strong>. Replies and warm follow-ups still go out.'
+      + ' <button class="brake-resume" type="button" onclick="smsResumeCold()">▶️ Resume now</button></div>';
   }
   el.innerHTML = banner + '<div class="ov-stats">' + tiles + '</div>' + bar;
 }
