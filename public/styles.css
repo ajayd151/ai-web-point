@@ -1444,3 +1444,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .sms-build .sms-check { margin-top: 4px; font-size: 13px; }
 .sms-build .sms-livecount { margin: 12px 0 0; }
 .sms-build .sms-actions { margin-top: 20px; }
+.smsf-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.smsf-tags-lbl { font-size: 11.5px; color: #8494a8; font-weight: 700; }
+.smsf-tag { border: 1px solid #cdeae7; background: #eefcfb; color: #0b7d74; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: ui-monospace, Menlo, monospace; }
+.smsf-tag:hover { background: #d9f7f4; border-color: #0fb6a8; }

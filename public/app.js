@@ -2567,6 +2567,8 @@ async function loadSmsAdmin() {
       const syncMode = () => {
         const ask = md.value === 'ask';
         const w = $('smsb-linkwrap'); if (w) w.classList.toggle('hidden', !ask);
+        const linkChip = document.querySelector('#admin-sms .smsf-tags[data-target=\"smsb-msg\"] .tag-link');
+        if (linkChip) linkChip.style.display = ask ? 'none' : '';
         const h = $('smsb-msg-hint');
         if (h) h.textContent = ask
           ? '{business} = their name, {industry} = their tag. Ask-first: NO {link} in this first message, it goes in the follow-up below. "Reply STOP to opt out" is added automatically.'
@@ -2574,6 +2576,18 @@ async function loadSmsAdmin() {
       };
       md.addEventListener('change', syncMode); syncMode();
     }
+    // clickable {tags} insert at the cursor of their target textarea
+    document.querySelectorAll('#admin-sms .smsf-tag').forEach((b) => b.addEventListener('click', (e) => {
+      e.preventDefault();
+      const wrap = b.closest('.smsf-tags'); if (!wrap) return;
+      const ta = $(wrap.dataset.target); if (!ta) return;
+      const tag = b.dataset.tag || '';
+      const s0 = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+      const s1 = ta.selectionEnd != null ? ta.selectionEnd : ta.value.length;
+      ta.value = ta.value.slice(0, s0) + tag + ta.value.slice(s1);
+      const pos = s0 + tag.length; ta.focus(); try { ta.setSelectionRange(pos, pos); } catch (err) {}
+      smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
+    }));
     const pv = $('smsb-preview'); if (pv) pv.addEventListener('click', smsPreview);
     const cr = $('smsb-create'); if (cr) cr.addEventListener('click', smsCreate);
     const rf = $('sms-refresh'); if (rf) rf.addEventListener('click', (e) => { e.preventDefault(); loadSmsAdmin(); });
