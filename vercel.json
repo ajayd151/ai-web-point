@@ -39,6 +39,9 @@
     },
     "api/sms-campaign.js": {
       "maxDuration": 60
+    },
+    "api/sms-suggest.js": {
+      "maxDuration": 30
     }
   },
   "crons": [

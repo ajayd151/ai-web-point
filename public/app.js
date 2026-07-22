@@ -2578,6 +2578,7 @@ async function loadSmsAdmin() {
       const syncMode = () => {
         const ask = md.value === 'ask';
         const w = $('smsb-linkwrap'); if (w) w.classList.toggle('hidden', !ask);
+        const sgr = $('smsb-suggest-row'); if (sgr) sgr.style.display = ask ? '' : 'none';
         const linkChip = document.querySelector('#admin-sms .smsf-tags[data-target=\"smsb-msg\"] .tag-link');
         if (linkChip) linkChip.style.display = ask ? 'none' : '';
         const h = $('smsb-msg-hint');
@@ -2600,6 +2601,23 @@ async function loadSmsAdmin() {
       smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
     }));
     const cb = $('smsb-count-btn'); if (cb) cb.addEventListener('click', (e) => { e.preventDefault(); smsLiveCount(); });
+    const sg = $('smsb-suggest'); if (sg) sg.addEventListener('click', async () => {
+      const first = ($('smsb-msg') && $('smsb-msg').value || '').trim();
+      const m = $('smsb-suggest-msg');
+      if (!first) { if (m) m.textContent = 'Write the first message first.'; return; }
+      if (m) m.textContent = 'Drafting…'; sg.disabled = true;
+      try {
+        const d = await (await fetch('/api/sms-suggest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ first: first }) })).json();
+        if (d.error) { if (m) m.textContent = d.error; }
+        else {
+          if (d.followUp && $('smsb-linkmsg')) $('smsb-linkmsg').value = d.followUp;
+          if (d.nudge && $('smsb-nudgemsg')) $('smsb-nudgemsg').value = d.nudge;
+          if (m) m.textContent = '✓ Drafted, edit as you like';
+          smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
+        }
+      } catch (e) { if (m) m.textContent = 'Could not draft, try again'; }
+      sg.disabled = false;
+    });
     const pv = $('smsb-preview'); if (pv) pv.addEventListener('click', smsPreview);
     const cr = $('smsb-create'); if (cr) cr.addEventListener('click', smsCreate);
     const rf = $('sms-refresh'); if (rf) rf.addEventListener('click', (e) => { e.preventDefault(); loadSmsAdmin(); });
