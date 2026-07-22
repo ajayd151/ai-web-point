@@ -1355,7 +1355,8 @@ function hbnSplit(tok) {
   return tok;
 }
 var HBN_LEGAL = new Set('ltd limited llp plc llc inc incorporated co company cic cio'.split(' '));
-var HBN_FLUFF = new Set('independent professional certified registered qualified experienced reliable trusted established genuine approved accredited insured dependable'.split(' '));
+var HBN_FLUFF = new Set(('independent professional certified registered qualified experienced reliable trusted established genuine approved accredited insured dependable ' +
+  'parlour parlor salon salons studio studios spa lounge').split(' '));
 var HBN_CONNECT = new Set(['and', 'of', 'the']);
 function hbnNorm(w) { return w.toLowerCase().replace(/[^a-z]/g, ''); }
 function hbnStripFiller(raw) {
@@ -1371,6 +1372,7 @@ function hbnStripFiller(raw) {
 function humaniseBusinessName(name) {
   let raw = String(name == null ? '' : name).trim();
   if (!raw) return raw;
+  raw = raw.split(/\s+/).map(function (t) { return (/^[A-Za-z](\.[A-Za-z])+\.?$/.test(t) ? t.replace(/\./g, '').toUpperCase() : t); }).join(' ');
   raw = raw.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
   raw = raw.replace(/\s*&\s*/g, ' & ').replace(/\s*\/\s*/g, ' / ').replace(/\s*\+\s*/g, ' + ').replace(/\s*\band\b\s*/gi, ' and ');
   raw = raw.split(' ').map(function (t) { return (/^[a-z0-9]+$/.test(t) && t.length >= 6) ? hbnSplit(t) : t; }).join(' ');
