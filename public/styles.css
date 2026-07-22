@@ -1457,3 +1457,4 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .enr-head { font-size: 13px; color: #15233b; }
 .enr-body { margin-top: 8px; font-size: 13px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .enr-run { color: #0b7d74; font-weight: 700; }
+.navbadge.green { background: #17a673; }

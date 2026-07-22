@@ -290,6 +290,7 @@ async function refreshAccess() {
   if (paid) {
     loadServerMockups(); loadHotLeads(); loadCallList(); // saved mockups + warm-lead / call-list badges + card states
     pullTemplatesFromServer(); // shared templates: server copy wins over this device's cache
+    if (acc.plan === 'owner') refreshSmsReady(); // green badge: positive SMS replies waiting
   }
   // resume a plan the user picked before signing up, but NEVER for someone who already has
   // access (a team member or existing subscriber must not be pushed into paying).
@@ -2647,6 +2648,7 @@ async function loadSmsAdmin() {
     renderSmsCampaigns(d.campaigns || []);
     renderSmsReplies(d.replies || []);
     renderSmsCallNow(d.callNow || []);
+    setSmsReadyBadge(d.readyCount != null ? d.readyCount : (d.callNow || []).length);
   } catch (e) { /* leave as is */ }
 }
 // live audience count, debounced so it fires when you pause typing, not on every keystroke
@@ -2673,6 +2675,19 @@ function smsLiveCount() {
 }
 
 let _enrichTimer = null;
+function setSmsReadyBadge(n) {
+  n = Number(n) || 0;
+  const txt = n > 99 ? '99+' : String(n);
+  ['sms-ready-nav', 'sms-ready-sub'].forEach((id) => {
+    const el = $(id); if (!el) return;
+    el.textContent = txt;
+    el.classList.toggle('hidden', n <= 0);
+  });
+}
+async function refreshSmsReady() {
+  if (!(window.AIWP_ACCESS && window.AIWP_ACCESS.plan === 'owner')) return; // owner-only feature
+  try { const d = await (await fetch('/api/sms-campaign?count=1')).json(); if (d && d.readyCount != null) setSmsReadyBadge(d.readyCount); } catch (e) {}
+}
 async function loadEnrich() {
   const el = $('sms-enrich'); if (!el) return;
   try {
@@ -4937,6 +4952,7 @@ function updateTabTitle() {
 }
 document.addEventListener('visibilitychange', updateTabTitle);
 setInterval(() => { if (authed) loadHotLeads(); }, 180000); // refresh the count every 3 min so it catches new ones while you're away
+setInterval(() => { if (authed) refreshSmsReady(); }, 180000); // green SMS-ready badge kept fresh
 function dowName(d) { return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d] || ''; }
 function fmtHourClient(h) { const a = h < 12 ? 'a' : 'p'; const hr = h % 12 === 0 ? 12 : h % 12; return hr + a; }
 function dashBars(items, labelFn, valFn, highlightMax) {

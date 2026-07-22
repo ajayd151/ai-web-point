@@ -10,6 +10,15 @@ const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
 const { buildAudience } = require('../lib/smsaudience');
 const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, listInbound, readyToCall } = require('../lib/smsdb');
 
+async function readJson(path) {
+  try {
+    const { blobs } = await list({ prefix: path });
+    const b = blobs.find((x) => x.pathname === path);
+    if (b) return await (await fetch(b.url + '?t=' + Date.now())).json();
+  } catch (e) { /* none */ }
+  return null;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please sign in first.' }); return; }
@@ -19,10 +28,17 @@ module.exports = async (req, res) => {
   if (req.method === 'GET') {
     const q = req.query || {};
     if (q.id) { res.status(200).json({ items: await campaignItems(Number(q.id)) }); return; }
+    // Ready-to-call = positive repliers you have NOT yet dealt with (still Interested-ish). Once
+    // you book/dismiss them their status moves on and they drop off, so the green badge self-clears.
+    const TERMINAL = { 'meeting-booked': 1, 'appointment-link-sent': 1, won: 1, lost: 1, 'not-interested': 1, declined: 1, 'invalid-phone': 1 };
+    const idx = (await readJson('notes/_index.json')) || {};
+    const callNow = (await readyToCall(200)).filter((r) => !TERMINAL[(idx[r.key] && idx[r.key].status) || '']);
+    if (q.count) { res.status(200).json({ readyCount: callNow.length }); return; }
     res.status(200).json({
       campaigns: await listCampaigns(),
       replies: await listInbound(100),
-      callNow: await readyToCall(50),
+      callNow: callNow.slice(0, 50),
+      readyCount: callNow.length,
       twilioReady: smsConfigured(),
     });
     return;
