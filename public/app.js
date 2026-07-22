@@ -2848,10 +2848,13 @@ function renderSmsStats(rows, readyCount, stopCount) {
       const sub = t.sent ? (rate.toFixed(1) + '% of sent · keep under 1%') : 'keep under 1%';
       return '<div class="ov-tile stoprate ' + band + '"><div class="ov-ico">🚫</div><div class="ov-num">' + stops + '</div><div class="ov-label">Opted out (STOP)</div><div class="ov-sub">' + esc(sub) + '</div></div>';
     })();
-  // reply-breakdown bar (of everyone we have texted)
+  // reply-breakdown bar (of everyone we have texted). STOP opt-outs are drawn as their OWN band,
+  // pulled out of "no reply", so they are never lumped in with people we simply have not heard from.
+  const stops = Math.min(Number(stopCount) || 0, noReply);
+  const noReplyRest = Math.max(0, noReply - stops);
   const seg = (n, cls, label) => { const pct = t.sent ? (n / t.sent * 100) : 0; return pct > 0 ? '<div class="smsbar-seg ' + cls + '" style="width:' + pct + '%" title="' + label + ': ' + n + '"></div>' : ''; };
-  const bar = t.sent ? ('<div class="smsbar">' + seg(t.positive, 'pos', 'Positive') + seg(t.negative, 'neg', 'Negative') + seg(noReply, 'none', 'No reply yet') + '</div>' +
-    '<div class="smsbar-key"><span><i class="pos"></i> Positive ' + t.positive + '</span><span><i class="neg"></i> Negative ' + t.negative + '</span><span><i class="none"></i> No reply ' + noReply + '</span></div>') : '';
+  const bar = t.sent ? ('<div class="smsbar">' + seg(t.positive, 'pos', 'Positive') + seg(t.negative, 'neg', 'Negative') + seg(stops, 'stop', 'Opted out (STOP)') + seg(noReplyRest, 'none', 'No reply yet') + '</div>' +
+    '<div class="smsbar-key"><span><i class="pos"></i> Positive ' + t.positive + '</span><span><i class="neg"></i> Negative ' + t.negative + '</span><span><i class="stop"></i> Opted out ' + stops + '</span><span><i class="none"></i> No reply ' + noReplyRest + '</span></div>') : '';
   el.innerHTML = '<div class="ov-stats">' + tiles + '</div>' + bar;
 }
 function renderSmsCampaigns(rows) {

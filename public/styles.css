@@ -1474,10 +1474,11 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .smsbar { display: flex; height: 16px; border-radius: 8px; overflow: hidden; background: #eef2f7; margin-top: 12px; }
 .smsbar-seg.pos { background: #17a673; }
 .smsbar-seg.neg { background: #dc7b7b; }
+.smsbar-seg.stop { background: #b91c1c; }
 .smsbar-seg.none { background: #c7d2df; }
 .smsbar-key { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: #5b6472; font-weight: 700; }
 .smsbar-key i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
-.smsbar-key i.pos { background: #17a673; } .smsbar-key i.neg { background: #dc7b7b; } .smsbar-key i.none { background: #c7d2df; }
+.smsbar-key i.pos { background: #17a673; } .smsbar-key i.neg { background: #dc7b7b; } .smsbar-key i.stop { background: #b91c1c; } .smsbar-key i.none { background: #c7d2df; }
 .lchip.st-dnd { background: #fde8e8; color: #b91c1c; border-color: #f5b5b5; }
 .acst-track i.st-dnd { background: #dc7b7b; }
 .ov-tile.stoprate.good .ov-num { color: #17a673; }

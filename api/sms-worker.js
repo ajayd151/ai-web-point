@@ -6,7 +6,7 @@
 // can be prepared before the account exists.
 const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, campaignKeys, addItemsToCampaign, stampToppedUp } = require('../lib/smsdb');
 const { buildAudience } = require('../lib/smsaudience');
-const { sendSms, smsConfigured, lookupPhone } = require('../lib/sms');
+const { sendSms, smsConfigured, lookupPhone, optOutUrl } = require('../lib/sms');
 const { list, put } = require('@vercel/blob');
 const { sign } = require('../lib/auth');
 const { ownerEmail } = require('../lib/tenant');
@@ -166,7 +166,7 @@ async function generateMockup(base, item) {
   }
 }
 
-function renderMessage(template, item) {
+function renderMessage(template, item, base) {
   const biz = humaniseBusinessName(item.name) || item.name;
   let msg = String(template || '')
     .split('{business}').join(biz)
@@ -175,7 +175,13 @@ function renderMessage(template, item) {
     .split('{category}').join(item.category || 'business')
     .split('{location}').join(item.location || 'your area')
     .split('{link}').join(item.view_url || '');
-  if (!/stop/i.test(msg)) msg += '\nReply STOP to opt out';
+  // Opt-out footer. A tap-to-opt-out LINK instead of "reply STOP": a link click does not count
+  // against the carrier opt-out metric the way a STOP text does, so the number stays healthy.
+  // STOP still works silently for anyone who types it. If we somehow have no item id, fall back
+  // to the STOP wording so there is always a way out.
+  if (!/opt out|unsubscribe|stop/i.test(msg)) {
+    msg += item.id ? ('\nNot interested? Opt out: ' + optOutUrl(base, item.id)) : '\nReply STOP to opt out';
+  }
   return msg.slice(0, 640);
 }
 
@@ -210,7 +216,7 @@ module.exports = async (req, res) => {
         it.view_url = g.viewUrl;
         out.mockups++;
       }
-      const msg = renderMessage(it.link_message || 'Here it is: {link}', it);
+      const msg = renderMessage(it.link_message || 'Here it is: {link}', it, base);
       const r = await sendSms(it.phone, msg, base);
       if (r.ok) {
         await markLinkSent(it.id, r.sid);
@@ -234,7 +240,7 @@ module.exports = async (req, res) => {
       const cap = await limitFor('sms', who);
       const used = await getDailyUsage(who, 'sms', day);
       if (paceRoom(cap, used, now) <= 0) { out.held.push('nudges held, pacing/cap'); break; }
-      const r = await sendSms(it.phone, renderMessage(it.nudge_message, it), base);
+      const r = await sendSms(it.phone, renderMessage(it.nudge_message, it, base), base);
       if (r.ok) {
         await markNudged(it.id);
         await bumpDailyUsage(who, 'sms', 1, day);
@@ -296,7 +302,7 @@ module.exports = async (req, res) => {
 
     const ready = await itemsInState(c.id, 'ready', Math.min(SENDS_PER_TICK, room));
     for (const it of ready) {
-      const msg = renderMessage(c.message, it);
+      const msg = renderMessage(c.message, it, base);
       const r = await sendSms(it.phone, msg, base);
       if (r.ok) {
         await setItem(it.id, { state: 'sent', sid: r.sid });

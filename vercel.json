@@ -66,6 +66,10 @@
     {
       "source": "/s/:slug",
       "destination": "/api/site?slug=:slug"
+    },
+    {
+      "source": "/optout",
+      "destination": "/api/optout"
     }
   ],
   "headers": [

@@ -118,19 +118,19 @@ module.exports = async (req, res) => {
       // they have SEEN the mockup: this is the response that matters most
       await setPostReply(item.id, verdict);
       if (verdict === 'positive' && matched) await setCrmStatus(matched.key, 'interested', '📱 SMS reply after seeing the mockup: "' + body + '" → CALL THEM');
-      if (verdict === 'negative' && matched) await setCrmStatus(matched.key, 'dnd', '📱 Negative reply after the mockup: "' + body + '". Marked Do Not Contact (DND).');
+      if (verdict === 'negative' && matched) await setCrmStatus(matched.key, 'not-interested', '📱 Negative reply after the mockup: "' + body + '".');
     } else {
       // reply to the ask: a YES schedules the mockup link after the campaign's delay
       const linkDue = (verdict === 'positive' && item.mode === 'ask')
         ? new Date(Date.now() + (Number(item.link_delay_min) || 1) * 60000).toISOString() : null;
       await setReply(item.id, verdict, linkDue);
       if (verdict === 'positive' && matched) await setCrmStatus(matched.key, 'interested', '📱 SMS reply: "' + body + '" (mockup link auto-sends in ' + (Number(item.link_delay_min) || 1) + ' min)');
-      if (verdict === 'negative' && matched) await setCrmStatus(matched.key, 'dnd', '📱 Negative reply: "' + body + '". Marked Do Not Contact (DND).');
+      if (verdict === 'negative' && matched) await setCrmStatus(matched.key, 'not-interested', '📱 Negative reply: "' + body + '".');
     }
   }
   // any reply that is not part of the workflow still lands in the notes
   if (matched && verdict !== 'stop' && !item) {
-    await setCrmStatus(matched.key, verdict === 'positive' ? 'interested' : (verdict === 'negative' ? 'dnd' : ''), '📱 SMS reply: ' + body);
+    await setCrmStatus(matched.key, verdict === 'positive' ? 'interested' : (verdict === 'negative' ? 'not-interested' : ''), '📱 SMS reply: ' + body);
   }
 
   // tell the owner (await it: never fire-and-forget on Vercel)
