@@ -2789,11 +2789,34 @@ function renderHourly(hours) {
     + '<span><i style="background:#b91c1c"></i> STOP</span>'
     + '<span><i style="background:#7c3aed"></i> Opt-out link</span></div>';
   el.innerHTML = '<div class="ov-rev-head" style="margin-top:22px">🕐 By hour of day <span class="muted" style="font-weight:400;font-size:12px">· last 30 days, UK time. Hover a bar for the numbers.</span></div>'
+    + bestWindowCallout(hours)
     + legend
     + '<div class="hourly-chart"><div class="hourly-lbl">Sent</div><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + sends + hLabels + '</svg></div>'
     + '<div class="hourly-chart"><div class="hourly-lbl">Replies &amp; opt-outs</div><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + resp + hLabels + '</svg></div>';
 }
 function fmtHour(h) { const x = ((h % 24) + 24) % 24; const ap = x < 12 ? 'am' : 'pm'; const hr = x % 12 === 0 ? 12 : x % 12; return hr + ap; }
+// "Best window" callout. Deliberately conservative: it only names a time once there is enough
+// volume and enough yeses to mean something, otherwise it says so rather than inventing a peak.
+function bestWindowCallout(hours) {
+  const totalSends = hours.reduce((a, x) => a + x.sends, 0);
+  const totalPos = hours.reduce((a, x) => a + x.positive, 0);
+  if (totalSends < 40 || totalPos < 3) {
+    return '<div class="best-window low">🎯 <strong>Best time to send:</strong> not enough data yet. It needs a few hundred texts across different hours, and at least a few positive replies, before it can name a window honestly.</div>';
+  }
+  let best = null; // best 3-hour window by yes-rate, needing >=15 sends in the window
+  for (let s = 0; s <= 21; s++) {
+    let ws = 0, wp = 0;
+    for (let k = 0; k < 3; k++) { ws += hours[s + k].sends; wp += hours[s + k].positive; }
+    if (ws < 15) continue;
+    const rate = wp / ws;
+    if (!best || rate > best.rate || (rate === best.rate && wp > best.pos)) best = { s: s, e: s + 2, rate: rate, pos: wp, sends: ws };
+  }
+  if (best && best.pos > 0) {
+    const pct = Math.round(best.rate * 100);
+    return '<div class="best-window">🎯 <strong>Best window so far:</strong> ' + fmtHour(best.s) + '–' + fmtHour(best.e + 1) + ' · ' + pct + '% reply yes (' + best.pos + ' of ' + best.sends + '). Worth weighting your sends here.</div>';
+  }
+  return '<div class="best-window low">🎯 <strong>Best time to send:</strong> replies are still too spread out to name a clear window. Give it a few more days.</div>';
+}
 async function loadHourly() {
   try { const d = await (await fetch('/api/sms-campaign?hourly=1')).json(); if (d && d.hourly) renderHourly(d.hourly); } catch (e) { /* leave empty */ }
 }
