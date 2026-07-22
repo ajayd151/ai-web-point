@@ -865,19 +865,19 @@
                 <div class="smsf-full">
                   <label class="smsf-lbl">First message</label>
                   <textarea id="smsb-msg" rows="3" placeholder="Hi {business}, we put together a quick homepage design for you. Want me to text you the link?"></textarea>
-                  <div class="smsf-tags" data-target="smsb-msg"><span class="smsf-tags-lbl">Insert:</span><button type="button" class="smsf-tag" data-tag="{business}">{business}</button><button type="button" class="smsf-tag" data-tag="{industry}">{industry}</button><button type="button" class="smsf-tag" data-tag="{category}">{category}</button><button type="button" class="smsf-tag" data-tag="{location}">{location}</button><button type="button" class="smsf-tag tag-link" data-tag="{link}">{link}</button></div>
+                  <div class="smsf-tags" data-target="smsb-msg"><span class="smsf-tags-lbl">Insert:</span><button type="button" class="smsf-tag" data-tag="{business}">{business}</button><button type="button" class="smsf-tag" data-tag="{industry}">{industry}</button><button type="button" class="smsf-tag" data-tag="{location}">{location}</button><button type="button" class="smsf-tag tag-link" data-tag="{link}">{link}</button></div>
                   <p class="muted sms-hint" id="smsb-msg-hint">{business} = their name, {industry} = their tag. Ask-first: NO {link} in this first message, it goes in the follow-up below. "Reply STOP to opt out" is added automatically.</p>
                 </div>
                 <div id="smsb-linkwrap" class="smsf-sub">
                   <label class="smsf-lbl">Follow-up sent automatically on a YES</label>
                   <textarea id="smsb-linkmsg" rows="2" placeholder="Brilliant. Here is the design we made for {business}: {link}  If you like it, reply CALL and we will walk you through it."></textarea>
-                  <div class="smsf-tags" data-target="smsb-linkmsg"><span class="smsf-tags-lbl">Insert:</span><button type="button" class="smsf-tag" data-tag="{business}">{business}</button><button type="button" class="smsf-tag" data-tag="{industry}">{industry}</button><button type="button" class="smsf-tag" data-tag="{category}">{category}</button><button type="button" class="smsf-tag" data-tag="{location}">{location}</button><button type="button" class="smsf-tag" data-tag="{link}">{link}</button></div>
+                  <div class="smsf-tags" data-target="smsb-linkmsg"><span class="smsf-tags-lbl">Insert:</span><button type="button" class="smsf-tag" data-tag="{business}">{business}</button><button type="button" class="smsf-tag" data-tag="{industry}">{industry}</button><button type="button" class="smsf-tag" data-tag="{location}">{location}</button><button type="button" class="smsf-tag" data-tag="{link}">{link}</button></div>
                   <div class="smsf-inline"><span>Send</span> <input id="smsb-delay" type="number" min="0" max="1440" value="1" /> <span class="muted">minute(s) after their yes (goes any time of day, they just replied).</span></div>
                 </div>
                 <div class="smsf-sub">
                   <label class="smsf-lbl">Nudge if they go quiet <span class="muted">(optional)</span></label>
                   <textarea id="smsb-nudgemsg" rows="2" placeholder="No rush {business}, just checking you saw this. Happy to send the design over whenever suits."></textarea>
-                  <div class="smsf-tags" data-target="smsb-nudgemsg"><span class="smsf-tags-lbl">Insert:</span><button type="button" class="smsf-tag" data-tag="{business}">{business}</button><button type="button" class="smsf-tag" data-tag="{industry}">{industry}</button><button type="button" class="smsf-tag" data-tag="{category}">{category}</button><button type="button" class="smsf-tag" data-tag="{location}">{location}</button></div>
+                  <div class="smsf-tags" data-target="smsb-nudgemsg"><span class="smsf-tags-lbl">Insert:</span><button type="button" class="smsf-tag" data-tag="{business}">{business}</button><button type="button" class="smsf-tag" data-tag="{industry}">{industry}</button><button type="button" class="smsf-tag" data-tag="{location}">{location}</button></div>
                   <div class="smsf-inline"><span>Send after</span> <input id="smsb-nudgehrs" type="number" min="1" max="168" value="24" /> <span class="muted">hour(s) of silence. One nudge only, ever. Leave blank for none.</span></div>
                 </div>
               </div>
