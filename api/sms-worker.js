@@ -103,6 +103,43 @@ async function validatePhones(base) {
   return todo.length;
 }
 
+const ENRICH_PER_TICK = 15; // Google Place Details lookups per tick when enrichment is ARMED
+// Backfill real Google data (website presence, rating, review count) for OLD call-list records so
+// the SMS filters work on them too. Stored in its OWN blob (calls/_enrichdata.json), never
+// touching the call list, so it cannot race a user add. Only runs when armed via Admin (a click),
+// because Google Places is not free. Bumps the running spend in calls/_enrich.json.
+async function enrichCallList() {
+  const ctrl = (await readJson('calls/_enrich.json')) || {};
+  if (!ctrl.active) return 0;
+  const key = process.env.GOOGLE_PLACES_API_KEY;
+  if (!key) return 0;
+  const calls = (await readJson('calls/_list.json')) || {};
+  const data = (await readJson('calls/_enrichdata.json')) || {};
+  const todo = Object.values(calls).filter((c) => c && c.placeId && c.web === undefined && !data[c.key]).slice(0, ENRICH_PER_TICK);
+  if (!todo.length) { ctrl.active = false; ctrl.finishedAt = new Date().toISOString(); await put('calls/_enrich.json', JSON.stringify(ctrl), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); return 0; }
+  let spentAdd = 0;
+  for (const c of todo) {
+    try {
+      const r = await fetch('https://places.googleapis.com/v1/places/' + encodeURIComponent(c.placeId), {
+        headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'websiteUri,rating,userRatingCount' },
+      });
+      const d = await r.json().catch(() => null);
+      spentAdd += 0.025;
+      if (d && !d.error) {
+        data[c.key] = { web: d.websiteUri ? 'has' : 'none', rating: d.rating || 0, reviews: d.userRatingCount || 0, at: new Date().toISOString() };
+      } else {
+        data[c.key] = { web: 'unknown', at: new Date().toISOString() }; // do not re-charge for a bad id
+      }
+    } catch (e) { data[c.key] = { web: 'unknown', at: new Date().toISOString() }; }
+  }
+  try {
+    await put('calls/_enrichdata.json', JSON.stringify(data), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+    ctrl.spent = (ctrl.spent || 0) + spentAdd;
+    await put('calls/_enrich.json', JSON.stringify(ctrl), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+  } catch (e) { /* next tick retries */ }
+  return todo.length;
+}
+
 // Generate one mockup by calling our own /api/generate with a server-minted owner cookie.
 // Reuses the whole existing pipeline (image, copy, tracking page) without duplicating it.
 async function generateMockup(base, item) {
@@ -183,6 +220,8 @@ module.exports = async (req, res) => {
 
   // rolling phone validation (one lookup per number, ever)
   if (smsConfigured()) { try { out.checked = await validatePhones(base); } catch (e) { /* next tick */ } }
+  // Google enrichment of old records, only when armed via Admin (costs money)
+  try { out.enriched = await enrichCallList(); } catch (e) { /* next tick */ }
 
   // One nudge each for non-responders whose window is up. Still a cold-ish touch, so it obeys the
   // send window, the daily cap AND the pacing, and each recipient only ever gets one.

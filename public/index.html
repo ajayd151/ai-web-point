@@ -837,17 +837,18 @@
                   <div class="smsf"><label class="smsf-lbl">Status</label><select id="smsb-status"></select></div>
                 </div>
                 <div class="smsf-row">
-                  <div class="smsf"><label class="smsf-lbl">Found with</label><select id="smsb-site" title="The website filter used by the search that found them">
-                    <option value="any">Any website filter</option>
+                  <div class="smsf"><label class="smsf-lbl">Website</label><select id="smsb-site" title="The website filter used by the search that found them">
+                    <option value="any">Any</option>
                     <option value="none">No website</option>
-                    <option value="has">Has website</option>
+                    <option value="has">Has a website</option>
                   </select></div>
-                  <div class="smsf"><label class="smsf-lbl">Search ratings from</label><input id="smsb-rfrom" type="number" min="0" placeholder="any" /></div>
+                  <div class="smsf"><label class="smsf-lbl">Reviews from</label><input id="smsb-rfrom" type="number" min="0" placeholder="any" /></div>
                   <div class="smsf"><label class="smsf-lbl">to</label><input id="smsb-rto" type="number" min="0" placeholder="any" /></div>
                   <div class="smsf"><label class="smsf-lbl">Max recipients</label><input id="smsb-max" type="number" min="1" placeholder="All matches" title="Leave blank to text everyone who matches. They still go out at your daily cap, not all at once." /></div>
                 </div>
                 <label class="sms-check"><input id="smsb-notmsg" type="checkbox" checked /> Skip anyone already texted</label>
-                <p class="muted sms-hint">💡 Your call list is already businesses with no website (that is what you search for), so you usually only need <b>Industry/tag</b> and <b>Location</b>. The Found-with and ratings filters only work on records added by a recent search, so they skip older ones.</p>
+                <p class="muted sms-hint">💡 <b>Website</b> and <b>Reviews</b> use each business's real Google data. New records get it automatically. Your existing records need a one-off enrichment (below) before those two filters see them, until then they are skipped.</p>
+                <div id="sms-enrich" class="sms-enrich"></div>
                 <div class="smsf-countrow"><button id="smsb-count-btn" class="ghost sm" type="button">🔢 Count matches</button><div id="smsb-count" class="sms-livecount muted">Fill in the criteria above, the match count shows here.</div></div>
               </div>
 

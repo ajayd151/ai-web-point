@@ -109,6 +109,9 @@ module.exports = async (req, res) => {
         mapsUrl: String(a.mapsUrl || '').slice(0, 300),
         tag: String(a.tag || '').trim().toLowerCase().slice(0, 60) || (map[key] && map[key].tag) || undefined,
         crit: crit || (map[key] && map[key].crit) || undefined,
+        web: (a.web === 'has' || a.web === 'none') ? a.web : (map[key] && map[key].web) || undefined,
+        rating: (a.rating != null && a.rating !== '') ? Number(a.rating) : (map[key] ? map[key].rating : undefined),
+        reviews: (a.reviews != null && a.reviews !== '') ? Number(a.reviews) : (map[key] ? map[key].reviews : undefined),
         addedAt: (map[key] && map[key].addedAt) || new Date().toISOString(),
         addedBy: (map[key] && map[key].addedBy) || who || undefined,
       };

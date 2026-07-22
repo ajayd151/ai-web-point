@@ -1452,3 +1452,8 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .smsf-countrow .sms-livecount { margin: 0; }
 #smsb-count-btn { background: #0fb6a8; color: #fff; border-color: #0fb6a8; font-weight: 700; }
 #smsb-count-btn:hover { filter: brightness(1.05); }
+.sms-enrich { margin-top: 10px; }
+.sms-enrich:empty { display: none; }
+.enr-head { font-size: 13px; color: #15233b; }
+.enr-body { margin-top: 8px; font-size: 13px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.enr-run { color: #0b7d74; font-weight: 700; }

@@ -725,7 +725,7 @@ async function batchAddToCallList() {
     name: b.name, location: b.location || '', category: b.category || '',
     phone: (b.phones && b.phones[0]) || b.phone || '', placeId: b.id || b.placeId || '',
     slug: (recentIndex.get(normKey(b.name, b.location)) || {}).id || b.slug || '', mapsUrl: b.mapsUrl || '',
-  }, searchCrit())));
+  }, actualData(b), searchCrit())));
   try {
     await callsPost({ add: adds }); // one serialized write for the whole batch
     adds.forEach((a) => { callKeys.add(callKeyFor(a)); callNameKeys.add(normKey(a.name, a.location)); callOptimistic.add(normKey(a.name, a.location)); });
@@ -765,6 +765,16 @@ let lastSearchParams = null; // {industry, location, filters} so Load more can r
 // list: the industry term becomes the record's 🏷️ tag ("salons"), and the location + filters
 // (website / phone / ratings) are kept as `crit`. Old records pre-date this, Admin > SMS has a
 // one-off "Tag existing records" that backfills their tag from the Google category.
+// Real Google data the search already fetched (website presence, rating, review count), stored on
+// the record so the SMS filters reflect the actual business, not just the search that found it.
+function actualData(b) {
+  const o = {};
+  if (b.website !== undefined) o.web = b.website ? 'has' : 'none';
+  if (b.rating != null) o.rating = Number(b.rating) || 0;
+  const rev = (b.userRatingsTotal != null ? b.userRatingsTotal : b.reviews);
+  if (rev != null) o.reviews = Number(rev) || 0;
+  return o;
+}
 function searchCrit() {
   const p = lastSearchParams || {};
   if (!p.industry && !p.location) return {};
@@ -2624,6 +2634,7 @@ async function loadSmsAdmin() {
     });
     smsLiveCount(); // initial count with the default (empty) criteria
   }
+  loadEnrich();
   try {
     const r = await fetch('/api/sms-campaign');
     const d = await r.json();
@@ -2659,6 +2670,32 @@ function smsLiveCount() {
         (skTotal ? ' <span class="muted">(' + skTotal + ' more excluded: no mobile, already texted, opted out or dead number)</span>' : '');
     } catch (e) { if (seq === _smsCountSeq) el.textContent = ''; }
   }, 600);
+}
+
+let _enrichTimer = null;
+async function loadEnrich() {
+  const el = $('sms-enrich'); if (!el) return;
+  try {
+    const d = await (await fetch('/api/enrich')).json();
+    if (d.error) { el.innerHTML = ''; return; }
+    const pct = d.total ? Math.round((d.done / d.total) * 100) : 0;
+    let h = '<div class="enr-head"><b>📡 Enrich from Google</b> <span class="muted">' + d.done + ' of ' + d.total + ' records have real website/review data (' + pct + '%)</span></div>';
+    if (d.remaining > 0) {
+      h += '<div class="enr-body">';
+      if (d.active) h += '<span class="enr-run">● Running, about ' + d.remaining + ' left. Spent so far ~£' + d.spent + '.</span> <button id="enr-stop" class="linkbtn">Pause</button>';
+      else h += '<button id="enr-start" class="ghost sm">Enrich ' + d.remaining + ' records now (~£' + d.estCost + ')</button> <span class="muted">one-off, ~' + d.costEach + 'p each. Drips in the background.</span>';
+      h += '</div>';
+    } else if (d.total) { h += '<div class="muted enr-body">✓ All records enriched.</div>'; }
+    el.innerHTML = h;
+    const a = $('enr-start'); if (a) a.addEventListener('click', async () => {
+      if (!confirm('Start enriching ' + d.remaining + ' records from Google? Estimated cost about £' + d.estCost + '. It runs in the background and you can pause any time.')) return;
+      await fetch('/api/enrich', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: 1 }) });
+      loadEnrich();
+    });
+    const st = $('enr-stop'); if (st) st.addEventListener('click', async () => { await fetch('/api/enrich', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stop: 1 }) }); loadEnrich(); });
+    clearTimeout(_enrichTimer);
+    if (d.active) _enrichTimer = setTimeout(loadEnrich, 20000); // refresh progress while running
+  } catch (e) { el.innerHTML = ''; }
 }
 
 async function smsPreview() {
@@ -4751,7 +4788,7 @@ function renderCallList() {
 }
 async function addToCallList(b, rec, btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; }
-  const add = Object.assign({ name: b.name, location: b.location || '', category: b.category || '', phone: (b.phones && b.phones[0]) || b.phone || '', placeId: b.id || b.placeId || '', slug: rec ? rec.id : (b.slug || ''), mapsUrl: b.mapsUrl || '' }, searchCrit());
+  const add = Object.assign({ name: b.name, location: b.location || '', category: b.category || '', phone: (b.phones && b.phones[0]) || b.phone || '', placeId: b.id || b.placeId || '', slug: rec ? rec.id : (b.slug || ''), mapsUrl: b.mapsUrl || '' }, actualData(b), searchCrit());
   try {
     await callsPost({ add }); // serialized, so rapid adds can't overwrite each other
     callKeys.add(callKeyFor(add));
