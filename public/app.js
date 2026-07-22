@@ -2935,10 +2935,16 @@ function renderSmsReplies(rows) {
   if (!rows.length) { el.innerHTML = '<p class="muted">No replies yet.</p>'; return; }
   el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>When</th><th>From</th><th>Message</th><th>Read as</th></tr></thead><tbody>' +
     rows.map((r) => {
-      const v = r.verdict === 'positive' ? '<span class="sms-v pos">✅ positive</span>'
+      // link opt-out = a tap on the unsubscribe link (verdict optout-link). Older rows logged it
+      // as 'stop' with the "[opted out via link]" body, so relabel those too rather than call a
+      // link tap a STOP text (which it is not, and which carriers treat very differently).
+      const isLink = r.verdict === 'optout-link' || (r.verdict === 'stop' && /opted out via link/i.test(r.body || ''));
+      const v = isLink ? '<span class="sms-v link">🔕 Link opt-out</span>'
+        : (r.verdict === 'positive' ? '<span class="sms-v pos">✅ positive</span>'
         : (r.verdict === 'negative' ? '<span class="sms-v neg">❌ negative</span>'
-        : (r.verdict === 'stop' ? '<span class="sms-v neg">🚫 STOP</span>' : '<span class="sms-v">–</span>'));
-      return '<tr><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.from_phone || '') + '</span>') : esc(r.from_phone || '')) + '</td><td>' + esc(r.body || '') + '</td><td>' + v + '</td></tr>';
+        : (r.verdict === 'stop' ? '<span class="sms-v neg">🚫 STOP</span>' : '<span class="sms-v">–</span>')));
+      const body = isLink ? 'Opted out via link' : (r.body || '');
+      return '<tr><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.from_phone || '') + '</span>') : esc(r.from_phone || '')) + '</td><td>' + esc(body) + '</td><td>' + v + '</td></tr>';
     }).join('') +
     '</tbody></table></div>';
 }
