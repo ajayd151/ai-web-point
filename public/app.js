@@ -2557,7 +2557,8 @@ async function loadCallCounts() {
   } catch (e) { /* leave the plain labels */ }
 }
 
-async function loadSmsAdmin() {
+async function loadSmsAdmin(opts) {
+  opts = opts || {};
   // sub-tabs (Create / Analytics / Campaigns / Replies / Maintenance): wired once
   const tabs = $('sms-tabs');
   if (tabs && !tabs.dataset.wired) {
@@ -2707,6 +2708,7 @@ async function loadSmsAdmin() {
   }
   loadEnrich();
   loadCallCounts();
+  if (!opts.poll) loadHourly(); // heavier aggregate: only on open/Refresh, not the 20s poll
   try {
     const r = await fetch('/api/sms-campaign');
     const d = await r.json();
@@ -2748,6 +2750,53 @@ function smsLiveCount() {
 }
 
 let _enrichTimer = null;
+// Hour-of-day chart on the Analytics tab (last 30 days, UK time). Two small SVG bar charts:
+// sends per hour, and the responses (yes / no / STOP / link opt-out) per hour, so you can see
+// which times land best.
+function renderHourly(hours) {
+  const el = $('sms-hourly'); if (!el) return;
+  if (!hours || !hours.length) { el.innerHTML = ''; return; }
+  const total = hours.reduce((a, x) => a + x.sends + x.positive + x.negative + x.stop + x.optout, 0);
+  if (!total) { el.innerHTML = '<div class="ov-rev-head" style="margin-top:22px">🕐 By hour of day</div><p class="muted">Nothing yet, the hourly pattern appears once sends and replies come in.</p>'; return; }
+  const W = 760, H = 128, padL = 6, padT = 8, padB = 16, n = 24;
+  const cw = (W - padL * 2) / n;
+  const barW = Math.max(4, cw * 0.62);
+  const chartH = H - padT - padB;
+  const xFor = (h) => padL + h * cw + (cw - barW) / 2;
+  const maxSends = Math.max(1, ...hours.map((x) => x.sends));
+  const maxResp = Math.max(1, ...hours.map((x) => x.positive + x.negative + x.stop + x.optout));
+  const hLabels = hours.map((x) => (x.h % 3 === 0) ? '<text x="' + (padL + x.h * cw + cw / 2) + '" y="' + (H - 4) + '" font-size="9" fill="#94a3b8" text-anchor="middle">' + x.h + '</text>' : '').join('');
+  let sends = '';
+  hours.forEach((x) => {
+    const bh = (x.sends / maxSends) * chartH;
+    sends += '<rect x="' + xFor(x.h) + '" y="' + (padT + chartH - bh) + '" width="' + barW + '" height="' + Math.max(0, bh) + '" rx="2" fill="#5e7bea"><title>' + fmtHour(x.h) + ' · ' + x.sends + ' sent</title></rect>';
+  });
+  let resp = '';
+  const segs = [['positive', '#17a673'], ['negative', '#dc7b7b'], ['stop', '#b91c1c'], ['optout', '#7c3aed']];
+  hours.forEach((x) => {
+    let y = padT + chartH;
+    const tip = fmtHour(x.h) + ' · ' + x.positive + ' yes, ' + x.negative + ' no, ' + x.stop + ' STOP, ' + x.optout + ' opt-out';
+    segs.forEach((sg) => {
+      const v = x[sg[0]] || 0; if (!v) return;
+      const sh = (v / maxResp) * chartH; y -= sh;
+      resp += '<rect x="' + xFor(x.h) + '" y="' + y + '" width="' + barW + '" height="' + sh + '" fill="' + sg[1] + '"><title>' + tip + '</title></rect>';
+    });
+  });
+  const legend = '<div class="hourly-legend">'
+    + '<span><i style="background:#5e7bea"></i> Sent</span>'
+    + '<span><i style="background:#17a673"></i> Yes</span>'
+    + '<span><i style="background:#dc7b7b"></i> No</span>'
+    + '<span><i style="background:#b91c1c"></i> STOP</span>'
+    + '<span><i style="background:#7c3aed"></i> Opt-out link</span></div>';
+  el.innerHTML = '<div class="ov-rev-head" style="margin-top:22px">🕐 By hour of day <span class="muted" style="font-weight:400;font-size:12px">· last 30 days, UK time. Hover a bar for the numbers.</span></div>'
+    + legend
+    + '<div class="hourly-chart"><div class="hourly-lbl">Sent</div><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + sends + hLabels + '</svg></div>'
+    + '<div class="hourly-chart"><div class="hourly-lbl">Replies &amp; opt-outs</div><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + resp + hLabels + '</svg></div>';
+}
+function fmtHour(h) { const x = ((h % 24) + 24) % 24; const ap = x < 12 ? 'am' : 'pm'; const hr = x % 12 === 0 ? 12 : x % 12; return hr + ap; }
+async function loadHourly() {
+  try { const d = await (await fetch('/api/sms-campaign?hourly=1')).json(); if (d && d.hourly) renderHourly(d.hourly); } catch (e) { /* leave empty */ }
+}
 // Daily-cap row on the Analytics tab: shows the standing cap + any one-day boost, with a button
 // to add more just for today (it auto-expires at midnight).
 function renderCapRow(dailyCap, capExtra) {
@@ -5112,7 +5161,7 @@ setInterval(() => { if (authed) loadHotLeads(); }, 180000); // refresh the count
 setInterval(() => { if (authed) refreshSmsReady(); }, 180000); // green SMS-ready badge kept fresh
 // while the SMS pane is open, live-refresh the campaigns / replies / ready-to-call every 20s so
 // the sent count climbs in front of you without a manual refresh
-setInterval(() => { const p = document.getElementById('admin-sms'); if (authed && p && !p.classList.contains('hidden')) loadSmsAdmin(); }, 20000);
+setInterval(() => { const p = document.getElementById('admin-sms'); if (authed && p && !p.classList.contains('hidden')) loadSmsAdmin({ poll: true }); }, 20000);
 function dowName(d) { return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d] || ''; }
 function fmtHourClient(h) { const a = h < 12 ? 'a' : 'p'; const hr = h % 12 === 0 ? 12 : h % 12; return hr + a; }
 function dashBars(items, labelFn, valFn, highlightMax) {
