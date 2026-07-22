@@ -2529,7 +2529,7 @@ function smsFilters() {
     foundWebsite: ($('smsb-site') && $('smsb-site').value) || 'any',
     critRatingsFrom: ($('smsb-rfrom') && $('smsb-rfrom').value) || null,
     critRatingsTo: ($('smsb-rto') && $('smsb-rto').value) || null,
-    max: Number(($('smsb-max') && $('smsb-max').value) || 50),
+    max: ($('smsb-max') && $('smsb-max').value) || '',   // blank = everyone who matches
   };
 }
 async function loadSmsAdmin() {
@@ -2640,7 +2640,7 @@ function smsLiveCount() {
       const skTotal = (sk.noMobile || 0) + (sk.alreadyMessaged || 0) + (sk.optedOut || 0) + (sk.deadNumber || 0);
       const m = (d.matched != null ? d.matched : d.count);
       el.innerHTML = '<b>' + m + '</b> record' + (m === 1 ? '' : 's') + ' match' + (m === 1 ? 'es' : '') +
-        (d.capped ? ' <span class="muted">· this campaign takes the first ' + d.count + ' (max per campaign is 200, run it again for the rest)</span>' : '') +
+        (d.capped ? ' <span class="muted">· you capped this at ' + d.count + ', clear the Max box to include all of them</span>' : '') +
         (skTotal ? ' <span class="muted">(' + skTotal + ' more excluded: no mobile, already texted, opted out or dead number)</span>' : '');
     } catch (e) { if (seq === _smsCountSeq) el.textContent = ''; }
   }, 600);
