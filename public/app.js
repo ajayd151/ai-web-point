@@ -2558,6 +2558,16 @@ async function loadCallCounts() {
 }
 
 async function loadSmsAdmin() {
+  // sub-tabs (Create / Analytics / Campaigns / Replies / Maintenance): wired once
+  const tabs = $('sms-tabs');
+  if (tabs && !tabs.dataset.wired) {
+    tabs.dataset.wired = '1';
+    tabs.querySelectorAll('.sms-tab').forEach((btn) => btn.addEventListener('click', () => {
+      const name = btn.getAttribute('data-smstab');
+      tabs.querySelectorAll('.sms-tab').forEach((b) => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('#admin-sms .sms-tabpane').forEach((p) => p.classList.toggle('hidden', p.getAttribute('data-smspane') !== name));
+    }));
+  }
   // one-time wiring
   const st = $('smsb-status');
   if (st && !st.dataset.loaded) {
@@ -2734,7 +2744,7 @@ let _enrichTimer = null;
 function setSmsReadyBadge(n) {
   n = Number(n) || 0;
   const txt = n > 99 ? '99+' : String(n);
-  ['sms-ready-nav', 'sms-ready-sub'].forEach((id) => {
+  ['sms-ready-nav', 'sms-ready-sub', 'sms-ready-tab'].forEach((id) => {
     const el = $(id); if (!el) return;
     el.textContent = txt;
     el.classList.toggle('hidden', n <= 0);

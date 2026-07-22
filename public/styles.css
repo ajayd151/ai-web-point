@@ -1488,3 +1488,12 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .brake-banner strong { font-weight: 700; }
 .btn-badge { display: inline-block; min-width: 18px; padding: 0 6px; margin-left: 2px; border-radius: 9px; background: #e2e8f0; color: #334155; font-size: 12px; font-weight: 700; line-height: 18px; text-align: center; vertical-align: 1px; }
 #sms-deldnd .btn-badge { background: #fde8e8; color: #b91c1c; }
+
+/* SMS pane sub-tabs */
+.sms-tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #e2e8f0; margin: 4px 0 20px; }
+.sms-tab { appearance: none; border: none; background: none; padding: 9px 15px; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; border-radius: 8px 8px 0 0; margin-bottom: -1px; }
+.sms-tab:hover { color: #1f2933; background: #eef2f7; }
+.sms-tab.active { color: #0f766e; border-bottom-color: #14b8a6; }
+.sms-tab .navbadge { margin-left: 2px; }
+.sms-tools { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.sms-tools .linkbtn { font-size: 15px; }

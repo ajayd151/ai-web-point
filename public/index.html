@@ -811,10 +811,22 @@
           <div id="admin-sms" class="admin-pane hidden">
             <div class="admin-pane-head">
               <h2 class="view-title">📣 SMS campaigns</h2>
-              <button id="sms-retag" class="linkbtn" title="Backfill a 🏷️ tag onto old call-list records from their Google category">🏷️ Tag existing records</button> <button id="sms-sweep" class="linkbtn" title="Remove junk call-list records whose name is just a phone number">🧹 Sweep junk records</button> <button id="sms-deldnd" class="linkbtn" title="Delete records marked Do Not Contact (their opt-out is kept)">🚫 Delete DND records</button> <button id="sms-refresh" class="linkbtn">↻ Refresh</button>
+              <button id="sms-refresh" class="linkbtn">↻ Refresh</button>
             </div>
-            <p class="muted view-sub">Pick who gets it with search criteria, we generate a fresh mockup for each business and text them the link on your schedule. Replies land below, in their notes, and in your inbox.</p>
+
+            <div id="sms-tabs" class="sms-tabs">
+              <button class="sms-tab active" data-smstab="create" type="button">✏️ Create</button>
+              <button class="sms-tab" data-smstab="analytics" type="button">📊 Analytics</button>
+              <button class="sms-tab" data-smstab="campaigns" type="button">🗂️ Campaigns</button>
+              <button class="sms-tab" data-smstab="replies" type="button">💬 Replies <span id="sms-ready-tab" class="navbadge green hidden">0</span></button>
+              <button class="sms-tab" data-smstab="tools" type="button">🧹 Maintenance</button>
+            </div>
+
             <div id="sms-twilio-note" class="sms-note hidden"></div>
+
+            <!-- TAB: Create -->
+            <div class="sms-tabpane" data-smspane="create">
+            <p class="muted view-sub">Pick who gets it with search criteria, we generate a fresh mockup for each business and text them the link on your schedule. Replies land in the Replies tab, in their notes, and in your inbox.</p>
             <div id="sms-test" class="sms-test">
               <b>Send a test to yourself</b>
               <input id="smst-phone" type="tel" placeholder="Your mobile, e.g. 07..." />
@@ -896,19 +908,39 @@
               </div>
               <div id="smsb-out" class="sms-out hidden"></div>
             </div>
+            </div><!-- /Create -->
 
-            <div class="ov-rev-head" style="margin-top:22px">📞 Ready to call</div>
-            <p class="muted view-sub">Replied positively, so the door is open. Post-mockup yeses first, they have SEEN it and still said yes.</p>
-            <div id="sms-callnow"><p class="muted">Nobody yet.</p></div>
+            <!-- TAB: Analytics -->
+            <div class="sms-tabpane hidden" data-smspane="analytics">
+              <div class="ov-rev-head">📊 Overview</div>
+              <div id="sms-stats"></div>
+            </div>
 
-            <div class="ov-rev-head" style="margin-top:22px">📊 Overview</div>
-            <div id="sms-stats"></div>
+            <!-- TAB: Campaigns -->
+            <div class="sms-tabpane hidden" data-smspane="campaigns">
+              <div class="ov-rev-head">Campaigns</div>
+              <div id="sms-campaigns"><p class="muted">Loading…</p></div>
+            </div>
 
-            <div class="ov-rev-head" style="margin-top:22px">Campaigns</div>
-            <div id="sms-campaigns"><p class="muted">Loading…</p></div>
+            <!-- TAB: Replies -->
+            <div class="sms-tabpane hidden" data-smspane="replies">
+              <div class="ov-rev-head">📞 Ready to call</div>
+              <p class="muted view-sub">Replied positively, so the door is open. Post-mockup yeses first, they have SEEN it and still said yes.</p>
+              <div id="sms-callnow"><p class="muted">Nobody yet.</p></div>
+              <div class="ov-rev-head" style="margin-top:22px">Replies</div>
+              <div id="sms-replies"><p class="muted">No replies yet.</p></div>
+            </div>
 
-            <div class="ov-rev-head" style="margin-top:22px">Replies</div>
-            <div id="sms-replies"><p class="muted">No replies yet.</p></div>
+            <!-- TAB: Maintenance -->
+            <div class="sms-tabpane hidden" data-smspane="tools">
+              <div class="ov-rev-head">🧹 Maintenance</div>
+              <p class="muted view-sub">Housekeeping for your call-list records. The number on each shows how many it would affect right now.</p>
+              <div class="sms-tools">
+                <button id="sms-retag" class="linkbtn" title="Backfill a 🏷️ tag onto old call-list records from their Google category">🏷️ Tag existing records</button>
+                <button id="sms-sweep" class="linkbtn" title="Remove junk call-list records whose name is just a phone number">🧹 Sweep junk records</button>
+                <button id="sms-deldnd" class="linkbtn" title="Delete records marked Do Not Contact (their opt-out is kept)">🚫 Delete DND records</button>
+              </div>
+            </div>
           </div>
         </section>
       </div>
