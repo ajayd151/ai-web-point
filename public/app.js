@@ -2754,7 +2754,7 @@ function renderCapRow(dailyCap, capExtra) {
     : ('Daily cap <strong>' + base + '</strong>');
   el.innerHTML = '<span class="cap-label">📈 ' + label + '</span>'
     + '<button class="cap-boost" type="button" onclick="smsBoostToday(this)">＋ Send 50 more today</button>'
-    + '<span class="cap-note muted">today only, resets tomorrow</span>';
+    + '<span class="cap-note muted">today only · stops at 8pm, back to ' + base + ' at 8am tomorrow</span>';
 }
 async function smsBoostToday(b) {
   if (b) { b.disabled = true; b.textContent = 'Adding…'; }

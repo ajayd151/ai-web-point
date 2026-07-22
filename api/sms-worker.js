@@ -92,7 +92,8 @@ async function readJson(path) {
   return null;
 }
 // A one-day-only bump to the daily send cap (the "send more today" button). It carries the day it
-// was set for, so it is ignored automatically tomorrow, it can never quietly become the standing cap.
+// was set for, so it applies only to today's 8am-8pm window and is ignored from 8am tomorrow, when
+// sends resume at the normal cap. It can never quietly become the standing cap.
 async function todayCapExtra(day) {
   const b = (await readJson('sms/_capboost.json')) || {};
   return (b.day === day && Number(b.extra) > 0) ? Number(b.extra) : 0;
