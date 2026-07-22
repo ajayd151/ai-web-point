@@ -29,7 +29,8 @@ module.exports = async (req, res) => {
   const enr = (await readJson('calls/_enrichdata.json')) || {};
   const all = Object.values(calls).filter((c) => c && c.name);
   const done = all.filter((c) => c.web !== undefined || enr[c.key]).length; // real website data (record or backfill)
-  const todo = all.length - done;
+  const enrichable = all.filter((c) => c.placeId).length; // only records with a Google id can be looked up
+  const todo = Math.max(0, enrichable - done);
 
   if (req.method === 'POST') {
     let body = req.body;
@@ -47,6 +48,8 @@ module.exports = async (req, res) => {
     active: !!ctrl.active,
     total: all.length,
     done: done,
+    enrichable: enrichable,
+    noId: all.length - enrichable,
     remaining: todo,
     estCost: Math.round(Math.max(0, todo - FREE_TIER) * COST_EACH * 100) / 100, // GBP AFTER the free tier
     withinFree: todo <= FREE_TIER,

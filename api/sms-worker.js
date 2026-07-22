@@ -103,7 +103,7 @@ async function validatePhones(base) {
   return todo.length;
 }
 
-const ENRICH_PER_TICK = 15; // Google Place Details lookups per tick when enrichment is ARMED
+const ENRICH_PER_TICK = 150; // Google Place Details lookups per tick (free tier); ~150 x 5min finishes a few thousand in a couple of hours
 // Backfill real Google data (website presence, rating, review count) for OLD call-list records so
 // the SMS filters work on them too. Stored in its OWN blob (calls/_enrichdata.json), never
 // touching the call list, so it cannot race a user add. Only runs when armed via Admin (a click),

@@ -2694,7 +2694,7 @@ async function loadEnrich() {
     const d = await (await fetch('/api/enrich')).json();
     if (d.error) { el.innerHTML = ''; return; }
     const pct = d.total ? Math.round((d.done / d.total) * 100) : 0;
-    let h = '<div class="enr-head"><b>📡 Enrich from Google</b> <span class="muted">' + d.done + ' of ' + d.total + ' records have real website/review data (' + pct + '%)</span></div>';
+    let h = '<div class="enr-head"><b>📡 Enrich from Google</b> <span class="muted">' + d.done + ' of ' + d.total + ' records checked (' + pct + '%)' + ((d.noId > 0) ? ' · ' + d.noId + ' have no Google ID and cannot be checked' : '') + '</span></div>';
     if (d.remaining > 0) {
       h += '<div class="enr-body">';
       if (d.active) h += '<span class="enr-run">● Running, about ' + d.remaining + ' left. Spent so far ~£' + d.spent + '.</span> <button id="enr-stop" class="linkbtn">Pause</button>';
