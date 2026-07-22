@@ -8,7 +8,7 @@ const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
 const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
 const { buildAudience } = require('../lib/smsaudience');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, listInbound, readyToCall } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, listInbound, readyToCall } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -34,12 +34,17 @@ module.exports = async (req, res) => {
     const idx = (await readJson('notes/_index.json')) || {};
     const callNow = (await readyToCall(200)).filter((r) => !TERMINAL[(idx[r.key] && idx[r.key].status) || '']);
     if (q.count) { res.status(200).json({ readyCount: callNow.length }); return; }
+    const oc = await optoutCounts();
+    const brake = (await readJson('sms/_breaker.json')) || {};
+    const brakeActive = brake.until && new Date(brake.until).getTime() > Date.now();
     res.status(200).json({
       campaigns: await listCampaigns(),
       replies: await listInbound(100),
       callNow: callNow.slice(0, 50),
       readyCount: callNow.length,
-      stopCount: (await optoutSet()).size,
+      stopCount: oc.reply,            // STOP texts, the number carriers police
+      linkOptouts: oc.link,           // soft opt-outs (a tap on the link) - proof it works
+      brake: brakeActive ? { paused: true, until: brake.until, rate: brake.rate, stops: brake.stops, sent: brake.sent } : { paused: false },
       twilioReady: smsConfigured(),
     });
     return;

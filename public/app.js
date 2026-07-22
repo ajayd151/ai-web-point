@@ -2687,7 +2687,7 @@ async function loadSmsAdmin() {
       note.classList.toggle('hidden', !!d.twilioReady);
       if (!d.twilioReady) note.textContent = '⚠️ Twilio is not connected yet. Campaigns can be built and mockups will generate, but no texts go out until the Twilio keys are added in Vercel. Ask Claude for the sign-up steps.';
     }
-    renderSmsStats(d.campaigns || [], d.readyCount || 0, d.stopCount || 0);
+    renderSmsStats(d.campaigns || [], d.readyCount || 0, d.stopCount || 0, d.linkOptouts || 0, d.brake || null);
     renderSmsCampaigns(d.campaigns || []);
     renderSmsReplies(d.replies || []);
     renderSmsCallNow(d.callNow || []);
@@ -2825,7 +2825,7 @@ async function smsCreate() {
   if (b) { b.textContent = 'Schedule campaign'; b.disabled = true; }
   smsPreviewOk = false;
 }
-function renderSmsStats(rows, readyCount, stopCount) {
+function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake) {
   const el = $('sms-stats'); if (!el) return;
   if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet, stats appear once one is running.</p>'; return; }
   const t = { total: 0, sent: 0, linked: 0, delivered: 0, failed: 0, positive: 0, negative: 0, hot: 0, nudged: 0 };
@@ -2847,6 +2847,11 @@ function renderSmsStats(rows, readyCount, stopCount) {
       const band = rate < 1 ? 'good' : (rate <= 2 ? 'warn' : 'bad');
       const sub = t.sent ? (rate.toFixed(1) + '% of sent · keep under 1%') : 'keep under 1%';
       return '<div class="ov-tile stoprate ' + band + '"><div class="ov-ico">🚫</div><div class="ov-num">' + stops + '</div><div class="ov-label">Opted out (STOP)</div><div class="ov-sub">' + esc(sub) + '</div></div>';
+    })() +
+    (function () {
+      const link = Number(linkOptouts) || 0;
+      const sub = link > 0 ? 'link works ✓ · not a STOP' : 'tap-to-opt-out (soft)';
+      return '<div class="ov-tile"><div class="ov-ico">🔕</div><div class="ov-num">' + link + '</div><div class="ov-label">Opted out (link)</div><div class="ov-sub">' + esc(sub) + '</div></div>';
     })();
   // reply-breakdown bar (of everyone we have texted). STOP opt-outs are drawn as their OWN band,
   // pulled out of "no reply", so they are never lumped in with people we simply have not heard from.
@@ -2855,7 +2860,17 @@ function renderSmsStats(rows, readyCount, stopCount) {
   const seg = (n, cls, label) => { const pct = t.sent ? (n / t.sent * 100) : 0; return pct > 0 ? '<div class="smsbar-seg ' + cls + '" style="width:' + pct + '%" title="' + label + ': ' + n + '"></div>' : ''; };
   const bar = t.sent ? ('<div class="smsbar">' + seg(t.positive, 'pos', 'Positive') + seg(t.negative, 'neg', 'Negative') + seg(stops, 'stop', 'Opted out (STOP)') + seg(noReplyRest, 'none', 'No reply yet') + '</div>' +
     '<div class="smsbar-key"><span><i class="pos"></i> Positive ' + t.positive + '</span><span><i class="neg"></i> Negative ' + t.negative + '</span><span><i class="stop"></i> Opted out ' + stops + '</span><span><i class="none"></i> No reply ' + noReplyRest + '</span></div>') : '';
-  el.innerHTML = '<div class="ov-stats">' + tiles + '</div>' + bar;
+  // auto safety-brake banner: cold sends paused because the STOP rate got too high
+  let banner = '';
+  if (brake && brake.paused) {
+    const until = brake.until ? new Date(brake.until) : null;
+    const when = until ? until.toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : 'soon';
+    const r = brake.rate != null ? brake.rate : (t.sent ? Math.round((Number(stopCount) || 0) / t.sent * 1000) / 10 : 0);
+    banner = '<div class="brake-banner">⏸️ <strong>Cold sending auto-paused</strong> · STOP rate hit ' + esc(String(r)) + '%'
+      + (brake.stops != null ? ' (' + brake.stops + '/' + brake.sent + ' in the last 24h)' : '')
+      + '. New openers and nudges resume <strong>' + esc(when) + '</strong>. Replies and warm follow-ups still go out.</div>';
+  }
+  el.innerHTML = banner + '<div class="ov-stats">' + tiles + '</div>' + bar;
 }
 function renderSmsCampaigns(rows) {
   const el = $('sms-campaigns'); if (!el) return;

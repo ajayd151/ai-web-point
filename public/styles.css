@@ -1484,3 +1484,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .ov-tile.stoprate.good .ov-num { color: #17a673; }
 .ov-tile.stoprate.warn { background: #fff8ec; } .ov-tile.stoprate.warn .ov-num { color: #b45309; }
 .ov-tile.stoprate.bad { background: #fef2f2; border-color: #f5b5b5; } .ov-tile.stoprate.bad .ov-num { color: #b91c1c; }
+.brake-banner { background: #fff4e5; border: 1px solid #f5c98b; color: #92400e; border-radius: 10px; padding: 11px 14px; margin: 0 0 14px; font-size: 14px; line-height: 1.5; }
+.brake-banner strong { font-weight: 700; }

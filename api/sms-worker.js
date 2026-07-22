@@ -4,7 +4,7 @@
 // Sends only happen inside working hours (Mon-Fri, 09:00-17:59 UK) and inside the daily 'sms'
 // cap from Admin > Limits. Without Twilio keys, mockups still build but sends wait, so a campaign
 // can be prepared before the account exists.
-const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, campaignKeys, addItemsToCampaign, stampToppedUp } = require('../lib/smsdb');
+const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, campaignKeys, addItemsToCampaign, stampToppedUp, stopWindow } = require('../lib/smsdb');
 const { buildAudience } = require('../lib/smsaudience');
 const { sendSms, smsConfigured, lookupPhone, optOutUrl } = require('../lib/sms');
 const { list, put } = require('@vercel/blob');
@@ -20,6 +20,35 @@ const LOOKUPS_PER_TICK = 20; // phone validation, ~0.8p each, each number only e
 const TOPUP_PER_TICK = 200;         // evergreen: new matching records pulled in per top-up
 const TOPUP_EVERY_HOURS = 11;       // ...and a top-up only runs about twice a day per campaign
 const SENDS_PER_TICK = 10;   // ~120/hour ceiling, gentle on carrier filtering
+
+// Auto safety-brake. If too many people are texting STOP (the metric carriers police), cold sends
+// pause for a cooldown so the 24h volume drops and the number cools off. Measured over a rolling
+// window so it recovers by itself. All three are env-overridable.
+const STOP_WINDOW_HOURS = Math.max(1, Number(process.env.SMS_STOP_WINDOW_HOURS) || 24); // look-back for the rate
+const STOP_TRIP_PCT = Math.max(0.5, Number(process.env.SMS_STOP_TRIP_PCT) || 3);        // trip at this STOP-rate %
+const STOP_MIN_SENT = Math.max(1, Number(process.env.SMS_STOP_MIN_SENT) || 40);         // ...but only once enough have been sent
+const STOP_COOLDOWN_HOURS = Math.max(1, Number(process.env.SMS_STOP_COOLDOWN_HOURS) || 24); // how long cold sends stay paused
+// Read/trip/clear the brake. Returns { paused, until, rate, stops, sent, reason }. State lives in
+// its own blob so it survives between ticks and the dashboard can show a banner.
+async function evalStopBrake(now) {
+  let st = (await readJson('sms/_breaker.json')) || {};
+  const w = await stopWindow(STOP_WINDOW_HOURS);
+  const rate = w.sent ? (w.stops / w.sent * 100) : 0;
+  const tNow = new Date(now).getTime();
+  const activeUntil = st.until ? new Date(st.until).getTime() : 0;
+  // still inside a cooldown that was set earlier
+  if (activeUntil > tNow) return { paused: true, until: st.until, rate: rate, stops: w.stops, sent: w.sent, reason: 'cooldown' };
+  // enough volume to judge, and the rate is over the line -> trip a fresh cooldown
+  if (w.sent >= STOP_MIN_SENT && rate >= STOP_TRIP_PCT) {
+    const until = new Date(tNow + STOP_COOLDOWN_HOURS * 3600000).toISOString();
+    const next = { until: until, trippedAt: new Date(tNow).toISOString(), rate: Math.round(rate * 10) / 10, stops: w.stops, sent: w.sent };
+    try { await put('sms/_breaker.json', JSON.stringify(next), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); } catch (e) { /* still pause this tick */ }
+    return { paused: true, until: until, rate: rate, stops: w.stops, sent: w.sent, reason: 'tripped' };
+  }
+  // healthy: clear any spent cooldown so the banner disappears
+  if (st.until) { try { await put('sms/_breaker.json', JSON.stringify({ clearedAt: new Date(tNow).toISOString() }), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); } catch (e) { /* nothing */ } }
+  return { paused: false, until: null, rate: rate, stops: w.stops, sent: w.sent, reason: 'ok' };
+}
 
 function isCron(req) {
   const ua = String((req.headers && req.headers['user-agent']) || '');
@@ -197,6 +226,18 @@ module.exports = async (req, res) => {
   const day = todayKey(new Date(now));
   const out = { campaigns: 0, mockups: 0, sent: 0, failed: 0, held: [] };
 
+  // Auto STOP-rate safety-brake, evaluated once per tick. When paused, only COLD sends (openers +
+  // nudges) are held. Warm follow-ups to people who already replied YES keep flowing: those are
+  // wanted replies, not cold outreach, and holding them would be rude.
+  let brake = { paused: false };
+  try { brake = await evalStopBrake(now); } catch (e) { /* fail open: never let the brake itself stop everything */ }
+  out.stopRate = Math.round((brake.rate || 0) * 10) / 10;
+  if (brake.paused) {
+    out.coldPaused = true; out.coldPausedUntil = brake.until;
+    out.held.push('cold sends paused: STOP rate ' + out.stopRate + '% (' + brake.stops + '/' + brake.sent + '), resumes ' + (brake.until || 'soon'));
+    if (brake.reason === 'tripped') { try { await logActivity(owner, owner, 'sms_brake', 'Cold SMS auto-paused: STOP rate ' + out.stopRate + '% (' + brake.stops + '/' + brake.sent + ' in ' + STOP_WINDOW_HOURS + 'h). Resumes ' + brake.until); } catch (e) { /* nothing */ } }
+  }
+
   // Mockups are only generated AFTER a positive reply (no credits burned on the uninterested),
   // so a YES may wait one extra tick while its mockup builds. These warm follow-ups go first,
   // any time of day and outside the cold cap: they are replies to a conversation THEY continued.
@@ -235,7 +276,7 @@ module.exports = async (req, res) => {
 
   // One nudge each for non-responders whose window is up. Still a cold-ish touch, so it obeys the
   // send window, the daily cap AND the pacing, and each recipient only ever gets one.
-  if (smsConfigured() && inSendWindow(now)) {
+  if (smsConfigured() && inSendWindow(now) && !brake.paused) {
     const nudges = await dueNudges(SENDS_PER_TICK);
     for (const it of nudges) {
       const who = it.created_by || owner;
@@ -296,6 +337,7 @@ module.exports = async (req, res) => {
     // 2. send: inside the window, under the daily cap, AND paced so the allowance spreads across
     // the day instead of firing all at once
     if (!smsConfigured()) { out.held.push('Twilio keys not set yet'); continue; }
+    if (brake.paused) { continue; } // STOP-rate brake: hold cold openers (already logged above)
     if (!inSendWindow(now)) { out.held.push('outside send window'); continue; }
     const cap = await limitFor('sms', c.created_by || owner);
     const used = await getDailyUsage(c.created_by || owner, 'sms', day);
