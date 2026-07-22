@@ -175,11 +175,13 @@ function renderMessage(template, item, base) {
     .split('{category}').join(item.category || 'business')
     .split('{location}').join(item.location || 'your area')
     .split('{link}').join(item.view_url || '');
-  // Opt-out footer. A tap-to-opt-out LINK instead of "reply STOP": a link click does not count
-  // against the carrier opt-out metric the way a STOP text does, so the number stays healthy.
-  // STOP still works silently for anyone who types it. If we somehow have no item id, fall back
-  // to the STOP wording so there is always a way out.
-  if (!/opt out|unsubscribe|stop/i.test(msg)) {
+  // Opt-out footer, the SOFT opt-out. A tap-to-opt-out LINK instead of "reply STOP": a link click
+  // does not count against the carrier opt-out metric the way a STOP text does, so the number stays
+  // healthy. STOP still works silently for anyone who types it. We only skip adding the link if one
+  // (or an unsubscribe link) is ALREADY in the message, a stray mention of the word "stop" no longer
+  // suppresses it. Fall back to the STOP wording only if we somehow have no item id to sign.
+  const hasLink = /\/optout\b|unsubscribe/i.test(msg);
+  if (!hasLink) {
     msg += item.id ? ('\nNot interested? Opt out: ' + optOutUrl(base, item.id)) : '\nReply STOP to opt out';
   }
   return msg.slice(0, 640);
