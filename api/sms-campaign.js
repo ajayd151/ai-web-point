@@ -10,6 +10,7 @@ const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
 const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey } = require('../lib/digest');
+const { getDailyUsage } = require('../lib/db');
 const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, listInbound, readyToCall } = require('../lib/smsdb');
 
 async function readJson(path) {
@@ -44,6 +45,7 @@ module.exports = async (req, res) => {
     const boost = (await readJson('sms/_capboost.json')) || {};
     const capExtra = (boost.day === day && Number(boost.extra) > 0) ? Number(boost.extra) : 0;
     const dailyCap = await limitFor('sms', acct.email);
+    const sentToday = await getDailyUsage(acct.email, 'sms', day);
     res.status(200).json({
       campaigns: await listCampaigns(),
       replies: await listInbound(100),
@@ -54,6 +56,7 @@ module.exports = async (req, res) => {
       brake: brakeActive ? { paused: true, until: brake.until, rate: brake.rate, stops: brake.stops, sent: brake.sent } : { paused: false },
       dailyCap: dailyCap,
       capExtra: capExtra,
+      sentToday: sentToday,
       twilioReady: smsConfigured(),
     });
     return;

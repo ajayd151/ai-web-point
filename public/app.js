@@ -2718,7 +2718,7 @@ async function loadSmsAdmin(opts) {
       note.classList.toggle('hidden', !!d.twilioReady);
       if (!d.twilioReady) note.textContent = '⚠️ Twilio is not connected yet. Campaigns can be built and mockups will generate, but no texts go out until the Twilio keys are added in Vercel. Ask Claude for the sign-up steps.';
     }
-    renderCapRow(d.dailyCap != null ? d.dailyCap : 100, d.capExtra || 0);
+    renderCapRow(d.dailyCap != null ? d.dailyCap : 100, d.capExtra || 0, d.sentToday || 0);
     renderSmsStats(d.campaigns || [], d.readyCount || 0, d.stopCount || 0, d.linkOptouts || 0, d.brake || null);
     renderSmsCampaigns(d.campaigns || []);
     renderSmsReplies(d.replies || []);
@@ -2822,15 +2822,18 @@ async function loadHourly() {
 }
 // Daily-cap row on the Analytics tab: shows the standing cap + any one-day boost, with a button
 // to add more just for today (it auto-expires at midnight).
-function renderCapRow(dailyCap, capExtra) {
+function renderCapRow(dailyCap, capExtra, sentToday) {
   const el = $('sms-caprow'); if (!el) return;
   const base = Number(dailyCap) || 0;
   const extra = Number(capExtra) || 0;
   const total = base + extra;
+  const used = Number(sentToday) || 0;
+  const reached = used >= total;
   const label = extra > 0
     ? ('Daily cap <strong>' + base + '</strong> ＋<strong>' + extra + '</strong> today = <strong>' + total + '</strong>')
     : ('Daily cap <strong>' + base + '</strong>');
-  el.innerHTML = '<span class="cap-label">📈 ' + label + '</span>'
+  const usage = ' <span class="cap-used' + (reached ? ' full' : '') + '">· sent today <strong>' + used + '/' + total + '</strong>' + (reached ? ' · cap reached, resumes 8am' : '') + '</span>';
+  el.innerHTML = '<span class="cap-label">📈 ' + label + usage + '</span>'
     + '<button class="cap-boost" type="button" onclick="smsBoostToday(this)">＋ Send 50 more today</button>'
     + (extra > 0 ? '<button class="cap-undo" type="button" onclick="smsResetBoost(this)" title="Remove today\'s boost, back to ' + base + '">↺ Undo boost</button>' : '')
     + '<span class="cap-note muted">today only · stops at 8pm, back to ' + base + ' at 8am tomorrow</span>';
