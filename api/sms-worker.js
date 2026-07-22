@@ -120,13 +120,15 @@ async function enrichCallList() {
   let spentAdd = 0;
   for (const c of todo) {
     try {
+      // websiteUri only = Place Details Pro SKU ($17/1000, 5000 free/month), far cheaper than
+      // pulling rating/reviews (Enterprise+Atmosphere $25/1000). New records still get reviews free.
       const r = await fetch('https://places.googleapis.com/v1/places/' + encodeURIComponent(c.placeId), {
-        headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'websiteUri,rating,userRatingCount' },
+        headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'websiteUri' },
       });
       const d = await r.json().catch(() => null);
-      spentAdd += 0.025;
+      spentAdd += 0.0135;
       if (d && !d.error) {
-        data[c.key] = { web: d.websiteUri ? 'has' : 'none', rating: d.rating || 0, reviews: d.userRatingCount || 0, at: new Date().toISOString() };
+        data[c.key] = { web: d.websiteUri ? 'has' : 'none', at: new Date().toISOString() };
       } else {
         data[c.key] = { web: 'unknown', at: new Date().toISOString() }; // do not re-charge for a bad id
       }

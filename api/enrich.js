@@ -6,7 +6,8 @@ const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
 
-const COST_EACH = 0.025; // rough GBP per Google Place Details call (field-masked)
+const COST_EACH = 0.0135; // GBP per Place Details Pro call (websiteUri only, $17/1000)
+const FREE_TIER = 5000;    // Google's free Place Details Pro calls per month
 
 async function readJson(path) {
   try {
@@ -25,8 +26,9 @@ module.exports = async (req, res) => {
 
   const calls = (await readJson('calls/_list.json')) || {};
   const ctrl = (await readJson('calls/_enrich.json')) || {};
+  const enr = (await readJson('calls/_enrichdata.json')) || {};
   const all = Object.values(calls).filter((c) => c && c.name);
-  const done = all.filter((c) => c.web !== undefined).length; // already have real website data
+  const done = all.filter((c) => c.web !== undefined || enr[c.key]).length; // real website data (record or backfill)
   const todo = all.length - done;
 
   if (req.method === 'POST') {
@@ -46,7 +48,8 @@ module.exports = async (req, res) => {
     total: all.length,
     done: done,
     remaining: todo,
-    estCost: Math.round(todo * COST_EACH * 100) / 100, // GBP to finish
+    estCost: Math.round(Math.max(0, todo - FREE_TIER) * COST_EACH * 100) / 100, // GBP AFTER the free tier
+    withinFree: todo <= FREE_TIER,
     spent: Math.round((ctrl.spent || 0) * 100) / 100,
     costEach: COST_EACH,
   });

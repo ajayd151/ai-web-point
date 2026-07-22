@@ -2698,12 +2698,12 @@ async function loadEnrich() {
     if (d.remaining > 0) {
       h += '<div class="enr-body">';
       if (d.active) h += '<span class="enr-run">● Running, about ' + d.remaining + ' left. Spent so far ~£' + d.spent + '.</span> <button id="enr-stop" class="linkbtn">Pause</button>';
-      else h += '<button id="enr-start" class="ghost sm">Enrich ' + d.remaining + ' records now (~£' + d.estCost + ')</button> <span class="muted">one-off, ~' + d.costEach + 'p each. Drips in the background.</span>';
+      else { const costLabel = d.withinFree ? 'free, within Google\'s monthly allowance' : ('~£' + d.estCost); h += '<button id="enr-start" class="ghost sm">Enrich ' + d.remaining + ' records now (' + costLabel + ')</button> <span class="muted">website check only, drips in the background.</span>'; }
       h += '</div>';
     } else if (d.total) { h += '<div class="muted enr-body">✓ All records enriched.</div>'; }
     el.innerHTML = h;
     const a = $('enr-start'); if (a) a.addEventListener('click', async () => {
-      if (!confirm('Start enriching ' + d.remaining + ' records from Google? Estimated cost about £' + d.estCost + '. It runs in the background and you can pause any time.')) return;
+      if (!confirm('Start enriching ' + d.remaining + ' records from Google (website check)? ' + (d.withinFree ? 'This is within Google\'s free monthly allowance, so about £0.' : ('Estimated cost about £' + d.estCost + '.')) + ' It runs in the background and you can pause any time.')) return;
       await fetch('/api/enrich', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ start: 1 }) });
       loadEnrich();
     });
