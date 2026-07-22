@@ -9,7 +9,7 @@ const { logActivity, recordNote } = require('../lib/db');
 
 // NOTE: 'meeting-booked' reads as "Appointment booked" everywhere in the UI (GoHighLevel wording).
 // The internal value stays as-is so historical activity_log rows still count, same as 'declined'.
-const STATUSES = ['contacted', 'no-answer', 'interested', 'appointment-link-sent', 'meeting-booked', 'callback', 'not-interested', 'declined', 'invalid-phone', 'won', 'lost'];
+const STATUSES = ['contacted', 'no-answer', 'interested', 'appointment-link-sent', 'meeting-booked', 'callback', 'not-interested', 'declined', 'invalid-phone', 'won', 'lost', 'dnd'];
 
 async function readJson(path) {
   try {

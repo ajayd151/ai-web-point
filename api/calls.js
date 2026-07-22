@@ -130,6 +130,18 @@ module.exports = async (req, res) => {
     await logActivity(emailOf(req), accountEmailOf(req), 'call_remove', 'Sweep: ' + goners.length + ' junk records (name was a phone number)');
     res.status(200).json({ ok: true, removed: goners.length });
     return;
+  } else if (body.deleteDnd) {
+    // remove call-list records marked Do Not Contact. Their SMS opt-out (by phone) is kept in the
+    // opt-out list, so even if re-added later they can never be texted again.
+    const idx = await readList('notes/_index.json');
+    const goners = Object.values(map).filter((c) => c && idx[c.key] && idx[c.key].status === 'dnd');
+    if (!goners.length) { res.status(200).json({ ok: true, removed: 0 }); return; }
+    goners.forEach((c) => { delete map[c.key]; });
+    try { await put(PATH, JSON.stringify(map), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
+    catch (e) { res.status(500).json({ error: 'Could not save.' }); return; }
+    await logActivity(emailOf(req), accountEmailOf(req), 'call_remove', 'Deleted ' + goners.length + ' Do-Not-Contact records');
+    res.status(200).json({ ok: true, removed: goners.length });
+    return;
   } else if (body.retag) {
     // one-off backfill: records that pre-date tagging get their Google category as the tag,
     // which is the best signal we still have (the original search terms were never stored)

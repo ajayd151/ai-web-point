@@ -2646,6 +2646,13 @@ async function loadSmsAdmin() {
         if (m) m.textContent = d.ok ? '✓ Sent, check your phone' : (d.error || 'Failed');
       } catch (e) { if (m) m.textContent = 'Failed, try again'; }
     });
+    const dd = $('sms-deldnd'); if (dd) dd.addEventListener('click', async () => {
+      if (!confirm('Delete every call-list record marked Do Not Contact? Their opt-out stays, so they can never be texted again even if re-added.')) return;
+      dd.disabled = true; dd.textContent = 'Deleting…';
+      try { const d = await (await fetch('/api/calls', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deleteDnd: 1 }) })).json();
+        alert('Removed ' + (d.removed != null ? d.removed : 0) + ' Do-Not-Contact record' + (d.removed === 1 ? '' : 's') + '.'); loadCallList(); } catch (e) { alert('Could not delete, try again.'); }
+      dd.disabled = false; dd.textContent = '🚫 Delete DND records';
+    });
     const sw = $('sms-sweep'); if (sw) sw.addEventListener('click', async () => {
       if (!confirm('Remove every call-list record whose name is just a phone number? Their notes stay, but the records go.')) return;
       sw.disabled = true; sw.textContent = 'Sweeping…';
@@ -2680,7 +2687,7 @@ async function loadSmsAdmin() {
       note.classList.toggle('hidden', !!d.twilioReady);
       if (!d.twilioReady) note.textContent = '⚠️ Twilio is not connected yet. Campaigns can be built and mockups will generate, but no texts go out until the Twilio keys are added in Vercel. Ask Claude for the sign-up steps.';
     }
-    renderSmsStats(d.campaigns || [], d.readyCount || 0);
+    renderSmsStats(d.campaigns || [], d.readyCount || 0, d.stopCount || 0);
     renderSmsCampaigns(d.campaigns || []);
     renderSmsReplies(d.replies || []);
     renderSmsCallNow(d.callNow || []);
@@ -2818,7 +2825,7 @@ async function smsCreate() {
   if (b) { b.textContent = 'Schedule campaign'; b.disabled = true; }
   smsPreviewOk = false;
 }
-function renderSmsStats(rows, readyCount) {
+function renderSmsStats(rows, readyCount, stopCount) {
   const el = $('sms-stats'); if (!el) return;
   if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet, stats appear once one is running.</p>'; return; }
   const t = { total: 0, sent: 0, linked: 0, delivered: 0, failed: 0, positive: 0, negative: 0, hot: 0, nudged: 0 };
@@ -2833,7 +2840,14 @@ function renderSmsStats(rows, readyCount) {
     ovTile('👍', t.positive, 'Positive replies', t.hot ? (t.hot + ' after the mockup') : '') +
     ovTile('👎', t.negative, 'Negative replies', '') +
     ovTile('🤫', noReply, 'No reply yet', t.nudged ? (t.nudged + ' nudged') : '') +
-    ovTile('📞', readyCount || 0, 'Ready to call', 'waiting for you');
+    ovTile('📞', readyCount || 0, 'Ready to call', 'waiting for you') +
+    (function () {
+      const stops = Number(stopCount) || 0;
+      const rate = t.sent ? (stops / t.sent * 100) : 0;
+      const band = rate < 1 ? 'good' : (rate <= 2 ? 'warn' : 'bad');
+      const sub = t.sent ? (rate.toFixed(1) + '% of sent · keep under 1%') : 'keep under 1%';
+      return '<div class="ov-tile stoprate ' + band + '"><div class="ov-ico">🚫</div><div class="ov-num">' + stops + '</div><div class="ov-label">Opted out (STOP)</div><div class="ov-sub">' + esc(sub) + '</div></div>';
+    })();
   // reply-breakdown bar (of everyone we have texted)
   const seg = (n, cls, label) => { const pct = t.sent ? (n / t.sent * 100) : 0; return pct > 0 ? '<div class="smsbar-seg ' + cls + '" style="width:' + pct + '%" title="' + label + ': ' + n + '"></div>' : ''; };
   const bar = t.sent ? ('<div class="smsbar">' + seg(t.positive, 'pos', 'Positive') + seg(t.negative, 'neg', 'Negative') + seg(noReply, 'none', 'No reply yet') + '</div>' +
@@ -4415,7 +4429,7 @@ function renderLeadStatus(l, dossier, pounce) {
 }
 // 'meeting-booked' displays as "Appointment booked" (GoHighLevel wording). The internal value is
 // deliberately unchanged so past activity_log rows and notes still match, same as 'declined'.
-const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"], ['interested', 'Interested'], ['appointment-link-sent', 'Appointment link sent'], ['meeting-booked', 'Appointment booked'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'], ['invalid-phone', 'Invalid phone'], ['won', 'Won, customer'], ['lost', 'Lost']];
+const LEAD_STATUSES = [['', 'New'], ['contacted', 'Contacted'], ['no-answer', "Doesn't answer"], ['interested', 'Interested'], ['appointment-link-sent', 'Appointment link sent'], ['meeting-booked', 'Appointment booked'], ['callback', 'Call back'], ['not-interested', 'Not interested'], ['declined', 'Not interested (via mockup)'], ['invalid-phone', 'Invalid phone'], ['won', 'Won, customer'], ['lost', 'Lost'], ['dnd', '🚫 Do not contact (DND)']];
 function statusLabel(s) { const f = LEAD_STATUSES.find((x) => x[0] === (s || '')); return f ? f[1] : 'New'; }
 function statusClass(s) { return 'st-' + (s || 'new'); }
 function renderLeadNotes(l, note) {
