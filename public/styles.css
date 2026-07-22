@@ -1450,3 +1450,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .smsf-tag:hover { background: #d9f7f4; border-color: #0fb6a8; }
 .smsf-countrow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
 .smsf-countrow .sms-livecount { margin: 0; }
+#smsb-count-btn { background: #0fb6a8; color: #fff; border-color: #0fb6a8; font-weight: 700; }
+#smsb-count-btn:hover { filter: brightness(1.05); }
