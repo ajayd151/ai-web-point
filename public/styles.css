@@ -1463,3 +1463,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 #smsb-suggest:hover { background: #e0e7ff; }
 .smsf-tidy { border: 1px solid #f3d9a8; background: #fff8ec; color: #b45309; border-radius: 6px; padding: 3px 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-left: 4px; }
 .smsf-tidy:hover { background: #fdeecb; }
+/* fix: the global input{width:100%} rule was stretching these checkboxes full-width, dropping
+   their label onto the next line. Keep the tick next to its text. */
+.sms-check { white-space: normal; align-items: flex-start; }
+.sms-check input[type="checkbox"] { width: 16px; height: 16px; flex: 0 0 auto; margin: 2px 0 0; padding: 0; }
