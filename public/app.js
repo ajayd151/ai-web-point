@@ -3841,8 +3841,8 @@ function startProwlProgress() {
     steps.map((s) => `<div class="gp-row"><span class="gp-ic"><span class="spinner sm"></span></span><span class="gp-text">${esc(s)}…</span></div>`).join('') +
     '</div><p class="genprog-foot"><small>Gathering AI intel… ~10–20 seconds.</small></p></div>';
 }
-function prowlFetch(lead, refresh) {
-  return fetch('/api/prowl', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: lead.slug, name: lead.name, location: lead.location, category: lead.category || '', phone: lead.phone || '', refresh: !!refresh }) })
+function prowlFetch(lead, refresh, mini) {
+  return fetch('/api/prowl', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: lead.slug, name: lead.name, location: lead.location, category: lead.category || '', phone: lead.phone || '', refresh: !!refresh, mini: !!mini }) })
     .then((r) => r.json().then((j) => {
       if (r.status === 200 && j && j.cached === false) recordSpend('prowl'); // only a fresh dossier costs
       return { status: r.status, j };
@@ -3851,10 +3851,45 @@ function prowlFetch(lead, refresh) {
 function openProwl(lead) {
   $('prowl-title').textContent = '🐾 Prowl · ' + lead.name;
   $('prowl-modal').classList.remove('hidden');
-  startProwlProgress();
-  prowlFetch(lead, false)
-    .then(({ status, j }) => { if (status !== 200) throw new Error(j.error || 'Prowl failed'); renderDossier(j.dossier, lead); })
-    .catch((e) => { $('prowl-body').innerHTML = `<div class="empty">⚠️ ${esc(e && e.message ? e.message : 'Prowl failed')}</div>`; });
+  $('prowl-body').innerHTML = '<div class="empty">Checking…</div>';
+  // peek the cache (no credit). A cached FULL dossier shows straight away. Otherwise offer the
+  // choice, so no AI credit is spent unless you ask for the full briefing.
+  fetch('/api/prowl', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: lead.slug, peek: true }) })
+    .then((r) => r.json()).then((d) => {
+      const c = d && d.dossier;
+      if (c && !c.mini) { renderDossier(c, lead); return; }   // full already paid for
+      renderProwlChooser(lead, c || null);                    // c = a cached mini if we have one
+    })
+    .catch(() => renderProwlChooser(lead, null));
+}
+// Two buttons: a cheap Google-only Mini, or the full AI briefing. A cached mini can be viewed
+// for free, and upgraded to full from inside it.
+function renderProwlChooser(lead, cachedMini) {
+  $('prowl-body').innerHTML =
+    '<div class="prowl-choose">' +
+    '<p class="pc-lead">What do you need on <b>' + esc(humaniseBusinessName(lead.name) || lead.name) + '</b>?</p>' +
+    '<div class="pc-cards">' +
+      '<button class="pc-card" data-prowl-run="mini">' +
+        '<div class="pc-h">⚡ Mini Prowl</div>' +
+        '<div class="pc-d">Their Google reviews, rating, recent comments and a competitor comparison table.</div>' +
+        '<div class="pc-tag free">No AI credit</div>' +
+      '</button>' +
+      '<button class="pc-card full" data-prowl-run="full">' +
+        '<div class="pc-h">🔍 Full Prowl</div>' +
+        '<div class="pc-d">Everything in Mini, plus the AI call briefing: opener, weak spots, talking points and objection handling.</div>' +
+        '<div class="pc-tag">Uses 1 Prowl credit</div>' +
+      '</button>' +
+    '</div>' +
+    (cachedMini ? '<button class="linkbtn pc-viewmini">or view the Mini you already ran →</button>' : '') +
+    '</div>';
+  const run = (mini) => {
+    startProwlProgress();
+    prowlFetch(lead, false, mini)
+      .then(({ status, j }) => { if (status !== 200) throw new Error(j.error || 'Prowl failed'); renderDossier(j.dossier, lead); })
+      .catch((e) => { $('prowl-body').innerHTML = `<div class="empty">⚠️ ${esc(e && e.message ? e.message : 'Prowl failed')}</div>`; });
+  };
+  $('prowl-body').querySelectorAll('[data-prowl-run]').forEach((b) => b.addEventListener('click', () => run(b.dataset.prowlRun === 'mini')));
+  const vm = $('prowl-body').querySelector('.pc-viewmini'); if (vm) vm.addEventListener('click', () => renderDossier(cachedMini, lead));
 }
 function renderDossier(d, lead) {
   const ch = d.companiesHouse || {};
@@ -3889,17 +3924,29 @@ function renderDossier(d, lead) {
   if (mobile) { const msg = fillWaMessage(loadSettings().followUp, { name: b.name, location: loc, category: b.category }, tagLink((lead && lead.viewUrl) || '', 'w'), (lead && lead.who) || ''); cActs += `<a class="dos-act wa" target="_blank" rel="noopener" href="https://wa.me/${toWaNumber(phone)}?text=${encodeURIComponent(msg)}">📱 WhatsApp</a>`; }
   cActs += `<a class="dos-act" target="_blank" rel="noopener" href="${esc(mapsU)}">📍 Maps</a>`;
   const contact = `<div class="dos-contact"><div class="dos-cline">${phone ? '📞 <b>' + esc(phone) + '</b>' : '<span class="muted">No phone on file</span>'}${loc ? ' · ' + esc(loc) : ''}</div><div class="dos-acts">${cActs}</div></div>`;
+  // recent Google review comments, shown in both Mini and Full
+  const revs = (d.reviews && d.reviews.length)
+    ? `<div class="dos-block"><h3>💬 Recent Google reviews</h3>${d.reviews.map((r) => `<div class="dos-rev"><span class="dos-rev-s">${'★'.repeat(Math.round(r.rating || 0))}</span> ${esc(r.text)}</div>`).join('')}</div>`
+    : '';
+  // Mini: a clear banner offering the full AI briefing rather than the empty AI sections
+  const miniBanner = d.mini
+    ? `<div class="dos-mini"><div><b>⚡ Mini Prowl</b> · just the Google data. Want the opener, weak spots, talking points and objection handling?</div><button id="prowl-upgrade" class="primary sm">🔍 Run full AI briefing</button></div>`
+    : '';
+  const rerunTitle = d.mini ? 'Refresh the Google data (no AI credit)' : 'Gather fresh, current info (uses a Prowl credit)';
   $('prowl-body').innerHTML =
     contact +
-    `<div class="dos-top"><span class="muted">🐾 Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-rerun" class="ghost sm" title="Gather fresh, current info (uses a Prowl credit)">↻ Re-run for the latest</button></div>` +
+    `<div class="dos-top"><span class="muted">🐾 ${d.mini ? 'Mini ' : ''}Prowled ${esc(fmtDate(d.generatedAt))}</span> <button id="prowl-rerun" class="ghost sm" title="${rerunTitle}">↻ Re-run for the latest</button></div>` +
     '<div id="prowl-notes"></div>' + // notes/status at the TOP, right under the contact line
     `<div class="dos-rep">⭐ Google: <b>${g.reviews}</b> reviews at <b>${g.rating}★</b>${g.mapsUrl ? ' · <a href="' + esc(g.mapsUrl) + '" target="_blank" rel="noopener">📍 Maps</a>' : ''}${g.website ? '' : ' · <b>no website</b>'}${d.reputationSummary ? ', ' + esc(d.reputationSummary) : ''}</div>` +
+    miniBanner +
     opener + strengths + weak + ammo + objections +
-    compTable + services +
+    compTable + revs + services +
     `<div class="dos-snap">${snapshot}</div>` +
     `<div class="dos-foot"><button id="prowl-pounce" class="primary sm">🐆 Pounce, build their website</button></div>`;
   const rr = $('prowl-rerun');
-  if (rr) rr.addEventListener('click', () => { startProwlProgress(); prowlFetch(lead, true).then(({ j }) => renderDossier(j.dossier || {}, lead)).catch(() => {}); });
+  if (rr) rr.addEventListener('click', () => { startProwlProgress(); prowlFetch(lead, true, d.mini).then(({ j }) => renderDossier(j.dossier || {}, lead)).catch(() => {}); });
+  const up = $('prowl-upgrade');
+  if (up) up.addEventListener('click', () => { startProwlProgress(); prowlFetch(lead, false, false).then(({ status, j }) => { if (status !== 200) throw new Error(j.error || 'Prowl failed'); renderDossier(j.dossier, lead); }).catch((e) => { const b = $('prowl-body'); if (b) b.innerHTML = `<div class="empty">⚠️ ${esc(e && e.message ? e.message : 'Prowl failed')}</div>`; }); });
   const pb = $('prowl-pounce');
   if (pb) pb.addEventListener('click', () => { $('prowl-modal').classList.add('hidden'); openPounce(lead); });
   renderProwlNotes(lead); // status + timestamped notes right in the dossier (take notes while you call)

@@ -28,20 +28,25 @@ module.exports = async (req, res) => {
   const category = String(body.category || '').trim() || 'local business';
   if (!slug || !name) { res.status(400).json({ error: 'Missing lead details.' }); return; }
   const refresh = !!body.refresh;
+  const mini = !!body.mini; // Google reviews + competitors only, no OpenAI briefing
 
-  // serve cached dossier (no credit) unless re-running
+  // serve cached dossier (no credit) unless re-running. A cached MINI cannot satisfy a FULL
+  // request (the AI briefing is missing), so in that case we fall through and gather.
   if (!refresh) {
     const cached = await readDossier(slug);
-    if (cached) { res.status(200).json({ dossier: cached, cached: true }); return; }
+    if (cached && (mini || !cached.mini)) { res.status(200).json({ dossier: cached, cached: true }); return; }
   }
 
   if (!process.env.GOOGLE_PLACES_API_KEY) { res.status(503).json({ error: 'Google Places key is not set.' }); return; }
-  const rl = await checkAndRecord('prowl', Date.now(), tenantPrefix(req), emailOf(req));
-  if (!rl.ok) { res.status(429).json({ error: `Prowl limit reached (${rl.limit} per ${rl.windowHours} hours). Try again in ~${rl.retryHours}h.` }); return; }
+  // Mini does not spend an AI Prowl credit (no OpenAI call). Full does.
+  if (!mini) {
+    const rl = await checkAndRecord('prowl', Date.now(), tenantPrefix(req), emailOf(req));
+    if (!rl.ok) { res.status(429).json({ error: `Prowl limit reached (${rl.limit} per ${rl.windowHours} hours). Try again in ~${rl.retryHours}h.` }); return; }
+  }
 
   try {
-    const dossier = await gatherDossier({ slug, name, location, category, phone: body.phone || '' });
-    await logActivity(emailOf(req), accountEmailOf(req), 'prowl', String(name || slug), String(name || slug));
+    const dossier = await gatherDossier({ slug, name, location, category, phone: body.phone || '', mini });
+    await logActivity(emailOf(req), accountEmailOf(req), 'prowl', String(name || slug) + (mini ? ' (mini)' : ''), String(name || slug), mini ? { mini: 1 } : undefined);
     res.status(200).json({ dossier, cached: false });
   } catch (e) {
     res.status(500).json({ error: 'Prowl failed to gather intel.' });
