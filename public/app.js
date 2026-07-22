@@ -2675,6 +2675,12 @@ async function loadSmsAdmin() {
         alert('Removed ' + (d.removed != null ? d.removed : 0) + ' Do-Not-Contact record' + (d.removed === 1 ? '' : 's') + '.'); loadCallList(); } catch (e) { alert('Could not delete, try again.'); }
       dd.disabled = false; dd.textContent = '🚫 Delete DND records'; loadCallCounts();
     });
+    const de = $('sms-dedupe'); if (de) de.addEventListener('click', async () => {
+      de.disabled = true; de.textContent = 'Tidying…';
+      try { const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'dedupeReplies' }) })).json();
+        alert('Removed ' + (d.removed != null ? d.removed : 0) + ' duplicate repl' + (d.removed === 1 ? 'y' : 'ies') + '.'); loadSmsAdmin(); } catch (e) { alert('Could not tidy, try again.'); }
+      de.disabled = false; de.textContent = '🧹 Remove duplicate replies';
+    });
     const sw = $('sms-sweep'); if (sw) sw.addEventListener('click', async () => {
       if (!confirm('Remove every call-list record whose name is just a phone number? Their notes stay, but the records go.')) return;
       sw.disabled = true; sw.textContent = 'Sweeping…';

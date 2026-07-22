@@ -10,7 +10,7 @@ const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
 const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey } = require('../lib/digest');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, listInbound, readyToCall } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, listInbound, readyToCall } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -125,6 +125,12 @@ module.exports = async (req, res) => {
     const r = await sendSms(mob, 'Site Pounce test: your SMS is working. Reply anything and it will show in Admin > SMS. Reply STOP to opt out.', base);
     if (r.ok) res.status(200).json({ ok: true });
     else res.status(200).json({ error: 'Twilio refused it: ' + (r.error || 'unknown') });
+    return;
+  }
+
+  if (action === 'dedupeReplies') {
+    const n = await dedupeInbound();
+    res.status(200).json({ ok: true, removed: n });
     return;
   }
 
