@@ -2827,7 +2827,25 @@ function bestWindowCallout(hours) {
   return '<div class="best-window low">🎯 <strong>Best time to send:</strong> replies are still too spread out to name a clear window. Give it a few more days.</div>';
 }
 async function loadHourly() {
-  try { const d = await (await fetch('/api/sms-campaign?hourly=1')).json(); if (d && d.hourly) renderHourly(d.hourly); } catch (e) { /* leave empty */ }
+  try { const d = await (await fetch('/api/sms-campaign?hourly=1')).json(); if (d) { renderHourly(d.hourly); renderIndustry(d.industry); } } catch (e) { /* leave empty */ }
+}
+// Reply performance by industry/niche tag: which niches say yes, so targeting can lean in.
+function renderIndustry(rows) {
+  const el = $('sms-industry'); if (!el) return;
+  rows = (rows || []).filter((r) => (Number(r.sent) || 0) > 0);
+  if (!rows.length) { el.innerHTML = ''; return; }
+  const body = rows.slice(0, 25).map((r) => {
+    const sent = Number(r.sent) || 0, yes = Number(r.yes) || 0, no = Number(r.no) || 0;
+    const rate = sent ? Math.round((yes / sent) * 100) : 0;
+    const thin = sent < 15; // too few sends to trust the rate
+    return '<tr><td>' + esc(r.tag || '(untagged)') + '</td>'
+      + '<td class="num">' + sent + '</td>'
+      + '<td class="num">' + yes + '</td>'
+      + '<td class="num"><span class="ind-rate' + (thin ? ' thin' : '') + '"><span style="width:' + Math.min(100, rate) + '%"></span></span>' + rate + '%' + (thin ? '<span class="ind-thin" title="Small sample, treat with caution">·</span>' : '') + '</td>'
+      + '<td class="num">' + no + '</td></tr>';
+  }).join('');
+  el.innerHTML = '<div class="ov-rev-head" style="margin-top:22px">🏷️ By industry / niche <span class="muted" style="font-weight:400;font-size:12px">· which tags reply best. Yes rate needs a decent number of sends to mean much.</span></div>'
+    + '<div class="tgt-scroll"><table class="cust-table ind-table"><thead><tr><th>Niche</th><th class="num">Sent</th><th class="num">Yes</th><th class="num">Yes rate</th><th class="num">No</th></tr></thead><tbody>' + body + '</tbody></table></div>';
 }
 // Daily-cap row on the Analytics tab: shows the standing cap + any one-day boost, with a button
 // to add more just for today (it auto-expires at midnight).

@@ -1522,3 +1522,10 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .best-window.low { background: #f8fafc; border-color: #e2e8f0; color: #64748b; }
 .cap-used { color: #64748b; font-size: 13px; }
 .cap-used.full { color: #b45309; }
+
+/* SMS by-industry table */
+.ind-table td.num, .ind-table th.num { text-align: right; white-space: nowrap; }
+.ind-rate { display: inline-block; width: 54px; height: 6px; background: #eef2f7; border-radius: 3px; overflow: hidden; vertical-align: middle; margin-right: 7px; }
+.ind-rate > span { display: block; height: 100%; background: #17a673; }
+.ind-rate.thin > span { background: #cbd5e1; }
+.ind-thin { color: #cbd5e1; margin-left: 3px; }
