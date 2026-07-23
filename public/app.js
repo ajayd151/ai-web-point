@@ -2786,6 +2786,8 @@ async function loadSmsAdmin(opts) {
     }
     renderApprovals(d.approvals || [], !!d.isApprover);
     renderApprovers(d.approvers, !!d.isOwner);
+    renderSmsNumbers(d.numbers || [], d.primaryNumber || '', !!d.isOwner);
+    fillSmsFromPicker(d.numbers || [], d.primaryNumber || '');
     renderCapRow(d.dailyCap != null ? d.dailyCap : 100, d.capExtra || 0, d.sentToday || 0);
     renderSmsStats(d.campaigns || [], d.readyCount || 0, d.stopCount || 0, d.linkOptouts || 0, d.brake || null);
     renderSmsCampaigns(d.campaigns || []);
@@ -3100,6 +3102,40 @@ function renderApprovers(approvers, isOwner) {
     + '<div class="appr-list">' + (list.length ? list.map((e) => '<span class="appr-chip">' + esc(e) + ' <button type="button" onclick="smsManageApprover(\'remove\',\'' + esc(e) + '\')">✕</button></span>').join('') : '<span class="muted">No approvers yet, just you.</span>') + '</div>'
     + '<div class="appr-add"><input id="sms-appr-email" type="email" placeholder="colleague@yourfirm.co.uk"><button class="ghost sm" type="button" onclick="smsManageApprover(\'add\', ($(\'sms-appr-email\')||{}).value)">➕ Add approver</button></div>';
 }
+// The "Send from" dropdown in the builder: default number + any pool numbers.
+function fillSmsFromPicker(numbers, primary) {
+  const sel = $('smsb-from'); if (!sel) return;
+  const keep = sel.value;
+  const opts = ['<option value="">Default number' + (primary ? ' (' + esc(primary) + ')' : '') + '</option>']
+    .concat((numbers || []).map((n) => '<option value="' + esc(n.phone) + '">' + esc(n.label ? (n.label + ' · ' + n.phone) : n.phone) + ' · cap ' + (Number(n.cap) || 0) + '/day</option>'));
+  sel.innerHTML = opts.join('');
+  if (keep) sel.value = keep;
+  const wrap = $('smsb-from-wrap'); if (wrap) wrap.classList.toggle('hidden', !(numbers && numbers.length)); // only show the picker once there is a choice
+}
+// Owner-only number pool: add numbers, set each one's warm-up daily cap, remove.
+function renderSmsNumbers(numbers, primary, isOwner) {
+  const el = $('sms-numbers'); if (!el) return;
+  if (!isOwner) { el.innerHTML = ''; return; }
+  const rows = (numbers || []).map((n) => '<div class="num-row"><span class="num-phone">' + esc(n.phone) + (n.label ? ' <span class="muted">' + esc(n.label) + '</span>' : '') + '</span>'
+    + '<span class="num-cap">cap <input type="number" min="1" max="1000" value="' + (Number(n.cap) || 20) + '" onchange="smsNumberCap(\'' + esc(n.phone) + '\', this.value)">/day</span>'
+    + '<button type="button" class="linkbtn num-rm" onclick="smsManageNumber(\'remove\',\'' + esc(n.phone) + '\')">✕ remove</button></div>').join('');
+  el.innerHTML = '<div class="ov-rev-head">📱 Sending numbers</div>'
+    + '<p class="muted view-sub">Default: <b>' + esc(primary || 'not set') + '</b>. Add more numbers to run campaigns in parallel, each paces its OWN daily cap (start a new one low, e.g. 20, and raise it as it warms up).</p>'
+    + '<div class="num-list">' + (rows || '<span class="muted">No extra numbers yet.</span>') + '</div>'
+    + '<div class="num-add"><input id="sms-num-phone" type="tel" placeholder="+447..."><input id="sms-num-label" type="text" placeholder="Label (e.g. Salons London)"><input id="sms-num-cap" type="number" min="1" max="1000" value="20" title="Daily cap"><button class="ghost sm" type="button" onclick="smsAddNumber()">➕ Add number</button></div>'
+    + '<p class="muted" style="font-size:12px">⚠️ Also set this number\'s Messaging webhook in Twilio to <b>/api/sms-inbound</b>, or replies to it will not come through.</p>';
+}
+function smsAddNumber() {
+  const phone = (($('sms-num-phone') || {}).value || '').trim();
+  if (!phone) { alert('Enter the number first.'); return; }
+  smsManageNumber('add', phone, (($('sms-num-label') || {}).value || ''), (($('sms-num-cap') || {}).value || 20));
+}
+function smsNumberCap(phone, cap) { smsManageNumber('setcap', phone, '', cap); }
+function smsManageNumber(op, phone, label, cap) {
+  fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'manageNumbers', op: op, phone: phone, label: label, cap: cap }) })
+    .then((r) => r.json()).then((d) => { if (d && d.ok) loadSmsAdmin(); else alert((d && d.error) || 'Could not save.'); })
+    .catch(() => alert('Could not save, try again.'));
+}
 function smsManageApprover(op, email) {
   email = String(email || '').trim(); if (op === 'add' && !email) return;
   fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'manageApprovers', op: op, email: email }) })
@@ -3223,6 +3259,7 @@ async function smsCreate() {
     evergreen: !!($('smsb-evergreen') && $('smsb-evergreen').checked),
     nudges: collectNudges(),
     hold: !!($('smsb-hold') && $('smsb-hold').checked),
+    fromNumber: ($('smsb-from') && $('smsb-from').value) || '',
     filters: smsFilters(),
     scheduleAt: whenRaw ? new Date(whenRaw).toISOString() : '',
   };

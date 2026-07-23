@@ -232,6 +232,12 @@ module.exports = async (req, res) => {
   const owner = ownerEmail();
   const day = todayKey(new Date(now));
   const capExtra = await todayCapExtra(day); // one-day-only boost to the daily cap
+  // number pool: each number paces its OWN daily allowance, so a second number adds capacity
+  // rather than sharing the first one's. The default TWILIO_FROM uses the standing 'sms' cap.
+  const PRIMARY = process.env.TWILIO_FROM || '';
+  const numbersPool = ((await readJson('sms/_numbers.json')) || {}).numbers || [];
+  const numCap = (fromNum, baseCap) => { const n = numbersPool.find((x) => x && x.phone === fromNum); return (n && Number(n.cap) > 0) ? Number(n.cap) : baseCap; };
+  const capKindFor = (fromNum) => (!fromNum || fromNum === PRIMARY) ? 'sms' : ('smsn:' + fromNum);
   const out = { campaigns: 0, mockups: 0, sent: 0, failed: 0, held: [] };
 
   // Auto STOP-rate safety-brake, evaluated once per tick. When paused, only COLD sends (openers +
@@ -269,7 +275,7 @@ module.exports = async (req, res) => {
         out.mockups++;
       }
       const msg = renderMessage(it.link_message || 'Here it is: {link}', it, base);
-      const r = await sendSms(it.phone, msg, base);
+      const r = await sendSms(it.phone, msg, base, it.from_number || PRIMARY); // reply from the same number they know
       if (r.ok) {
         await markLinkSent(it.id, r.sid);
         await logActivity(it.created_by || owner, owner, 'message_sent', it.name + ' (mockup link after YES)', it.name);
@@ -304,13 +310,16 @@ module.exports = async (req, res) => {
       const gapMs = Math.min(Math.max(Number(nud.hours) || 24, 1), 168) * 3600000;
       if (now < new Date(baseTs).getTime() + gapMs) continue; // not due yet
       const who = it.created_by || owner;
-      const cap = (await limitFor('sms', who)) + capExtra;
-      const used = await getDailyUsage(who, 'sms', day);
+      const fromNum = it.from_number || PRIMARY;
+      const isPrimary = !it.from_number || it.from_number === PRIMARY;
+      const capKind = capKindFor(fromNum);
+      const cap = numCap(fromNum, await limitFor('sms', who)) + (isPrimary ? capExtra : 0);
+      const used = await getDailyUsage(who, capKind, day);
       if (paceRoom(cap, used, now) <= 0) { out.held.push('nudges held, pacing/cap'); break; }
-      const r = await sendSms(it.phone, renderMessage(nud.message || '', it, base), base);
+      const r = await sendSms(it.phone, renderMessage(nud.message || '', it, base), base, fromNum);
       if (r.ok) {
         await markNudged(it.id, count + 1);
-        await bumpDailyUsage(who, 'sms', 1, day);
+        await bumpDailyUsage(who, capKind, 1, day);
         await logActivity(who, owner, 'message_sent', it.name + ' (nudge ' + (count + 1) + ', no reply)', it.name);
         out.nudged = (out.nudged || 0) + 1; sentThisTick++;
       } else { await markNudged(it.id, count + 1); out.held.push('nudge failed: ' + r.error); }
@@ -363,8 +372,11 @@ module.exports = async (req, res) => {
     if (!smsConfigured()) { out.held.push('Twilio keys not set yet'); continue; }
     if (brake.paused) { continue; } // STOP-rate brake: hold cold openers (already logged above)
     if (!inSendWindow(now)) { out.held.push('outside send window'); continue; }
-    const cap = (await limitFor('sms', c.created_by || owner)) + capExtra;
-    const used = await getDailyUsage(c.created_by || owner, 'sms', day);
+    const fromNum = c.from_number || PRIMARY;                       // this campaign's number
+    const isPrimary = !c.from_number || c.from_number === PRIMARY;
+    const capKind = capKindFor(fromNum);
+    const cap = numCap(fromNum, await limitFor('sms', c.created_by || owner)) + (isPrimary ? capExtra : 0);
+    const used = await getDailyUsage(c.created_by || owner, capKind, day);
     const room = paceRoom(cap, used, now);
     if (!room) { out.held.push(used >= cap ? ('daily cap reached (' + cap + ')') : 'paced, more later today'); continue; }
 
@@ -374,10 +386,10 @@ module.exports = async (req, res) => {
     const curText = (cur && cur.text) || c.message; // active version's text (a scheduled one only kicks in on its start day)
     for (const it of ready) {
       const msg = renderMessage(curText, it, base);
-      const r = await sendSms(it.phone, msg, base);
+      const r = await sendSms(it.phone, msg, base, fromNum);
       if (r.ok) {
         await setItem(it.id, { state: 'sent', sid: r.sid, msgId: curMsgId });
-        await bumpDailyUsage(c.created_by || owner, 'sms', 1, day);
+        await bumpDailyUsage(c.created_by || owner, capKind, 1, day);
         await logActivity(c.created_by || owner, owner, 'message_sent', it.name + ' (SMS campaign ' + c.id + ')', it.name);
         out.sent++;
       } else {

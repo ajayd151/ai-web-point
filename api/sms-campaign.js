@@ -30,6 +30,7 @@ const GUARDED = { boostToday: 'Raise today\'s send cap (+50)', resumeCold: 'Over
 // ALLOW). The owner is always an approver; others are added by email here.
 async function readApprovers() { const j = await readJson('sms/_approvers.json'); return (j && Array.isArray(j.emails)) ? j.emails.map((e) => String(e).toLowerCase()) : []; }
 async function isApproverEmail(email) { if (isComped(email)) return true; const list = await readApprovers(); return list.includes(String(email || '').toLowerCase()); }
+async function readNumbers() { const j = await readJson('sms/_numbers.json'); return (j && Array.isArray(j.numbers)) ? j.numbers : []; }
 async function readApprovals() { const j = await readJson('sms/_approvals.json'); return (j && Array.isArray(j.requests)) ? j.requests : []; }
 async function writeApprovals(reqs) { try { await put('sms/_approvals.json', JSON.stringify({ requests: reqs }), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); } catch (e) { /* best effort */ } }
 
@@ -89,6 +90,8 @@ module.exports = async (req, res) => {
       sentToday: sentToday,
       isOwner: isComped(acct.email),
       isApprover: approver,
+      primaryNumber: process.env.TWILIO_FROM || '',
+      numbers: await readNumbers(),
       approvals: approver ? (await readApprovals()).filter((r) => r.status === 'pending') : [],
       approvers: isComped(acct.email) ? await readApprovers() : undefined,
       twilioReady: smsConfigured(),
@@ -136,6 +139,24 @@ module.exports = async (req, res) => {
     res.status(200).json({ ok: true, status: r.status });
     return;
   }
+  // Owner manages the SENDING NUMBER pool (add/remove, set each number's own daily cap for warm-up).
+  if (action === 'manageNumbers') {
+    if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
+    let nums = await readNumbers();
+    const phone = String(body.phone || '').replace(/[^0-9+]/g, '').trim();
+    if (body.op === 'add' && phone) {
+      if (!nums.find((n) => n.phone === phone)) nums.push({ phone: phone, label: String(body.label || '').slice(0, 40), cap: Math.min(Math.max(Number(body.cap) || 20, 1), 1000), addedAt: new Date().toISOString() });
+    } else if (body.op === 'remove' && phone) {
+      nums = nums.filter((n) => n.phone !== phone);
+    } else if (body.op === 'setcap' && phone) {
+      const n = nums.find((x) => x.phone === phone); if (n) n.cap = Math.min(Math.max(Number(body.cap) || 1, 1), 1000);
+    }
+    try { await put('sms/_numbers.json', JSON.stringify({ numbers: nums }), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
+    catch (e) { res.status(500).json({ error: 'Could not save numbers.' }); return; }
+    res.status(200).json({ ok: true, numbers: nums });
+    return;
+  }
+
   // Owner manages the approver list (add/remove by email).
   if (action === 'manageApprovers') {
     if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
@@ -184,6 +205,11 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'A nudge goes to people who have not said yes, so it cannot contain {link} in ask-first mode.' }); return;
       }
     }
+    // sending number: blank = the default; otherwise must be the default or a number in the pool
+    const fromNumber = String(body.fromNumber || '').replace(/[^0-9+]/g, '').trim();
+    if (fromNumber && fromNumber !== (process.env.TWILIO_FROM || '') && !(await readNumbers()).find((n) => n.phone === fromNumber)) {
+      res.status(400).json({ error: 'That sending number is not in your pool.' }); return;
+    }
     const a = await buildAudience(body.filters);
     if (!a.items.length) { res.status(400).json({ error: 'Nobody matches those criteria.' }); return; }
     const when = body.scheduleAt ? new Date(body.scheduleAt) : new Date();
@@ -200,6 +226,7 @@ module.exports = async (req, res) => {
       linkDelayMin: body.linkDelayMin,
       nudges: nudges,
       evergreen: evergreen,
+      fromNumber: fromNumber,
     });
     if (!id) { res.status(500).json({ error: 'Could not save the campaign.' }); return; }
     if (body.hold) { await setCampaignStatus(id, 'paused'); } // built but held: no sends until resumed

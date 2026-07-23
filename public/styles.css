@@ -1585,3 +1585,12 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .appr-chip button { border: none; background: none; color: #b91c1c; cursor: pointer; font-weight: 700; }
 .appr-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .appr-add input { min-width: 220px; }
+
+/* SMS sending-number pool */
+.num-list { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 12px; }
+.num-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; }
+.num-phone { font-weight: 700; font-size: 14px; }
+.num-cap input { width: 64px; }
+.num-rm { color: #b91c1c; margin-left: auto; }
+.num-add { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.num-add input[type="tel"] { min-width: 150px; } .num-add input[type="text"] { min-width: 180px; } .num-add input[type="number"] { width: 74px; }
