@@ -3126,7 +3126,7 @@ function renderSmsNumbers(numbers, primary, isOwner) {
     + '<p class="muted view-sub">Default: <b>' + esc(primary || 'not set') + '</b>. Add more numbers to run campaigns in parallel, each paces its OWN daily cap (start a new one low, e.g. 20, and raise it as it warms up).</p>'
     + '<div class="num-list">' + (rows || '<span class="muted">No extra numbers yet.</span>') + '</div>'
     + '<div class="num-add"><input id="sms-num-phone" type="tel" placeholder="+447..."><input id="sms-num-label" type="text" placeholder="Label (e.g. Salons London)"><input id="sms-num-cap" type="number" min="1" max="1000" value="20" title="Daily cap"><button class="ghost sm" type="button" onclick="smsAddNumber()">➕ Add number</button></div>'
-    + '<p class="muted" style="font-size:12px">⚠️ Also set this number\'s Messaging webhook in Twilio to <b>/api/sms-inbound</b>, or replies to it will not come through.</p>';
+    + '<p class="num-warn">⚠️ Also set this number\'s Messaging webhook in Twilio to <b>/api/sms-inbound</b>, or replies to it will not come through.</p>';
 }
 function smsAddNumber() {
   const phone = (($('sms-num-phone') || {}).value || '').trim();
