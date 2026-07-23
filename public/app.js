@@ -4666,7 +4666,8 @@ function pounceQuestionsHTML(lead) {
   return `<div class="pq">
     <p class="muted pq-intro">Optional, tweak the build below, or just hit <b>Build my site</b> for smart defaults.${lead && lead.prowled === false ? '' : ''}</p>
     <div class="pq-grid">
-      <div class="pq-fld"><label>Accent colour</label><select id="pq-accent">${POUNCE_ACCENTS.map((a) => `<option value="${a[0]}">${a[1]}</option>`).join('')}</select></div>
+      <div class="pq-fld"><label>Accent colour</label><select id="pq-accent" onchange="pqAccentChange()">${POUNCE_ACCENTS.map((a) => `<option value="${a[0]}">${a[1]}</option>`).join('')}<option value="custom">Custom colour…</option></select>
+        <span id="pq-accent-custom" class="pq-accent-custom hidden"><input id="pq-accent-hex" type="color" value="#0ea5e9" onchange="pqAccentHex(this.value)"><input id="pq-accent-hextxt" type="text" maxlength="7" placeholder="#0ea5e9" value="#0ea5e9" oninput="pqAccentHex(this.value)"></span></div>
       <div class="pq-fld"><label>Add an FAQ section?</label><label class="pq-toggle"><input id="pq-faq" type="checkbox"> Yes, generate FAQs</label></div>
       <div class="pq-fld wide"><label>Services to highlight</label><input id="pq-highlight" type="text" placeholder="e.g. EV chargers, rewires, fuse boards"></div>
       <div class="pq-fld wide"><label>Their standout selling point</label><input id="pq-usp" type="text" placeholder="e.g. 24/7 emergency callout · 10-year guarantee"></div>
@@ -4681,10 +4682,23 @@ function pounceQuestionsHTML(lead) {
     <div class="pq-actions"><button id="pq-build" class="primary">🐆 Build my site →</button><button id="pq-skip" class="ghost sm">Skip, smart defaults</button></div>
   </div>`;
 }
+// custom accent: show the colour picker when "Custom colour…" is chosen, and keep the swatch + hex
+// text box in sync so either can drive it.
+function pqAccentChange() {
+  const sel = $('pq-accent'); const box = $('pq-accent-custom');
+  if (box) box.classList.toggle('hidden', !(sel && sel.value === 'custom'));
+}
+function pqAccentHex(val) {
+  let hex = String(val || '').trim(); if (hex && hex[0] !== '#') hex = '#' + hex;
+  const sw = $('pq-accent-hex'); const tx = $('pq-accent-hextxt');
+  if (/^#[0-9a-fA-F]{6}$/.test(hex)) { if (sw) sw.value = hex; if (tx && tx.value.trim().replace(/^#?/, '#') !== hex) tx.value = hex; }
+}
 function collectPounceOpts() {
   const v = (id) => { const el = $(id); return el ? (el.type === 'checkbox' ? el.checked : el.value.trim()) : ''; };
   const accreditations = Array.prototype.slice.call(document.querySelectorAll('.pq-acc:checked')).map((el) => el.value);
-  return { accent: v('pq-accent'), faq: v('pq-faq'), highlightServices: v('pq-highlight'), usp: v('pq-usp'), offer: v('pq-offer'), notes: v('pq-notes'), accreditations, leadEmail: v('pq-leademail'), leadName: v('pq-leadname') };
+  let accent = v('pq-accent');
+  if (accent === 'custom') { const hx = (v('pq-accent-hextxt') || v('pq-accent-hex') || '').trim(); accent = /^#[0-9a-fA-F]{6}$/.test(hx) ? hx.toLowerCase() : ''; } // send the hex; a bad hex falls back to Auto
+  return { accent: accent, faq: v('pq-faq'), highlightServices: v('pq-highlight'), usp: v('pq-usp'), offer: v('pq-offer'), notes: v('pq-notes'), accreditations, leadEmail: v('pq-leademail'), leadName: v('pq-leadname') };
 }
 function buildPounce(lead, opts, refresh) {
   lastPounceOpts = opts || {};

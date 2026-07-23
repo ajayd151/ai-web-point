@@ -1563,3 +1563,6 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .jstamp { font-size: 11px; color: #475569; white-space: nowrap; }
 .jstamp.pos { color: #15803d; font-weight: 700; }
 .jstamp.neg { color: #b91c1c; font-weight: 700; }
+.pq-accent-custom { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; }
+.pq-accent-custom input[type="color"] { width: 40px; height: 30px; padding: 0; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; }
+.pq-accent-custom input[type="text"] { width: 96px; }
