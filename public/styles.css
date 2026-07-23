@@ -1560,3 +1560,6 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .jtick { font-weight: 800; color: #cbd5e1; }
 .jtick.on { color: #17a673; }
 .jtick.no { color: #dc7b7b; }
+.jstamp { font-size: 11px; color: #475569; white-space: nowrap; }
+.jstamp.pos { color: #15803d; font-weight: 700; }
+.jstamp.neg { color: #b91c1c; font-weight: 700; }
