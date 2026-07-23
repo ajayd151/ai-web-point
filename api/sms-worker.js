@@ -4,7 +4,7 @@
 // Sends only happen inside working hours (Mon-Fri, 09:00-17:59 UK) and inside the daily 'sms'
 // cap from Admin > Limits. Without Twilio keys, mockups still build but sends wait, so a campaign
 // can be prepared before the account exists.
-const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, campaignKeys, addItemsToCampaign, stampToppedUp, stopWindow, ensureBaseVersions, currentMsgId } = require('../lib/smsdb');
+const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, campaignKeys, addItemsToCampaign, stampToppedUp, stopWindow, ensureBaseVersions, currentMsg } = require('../lib/smsdb');
 const { buildAudience } = require('../lib/smsaudience');
 const { sendSms, smsConfigured, lookupPhone, optOutUrl } = require('../lib/sms');
 const { list, put } = require('@vercel/blob');
@@ -354,9 +354,11 @@ module.exports = async (req, res) => {
     if (!room) { out.held.push(used >= cap ? ('daily cap reached (' + cap + ')') : 'paced, more later today'); continue; }
 
     const ready = await itemsInState(c.id, 'ready', Math.min(SENDS_PER_TICK, room));
-    const curMsgId = ready.length ? await currentMsgId(c.id) : null; // stamp which opener version each send used
+    const cur = ready.length ? await currentMsg(c.id, day) : null; // the opener version LIVE today
+    const curMsgId = cur ? cur.id : null;
+    const curText = (cur && cur.text) || c.message; // active version's text (a scheduled one only kicks in on its start day)
     for (const it of ready) {
-      const msg = renderMessage(c.message, it, base);
+      const msg = renderMessage(curText, it, base);
       const r = await sendSms(it.phone, msg, base);
       if (r.ok) {
         await setItem(it.id, { state: 'sent', sid: r.sid, msgId: curMsgId });

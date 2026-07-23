@@ -2827,14 +2827,18 @@ function bestWindowCallout(hours) {
   return '<div class="best-window low">🎯 <strong>Best time to send:</strong> replies are still too spread out to name a clear window. Give it a few more days.</div>';
 }
 async function loadHourly() {
-  try { const d = await (await fetch('/api/sms-campaign?hourly=1')).json(); if (d) { renderHourly(d.hourly); renderIndustry(d.industry); renderExperiments(d.messages); } } catch (e) { /* leave empty */ }
+  try { const d = await (await fetch('/api/sms-campaign?hourly=1')).json(); if (d) { renderHourly(d.hourly); renderIndustry(d.industry); renderExperiments(d.messages, d.today); } } catch (e) { /* leave empty */ }
 }
 
 // ----- Message experiments: compare opener versions on real data, gated at 100 sends -----
 var EXPERIMENT_MIN = 100; // no conclusions below this many sends per version
-function renderExperiments(versions) {
+function expDayLabel(ymd) {
+  try { return new Date(ymd + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); } catch (e) { return ymd; }
+}
+function renderExperiments(versions, today) {
   const el = $('sms-experiments'); if (!el) return;
   versions = versions || [];
+  today = today || '9999-99-99';
   if (!versions.length) { el.innerHTML = ''; return; }
   // group by campaign, keep version order (v1, v2, ...)
   const byCamp = {};
@@ -2843,9 +2847,12 @@ function renderExperiments(versions) {
   Object.keys(byCamp).forEach((cid) => {
     const camp = byCamp[cid];
     const list = camp.list;
-    const current = list[list.length - 1];
+    const isSched = (v) => v.startDay && v.startDay > today;               // not started yet
+    // the LIVE version = the last one that has already started
+    const started = list.filter((v) => !isSched(v));
+    const live = started.length ? started[started.length - 1] : list[list.length - 1];
     html += '<div class="exp-camp"><div class="exp-camp-name">' + esc(camp.name) + '</div>';
-    // versions table
+    // versions table (full message, no truncation)
     html += '<div class="tgt-scroll"><table class="cust-table exp-table"><thead><tr><th>Version</th><th>Message</th><th class="num">Sent</th><th class="num">Yes</th><th class="num">STOP</th><th class="num">Opt-out</th><th>Status</th></tr></thead><tbody>';
     list.forEach((v, i) => {
       const sent = Number(v.sent) || 0;
@@ -2853,10 +2860,12 @@ function renderExperiments(versions) {
       const stopR = sent ? Math.round((v.stop / sent) * 1000) / 10 : 0;
       const optR = sent ? Math.round((v.optout / sent) * 1000) / 10 : 0;
       const ready = sent >= EXPERIMENT_MIN;
-      const status = ready ? '<span class="exp-badge ready">ready</span>' : '<span class="exp-badge gather">gathering ' + sent + '/' + EXPERIMENT_MIN + '</span>';
-      const isCur = i === list.length - 1;
-      html += '<tr' + (isCur ? ' class="exp-cur"' : '') + '><td>v' + (i + 1) + (isCur ? ' <span class="exp-live">live</span>' : '') + '</td>'
-        + '<td class="exp-msg" title="' + esc(v.text || '') + '">' + esc((v.text || '').slice(0, 70)) + ((v.text || '').length > 70 ? '…' : '') + '</td>'
+      const sched = isSched(v);
+      const status = sched ? '<span class="exp-badge sched">⏳ starts ' + esc(expDayLabel(v.startDay)) + ', 8am</span>'
+        : (ready ? '<span class="exp-badge ready">ready</span>' : '<span class="exp-badge gather">gathering ' + sent + '/' + EXPERIMENT_MIN + '</span>');
+      const isLive = v.id === live.id && !sched;
+      html += '<tr' + (isLive ? ' class="exp-cur"' : '') + '><td>v' + (i + 1) + (isLive ? ' <span class="exp-live">live</span>' : '') + '</td>'
+        + '<td class="exp-msg">' + esc(v.text || '') + '</td>'
         + '<td class="num">' + sent + '</td>'
         + '<td class="num">' + (v.yes || 0) + ' <span class="muted">' + yesR + '%</span></td>'
         + '<td class="num' + (stopR >= 3 ? ' bad' : '') + '">' + (v.stop || 0) + ' <span class="muted">' + stopR + '%</span></td>'
@@ -2865,13 +2874,14 @@ function renderExperiments(versions) {
     });
     html += '</tbody></table></div>';
     html += expCompareGraph(list);
-    // new-version editor
+    // new-version editor. The box is your DRAFT (starts as a copy of the live message). "Suggest"
+    // replaces it with a gentler AI rewrite. It goes live next morning, not immediately.
     html += '<details class="exp-new"><summary>✏️ Test a new message</summary>'
-      + '<textarea id="exp-ta-' + cid + '" rows="3" class="exp-ta">' + esc(current.text || '') + '</textarea>'
+      + '<p class="muted" style="font-size:12px;margin:8px 0 4px">Edit the draft below (it starts as a copy of your live message), or tap Suggest for a gentler rewrite. It goes live at <strong>8am tomorrow</strong> so the experiment runs over clean full days.</p>'
+      + '<textarea id="exp-ta-' + cid + '" rows="3" class="exp-ta">' + esc(live.text || '') + '</textarea>'
       + '<div class="exp-actions"><button class="ghost sm" type="button" onclick="smsSuggestOpener(this,' + cid + ')">✨ Suggest a gentler version</button>'
-      + '<button class="batch-btn sm" type="button" onclick="smsImplementMsg(this,' + cid + ')">Implement as new version</button>'
-      + '<span class="ct-msg" id="exp-msg-' + cid + '"></span></div>'
-      + '<p class="muted" style="font-size:12px">This starts a fresh experiment: new sends use it and are tracked separately, the old versions stay in the history above.</p></details>';
+      + '<button class="batch-btn sm" type="button" onclick="smsImplementMsg(this,' + cid + ')">Schedule as new version</button>'
+      + '<span class="ct-msg" id="exp-msg-' + cid + '"></span></div></details>';
     html += '</div>';
   });
   el.innerHTML = html;
@@ -2917,12 +2927,12 @@ async function smsSuggestOpener(btn, cid) {
 }
 async function smsImplementMsg(btn, cid) {
   const ta = $('exp-ta-' + cid); if (!ta || !ta.value.trim()) { alert('Write the new message first.'); return; }
-  if (!confirm('Make this the live opener from now on? It starts a new experiment, the old versions stay in the history.')) return;
-  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Implementing…';
+  if (!confirm('Schedule this as the new opener from 8am tomorrow? Today keeps sending the current version, so each experiment gets clean full days. The old versions stay in the history.')) return;
+  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Scheduling…';
   try {
     const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'implementMsg', campaignId: cid, text: ta.value.trim() }) })).json();
-    if (d && d.ok) loadSmsAdmin();
-    else { btn.disabled = false; btn.textContent = old; alert((d && d.error) || 'Could not implement.'); }
+    if (d && d.ok) { alert(d.startsToday ? 'Scheduled, it goes live when the window opens at 8am today.' : 'Scheduled, it goes live at 8am tomorrow.'); loadSmsAdmin(); }
+    else { btn.disabled = false; btn.textContent = old; alert((d && d.error) || 'Could not schedule.'); }
   } catch (e) { btn.disabled = false; btn.textContent = old; }
 }
 // Reply performance by industry/niche tag: which niches say yes, so targeting can lean in.

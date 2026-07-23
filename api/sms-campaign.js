@@ -9,7 +9,7 @@ const { account, isComped } = require('../lib/access');
 const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
 const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
-const { todayKey } = require('../lib/digest');
+const { todayKey, londonHour } = require('../lib/digest');
 const { getDailyUsage } = require('../lib/db');
 const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, messageStats, addMsg, setCampaignMessage, listInbound, readyToCall } = require('../lib/smsdb');
 
@@ -37,7 +37,7 @@ module.exports = async (req, res) => {
     const idx = (await readJson('notes/_index.json')) || {};
     const callNow = (await readyToCall(200)).filter((r) => !TERMINAL[(idx[r.key] && idx[r.key].status) || '']);
     if (q.count) { res.status(200).json({ readyCount: callNow.length }); return; }
-    if (q.hourly) { res.status(200).json({ hourly: await hourlyBreakdown(30), industry: await byIndustry(), messages: await messageStats() }); return; }
+    if (q.hourly) { res.status(200).json({ hourly: await hourlyBreakdown(30), industry: await byIndustry(), messages: await messageStats(), today: todayKey(new Date()) }); return; }
     const oc = await optoutCounts();
     const brake = (await readJson('sms/_breaker.json')) || {};
     const brakeActive = brake.until && new Date(brake.until).getTime() > Date.now();
@@ -139,10 +139,16 @@ module.exports = async (req, res) => {
     const text = String(body.text || '').trim().slice(0, 480);
     if (!cid) { res.status(400).json({ error: 'Which campaign?' }); return; }
     if (!text) { res.status(400).json({ error: 'Write the new message first.' }); return; }
-    const vid = await addMsg(cid, text, acct.email);
+    // schedule the new version to start on a FRESH day (next 8am), so each experiment runs over
+    // whole days and stays comparable. If it is implemented before the window even opens (UK hour
+    // < 8), it can start today.
+    const nowD = new Date();
+    const today = todayKey(nowD);
+    const tomorrow = todayKey(new Date(nowD.getTime() + 24 * 3600 * 1000));
+    const startDay = londonHour(nowD) < 8 ? today : tomorrow;
+    const vid = await addMsg(cid, text, acct.email, startDay);
     if (!vid) { res.status(500).json({ error: 'Could not save the new version.' }); return; }
-    await setCampaignMessage(cid, text);
-    res.status(200).json({ ok: true, id: vid });
+    res.status(200).json({ ok: true, id: vid, startDay: startDay, startsToday: startDay === today });
     return;
   }
 
