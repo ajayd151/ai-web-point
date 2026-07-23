@@ -3108,12 +3108,17 @@ function renderApprovers(approvers, isOwner) {
 function fillSmsFromPicker(numbers, primary) {
   const sel = $('smsb-from'); if (!sel) return;
   const keep = sel.value;
-  const opts = ['<option value="">— Choose a number —</option>'];
+  const pool = numbers || [];
+  const opts = [];
+  // only force a deliberate choice when there is more than one number; with just the default,
+  // auto-select it so nobody gets blocked with no real option to pick
+  if (pool.length) opts.push('<option value="">— Choose a number —</option>');
   if (primary) opts.push('<option value="' + esc(primary) + '">Default · ' + esc(primary) + '</option>');
-  (numbers || []).forEach((n) => opts.push('<option value="' + esc(n.phone) + '">' + esc(n.label ? (n.label + ' · ' + n.phone) : n.phone) + ' · cap ' + (Number(n.cap) || 0) + '/day</option>'));
+  pool.forEach((n) => opts.push('<option value="' + esc(n.phone) + '">' + esc(n.label ? (n.label + ' · ' + n.phone) : n.phone) + ' · cap ' + (Number(n.cap) || 0) + '/day</option>'));
   sel.innerHTML = opts.join('');
   if (keep) sel.value = keep;
-  const wrap = $('smsb-from-wrap'); if (wrap) wrap.classList.remove('hidden'); // always shown: choosing a number is mandatory
+  else if (!pool.length && primary) sel.value = primary; // single number -> pre-selected, no friction
+  const wrap = $('smsb-from-wrap'); if (wrap) wrap.classList.remove('hidden');
 }
 // Owner-only number pool: add numbers, set each one's warm-up daily cap, remove.
 function renderSmsNumbers(numbers, primary, isOwner) {
