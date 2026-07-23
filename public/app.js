@@ -2786,6 +2786,8 @@ async function loadSmsAdmin(opts) {
     }
     renderApprovals(d.approvals || [], !!d.isApprover);
     renderApprovers(d.approvers, !!d.isOwner);
+    smsPrimaryNum = d.primaryNumber || '';
+    smsNumbersMap = {}; (d.numbers || []).forEach((n) => { if (n && n.phone) smsNumbersMap[n.phone] = n.label || n.phone; });
     renderSmsNumbers(d.numbers || [], d.primaryNumber || '', !!d.isOwner);
     fillSmsFromPicker(d.numbers || [], d.primaryNumber || '');
     renderCapRow(d.dailyCap != null ? d.dailyCap : 100, d.capExtra || 0, d.sentToday || 0);
@@ -3106,11 +3108,12 @@ function renderApprovers(approvers, isOwner) {
 function fillSmsFromPicker(numbers, primary) {
   const sel = $('smsb-from'); if (!sel) return;
   const keep = sel.value;
-  const opts = ['<option value="">Default number' + (primary ? ' (' + esc(primary) + ')' : '') + '</option>']
-    .concat((numbers || []).map((n) => '<option value="' + esc(n.phone) + '">' + esc(n.label ? (n.label + ' · ' + n.phone) : n.phone) + ' · cap ' + (Number(n.cap) || 0) + '/day</option>'));
+  const opts = ['<option value="">— Choose a number —</option>'];
+  if (primary) opts.push('<option value="' + esc(primary) + '">Default · ' + esc(primary) + '</option>');
+  (numbers || []).forEach((n) => opts.push('<option value="' + esc(n.phone) + '">' + esc(n.label ? (n.label + ' · ' + n.phone) : n.phone) + ' · cap ' + (Number(n.cap) || 0) + '/day</option>'));
   sel.innerHTML = opts.join('');
   if (keep) sel.value = keep;
-  const wrap = $('smsb-from-wrap'); if (wrap) wrap.classList.toggle('hidden', !(numbers && numbers.length)); // only show the picker once there is a choice
+  const wrap = $('smsb-from-wrap'); if (wrap) wrap.classList.remove('hidden'); // always shown: choosing a number is mandatory
 }
 // Owner-only number pool: add numbers, set each one's warm-up daily cap, remove.
 function renderSmsNumbers(numbers, primary, isOwner) {
@@ -3248,6 +3251,7 @@ async function smsCreate() {
     if (msg.indexOf('{link}') >= 0) { alert('Ask-first mode: take {link} OUT of the first message. It goes in the follow-up box, sent automatically when they say yes.'); return; }
     if (!linkMsg || linkMsg.indexOf('{link}') < 0) { alert('Write the auto-send follow-up too, with {link} in it.'); return; }
   }
+  if (!(($('smsb-from') && $('smsb-from').value) || '').trim()) { alert('Choose which number to send from first (step 3).'); const f = $('smsb-from'); if (f) f.focus(); return; }
   const whenRaw = ($('smsb-when') && $('smsb-when').value) || '';
   const body = {
     action: 'create',
@@ -3323,10 +3327,11 @@ function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake) {
   }
   el.innerHTML = banner + '<div class="ov-stats">' + tiles + '</div>' + bar;
 }
+var smsNumbersMap = {}; var smsPrimaryNum = '';
 function renderSmsCampaigns(rows) {
   const el = $('sms-campaigns'); if (!el) return;
   if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet.</p>'; return; }
-  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Campaign</th><th>Type</th><th>Status</th><th>Progress</th><th>Sends from</th><th></th></tr></thead><tbody>' +
+  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Campaign</th><th>Type</th><th>Number</th><th>Status</th><th>Progress</th><th>Starts</th><th></th></tr></thead><tbody>' +
     rows.map((c) => {
       const prog = '<b>' + (c.sent || 0) + '</b>' + (c.linked ? ('+' + c.linked + '🔗') : '') + ' sent / ' + (c.total || 0) +
         ' · ' + (c.delivered || 0) + ' delivered' + (c.failed ? (' · ' + c.failed + ' failed') : '') +
@@ -3335,8 +3340,13 @@ function renderSmsCampaigns(rows) {
         ? '<button class="linkbtn" data-smsact="pause" data-id="' + c.id + '">Pause</button> <button class="linkbtn" data-smsact="cancel" data-id="' + c.id + '">Cancel</button>'
         : (c.status === 'paused' ? '<button class="linkbtn" data-smsact="resume" data-id="' + c.id + '">Resume</button> <button class="linkbtn" data-smsact="cancel" data-id="' + c.id + '">Cancel</button>' : '');
       const typeCell = c.evergreen ? '<span class="sms-type ever" title="Keeps auto-texting new records that later match the criteria">♻️ Always-on</span>' : '<span class="sms-type oneoff">One-off</span>';
+      const isDefaultNum = !c.from_number || c.from_number === smsPrimaryNum;
+      const numCell = isDefaultNum
+        ? '<span class="sms-num-cell" title="' + esc(smsPrimaryNum || '') + '">Default</span>'
+        : '<span class="sms-num-cell" title="' + esc(c.from_number) + '">' + esc(smsNumbersMap[c.from_number] || c.from_number) + '</span>';
       return '<tr><td><b>' + esc(c.name || ('#' + c.id)) + '</b><span class="muted" style="display:block;font-size:11px">by ' + esc(noteAuthor(c.created_by || '')) + '</span></td>' +
         '<td>' + typeCell + '</td>' +
+        '<td>' + numCell + '</td>' +
         '<td>' + esc(c.status) + (c.note ? ('<span class="muted" style="display:block;font-size:11px">' + esc(c.note) + '</span>') : '') + '</td>' +
         '<td>' + prog + '</td><td>' + esc(fmtDate(c.schedule_at)) + '</td><td>' + act + '</td></tr>';
     }).join('') + '</tbody></table></div>';

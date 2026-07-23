@@ -205,9 +205,10 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'A nudge goes to people who have not said yes, so it cannot contain {link} in ask-first mode.' }); return;
       }
     }
-    // sending number: blank = the default; otherwise must be the default or a number in the pool
+    // sending number is now MANDATORY: must be the default number or one in the pool
     const fromNumber = String(body.fromNumber || '').replace(/[^0-9+]/g, '').trim();
-    if (fromNumber && fromNumber !== (process.env.TWILIO_FROM || '') && !(await readNumbers()).find((n) => n.phone === fromNumber)) {
+    if (!fromNumber) { res.status(400).json({ error: 'Choose which number to send from first.' }); return; }
+    if (fromNumber !== (process.env.TWILIO_FROM || '') && !(await readNumbers()).find((n) => n.phone === fromNumber)) {
       res.status(400).json({ error: 'That sending number is not in your pool.' }); return;
     }
     const a = await buildAudience(body.filters);

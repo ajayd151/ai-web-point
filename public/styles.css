@@ -1594,3 +1594,4 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .num-rm { color: #b91c1c; margin-left: auto; }
 .num-add { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .num-add input[type="tel"] { min-width: 150px; } .num-add input[type="text"] { min-width: 180px; } .num-add input[type="number"] { width: 74px; }
+.sms-num-cell { font-size: 13px; font-weight: 600; color: #334155; white-space: nowrap; }
