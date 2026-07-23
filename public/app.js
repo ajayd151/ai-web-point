@@ -2832,6 +2832,7 @@ async function loadHourly() {
 
 // ----- Message experiments: compare opener versions on real data, gated at 100 sends -----
 var EXPERIMENT_MIN = 100; // no conclusions below this many sends per version
+var expLiveText = {};     // the live opener per campaign, so Suggest always rewrites THAT
 function expDayLabel(ymd) {
   try { return new Date(ymd + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); } catch (e) { return ymd; }
 }
@@ -2874,12 +2875,13 @@ function renderExperiments(versions, today) {
     });
     html += '</tbody></table></div>';
     html += expCompareGraph(list);
-    // new-version editor. The box is your DRAFT (starts as a copy of the live message). "Suggest"
-    // replaces it with a gentler AI rewrite. It goes live next morning, not immediately.
-    html += '<details class="exp-new"><summary>✏️ Test a new message</summary>'
-      + '<p class="muted" style="font-size:12px;margin:8px 0 4px">Edit the draft below (it starts as a copy of your live message), or tap Suggest for a gentler rewrite. It goes live at <strong>8am tomorrow</strong> so the experiment runs over clean full days.</p>'
-      + '<textarea id="exp-ta-' + cid + '" rows="3" class="exp-ta">' + esc(live.text || '') + '</textarea>'
-      + '<div class="exp-actions"><button class="ghost sm" type="button" onclick="smsSuggestOpener(this,' + cid + ')">✨ Suggest a gentler version</button>'
+    // new-version editor. Opening it AUTO-drafts a gentler rewrite (so it is obviously different
+    // from the live one), which you can then edit or re-suggest. It goes live next morning.
+    expLiveText[cid] = live.text || '';
+    html += '<details class="exp-new" ontoggle="expOnToggle(this,' + cid + ')"><summary>✏️ Test a new message</summary>'
+      + '<p class="muted" style="font-size:12px;margin:8px 0 4px">A gentler rewrite drafts below automatically (edit it, or tap Suggest again for another). It goes live at <strong>8am tomorrow</strong> so the experiment runs over clean full days.</p>'
+      + '<textarea id="exp-ta-' + cid + '" rows="3" class="exp-ta" placeholder="Drafting a gentler version…"></textarea>'
+      + '<div class="exp-actions"><button id="exp-sug-' + cid + '" class="ghost sm" type="button" onclick="smsSuggestOpener(this,' + cid + ')">✨ Suggest another</button>'
       + '<button class="batch-btn sm" type="button" onclick="smsImplementMsg(this,' + cid + ')">Schedule as new version</button>'
       + '<span class="ct-msg" id="exp-msg-' + cid + '"></span></div></details>';
     html += '</div>';
@@ -2915,15 +2917,29 @@ function expCompareGraph(list) {
   return '<div class="exp-legend"><span><i style="background:#17a673"></i> Yes rate</span><span><i style="background:#b91c1c"></i> STOP rate</span><span class="muted">faded = under ' + EXPERIMENT_MIN + ' sends</span></div>'
     + '<svg class="exp-graph" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + g + '</svg>';
 }
+// Auto-draft a gentler version the first time the box is opened, so it is clearly DIFFERENT from
+// the live message rather than an identical copy.
+function expOnToggle(det, cid) {
+  if (!det || !det.open) return;
+  const ta = $('exp-ta-' + cid);
+  if (ta && !ta.value.trim() && !ta.dataset.busy) smsSuggestOpener($('exp-sug-' + cid), cid);
+}
 async function smsSuggestOpener(btn, cid) {
   const ta = $('exp-ta-' + cid); const note = $('exp-msg-' + cid); if (!ta) return;
-  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Thinking…';
+  // always rewrite the LIVE opener, so "gentler" is measured against what is actually sending
+  const basis = (expLiveText[cid] || ta.value || '').trim();
+  if (!basis) { if (note) note.textContent = 'Nothing to rewrite yet.'; return; }
+  ta.dataset.busy = '1';
+  if (btn) btn.disabled = true; const old = btn ? btn.textContent : '';
+  if (btn) btn.textContent = 'Thinking…';
+  if (note) note.textContent = '';
   try {
-    const d = await (await fetch('/api/sms-suggest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ opener: ta.value }) })).json();
-    if (d && d.opener) { ta.value = d.opener; if (note) note.textContent = 'Suggested. Edit if you like, then Implement.'; }
-    else if (note) note.textContent = (d && d.error) || 'Could not draft one.';
-  } catch (e) { if (note) note.textContent = 'Could not draft one.'; }
-  btn.disabled = false; btn.textContent = old;
+    const d = await (await fetch('/api/sms-suggest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ opener: basis }) })).json();
+    if (d && d.opener) { ta.value = d.opener; if (note) note.textContent = 'Gentler draft ready. Edit if you like, then schedule.'; }
+    else if (note) note.textContent = (d && d.error) || 'Could not draft one (is AI configured?). You can type your own.';
+  } catch (e) { if (note) note.textContent = 'Could not draft one. You can type your own.'; }
+  if (btn) { btn.disabled = false; btn.textContent = old; }
+  delete ta.dataset.busy;
 }
 async function smsImplementMsg(btn, cid) {
   const ta = $('exp-ta-' + cid); if (!ta || !ta.value.trim()) { alert('Write the new message first.'); return; }
