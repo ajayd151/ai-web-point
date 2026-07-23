@@ -281,7 +281,15 @@ async function refreshAccess() {
   // ⚙️ Admin menu only for the OWNER (plan 'owner'). NOTE: team members are also
   // status 'comped', so we key on plan, not status, or they'd see Admin.
   const isOwner = acc.plan === 'owner';
-  if ($('nav-admin')) $('nav-admin').classList.toggle('hidden', !isOwner);
+  // team members with the 'sms' permission may reach the SMS screen; the rest of Admin stays owner-only
+  const canSms = isOwner || (acc.member && acc.perms && acc.perms.sms !== false);
+  if ($('nav-admin')) $('nav-admin').classList.toggle('hidden', !(isOwner || canSms));
+  if (!isOwner && canSms) {
+    // strip Admin down to just SMS for the member, and open it by default
+    document.querySelectorAll('.admin-navbtn').forEach((b) => { if (b.dataset.adminview !== 'sms') b.classList.add('hidden'); });
+    const smsBtn = document.querySelector('.admin-navbtn[data-adminview="sms"]');
+    if (smsBtn) { document.querySelectorAll('.admin-navbtn').forEach((x) => x.classList.toggle('active', x === smsBtn)); document.querySelectorAll('.admin-pane').forEach((p) => p.classList.toggle('hidden', p.id !== 'admin-sms')); }
+  }
   // 🔎 DeepDossier: private MVP, only the allow-listed account (server decides via /api/me).
   // Deep Dossier Leads lives as a left sub-menu inside this section, not a top tab.
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
@@ -2776,6 +2784,8 @@ async function loadSmsAdmin(opts) {
       note.classList.toggle('hidden', !!d.twilioReady);
       if (!d.twilioReady) note.textContent = '⚠️ Twilio is not connected yet. Campaigns can be built and mockups will generate, but no texts go out until the Twilio keys are added in Vercel. Ask Claude for the sign-up steps.';
     }
+    renderApprovals(d.approvals || [], !!d.isApprover);
+    renderApprovers(d.approvers, !!d.isOwner);
     renderCapRow(d.dailyCap != null ? d.dailyCap : 100, d.capExtra || 0, d.sentToday || 0);
     renderSmsStats(d.campaigns || [], d.readyCount || 0, d.stopCount || 0, d.linkOptouts || 0, d.brake || null);
     renderSmsCampaigns(d.campaigns || []);
@@ -3055,6 +3065,7 @@ async function smsBoostToday(b) {
   if (b) { b.disabled = true; b.textContent = 'Adding…'; }
   try {
     const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'boostToday', step: 50 }) })).json();
+    if (d && d.needsApproval) { if (b) { b.disabled = false; b.textContent = '＋ Send 50 more today'; } smsRequestApproval(d.action, d.label); return; }
     if (d && d.ok) loadSmsAdmin();
     else { if (b) { b.disabled = false; b.textContent = '＋ Send 50 more today'; } alert((d && d.error) || 'Could not raise the cap.'); }
   } catch (e) { if (b) { b.disabled = false; b.textContent = '＋ Send 50 more today'; } }
@@ -3068,11 +3079,57 @@ async function smsResetBoost(b) {
     else { if (b) { b.disabled = false; b.textContent = '↺ Undo boost'; } alert((d && d.error) || 'Could not undo.'); }
   } catch (e) { if (b) { b.disabled = false; b.textContent = '↺ Undo boost'; } }
 }
+// Pending approval requests, shown to approvers (owner + designated) at the top of the SMS screen.
+function renderApprovals(list, isApprover) {
+  const el = $('sms-approvals'); if (!el) return;
+  if (!isApprover || !list.length) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="appr-box"><div class="appr-hd">🔔 ' + list.length + ' approval request' + (list.length === 1 ? '' : 's') + ' waiting</div>' +
+    list.map((r) => '<div class="appr-row"><div class="appr-what"><b>' + esc(r.label || r.action) + '</b>'
+      + '<span class="muted"> · asked by ' + esc(r.by || '') + (r.reason ? ' · "' + esc(r.reason) + '"' : '') + '</span></div>'
+      + '<div class="appr-acts"><button class="batch-btn sm" type="button" onclick="smsDecideApproval(\'' + esc(r.id) + '\',\'approve\',this)">Approve</button>'
+      + '<button class="ghost sm" type="button" onclick="smsDecideApproval(\'' + esc(r.id) + '\',\'deny\',this)">Deny</button></div></div>').join('')
+    + '</div>';
+}
+// Owner-only: manage who can approve (add/remove approver emails). Shown in the Maintenance tab.
+function renderApprovers(approvers, isOwner) {
+  const el = $('sms-approvers'); if (!el) return;
+  if (!isOwner || approvers === undefined) { el.innerHTML = ''; return; }
+  const list = approvers || [];
+  el.innerHTML = '<div class="ov-rev-head">🛡️ SMS approvers</div>'
+    + '<p class="muted view-sub">These people (plus you) can approve a team member\'s request to raise send volume.</p>'
+    + '<div class="appr-list">' + (list.length ? list.map((e) => '<span class="appr-chip">' + esc(e) + ' <button type="button" onclick="smsManageApprover(\'remove\',\'' + esc(e) + '\')">✕</button></span>').join('') : '<span class="muted">No approvers yet, just you.</span>') + '</div>'
+    + '<div class="appr-add"><input id="sms-appr-email" type="email" placeholder="colleague@yourfirm.co.uk"><button class="ghost sm" type="button" onclick="smsManageApprover(\'add\', ($(\'sms-appr-email\')||{}).value)">➕ Add approver</button></div>';
+}
+function smsManageApprover(op, email) {
+  email = String(email || '').trim(); if (op === 'add' && !email) return;
+  fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'manageApprovers', op: op, email: email }) })
+    .then((r) => r.json()).then((d) => { if (d && d.ok) loadSmsAdmin(); else alert((d && d.error) || 'Could not save.'); })
+    .catch(() => alert('Could not save, try again.'));
+}
 // Manual override of the STOP-rate auto-pause (the "Resume now" button in the paused banner).
 async function smsResumeCold() {
   if (!confirm('Resume cold sending now, overriding the auto-pause? Only do this if you are happy with the current STOP rate.')) return;
-  try { await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'resumeCold' }) }); } catch (e) { /* refresh will show if it held */ }
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'resumeCold' }) })).json();
+    if (d && d.needsApproval) { smsRequestApproval(d.action, d.label); return; }
+  } catch (e) { /* refresh will show if it held */ }
   loadSmsAdmin();
+}
+// A team member hit a guarded (raise-volume) action: offer the safe option or a request to an approver.
+function smsRequestApproval(reqAction, label) {
+  const msg = 'Sorry, this is not something you can do directly.\n\n"' + (label || 'Raise send volume') + '" affects deliverability and can get the number suspended, so it needs an approver.\n\nSafe option: leave the volume as it is.\n\nSubmit this for approval instead?';
+  if (!confirm(msg)) return;
+  const reason = prompt('Add a short note for the approver (why you need this):', '') || '';
+  fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'submitApproval', reqAction: reqAction, reason: reason }) })
+    .then((r) => r.json()).then((d) => { alert(d && d.ok ? 'Sent to your approver. You will see it happen once they approve.' : ((d && d.error) || 'Could not submit.')); })
+    .catch(() => alert('Could not submit, try again.'));
+}
+async function smsDecideApproval(id, decision, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'decideApproval', id: id, decision: decision }) })).json();
+    if (d && d.ok) loadSmsAdmin(); else { alert((d && d.error) || 'Could not save.'); if (btn) { btn.disabled = false; } }
+  } catch (e) { if (btn) btn.disabled = false; }
 }
 function setSmsReadyBadge(n) {
   n = Number(n) || 0;

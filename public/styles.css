@@ -1572,3 +1572,16 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .nudge-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .nudge-title { font-weight: 700; font-size: 13px; color: #334155; }
 .nudge-remove { color: #b91c1c; }
+
+/* SMS approvals + approvers */
+.appr-box { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 12px 14px; margin: 0 0 16px; }
+.appr-hd { font-weight: 700; color: #92400e; margin-bottom: 8px; }
+.appr-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 0; border-top: 1px solid #fde9b8; }
+.appr-row:first-of-type { border-top: none; }
+.appr-what { font-size: 14px; }
+.appr-acts { display: flex; gap: 6px; }
+.appr-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 10px; }
+.appr-chip { background: #eef2f7; border-radius: 999px; padding: 4px 10px; font-size: 13px; }
+.appr-chip button { border: none; background: none; color: #b91c1c; cursor: pointer; font-weight: 700; }
+.appr-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.appr-add input { min-width: 220px; }

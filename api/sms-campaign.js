@@ -22,11 +22,40 @@ async function readJson(path) {
   return null;
 }
 
+// Actions a regular SMS team member may NOT do directly: raising send volume. They are blocked and
+// offered "do the safe thing, or submit for approval". Owners and designated approvers bypass this.
+const GUARDED = { boostToday: 'Raise today\'s send cap (+50)', resumeCold: 'Override the STOP-rate auto-pause' };
+
+// Approvers are kept in their OWN store (not the team-permission system, whose keys default to
+// ALLOW). The owner is always an approver; others are added by email here.
+async function readApprovers() { const j = await readJson('sms/_approvers.json'); return (j && Array.isArray(j.emails)) ? j.emails.map((e) => String(e).toLowerCase()) : []; }
+async function isApproverEmail(email) { if (isComped(email)) return true; const list = await readApprovers(); return list.includes(String(email || '').toLowerCase()); }
+async function readApprovals() { const j = await readJson('sms/_approvals.json'); return (j && Array.isArray(j.requests)) ? j.requests : []; }
+async function writeApprovals(reqs) { try { await put('sms/_approvals.json', JSON.stringify({ requests: reqs }), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); } catch (e) { /* best effort */ } }
+
+// The two guarded actions, as reusable helpers so the direct path (approver) and the approval path
+// run identical logic.
+async function doBoostToday(step, by) {
+  const day = todayKey(new Date());
+  const cur = (await readJson('sms/_capboost.json')) || {};
+  const base = (cur.day === day && Number(cur.extra) > 0) ? Number(cur.extra) : 0;
+  const extra = Math.min(base + Math.min(Math.max(Number(step) || 50, 1), 100), 400);
+  await put('sms/_capboost.json', JSON.stringify({ day: day, extra: extra, by: by || '', at: new Date().toISOString() }), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+  return { extra: extra };
+}
+async function doResumeCold(by) {
+  await put('sms/_breaker.json', JSON.stringify({ clearedAt: new Date().toISOString(), clearedBy: by || '' }), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   if (!verify(parseCookie(req, 'aiwp'), Date.now())) { res.status(401).json({ error: 'Please sign in first.' }); return; }
   const acct = await account(req);
-  if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
+  // SMS is usable by the owner and by team members who have the 'sms' permission (default on,
+  // the owner can switch it off per person in Team).
+  const canSms = isComped(acct.email) || (acct.member && acct.perms && acct.perms.sms !== false);
+  if (!canSms) { res.status(403).json({ error: 'You do not have SMS access. Ask your admin to switch it on.' }); return; }
+  const approver = await isApproverEmail(acct.email);
 
   if (req.method === 'GET') {
     const q = req.query || {};
@@ -58,6 +87,10 @@ module.exports = async (req, res) => {
       dailyCap: dailyCap,
       capExtra: capExtra,
       sentToday: sentToday,
+      isOwner: isComped(acct.email),
+      isApprover: approver,
+      approvals: approver ? (await readApprovals()).filter((r) => r.status === 'pending') : [],
+      approvers: isComped(acct.email) ? await readApprovers() : undefined,
       twilioReady: smsConfigured(),
     });
     return;
@@ -67,6 +100,54 @@ module.exports = async (req, res) => {
   if (typeof body === 'string') { try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; } }
   body = body || {};
   const action = String(body.action || '');
+
+  // GUARDRAIL: a non-approver hitting a volume action is blocked and told to use the safe option or
+  // request approval. It does NOT execute here.
+  if (GUARDED[action] && !approver) {
+    res.status(200).json({ needsApproval: true, action: action, label: GUARDED[action] });
+    return;
+  }
+
+  // A team member asks an approver to sign off a guarded action.
+  if (action === 'submitApproval') {
+    const reqAction = String(body.reqAction || '');
+    if (!GUARDED[reqAction]) { res.status(400).json({ error: 'Unknown request.' }); return; }
+    const reqs = await readApprovals();
+    reqs.unshift({ id: 'ap_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), by: acct.email, action: reqAction, label: GUARDED[reqAction], payload: (body.payload && typeof body.payload === 'object') ? body.payload : {}, reason: String(body.reason || '').slice(0, 300), status: 'pending', at: new Date().toISOString() });
+    await writeApprovals(reqs.slice(0, 200));
+    res.status(200).json({ ok: true });
+    return;
+  }
+  // An approver approves or denies a pending request; approval runs the action.
+  if (action === 'decideApproval') {
+    if (!approver) { res.status(403).json({ error: 'Approvers only.' }); return; }
+    const reqs = await readApprovals();
+    const r = reqs.find((x) => x.id === body.id);
+    if (!r || r.status !== 'pending') { res.status(400).json({ error: 'Already handled or not found.' }); return; }
+    if (body.decision === 'approve') {
+      try {
+        if (r.action === 'boostToday') await doBoostToday((r.payload && r.payload.step) || 50, acct.email);
+        else if (r.action === 'resumeCold') await doResumeCold(acct.email);
+      } catch (e) { res.status(500).json({ error: 'Could not run the approved action.' }); return; }
+      r.status = 'approved';
+    } else { r.status = 'denied'; }
+    r.decidedBy = acct.email; r.decidedAt = new Date().toISOString();
+    await writeApprovals(reqs);
+    res.status(200).json({ ok: true, status: r.status });
+    return;
+  }
+  // Owner manages the approver list (add/remove by email).
+  if (action === 'manageApprovers') {
+    if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
+    let list = await readApprovers();
+    const email = String(body.email || '').toLowerCase().trim();
+    if (body.op === 'add' && email) list = Array.from(new Set(list.concat(email)));
+    if (body.op === 'remove' && email) list = list.filter((e) => e !== email);
+    try { await put('sms/_approvers.json', JSON.stringify({ emails: list }), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
+    catch (e) { res.status(500).json({ error: 'Could not save approvers.' }); return; }
+    res.status(200).json({ ok: true, approvers: list });
+    return;
+  }
 
   if (action === 'preview') {
     const a = await buildAudience(body.filters);
@@ -164,16 +245,9 @@ module.exports = async (req, res) => {
   }
 
   if (action === 'boostToday') {
-    // one-day-only bump to today's send cap. Cumulative (tap twice for +100), capped so a stuck
-    // finger cannot blast, and stamped with today's date so it evaporates tomorrow by itself.
-    const day = todayKey(new Date());
-    const cur = (await readJson('sms/_capboost.json')) || {};
-    const base = (cur.day === day && Number(cur.extra) > 0) ? Number(cur.extra) : 0;
-    const step = Math.min(Math.max(Number(body.step) || 50, 1), 100);
-    const extra = Math.min(base + step, 400);
-    try { await put('sms/_capboost.json', JSON.stringify({ day: day, extra: extra, by: acct.email, at: new Date().toISOString() }), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
-    catch (e) { res.status(500).json({ error: 'Could not raise today\'s cap.' }); return; }
-    res.status(200).json({ ok: true, extra: extra });
+    // one-day-only bump to today's send cap (approver/owner path; members are gated above).
+    try { const r = await doBoostToday(body.step || 50, acct.email); res.status(200).json({ ok: true, extra: r.extra }); }
+    catch (e) { res.status(500).json({ error: 'Could not raise today\'s cap.' }); }
     return;
   }
 
@@ -187,11 +261,9 @@ module.exports = async (req, res) => {
   }
 
   if (action === 'resumeCold') {
-    // manual override of the STOP-rate auto-pause: clear the brake so the next worker tick resumes
-    // cold sends (it re-evaluates the rate against the current threshold straight away).
-    try { await put('sms/_breaker.json', JSON.stringify({ clearedAt: new Date().toISOString(), clearedBy: acct.email }), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
-    catch (e) { res.status(500).json({ error: 'Could not lift the pause.' }); return; }
-    res.status(200).json({ ok: true });
+    // manual override of the STOP-rate auto-pause (approver/owner path; members are gated above).
+    try { await doResumeCold(acct.email); res.status(200).json({ ok: true }); }
+    catch (e) { res.status(500).json({ error: 'Could not lift the pause.' }); }
     return;
   }
 
