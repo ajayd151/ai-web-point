@@ -1550,3 +1550,6 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .exp-ta { width: 100%; margin: 10px 0 8px; box-sizing: border-box; }
 .exp-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .batch-btn.sm, .ghost.sm { font-size: 13px; padding: 7px 12px; }
+.exp-starters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 8px; }
+.exp-star { appearance: none; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 999px; cursor: pointer; }
+.exp-star:hover { background: #f1f5f9; border-color: #94a3b8; }

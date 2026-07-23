@@ -2833,6 +2833,17 @@ async function loadHourly() {
 // ----- Message experiments: compare opener versions on real data, gated at 100 sends -----
 var EXPERIMENT_MIN = 100; // no conclusions below this many sends per version
 var expLiveText = {};     // the live opener per campaign, so Suggest always rewrites THAT
+// Ready-to-run gentler openers (from the 2026-07-22 review). One-click to load, then Schedule.
+var EXP_STARTERS = [
+  { label: 'D · Local', text: 'Hi {business}, I help local businesses around {location} get a simple website online. Yours caught my eye, so I\'d be glad to make you a free one-page example to look at. Would that be ok?' },
+  { label: 'C · Short', text: 'Hi {business}, quick one, I design little websites for local businesses in {location}. Would you like me to show you a free mock-up I could make for you? No obligation at all.' },
+  { label: 'A · Idea-led', text: 'Hi {business}, I build simple websites for local businesses around {location}. I had a quick idea for a one-page site for you, would it be ok to send a preview to look at?' },
+];
+function expStarter(cid, i) {
+  const ta = $('exp-ta-' + cid); const s = EXP_STARTERS[i]; if (!ta || !s) return;
+  ta.value = s.text;
+  const note = $('exp-msg-' + cid); if (note) note.textContent = 'Loaded ' + s.label + '. Edit if you like, then Schedule.';
+}
 function expDayLabel(ymd) {
   try { return new Date(ymd + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); } catch (e) { return ymd; }
 }
@@ -2875,13 +2886,13 @@ function renderExperiments(versions, today) {
     });
     html += '</tbody></table></div>';
     html += expCompareGraph(list);
-    // new-version editor. Opening it AUTO-drafts a gentler rewrite (so it is obviously different
-    // from the live one), which you can then edit or re-suggest. It goes live next morning.
+    // new-version editor: one-click starters, an AI Suggest, or type your own. Goes live next morning.
     expLiveText[cid] = live.text || '';
-    html += '<details class="exp-new" ontoggle="expOnToggle(this,' + cid + ')"><summary>✏️ Test a new message</summary>'
-      + '<p class="muted" style="font-size:12px;margin:8px 0 4px">A gentler rewrite drafts below automatically (edit it, or tap Suggest again for another). It goes live at <strong>8am tomorrow</strong> so the experiment runs over clean full days.</p>'
-      + '<textarea id="exp-ta-' + cid + '" rows="3" class="exp-ta" placeholder="Drafting a gentler version…"></textarea>'
-      + '<div class="exp-actions"><button id="exp-sug-' + cid + '" class="ghost sm" type="button" onclick="smsSuggestOpener(this,' + cid + ')">✨ Suggest another</button>'
+    html += '<details class="exp-new"><summary>✏️ Test a new message</summary>'
+      + '<p class="muted" style="font-size:12px;margin:8px 0 4px">Tap a ready starter, or Suggest for an AI rewrite, or write your own. It goes live at <strong>8am tomorrow</strong> so the experiment runs over clean full days.</p>'
+      + '<div class="exp-starters"><span class="muted">Starters:</span>' + EXP_STARTERS.map((s, i) => '<button type="button" class="exp-star" onclick="expStarter(' + cid + ',' + i + ')">' + esc(s.label) + '</button>').join('') + '</div>'
+      + '<textarea id="exp-ta-' + cid + '" rows="3" class="exp-ta" placeholder="Tap a starter above, tap Suggest, or write your own…"></textarea>'
+      + '<div class="exp-actions"><button id="exp-sug-' + cid + '" class="ghost sm" type="button" onclick="smsSuggestOpener(this,' + cid + ')">✨ Suggest a gentler version</button>'
       + '<button class="batch-btn sm" type="button" onclick="smsImplementMsg(this,' + cid + ')">Schedule as new version</button>'
       + '<span class="ct-msg" id="exp-msg-' + cid + '"></span></div></details>';
     html += '</div>';
@@ -2916,13 +2927,6 @@ function expCompareGraph(list) {
   });
   return '<div class="exp-legend"><span><i style="background:#17a673"></i> Yes rate</span><span><i style="background:#b91c1c"></i> STOP rate</span><span class="muted">faded = under ' + EXPERIMENT_MIN + ' sends</span></div>'
     + '<svg class="exp-graph" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + g + '</svg>';
-}
-// Auto-draft a gentler version the first time the box is opened, so it is clearly DIFFERENT from
-// the live message rather than an identical copy.
-function expOnToggle(det, cid) {
-  if (!det || !det.open) return;
-  const ta = $('exp-ta-' + cid);
-  if (ta && !ta.value.trim() && !ta.dataset.busy) smsSuggestOpener($('exp-sug-' + cid), cid);
 }
 async function smsSuggestOpener(btn, cid) {
   const ta = $('exp-ta-' + cid); const note = $('exp-msg-' + cid); if (!ta) return;
