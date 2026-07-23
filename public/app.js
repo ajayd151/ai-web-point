@@ -3193,17 +3193,27 @@ function renderSmsCampaigns(rows) {
     loadSmsAdmin();
   }));
 }
+var smsCallNowRows = [];
+function slugFromUrl(u) { const m = String(u || '').match(/\/v\/([a-z0-9-]+)/i); return m ? m[1] : ''; }
 function renderSmsCallNow(rows) {
   const el = $('sms-callnow'); if (!el) return;
+  smsCallNowRows = rows || [];
   if (!rows.length) { el.innerHTML = '<p class="muted">Nobody yet. Positive repliers appear here automatically.</p>'; return; }
-  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Business</th><th>Stage</th><th>Call</th><th>Mockup</th></tr></thead><tbody>' +
-    rows.map((r) => {
+  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Business</th><th>Stage</th><th>Call</th><th>Mockup</th><th>Full site</th></tr></thead><tbody>' +
+    rows.map((r, i) => {
       const stage = r.post_reply === 'positive' ? '🔥 Yes AFTER seeing the mockup' : (r.link_sent_at ? 'Sent the mockup, awaiting reply' : '✅ Said yes to seeing it');
       return '<tr><td><b>' + esc(r.name || '') + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span></td>' +
         '<td>' + stage + '</td>' +
         '<td>' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞 ' + esc(r.phone) + '</a>' : '') + '</td>' +
-        '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td></tr>';
+        '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td>' +
+        '<td><button class="mini rc-pounce sms-fullsite" data-idx="' + i + '" title="Build them the full website with Pounce">🐆 Full website</button></td></tr>';
     }).join('') + '</tbody></table></div>';
+  el.querySelectorAll('.sms-fullsite').forEach((b) => b.addEventListener('click', () => {
+    const r = smsCallNowRows[Number(b.dataset.idx)]; if (!r) return;
+    const slug = r.slug || slugFromUrl(r.view_url) || r.key;
+    if (!slug) { alert('This lead has no mockup yet, so there is nothing to build the full site from.'); return; }
+    openPounce({ slug: slug, name: r.name || '', location: r.location || '', category: r.category || '', phone: r.phone || '', phones: r.phone ? [r.phone] : [], viewUrl: r.view_url || '' });
+  }));
 }
 function renderSmsReplies(rows) {
   const el = $('sms-replies'); if (!el) return;
