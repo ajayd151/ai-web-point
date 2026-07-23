@@ -95,9 +95,13 @@ module.exports = async (req, res) => {
       if (!linkMessage || linkMessage.indexOf('{link}') < 0) { res.status(400).json({ error: 'Write the auto-send follow-up, and it must contain {link}.' }); return; }
     }
     const evergreen = !!body.evergreen;
-    const nudgeMessage = String(body.nudgeMessage || '').trim().slice(0, 480);
-    if (nudgeMessage && mode === 'ask' && nudgeMessage.indexOf('{link}') >= 0) {
-      res.status(400).json({ error: 'The nudge goes to people who have not said yes, so it cannot contain {link} in ask-first mode.' }); return;
+    // nudges: an ordered list. Back-compat: a single nudgeMessage/nudgeHours becomes the first one.
+    let nudges = Array.isArray(body.nudges) ? body.nudges : [];
+    if (!nudges.length && String(body.nudgeMessage || '').trim()) nudges = [{ message: body.nudgeMessage, hours: body.nudgeHours }];
+    for (const n of nudges) {
+      if (n && n.message && mode === 'ask' && String(n.message).indexOf('{link}') >= 0) {
+        res.status(400).json({ error: 'A nudge goes to people who have not said yes, so it cannot contain {link} in ask-first mode.' }); return;
+      }
     }
     const a = await buildAudience(body.filters);
     if (!a.items.length) { res.status(400).json({ error: 'Nobody matches those criteria.' }); return; }
@@ -113,8 +117,7 @@ module.exports = async (req, res) => {
       mode: mode,
       linkMessage: linkMessage,
       linkDelayMin: body.linkDelayMin,
-      nudgeMessage: nudgeMessage,
-      nudgeHours: body.nudgeHours,
+      nudges: nudges,
       evergreen: evergreen,
     });
     if (!id) { res.status(500).json({ error: 'Could not save the campaign.' }); return; }

@@ -2557,6 +2557,53 @@ async function loadCallCounts() {
   } catch (e) { /* leave the plain labels */ }
 }
 
+// ---- Multiple nudges: a dynamic list of {message, hours} rows in the campaign builder ----
+var nudgeSeq = 0;
+function nudgeRowHtml(idx, msg, hours) {
+  const id = 'smsb-nudgemsg-' + idx;
+  const hid = 'smsb-nudgehrs-' + idx;
+  return '<div class="nudge-row" data-nrow="' + idx + '">'
+    + '<div class="nudge-hd"><span class="nudge-title"></span><button type="button" class="linkbtn nudge-remove" onclick="removeNudgeRow(' + idx + ')">✕ Remove</button></div>'
+    + '<textarea id="' + id + '" rows="2" placeholder="No rush {business}, just checking you saw this. Happy to send the design over whenever suits.">' + esc(msg || '') + '</textarea>'
+    + '<div class="smsf-tags" data-target="' + id + '"><span class="smsf-tags-lbl">Insert:</span><button type="button" class="smsf-tag" data-tag="{business}">{business}</button><button type="button" class="smsf-tag" data-tag="{industry}">{industry}</button><button type="button" class="smsf-tag" data-tag="{location}">{location}</button><button type="button" class="smsf-tidy">✏️ Tidy</button></div>'
+    + '<div class="smsf-inline"><span>Send after</span> <input id="' + hid + '" type="number" min="1" max="168" value="' + (Number(hours) || 24) + '" /> <span class="muted nudge-gap"></span></div>'
+    + '</div>';
+}
+function addNudgeRow(msg, hours) {
+  const box = $('smsb-nudges'); if (!box) return -1;
+  const idx = nudgeSeq++;
+  box.insertAdjacentHTML('beforeend', nudgeRowHtml(idx, msg, hours));
+  renumberNudges();
+  smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
+  return idx;
+}
+function removeNudgeRow(idx) {
+  const row = document.querySelector('#smsb-nudges .nudge-row[data-nrow="' + idx + '"]'); if (row) row.remove();
+  renumberNudges();
+  smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
+}
+function renumberNudges() {
+  document.querySelectorAll('#smsb-nudges .nudge-row').forEach((r, i) => {
+    const t = r.querySelector('.nudge-title'); if (t) t.textContent = 'Nudge ' + (i + 1);
+    const g = r.querySelector('.nudge-gap'); if (g) g.textContent = i === 0 ? 'hour(s) of silence after the first message.' : 'hour(s) of silence after the previous nudge.';
+  });
+}
+function collectNudges() {
+  const out = [];
+  document.querySelectorAll('#smsb-nudges .nudge-row').forEach((r) => {
+    const ta = r.querySelector('textarea'); const hr = r.querySelector('input[type="number"]');
+    const msg = ((ta && ta.value) || '').trim(); if (!msg) return;
+    out.push({ message: msg, hours: Math.min(Math.max(Number(hr && hr.value) || 24, 1), 168) });
+  });
+  return out;
+}
+// set the FIRST nudge's text (used by Suggest and template load); makes a row if none exists
+function setFirstNudge(text) {
+  let row = document.querySelector('#smsb-nudges .nudge-row');
+  if (!row) { addNudgeRow(text, 24); return; }
+  const ta = row.querySelector('textarea'); if (ta) ta.value = text;
+}
+
 async function loadSmsAdmin(opts) {
   opts = opts || {};
   // sub-tabs (Create / Analytics / Campaigns / Replies / Maintenance): wired once
@@ -2614,33 +2661,44 @@ async function loadSmsAdmin(opts) {
       md.addEventListener('change', syncMode); syncMode();
     }
     // clickable {tags} insert at the cursor of their target textarea
-    document.querySelectorAll('#admin-sms .smsf-tag').forEach((b) => b.addEventListener('click', (e) => {
-      e.preventDefault();
-      const wrap = b.closest('.smsf-tags'); if (!wrap) return;
-      const ta = $(wrap.dataset.target); if (!ta) return;
-      const tag = b.dataset.tag || '';
-      const s0 = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
-      const s1 = ta.selectionEnd != null ? ta.selectionEnd : ta.value.length;
-      ta.value = ta.value.slice(0, s0) + tag + ta.value.slice(s1);
-      const pos = s0 + tag.length; ta.focus(); try { ta.setSelectionRange(pos, pos); } catch (err) {}
-      smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
-    }));
+    // Delegated so dynamically-added nudge rows get insert-tag + Tidy too.
+    const smsPane = $('admin-sms');
+    if (smsPane && !smsPane.dataset.tagwired) {
+      smsPane.dataset.tagwired = '1';
+      smsPane.addEventListener('click', async (e) => {
+        const tagBtn = e.target.closest('.smsf-tag');
+        if (tagBtn) {
+          e.preventDefault();
+          const wrap = tagBtn.closest('.smsf-tags'); const ta = wrap && $(wrap.dataset.target); if (!ta) return;
+          const tag = tagBtn.dataset.tag || '';
+          const s0 = ta.selectionStart != null ? ta.selectionStart : ta.value.length;
+          const s1 = ta.selectionEnd != null ? ta.selectionEnd : ta.value.length;
+          ta.value = ta.value.slice(0, s0) + tag + ta.value.slice(s1);
+          const pos = s0 + tag.length; ta.focus(); try { ta.setSelectionRange(pos, pos); } catch (err) {}
+          smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
+          return;
+        }
+        const tidyBtn = e.target.closest('.smsf-tidy');
+        if (tidyBtn) {
+          const wrap = tidyBtn.closest('.smsf-tags'); const ta = wrap && $(wrap.dataset.target); if (!ta || !ta.value.trim()) return;
+          const toks = [];
+          const prot = ta.value.replace(/\{[a-z]+\}/gi, (m) => { toks.push(m); return '[[U' + (toks.length - 1) + ']]'; });
+          const old = tidyBtn.textContent; tidyBtn.disabled = true; tidyBtn.textContent = '…';
+          try {
+            const d = await (await fetch('/api/grammar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: prot }) })).json();
+            let out = (d && d.text) || prot;
+            out = out.replace(/\[\[U(\d+)\]\]/g, (m, i) => toks[Number(i)] != null ? toks[Number(i)] : m);
+            ta.value = out; smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
+          } catch (err) { /* leave as is */ }
+          tidyBtn.disabled = false; tidyBtn.textContent = old;
+          return;
+        }
+      });
+    }
     const cb = $('smsb-count-btn'); if (cb) cb.addEventListener('click', (e) => { e.preventDefault(); smsLiveCount(); });
-    // "Tidy" grammar-fixes a message while protecting the {placeholders} from being altered
-    document.querySelectorAll('#admin-sms .smsf-tidy').forEach((b) => b.addEventListener('click', async () => {
-      const wrap = b.closest('.smsf-tags'); if (!wrap) return;
-      const ta = $(wrap.dataset.target); if (!ta || !ta.value.trim()) return;
-      const orig = ta.value; const toks = [];
-      const prot = orig.replace(/\{[a-z]+\}/gi, (m) => { toks.push(m); return '[[U' + (toks.length - 1) + ']]'; });
-      const old = b.textContent; b.disabled = true; b.textContent = '…';
-      try {
-        const d = await (await fetch('/api/grammar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: prot }) })).json();
-        let out = (d && d.text) || prot;
-        out = out.replace(/\[\[U(\d+)\]\]/g, (m, i) => toks[Number(i)] != null ? toks[Number(i)] : m);
-        ta.value = out; smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
-      } catch (e) { /* leave as is */ }
-      b.disabled = false; b.textContent = old;
-    }));
+    // nudges: start with one empty row, and the Add button appends more
+    const anb = $('smsb-addnudge'); if (anb) anb.addEventListener('click', (e) => { e.preventDefault(); addNudgeRow('', 24); });
+    if ($('smsb-nudges') && !document.querySelector('#smsb-nudges .nudge-row')) addNudgeRow('', 24);
     const sg = $('smsb-suggest'); if (sg) sg.addEventListener('click', async () => {
       const first = ($('smsb-msg') && $('smsb-msg').value || '').trim();
       const m = $('smsb-suggest-msg');
@@ -2651,7 +2709,7 @@ async function loadSmsAdmin(opts) {
         if (d.error) { if (m) m.textContent = d.error; }
         else {
           if (d.followUp && $('smsb-linkmsg')) $('smsb-linkmsg').value = d.followUp;
-          if (d.nudge && $('smsb-nudgemsg')) $('smsb-nudgemsg').value = d.nudge;
+          if (d.nudge) setFirstNudge(d.nudge);
           if (m) m.textContent = '✓ Drafted, edit as you like';
           smsPreviewOk = false; const c = $('smsb-create'); if (c) c.disabled = true;
         }
@@ -3106,8 +3164,7 @@ async function smsCreate() {
     linkMessage: linkMsg,
     linkDelayMin: Number(($('smsb-delay') && $('smsb-delay').value) || 1),
     evergreen: !!($('smsb-evergreen') && $('smsb-evergreen').checked),
-    nudgeMessage: ($('smsb-nudgemsg') && $('smsb-nudgemsg').value || '').trim(),
-    nudgeHours: Number(($('smsb-nudgehrs') && $('smsb-nudgehrs').value) || 24),
+    nudges: collectNudges(),
     filters: smsFilters(),
     scheduleAt: whenRaw ? new Date(whenRaw).toISOString() : '',
   };

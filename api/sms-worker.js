@@ -283,22 +283,37 @@ module.exports = async (req, res) => {
   // Google enrichment of old records, only when armed via Admin (costs money)
   try { out.enriched = await enrichCallList(); } catch (e) { /* next tick */ }
 
-  // One nudge each for non-responders whose window is up. Still a cold-ish touch, so it obeys the
-  // send window, the daily cap AND the pacing, and each recipient only ever gets one.
+  // Nudges for non-responders: a campaign can have SEVERAL, sent in order. For each candidate we
+  // work out which nudge is next (nudge_count) and whether its gap has elapsed (per-nudge hours,
+  // measured from the previous message). Still cold, so it obeys the window, daily cap and pacing.
   if (smsConfigured() && inSendWindow(now) && !brake.paused) {
-    const nudges = await dueNudges(SENDS_PER_TICK);
-    for (const it of nudges) {
+    const cands = await dueNudges(400);
+    let sentThisTick = 0;
+    for (const it of cands) {
+      if (sentThisTick >= SENDS_PER_TICK) break;
+      let list = [];
+      try { list = Array.isArray(it.nudges) ? it.nudges : (it.nudges ? JSON.parse(it.nudges) : []); } catch (e) { list = []; }
+      if (!list.length && it.nudge_message) list = [{ message: it.nudge_message, hours: it.nudge_hours || 24 }];
+      if (!list.length) continue;
+      let count = Number(it.nudge_count) || 0;
+      if (!count && it.nudged_at) count = 1;            // legacy single nudge already sent
+      if (count >= list.length) continue;              // all this person's nudges are done
+      const nud = list[count] || {};
+      const baseTs = count === 0 ? it.sent_at : it.nudged_at; // gap measured from the previous message
+      if (!baseTs) continue;
+      const gapMs = Math.min(Math.max(Number(nud.hours) || 24, 1), 168) * 3600000;
+      if (now < new Date(baseTs).getTime() + gapMs) continue; // not due yet
       const who = it.created_by || owner;
       const cap = (await limitFor('sms', who)) + capExtra;
       const used = await getDailyUsage(who, 'sms', day);
       if (paceRoom(cap, used, now) <= 0) { out.held.push('nudges held, pacing/cap'); break; }
-      const r = await sendSms(it.phone, renderMessage(it.nudge_message, it, base), base);
+      const r = await sendSms(it.phone, renderMessage(nud.message || '', it, base), base);
       if (r.ok) {
-        await markNudged(it.id);
+        await markNudged(it.id, count + 1);
         await bumpDailyUsage(who, 'sms', 1, day);
-        await logActivity(who, owner, 'message_sent', it.name + ' (nudge, no reply after ask)', it.name);
-        out.nudged = (out.nudged || 0) + 1;
-      } else { await markNudged(it.id); out.held.push('nudge failed: ' + r.error); }
+        await logActivity(who, owner, 'message_sent', it.name + ' (nudge ' + (count + 1) + ', no reply)', it.name);
+        out.nudged = (out.nudged || 0) + 1; sentThisTick++;
+      } else { await markNudged(it.id, count + 1); out.held.push('nudge failed: ' + r.error); }
     }
   }
 

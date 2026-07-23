@@ -1566,3 +1566,9 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .pq-accent-custom { display: inline-flex; align-items: center; gap: 8px; margin-top: 8px; }
 .pq-accent-custom input[type="color"] { width: 40px; height: 30px; padding: 0; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; }
 .pq-accent-custom input[type="text"] { width: 96px; }
+
+/* Multiple nudge rows in the campaign builder */
+.nudge-row { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; margin: 0 0 10px; }
+.nudge-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.nudge-title { font-weight: 700; font-size: 13px; color: #334155; }
+.nudge-remove { color: #b91c1c; }
