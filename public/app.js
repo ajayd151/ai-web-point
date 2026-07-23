@@ -2723,6 +2723,7 @@ async function loadSmsAdmin(opts) {
     renderSmsCampaigns(d.campaigns || []);
     renderSmsReplies(d.replies || []);
     renderSmsCallNow(d.callNow || []);
+    renderSmsJourney(d.journey || []);
     setSmsReadyBadge(d.readyCount != null ? d.readyCount : (d.callNow || []).length);
   } catch (e) { /* leave as is */ }
 }
@@ -3214,6 +3215,32 @@ function renderSmsCallNow(rows) {
     if (!slug) { alert('This lead has no mockup yet, so there is nothing to build the full site from.'); return; }
     openPounce({ slug: slug, name: r.name || '', location: r.location || '', category: r.category || '', phone: r.phone || '', phones: r.phone ? [r.phone] : [], viewUrl: r.view_url || '' });
   }));
+}
+// Per-person funnel with tick columns: what each engaged lead has and has not done yet.
+function renderSmsJourney(rows) {
+  const el = $('sms-journey'); if (!el) return;
+  rows = rows || [];
+  if (!rows.length) { el.innerHTML = '<p class="muted">Nobody has engaged yet. People appear here the moment they reply or get the mockup.</p>'; return; }
+  const tick = (on) => on ? '<span class="jtick on">✓</span>' : '<span class="jtick">·</span>';
+  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table jtable"><thead><tr><th>Business</th><th>Delivered</th><th>Said yes</th><th>Got mockup</th><th>Reacted</th><th>Nudged</th><th>Stage</th><th>Call</th><th>Mockup</th></tr></thead><tbody>' +
+    rows.map((r) => {
+      const reacted = r.post_reply === 'positive' ? '<span class="jtick on">👍</span>' : (r.post_reply === 'negative' ? '<span class="jtick no">👎</span>' : '<span class="jtick">·</span>');
+      const stage = r.post_reply === 'positive' ? '🔥 Yes after mockup'
+        : (r.post_reply === 'negative' ? 'Cooled after mockup'
+        : (r.link_sent_at ? 'Mockup sent, awaiting reply'
+        : (r.reply === 'positive' ? 'Said yes, mockup building'
+        : (r.reply === 'negative' ? 'Not interested'
+        : 'Replied'))));
+      return '<tr><td><b>' + esc(r.name || '') + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span></td>' +
+        '<td>' + tick(r.delivery === 'delivered') + '</td>' +
+        '<td>' + tick(r.reply === 'positive') + '</td>' +
+        '<td>' + tick(!!r.link_sent_at) + '</td>' +
+        '<td>' + reacted + '</td>' +
+        '<td>' + tick(!!r.nudged_at) + '</td>' +
+        '<td>' + stage + '</td>' +
+        '<td>' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞</a>' : '') + '</td>' +
+        '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
 }
 function renderSmsReplies(rows) {
   const el = $('sms-replies'); if (!el) return;

@@ -1553,3 +1553,10 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .exp-starters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0 8px; }
 .exp-star { appearance: none; border: 1px solid #cbd5e1; background: #fff; color: #334155; font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 999px; cursor: pointer; }
 .exp-star:hover { background: #f1f5f9; border-color: #94a3b8; }
+
+/* SMS lead-journey tick table */
+.jtable th, .jtable td { text-align: center; }
+.jtable th:first-child, .jtable td:first-child, .jtable th:nth-child(7), .jtable td:nth-child(7) { text-align: left; }
+.jtick { font-weight: 800; color: #cbd5e1; }
+.jtick.on { color: #17a673; }
+.jtick.no { color: #dc7b7b; }

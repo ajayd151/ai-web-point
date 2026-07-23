@@ -11,7 +11,7 @@ const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey, londonHour } = require('../lib/digest');
 const { getDailyUsage } = require('../lib/db');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, messageStats, addMsg, setCampaignMessage, listInbound, readyToCall } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -49,6 +49,7 @@ module.exports = async (req, res) => {
     res.status(200).json({
       campaigns: await listCampaigns(),
       replies: await listInbound(100),
+      journey: await journey(200),
       callNow: callNow.slice(0, 50),
       readyCount: callNow.length,
       stopCount: oc.reply,            // STOP texts, the number carriers police
