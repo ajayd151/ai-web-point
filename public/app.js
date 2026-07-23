@@ -2573,7 +2573,7 @@ function nudgeRowHtml(idx, msg, hours) {
   return '<div class="nudge-row" data-nrow="' + idx + '">'
     + '<div class="nudge-hd"><span class="nudge-title"></span><button type="button" class="linkbtn nudge-remove" onclick="removeNudgeRow(' + idx + ')">✕ Remove</button></div>'
     + '<textarea id="' + id + '" rows="2" placeholder="No rush {business}, just checking you saw this. Happy to send the design over whenever suits.">' + esc(msg || '') + '</textarea>'
-    + '<div class="smsf-tags" data-target="' + id + '"><span class="smsf-tags-lbl">Insert:</span><button type="button" class="smsf-tag" data-tag="{business}">{business}</button><button type="button" class="smsf-tag" data-tag="{industry}">{industry}</button><button type="button" class="smsf-tag" data-tag="{location}">{location}</button><button type="button" class="smsf-tidy">✏️ Tidy</button></div>'
+    + '<div class="smsf-tags" data-target="' + id + '"><span class="smsf-tags-lbl">Insert:</span><button type="button" class="smsf-tag" data-tag="{business}">{business}</button><button type="button" class="smsf-tag" data-tag="{industry}">{industry}</button><button type="button" class="smsf-tag" data-tag="{location}">{location}</button><button type="button" class="smsf-tag" data-tag="{reviews}">{reviews}</button><button type="button" class="smsf-tag" data-tag="{rating}">{rating}</button><button type="button" class="smsf-tidy">✏️ Tidy</button></div>'
     + '<div class="smsf-inline"><span>Send after</span> <input id="' + hid + '" type="number" min="1" max="168" value="' + (Number(hours) || 24) + '" /> <span class="muted nudge-gap"></span></div>'
     + '</div>';
 }

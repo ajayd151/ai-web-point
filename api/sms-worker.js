@@ -210,6 +210,8 @@ function renderMessage(template, item, base) {
     .split('{industry}').join(item.category || 'business')
     .split('{category}').join(item.category || 'business')
     .split('{location}').join(item.location || 'your area')
+    .split('{reviews}').join((item.reviews != null && item.reviews !== '') ? String(item.reviews) : 'only a few')
+    .split('{rating}').join((item.rating != null && item.rating !== '') ? String(item.rating) : '')
     .split('{link}').join(item.view_url || '');
   // Opt-out footer, the SOFT opt-out. A tap-to-opt-out LINK instead of "reply STOP": a link click
   // does not count against the carrier opt-out metric the way a STOP text does, so the number stays
