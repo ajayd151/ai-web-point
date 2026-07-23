@@ -2758,29 +2758,38 @@ function renderHourly(hours) {
   if (!hours || !hours.length) { el.innerHTML = ''; return; }
   const total = hours.reduce((a, x) => a + x.sends + x.positive + x.negative + x.stop + x.optout, 0);
   if (!total) { el.innerHTML = '<div class="ov-rev-head" style="margin-top:22px">🕐 By hour of day</div><p class="muted">Nothing yet, the hourly pattern appears once sends and replies come in.</p>'; return; }
-  const W = 760, H = 128, padL = 6, padT = 8, padB = 16, n = 24;
+  const W = 760, H = 150, padL = 8, padT = 18, padB = 20, n = 24;
   const cw = (W - padL * 2) / n;
-  const barW = Math.max(4, cw * 0.62);
+  const barW = Math.max(5, cw * 0.6);
   const chartH = H - padT - padB;
-  const xFor = (h) => padL + h * cw + (cw - barW) / 2;
+  const baseY = padT + chartH;
+  const cxFor = (h) => padL + h * cw + cw / 2;
+  const xFor = (h) => cxFor(h) - barW / 2;
   const maxSends = Math.max(1, ...hours.map((x) => x.sends));
   const maxResp = Math.max(1, ...hours.map((x) => x.positive + x.negative + x.stop + x.optout));
-  const hLabels = hours.map((x) => (x.h % 3 === 0) ? '<text x="' + (padL + x.h * cw + cw / 2) + '" y="' + (H - 4) + '" font-size="9" fill="#94a3b8" text-anchor="middle">' + x.h + '</text>' : '').join('');
+  // baseline + every hour labelled along the bottom (0-23)
+  const hLabels = '<line x1="' + padL + '" y1="' + baseY + '" x2="' + (W - padL) + '" y2="' + baseY + '" stroke="#e5e9f0"/>'
+    + hours.map((x) => '<text x="' + cxFor(x.h) + '" y="' + (H - 6) + '" font-size="8" fill="#94a3b8" text-anchor="middle">' + x.h + '</text>').join('');
+  const numLabel = (cx, top, v) => v > 0 ? '<text x="' + cx + '" y="' + (top - 3) + '" font-size="9" font-weight="700" fill="#334155" text-anchor="middle">' + v + '</text>' : '';
   let sends = '';
   hours.forEach((x) => {
-    const bh = (x.sends / maxSends) * chartH;
-    sends += '<rect x="' + xFor(x.h) + '" y="' + (padT + chartH - bh) + '" width="' + barW + '" height="' + Math.max(0, bh) + '" rx="2" fill="#5e7bea"><title>' + fmtHour(x.h) + ' · ' + x.sends + ' sent</title></rect>';
+    const bh = (x.sends / maxSends) * chartH; const top = baseY - bh;
+    sends += '<rect x="' + xFor(x.h) + '" y="' + top + '" width="' + barW + '" height="' + Math.max(0, bh) + '" rx="2.5" fill="#5e7bea"><title>' + fmtHour(x.h) + ' · ' + x.sends + ' sent</title></rect>';
+    sends += numLabel(cxFor(x.h), top, x.sends);
   });
   let resp = '';
   const segs = [['positive', '#17a673'], ['negative', '#dc7b7b'], ['stop', '#b91c1c'], ['optout', '#7c3aed']];
   hours.forEach((x) => {
-    let y = padT + chartH;
+    const tot = x.positive + x.negative + x.stop + x.optout;
+    const th = (tot / maxResp) * chartH;
+    let y = baseY;
     const tip = fmtHour(x.h) + ' · ' + x.positive + ' yes, ' + x.negative + ' no, ' + x.stop + ' STOP, ' + x.optout + ' opt-out';
     segs.forEach((sg) => {
       const v = x[sg[0]] || 0; if (!v) return;
       const sh = (v / maxResp) * chartH; y -= sh;
       resp += '<rect x="' + xFor(x.h) + '" y="' + y + '" width="' + barW + '" height="' + sh + '" fill="' + sg[1] + '"><title>' + tip + '</title></rect>';
     });
+    resp += numLabel(cxFor(x.h), baseY - th, tot);
   });
   const legend = '<div class="hourly-legend">'
     + '<span><i style="background:#5e7bea"></i> Sent</span>'
