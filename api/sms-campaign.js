@@ -121,7 +121,8 @@ module.exports = async (req, res) => {
       evergreen: evergreen,
     });
     if (!id) { res.status(500).json({ error: 'Could not save the campaign.' }); return; }
-    res.status(200).json({ ok: true, id: id, count: a.items.length, skipped: a.skipped });
+    if (body.hold) { await setCampaignStatus(id, 'paused'); } // built but held: no sends until resumed
+    res.status(200).json({ ok: true, id: id, count: a.items.length, skipped: a.skipped, held: !!body.hold });
     return;
   }
 

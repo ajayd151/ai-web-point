@@ -3165,6 +3165,7 @@ async function smsCreate() {
     linkDelayMin: Number(($('smsb-delay') && $('smsb-delay').value) || 1),
     evergreen: !!($('smsb-evergreen') && $('smsb-evergreen').checked),
     nudges: collectNudges(),
+    hold: !!($('smsb-hold') && $('smsb-hold').checked),
     filters: smsFilters(),
     scheduleAt: whenRaw ? new Date(whenRaw).toISOString() : '',
   };
