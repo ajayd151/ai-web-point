@@ -2827,7 +2827,103 @@ function bestWindowCallout(hours) {
   return '<div class="best-window low">🎯 <strong>Best time to send:</strong> replies are still too spread out to name a clear window. Give it a few more days.</div>';
 }
 async function loadHourly() {
-  try { const d = await (await fetch('/api/sms-campaign?hourly=1')).json(); if (d) { renderHourly(d.hourly); renderIndustry(d.industry); } } catch (e) { /* leave empty */ }
+  try { const d = await (await fetch('/api/sms-campaign?hourly=1')).json(); if (d) { renderHourly(d.hourly); renderIndustry(d.industry); renderExperiments(d.messages); } } catch (e) { /* leave empty */ }
+}
+
+// ----- Message experiments: compare opener versions on real data, gated at 100 sends -----
+var EXPERIMENT_MIN = 100; // no conclusions below this many sends per version
+function renderExperiments(versions) {
+  const el = $('sms-experiments'); if (!el) return;
+  versions = versions || [];
+  if (!versions.length) { el.innerHTML = ''; return; }
+  // group by campaign, keep version order (v1, v2, ...)
+  const byCamp = {};
+  versions.forEach((v) => { (byCamp[v.campaignId] = byCamp[v.campaignId] || { name: v.campaignName, list: [] }).list.push(v); });
+  let html = '<div class="ov-rev-head" style="margin-top:22px">🧪 Message experiments <span class="muted" style="font-weight:400;font-size:12px">· change the opener, then compare on real data. A version needs ' + EXPERIMENT_MIN + '+ sends before it is judged.</span></div>';
+  Object.keys(byCamp).forEach((cid) => {
+    const camp = byCamp[cid];
+    const list = camp.list;
+    const current = list[list.length - 1];
+    html += '<div class="exp-camp"><div class="exp-camp-name">' + esc(camp.name) + '</div>';
+    // versions table
+    html += '<div class="tgt-scroll"><table class="cust-table exp-table"><thead><tr><th>Version</th><th>Message</th><th class="num">Sent</th><th class="num">Yes</th><th class="num">STOP</th><th class="num">Opt-out</th><th>Status</th></tr></thead><tbody>';
+    list.forEach((v, i) => {
+      const sent = Number(v.sent) || 0;
+      const yesR = sent ? Math.round((v.yes / sent) * 100) : 0;
+      const stopR = sent ? Math.round((v.stop / sent) * 1000) / 10 : 0;
+      const optR = sent ? Math.round((v.optout / sent) * 1000) / 10 : 0;
+      const ready = sent >= EXPERIMENT_MIN;
+      const status = ready ? '<span class="exp-badge ready">ready</span>' : '<span class="exp-badge gather">gathering ' + sent + '/' + EXPERIMENT_MIN + '</span>';
+      const isCur = i === list.length - 1;
+      html += '<tr' + (isCur ? ' class="exp-cur"' : '') + '><td>v' + (i + 1) + (isCur ? ' <span class="exp-live">live</span>' : '') + '</td>'
+        + '<td class="exp-msg" title="' + esc(v.text || '') + '">' + esc((v.text || '').slice(0, 70)) + ((v.text || '').length > 70 ? '…' : '') + '</td>'
+        + '<td class="num">' + sent + '</td>'
+        + '<td class="num">' + (v.yes || 0) + ' <span class="muted">' + yesR + '%</span></td>'
+        + '<td class="num' + (stopR >= 3 ? ' bad' : '') + '">' + (v.stop || 0) + ' <span class="muted">' + stopR + '%</span></td>'
+        + '<td class="num">' + (v.optout || 0) + ' <span class="muted">' + optR + '%</span></td>'
+        + '<td>' + status + '</td></tr>';
+    });
+    html += '</tbody></table></div>';
+    html += expCompareGraph(list);
+    // new-version editor
+    html += '<details class="exp-new"><summary>✏️ Test a new message</summary>'
+      + '<textarea id="exp-ta-' + cid + '" rows="3" class="exp-ta">' + esc(current.text || '') + '</textarea>'
+      + '<div class="exp-actions"><button class="ghost sm" type="button" onclick="smsSuggestOpener(this,' + cid + ')">✨ Suggest a gentler version</button>'
+      + '<button class="batch-btn sm" type="button" onclick="smsImplementMsg(this,' + cid + ')">Implement as new version</button>'
+      + '<span class="ct-msg" id="exp-msg-' + cid + '"></span></div>'
+      + '<p class="muted" style="font-size:12px">This starts a fresh experiment: new sends use it and are tracked separately, the old versions stay in the history above.</p></details>';
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+// small comparison graph: yes-rate (green) vs stop-rate (red) per version. Faded until 100 sends.
+function expCompareGraph(list) {
+  const withData = list.filter((v) => (Number(v.sent) || 0) > 0);
+  if (withData.length < 2) return ''; // nothing to compare yet
+  const W = 620, H = 130, padL = 8, padT = 12, padB = 26;
+  const n = withData.length;
+  const groupW = (W - padL * 2) / n;
+  const bw = Math.min(26, groupW * 0.32);
+  const chartH = H - padT - padB;
+  const baseY = padT + chartH;
+  const maxYes = Math.max(5, ...withData.map((v) => v.sent ? (v.yes / v.sent * 100) : 0));
+  let g = '<line x1="' + padL + '" y1="' + baseY + '" x2="' + (W - padL) + '" y2="' + baseY + '" stroke="#e5e9f0"/>';
+  withData.forEach((v, i) => {
+    const cx = padL + groupW * i + groupW / 2;
+    const idx = list.indexOf(v) + 1;
+    const faded = (Number(v.sent) || 0) < EXPERIMENT_MIN;
+    const yesPct = v.sent ? (v.yes / v.sent * 100) : 0;
+    const stopPct = v.sent ? (v.stop / v.sent * 100) : 0;
+    const yh = (yesPct / maxYes) * chartH;
+    const sh = (Math.min(stopPct, maxYes) / maxYes) * chartH;
+    const op = faded ? '0.4' : '1';
+    g += '<rect x="' + (cx - bw - 2) + '" y="' + (baseY - yh) + '" width="' + bw + '" height="' + Math.max(0, yh) + '" rx="2" fill="#17a673" opacity="' + op + '"><title>v' + idx + ' yes ' + Math.round(yesPct) + '%</title></rect>';
+    g += '<rect x="' + (cx + 2) + '" y="' + (baseY - sh) + '" width="' + bw + '" height="' + Math.max(0, sh) + '" rx="2" fill="#b91c1c" opacity="' + op + '"><title>v' + idx + ' stop ' + (Math.round(stopPct * 10) / 10) + '%</title></rect>';
+    g += '<text x="' + cx + '" y="' + (H - 10) + '" font-size="10" fill="#475569" text-anchor="middle">v' + idx + '</text>';
+    g += '<text x="' + cx + '" y="' + (H - 1) + '" font-size="8" fill="#94a3b8" text-anchor="middle">' + v.sent + ' sent' + (faded ? ' (thin)' : '') + '</text>';
+  });
+  return '<div class="exp-legend"><span><i style="background:#17a673"></i> Yes rate</span><span><i style="background:#b91c1c"></i> STOP rate</span><span class="muted">faded = under ' + EXPERIMENT_MIN + ' sends</span></div>'
+    + '<svg class="exp-graph" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + g + '</svg>';
+}
+async function smsSuggestOpener(btn, cid) {
+  const ta = $('exp-ta-' + cid); const note = $('exp-msg-' + cid); if (!ta) return;
+  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Thinking…';
+  try {
+    const d = await (await fetch('/api/sms-suggest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ opener: ta.value }) })).json();
+    if (d && d.opener) { ta.value = d.opener; if (note) note.textContent = 'Suggested. Edit if you like, then Implement.'; }
+    else if (note) note.textContent = (d && d.error) || 'Could not draft one.';
+  } catch (e) { if (note) note.textContent = 'Could not draft one.'; }
+  btn.disabled = false; btn.textContent = old;
+}
+async function smsImplementMsg(btn, cid) {
+  const ta = $('exp-ta-' + cid); if (!ta || !ta.value.trim()) { alert('Write the new message first.'); return; }
+  if (!confirm('Make this the live opener from now on? It starts a new experiment, the old versions stay in the history.')) return;
+  btn.disabled = true; const old = btn.textContent; btn.textContent = 'Implementing…';
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'implementMsg', campaignId: cid, text: ta.value.trim() }) })).json();
+    if (d && d.ok) loadSmsAdmin();
+    else { btn.disabled = false; btn.textContent = old; alert((d && d.error) || 'Could not implement.'); }
+  } catch (e) { btn.disabled = false; btn.textContent = old; }
 }
 // Reply performance by industry/niche tag: which niches say yes, so targeting can lean in.
 function renderIndustry(rows) {

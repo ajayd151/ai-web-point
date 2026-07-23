@@ -1529,3 +1529,23 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .ind-rate > span { display: block; height: 100%; background: #17a673; }
 .ind-rate.thin > span { background: #cbd5e1; }
 .ind-thin { color: #cbd5e1; margin-left: 3px; }
+
+/* SMS message experiments */
+.exp-camp { margin: 10px 0 18px; }
+.exp-camp-name { font-weight: 700; font-size: 15px; margin: 0 0 8px; }
+.exp-table td.num, .exp-table th.num { text-align: right; white-space: nowrap; }
+.exp-table td.num.bad { color: #b91c1c; font-weight: 700; }
+.exp-table .exp-msg { max-width: 280px; color: #475569; }
+.exp-table tr.exp-cur { background: #f0fdfa; }
+.exp-live { background: #14b8a6; color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 8px; vertical-align: 1px; }
+.exp-badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 8px; }
+.exp-badge.ready { background: #dcfce7; color: #15803d; }
+.exp-badge.gather { background: #f1f5f9; color: #64748b; }
+.exp-legend { display: flex; gap: 14px; font-size: 12px; color: #475569; margin: 10px 0 4px; align-items: center; }
+.exp-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.exp-graph { width: 100%; max-width: 620px; background: #fff; border: 1px solid #eef2f7; border-radius: 8px; }
+.exp-new { margin-top: 12px; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 12px; }
+.exp-new summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.exp-ta { width: 100%; margin: 10px 0 8px; box-sizing: border-box; }
+.exp-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.batch-btn.sm, .ghost.sm { font-size: 13px; padding: 7px 12px; }

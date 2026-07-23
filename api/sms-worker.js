@@ -4,7 +4,7 @@
 // Sends only happen inside working hours (Mon-Fri, 09:00-17:59 UK) and inside the daily 'sms'
 // cap from Admin > Limits. Without Twilio keys, mockups still build but sends wait, so a campaign
 // can be prepared before the account exists.
-const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, campaignKeys, addItemsToCampaign, stampToppedUp, stopWindow } = require('../lib/smsdb');
+const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, campaignKeys, addItemsToCampaign, stampToppedUp, stopWindow, ensureBaseVersions, currentMsgId } = require('../lib/smsdb');
 const { buildAudience } = require('../lib/smsaudience');
 const { sendSms, smsConfigured, lookupPhone, optOutUrl } = require('../lib/sms');
 const { list, put } = require('@vercel/blob');
@@ -237,6 +237,7 @@ module.exports = async (req, res) => {
   // Auto STOP-rate safety-brake, evaluated once per tick. When paused, only COLD sends (openers +
   // nudges) are held. Warm follow-ups to people who already replied YES keep flowing: those are
   // wanted replies, not cold outreach, and holding them would be rude.
+  try { await ensureBaseVersions(); } catch (e) { /* message-experiment backfill, non-fatal */ }
   let brake = { paused: false };
   try { brake = await evalStopBrake(now); } catch (e) { /* fail open: never let the brake itself stop everything */ }
   out.stopRate = Math.round((brake.rate || 0) * 10) / 10;
@@ -353,11 +354,12 @@ module.exports = async (req, res) => {
     if (!room) { out.held.push(used >= cap ? ('daily cap reached (' + cap + ')') : 'paced, more later today'); continue; }
 
     const ready = await itemsInState(c.id, 'ready', Math.min(SENDS_PER_TICK, room));
+    const curMsgId = ready.length ? await currentMsgId(c.id) : null; // stamp which opener version each send used
     for (const it of ready) {
       const msg = renderMessage(c.message, it, base);
       const r = await sendSms(it.phone, msg, base);
       if (r.ok) {
-        await setItem(it.id, { state: 'sent', sid: r.sid });
+        await setItem(it.id, { state: 'sent', sid: r.sid, msgId: curMsgId });
         await bumpDailyUsage(c.created_by || owner, 'sms', 1, day);
         await logActivity(c.created_by || owner, owner, 'message_sent', it.name + ' (SMS campaign ' + c.id + ')', it.name);
         out.sent++;
