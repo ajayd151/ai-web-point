@@ -3227,7 +3227,7 @@ function renderSmsJourney(rows) {
   const tick = (on, ts) => on ? (ts ? '<span class="jstamp">' + esc(fmtStamp(ts)) + '</span>' : '<span class="jtick on">✓</span>') : '<span class="jtick">·</span>';
   el.innerHTML = '<div class="tgt-scroll"><table class="cust-table jtable"><thead><tr><th>Business</th><th>Sent</th><th>Delivered</th><th>Said yes</th><th>Mockup sent</th><th>Viewed</th><th>Reacted</th><th>Nudged</th><th>Stage</th><th>Call</th><th>Mockup</th></tr></thead><tbody>' +
     rows.map((r) => {
-      const reacted = r.post_reply === 'positive' ? '<span class="jstamp pos">👍 ' + esc(fmtStamp(r.last_view || r.reply_at) || 'yes') + '</span>'
+      const reacted = r.post_reply === 'positive' ? '<span class="jstamp pos">👍 yes</span>'
         : (r.post_reply === 'negative' ? '<span class="jstamp neg">👎 no</span>' : '<span class="jtick">·</span>');
       const stage = r.post_reply === 'positive' ? '🔥 Yes after mockup'
         : (r.post_reply === 'negative' ? 'Cooled after mockup'
