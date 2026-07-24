@@ -1604,24 +1604,36 @@ function loadSpend() {
 }
 function spendTotal(s) { return Object.keys(COST_EST).reduce((t, k) => t + (s[k + 'C'] || 0), 0); }
 function estSearchCost(areas) { return Math.max(1, areas || 1) * COST_EST.search; }
+// full label + order for the breakdown, including the server-only lines (SMS + number checks)
+const SPEND_LABEL = { search: 'Searches', mockup: 'Mockups', prowl: 'Prowls', pounce: 'Websites', sms: 'SMS sent', lookup: 'Number checks' };
+const SPEND_ORDER = ['search', 'mockup', 'prowl', 'pounce', 'sms', 'lookup'];
+let serverCosts = null; // { counts, cost, total } for the WHOLE workspace today (incl. background SMS)
+async function refreshServerCosts() {
+  try { const d = await (await fetch('/api/costs')).json(); if (d && d.counts) { serverCosts = d; renderSpendMeter(); } } catch (e) { /* keep local */ }
+}
 function recordSpend(kind, amount) {
   if (!COST_EST[kind]) return 0;
   const c = (amount != null ? amount : COST_EST[kind]);
+  // optimistic local bump for instant feedback...
   const s = loadSpend();
   s[kind] = (s[kind] || 0) + 1;
   s[kind + 'C'] = (s[kind + 'C'] || 0) + c;
   try { localStorage.setItem('aiwp_spend', JSON.stringify(s)); } catch (e) {}
+  // ...and tell the server so it counts across the whole workspace (any device / user)
+  try { fetch('/api/costs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind: kind }), keepalive: true }); } catch (e) {}
   renderSpendMeter(true);
+  setTimeout(refreshServerCosts, 1500);
   return c;
 }
 let spendOpen = false;
 function renderSpendMeter(flash) {
   const el = $('spend-meter'); if (!el) return;
-  const s = loadSpend();
-  const tot = spendTotal(s);
-  const rows = Object.keys(COST_EST).map((k) => `<div class="sp-row"><span>${COST_LABEL[k]}: ${s[k] || 0}</span><span>~$${(s[k + 'C'] || 0).toFixed(2)}</span></div>`).join('');
+  let counts; let cost; let tot;
+  if (serverCosts && serverCosts.counts) { counts = serverCosts.counts; cost = serverCosts.cost || {}; tot = serverCosts.total || 0; }
+  else { const s = loadSpend(); counts = {}; cost = {}; Object.keys(COST_EST).forEach((k) => { counts[k] = s[k] || 0; cost[k] = COST_EST[k]; }); tot = spendTotal(s); }
+  const rows = SPEND_ORDER.filter((k) => cost[k] != null).map((k) => `<div class="sp-row"><span>${SPEND_LABEL[k]}: ${counts[k] || 0}</span><span>~$${(((counts[k] || 0) * (cost[k] || 0))).toFixed(2)}</span></div>`).join('');
   el.innerHTML = `<button id="spend-pill" title="Rough estimate of today's API cost, click for the breakdown">💷 Today ~$${tot.toFixed(2)} <span class="muted">est</span></button>` +
-    `<div id="spend-panel"${spendOpen ? '' : ' class="hidden"'}><div class="sp-head">Estimated API cost today</div>${rows}<div class="sp-row sp-tot"><span>Total</span><span>~$${tot.toFixed(2)}</span></div><p class="sp-note">Rough estimates in USD. Your real spend is on your <b>Google Cloud billing</b> and <b>OpenAI usage</b> dashboards. Counts reset daily on this device.</p></div>`;
+    `<div id="spend-panel"${spendOpen ? '' : ' class="hidden"'}><div class="sp-head">Estimated API cost today</div>${rows}<div class="sp-row sp-tot"><span>Total</span><span>~$${tot.toFixed(2)}</span></div><p class="sp-note">Rough USD estimate for the whole workspace, <b>including SMS campaigns running in the background</b>. Exact spend is on your <b>Google Cloud</b>, <b>OpenAI</b> and <b>Twilio</b> dashboards.</p></div>`;
   $('spend-pill').addEventListener('click', () => { spendOpen = !spendOpen; renderSpendMeter(); });
   if (flash) { const p = $('spend-pill'); if (p) { p.classList.add('flash'); setTimeout(() => { try { p.classList.remove('flash'); } catch (e) {} }, 600); } }
 }
@@ -2176,6 +2188,8 @@ $('rs-clear').addEventListener('click', () => {
 });
 renderRecentSearches();
 renderSpendMeter();
+refreshServerCosts(); // pull the real workspace total (incl. background SMS) on load
+setInterval(() => { if (authed) refreshServerCosts(); }, 120000); // and keep it fresh
 
 // ---- performance dashboard -----------------------------------------------
 // Generic best-practice tips (NOT based on your data, general outreach advice)

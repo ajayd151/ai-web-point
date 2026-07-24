@@ -115,6 +115,7 @@ async function validatePhones(base) {
       : (digits.startsWith('00') ? ('+' + digits.slice(2))
       : (digits.startsWith('0') ? ('+44' + digits.slice(1)) : ('+44' + digits)));
     const r = await lookupPhone(e164);
+    if (r.checked) { try { await bumpDailyUsage(ownerEmail(), 'cost:lookup', 1, todayKey(new Date())); } catch (e) { /* soft */ } }
     if (!r.checked) { chk[c.key] = { at: new Date().toISOString(), error: 1 }; continue; }
     chk[c.key] = { valid: !!r.valid, type: r.type || '', at: new Date().toISOString() };
     if (!r.valid) {
@@ -274,12 +275,13 @@ module.exports = async (req, res) => {
         }
         await setItem(it.id, { slug: g.slug, viewUrl: g.viewUrl });
         it.view_url = g.viewUrl;
-        out.mockups++;
+        out.mockups++; await bumpDailyUsage(owner, 'cost:mockup', 1, day);
       }
       const msg = renderMessage(it.link_message || 'Here it is: {link}', it, base);
       const r = await sendSms(it.phone, msg, base, it.from_number || PRIMARY); // reply from the same number they know
       if (r.ok) {
         await markLinkSent(it.id, r.sid);
+        await bumpDailyUsage(owner, 'cost:sms', 1, day);
         await logActivity(it.created_by || owner, owner, 'message_sent', it.name + ' (mockup link after YES)', it.name);
         out.linked = (out.linked || 0) + 1;
       } else { out.held.push('link send failed: ' + r.error); }
@@ -322,6 +324,7 @@ module.exports = async (req, res) => {
       if (r.ok) {
         await markNudged(it.id, count + 1);
         await bumpDailyUsage(who, capKind, 1, day);
+        await bumpDailyUsage(owner, 'cost:sms', 1, day);
         await logActivity(who, owner, 'message_sent', it.name + ' (nudge ' + (count + 1) + ', no reply)', it.name);
         out.nudged = (out.nudged || 0) + 1; sentThisTick++;
       } else { await markNudged(it.id, count + 1); out.held.push('nudge failed: ' + r.error); }
@@ -356,7 +359,7 @@ module.exports = async (req, res) => {
         if (genBudget <= 0) break;
         genBudget--;
         const g = await generateMockup(base, it);
-        if (g.ok) { await setItem(it.id, { state: 'ready', slug: g.slug, viewUrl: g.viewUrl }); out.mockups++; }
+        if (g.ok) { await setItem(it.id, { state: 'ready', slug: g.slug, viewUrl: g.viewUrl }); out.mockups++; await bumpDailyUsage(owner, 'cost:mockup', 1, day); }
         else {
           // one retry on the next tick, then give up on this recipient
           if (it.error) { await setItem(it.id, { state: 'failed', error: g.error }); out.failed++; }
@@ -392,6 +395,7 @@ module.exports = async (req, res) => {
       if (r.ok) {
         await setItem(it.id, { state: 'sent', sid: r.sid, msgId: curMsgId });
         await bumpDailyUsage(c.created_by || owner, capKind, 1, day);
+        await bumpDailyUsage(owner, 'cost:sms', 1, day);
         await logActivity(c.created_by || owner, owner, 'message_sent', it.name + ' (SMS campaign ' + c.id + ')', it.name);
         out.sent++;
       } else {
