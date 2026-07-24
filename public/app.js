@@ -3346,24 +3346,24 @@ function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake, range) 
   const replied = t.positive + t.negative;
   const noReply = Math.max(0, t.sent - replied);
   const tiles =
-    ovTile('📤', t.sent, 'Sent', sentSub) +
-    ovTile('✅', t.delivered, 'Delivered', t.sent ? Math.round((t.delivered / t.sent) * 100) + '% of sent' : '') +
-    ovTile('⏳', remaining, 'Left to send', 'queued for later') +
-    ovTile('👍', t.positive, 'Positive replies', t.hot ? (t.hot + ' after the mockup') : '') +
-    ovTile('👎', t.negative, 'Negative replies', '') +
-    ovTile('🤫', noReply, 'No reply yet', t.nudged ? (t.nudged + ' nudged') : '') +
-    ovTile('📞', readyCount || 0, 'Ready to call', 'waiting for you') +
+    ovTile('📤', t.sent, 'Sent', sentSub, 'sent') +
+    ovTile('✅', t.delivered, 'Delivered', t.sent ? Math.round((t.delivered / t.sent) * 100) + '% of sent' : '', 'delivered') +
+    ovTile('⏳', remaining, 'Left to send', 'queued for later', 'left') +
+    ovTile('👍', t.positive, 'Positive replies', t.hot ? (t.hot + ' after the mockup') : '', 'positive') +
+    ovTile('👎', t.negative, 'Negative replies', '', 'negative') +
+    ovTile('🤫', noReply, 'No reply yet', t.nudged ? (t.nudged + ' nudged') : '', 'noreply') +
+    ovTile('📞', readyCount || 0, 'Ready to call', 'waiting for you', 'ready') +
     (function () {
       const stops = Number(stopCount) || 0;
       const rate = t.sent ? (stops / t.sent * 100) : 0;
       const band = rate < 1 ? 'good' : (rate <= 2 ? 'warn' : 'bad');
       const sub = t.sent ? (rate.toFixed(1) + '% of sent · keep under 1%') : 'keep under 1%';
-      return '<div class="ov-tile stoprate ' + band + '"><div class="ov-ico">🚫</div><div class="ov-num">' + stops + '</div><div class="ov-label">Opted out (STOP)</div><div class="ov-sub">' + esc(sub) + '</div></div>';
+      return '<div class="ov-tile ov-clk stoprate ' + band + '" data-metric="stop" data-label="Opted out (STOP)"><div class="ov-ico">🚫</div><div class="ov-num">' + stops + '</div><div class="ov-label">Opted out (STOP)</div><div class="ov-sub">' + esc(sub) + '</div></div>';
     })() +
     (function () {
       const link = Number(linkOptouts) || 0;
       const sub = link > 0 ? 'link works ✓ · not a STOP' : 'tap-to-opt-out (soft)';
-      return '<div class="ov-tile"><div class="ov-ico">🔕</div><div class="ov-num">' + link + '</div><div class="ov-label">Opted out (link)</div><div class="ov-sub">' + esc(sub) + '</div></div>';
+      return '<div class="ov-tile ov-clk" data-metric="link" data-label="Opted out (link)"><div class="ov-ico">🔕</div><div class="ov-num">' + link + '</div><div class="ov-label">Opted out (link)</div><div class="ov-sub">' + esc(sub) + '</div></div>';
     })();
   // reply-breakdown bar (of everyone we have texted). STOP opt-outs are drawn as their OWN band,
   // pulled out of "no reply", so they are never lumped in with people we simply have not heard from.
@@ -3384,7 +3384,43 @@ function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake, range) 
       + ' <button class="brake-resume" type="button" onclick="smsResumeCold()">▶️ Resume now</button></div>';
   }
   el.innerHTML = banner + '<div class="ov-stats">' + tiles + '</div>' + bar;
+  if (!el.dataset.drillwired) {
+    el.dataset.drillwired = '1';
+    el.addEventListener('click', (e) => { const tile = e.target.closest('.ov-clk'); if (tile && tile.dataset.metric) openMetricDrill(tile.dataset.metric, tile.dataset.label || ''); });
+  }
 }
+// Click a tile -> a modal listing the actual records behind that number (respecting the date filter).
+async function openMetricDrill(metric, label) {
+  const f = smsRange ? smsRange.from : '1970-01-01T00:00:00.000Z';
+  const t = smsRange ? smsRange.to : '9999-01-01T00:00:00.000Z';
+  const rangeLabel = smsRange ? smsRange.label : 'all time';
+  showMetricModal(esc(label) + ' · ' + esc(rangeLabel), '<p class="muted">Loading…</p>');
+  try {
+    const d = await (await fetch('/api/sms-campaign?metric=' + encodeURIComponent(metric) + '&mfrom=' + encodeURIComponent(f) + '&mto=' + encodeURIComponent(t))).json();
+    const rows = (d && d.records) || [];
+    showMetricModal(esc(label) + ' · ' + esc(rangeLabel) + ' · ' + rows.length, metricTableHtml(rows));
+  } catch (e) { showMetricModal(esc(label), '<p class="muted">Could not load, try again.</p>'); }
+}
+function metricTableHtml(rows) {
+  if (!rows.length) return '<p class="muted">No records for this.</p>';
+  return '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Business</th><th>Phone</th><th>When</th><th>Mockup</th></tr></thead><tbody>'
+    + rows.map((r) => '<tr><td><b>' + esc(r.name || '(unknown)') + '</b>' + (r.location ? '<span class="muted" style="display:block;font-size:11px">' + esc(r.location) + '</span>' : '') + '</td>'
+      + '<td>' + (r.phone ? '<a href="tel:' + esc(String(r.phone).replace(/[^\d+]/g, '')) + '">' + esc(fmtPhone(r.phone)) + '</a>' : '') + '</td>'
+      + '<td>' + esc(r.at ? fmtStamp(r.at) : '') + '</td>'
+      + '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td></tr>').join('')
+    + '</tbody></table></div>';
+}
+function showMetricModal(title, body) {
+  let m = $('metric-modal');
+  if (!m) {
+    m = document.createElement('div'); m.id = 'metric-modal'; m.className = 'mm-overlay';
+    m.innerHTML = '<div class="mm-box"><div class="mm-head"><span id="mm-title"></span><button class="mm-close" type="button" onclick="closeMetricModal()">✕</button></div><div id="mm-body" class="mm-body"></div></div>';
+    document.body.appendChild(m);
+    m.addEventListener('click', (e) => { if (e.target === m) closeMetricModal(); });
+  }
+  $('mm-title').innerHTML = title; $('mm-body').innerHTML = body; m.style.display = 'flex';
+}
+function closeMetricModal() { const m = $('metric-modal'); if (m) m.style.display = 'none'; }
 var smsNumbersMap = {}; var smsPrimaryNum = '';
 function renderSmsCampaigns(rows) {
   const el = $('sms-campaigns'); if (!el) return;
@@ -4066,8 +4102,10 @@ function renderCustomerDetail(c) {
 { const rb = $('cust-refresh'); if (rb) rb.addEventListener('click', (e) => { e.preventDefault(); loadCustomers(); }); }
 
 // ---- Super Admin: Overview dashboard ----
-function ovTile(icon, num, label, sub) {
-  return '<div class="ov-tile"><div class="ov-ico">' + icon + '</div>' +
+function ovTile(icon, num, label, sub, metric) {
+  const cls = 'ov-tile' + (metric ? ' ov-clk' : '');
+  const dm = metric ? (' data-metric="' + metric + '" data-label="' + esc(label) + '"') : '';
+  return '<div class="' + cls + '"' + dm + '><div class="ov-ico">' + icon + '</div>' +
     '<div class="ov-num">' + num + '</div><div class="ov-label">' + esc(label) + '</div>' +
     (sub ? '<div class="ov-sub">' + esc(sub) + '</div>' : '') + '</div>';
 }

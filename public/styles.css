@@ -1605,3 +1605,12 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .dr-chip.on { background: #0f766e; border-color: #0f766e; color: #fff; }
 .dr-custom { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; }
 .dr-custom input[type="date"] { font-size: 13px; padding: 3px 6px; }
+
+/* Overview tile click-through */
+.ov-clk { cursor: pointer; transition: box-shadow .12s, transform .12s; }
+.ov-clk:hover { box-shadow: 0 4px 16px rgba(0,0,0,.1); transform: translateY(-1px); }
+.mm-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.5); display: none; align-items: center; justify-content: center; z-index: 9000; padding: 20px; }
+.mm-box { background: #fff; border-radius: 14px; max-width: 720px; width: 100%; max-height: 80vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,.2); }
+.mm-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #eef2f7; font-weight: 700; }
+.mm-close { border: none; background: none; font-size: 18px; cursor: pointer; color: #64748b; }
+.mm-body { padding: 8px 18px 18px; overflow: auto; }
