@@ -3400,6 +3400,7 @@ function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake, range) 
   }
 }
 // Click a tile -> a modal listing the actual records behind that number (respecting the date filter).
+var lastDrill = { rows: [], metric: '' };
 async function openMetricDrill(metric, label) {
   const f = smsRange ? smsRange.from : '1970-01-01T00:00:00.000Z';
   const t = smsRange ? smsRange.to : '9999-01-01T00:00:00.000Z';
@@ -3408,8 +3409,17 @@ async function openMetricDrill(metric, label) {
   try {
     const d = await (await fetch('/api/sms-campaign?metric=' + encodeURIComponent(metric) + '&mfrom=' + encodeURIComponent(f) + '&mto=' + encodeURIComponent(t))).json();
     const rows = (d && d.records) || [];
-    showMetricModal(esc(label) + ' · ' + esc(rangeLabel) + ' · ' + rows.length, metricTableHtml(rows));
+    lastDrill = { rows: rows, metric: metric, label: label };
+    const exportBtn = rows.length ? '<div class="mm-actions"><button class="ghost sm" type="button" onclick="exportMetricCsv()">⬇️ Export CSV</button></div>' : '';
+    showMetricModal(esc(label) + ' · ' + esc(rangeLabel) + ' · ' + rows.length, exportBtn + metricTableHtml(rows));
   } catch (e) { showMetricModal(esc(label), '<p class="muted">Could not load, try again.</p>'); }
+}
+function exportMetricCsv() {
+  const rows = (lastDrill && lastDrill.rows) || [];
+  if (!rows.length) { alert('Nothing to export.'); return; }
+  const header = ['Business', 'Location', 'Phone', 'When', 'Mockup'];
+  const data = rows.map((r) => [r.name || '', r.location || '', String(r.phone || ''), r.at ? fmtStamp(r.at) : '', r.view_url || '']);
+  downloadCsv('sms-' + (lastDrill.metric || 'records') + '-' + todayKey() + '.csv', header, data);
 }
 function metricTableHtml(rows) {
   if (!rows.length) return '<p class="muted">No records for this.</p>';

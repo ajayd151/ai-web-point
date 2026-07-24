@@ -1619,3 +1619,4 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .cust-table tr.rr-pos td:first-child { box-shadow: inset 3px 0 0 #17a673; }
 .cust-table tr.rr-neg td:first-child { box-shadow: inset 3px 0 0 #f0a3a3; }
 .rc-said { max-width: 260px; color: #334155; font-style: italic; }
+.mm-actions { display: flex; justify-content: flex-end; margin: 4px 0 8px; }
