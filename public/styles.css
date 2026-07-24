@@ -1614,3 +1614,8 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .mm-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid #eef2f7; font-weight: 700; }
 .mm-close { border: none; background: none; font-size: 18px; cursor: pointer; color: #64748b; }
 .mm-body { padding: 8px 18px 18px; overflow: auto; }
+/* Replies: highlight positive/negative rows */
+.cust-table tr.rr-pos { background: #ecfdf5; }
+.cust-table tr.rr-pos td:first-child { box-shadow: inset 3px 0 0 #17a673; }
+.cust-table tr.rr-neg td:first-child { box-shadow: inset 3px 0 0 #f0a3a3; }
+.rc-said { max-width: 260px; color: #334155; font-style: italic; }

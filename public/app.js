@@ -2808,6 +2808,7 @@ async function loadSmsAdmin(opts) {
     smsStatsCache = { rows: d.campaigns || [], readyCount: d.readyCount || 0, stopCount: d.stopCount || 0, linkOptouts: d.linkOptouts || 0, brake: d.brake || null };
     applyStatRange();
     renderSmsCampaigns(d.campaigns || []);
+    smsRepliesCache = d.replies || [];
     renderSmsReplies(d.replies || []);
     renderSmsCallNow(d.callNow || []);
     renderSmsJourney(d.journey || []);
@@ -3450,17 +3451,22 @@ function renderSmsCampaigns(rows) {
     loadSmsAdmin();
   }));
 }
-var smsCallNowRows = [];
+var smsCallNowRows = []; var smsRepliesCache = [];
 function slugFromUrl(u) { const m = String(u || '').match(/\/v\/([a-z0-9-]+)/i); return m ? m[1] : ''; }
 function renderSmsCallNow(rows) {
   const el = $('sms-callnow'); if (!el) return;
   smsCallNowRows = rows || [];
   if (!rows.length) { el.innerHTML = '<p class="muted">Nobody yet. Positive repliers appear here automatically.</p>'; return; }
-  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Business</th><th>Stage</th><th>Call</th><th>Mockup</th><th>Full site</th></tr></thead><tbody>' +
+  // latest reply text per phone, from the replies feed, so you see what they said without switching tab
+  const replyByPhone = {};
+  (smsRepliesCache || []).forEach((rp) => { const p = String(rp.from_phone || ''); if (p && !replyByPhone[p] && rp.body && rp.verdict !== 'optout-link') replyByPhone[p] = rp.body; });
+  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Business</th><th>Stage</th><th>Their reply</th><th>Call</th><th>Mockup</th><th>Full site</th></tr></thead><tbody>' +
     rows.map((r, i) => {
       const stage = r.post_reply === 'positive' ? '🔥 Yes AFTER seeing the mockup' : (r.link_sent_at ? 'Sent the mockup, awaiting reply' : '✅ Said yes to seeing it');
+      const said = replyByPhone[String(r.phone || '')] || '';
       return '<tr><td><b>' + esc(r.name || '') + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span></td>' +
         '<td>' + stage + '</td>' +
+        '<td class="rc-said">' + (said ? '“' + esc(said.slice(0, 90)) + (said.length > 90 ? '…' : '') + '”' : '<span class="muted">–</span>') + '</td>' +
         '<td>' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') + '</td>' +
         '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td>' +
         '<td><button class="mini rc-pounce sms-fullsite" data-idx="' + i + '" title="Build them the full website with Pounce">🐆 Full website</button></td></tr>';
@@ -3535,7 +3541,8 @@ function renderSmsReplies(rows) {
         : (r.verdict === 'stop' ? '<span class="sms-v neg">🚫 STOP</span>' : '<span class="sms-v">–</span>')));
       const body = isLink ? 'Opted out via link' : (r.body || '');
       const pname = r.person_name ? esc(r.person_name) : '<span class="muted">–</span>';
-      return '<tr><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(fmtPhone(r.from_phone || '')) + '</span>') : esc(fmtPhone(r.from_phone || ''))) + '</td><td>' + pname + '</td><td>' + esc(body) + '</td><td>' + v + '</td></tr>';
+      const rowCls = r.verdict === 'positive' ? ' class="rr-pos"' : (r.verdict === 'negative' ? ' class="rr-neg"' : '');
+      return '<tr' + rowCls + '><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(fmtPhone(r.from_phone || '')) + '</span>') : esc(fmtPhone(r.from_phone || ''))) + '</td><td>' + pname + '</td><td>' + esc(body) + '</td><td>' + v + '</td></tr>';
     }).join('') +
     '</tbody></table></div>';
 }
