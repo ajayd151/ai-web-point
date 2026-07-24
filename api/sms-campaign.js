@@ -11,7 +11,7 @@ const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey, londonHour } = require('../lib/digest');
 const { getDailyUsage } = require('../lib/db');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -70,7 +70,7 @@ module.exports = async (req, res) => {
     if (q.hourly) {
       const hto = q.hto ? String(q.hto) : new Date(Date.now() + 86400000).toISOString();
       const hfrom = q.hfrom ? String(q.hfrom) : new Date(Date.now() - 30 * 86400000).toISOString();
-      res.status(200).json({ hourly: await hourlyBreakdown(hfrom, hto), industry: await byIndustry(hfrom, hto), messages: await messageStats(), today: todayKey(new Date()) });
+      res.status(200).json({ hourly: await hourlyBreakdown(hfrom, hto), industry: await byIndustry(hfrom, hto), stopTrend: await stopTrend(14), messages: await messageStats(), today: todayKey(new Date()) });
       return;
     }
     if (q.statsFrom && q.statsTo) { res.status(200).json({ totals: await rangeStats(String(q.statsFrom), String(q.statsTo)) }); return; }

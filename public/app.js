@@ -2915,6 +2915,50 @@ function bestWindowCallout(hours) {
   }
   return '<div class="best-window low">🎯 <strong>Best time to send:</strong> replies are still too spread out to name a clear window. Give it a few more days.</div>';
 }
+// STOP-rate trend: a line of daily STOP% over the last 14 days, with healthy (1%) and watch (3%)
+// guide lines, so a drifting number shows up before carriers act.
+function renderStopTrend(data) {
+  const el = $('sms-stoptrend'); if (!el) return;
+  data = data || { sends: [], stops: [] };
+  const sMap = {}, oMap = {};
+  (data.sends || []).forEach((r) => { sMap[r.d] = r.n; });
+  (data.stops || []).forEach((r) => { oMap[r.d] = r.n; });
+  const DAYS = 14; const today = drStartOfDay(new Date()); const series = [];
+  for (let i = DAYS - 1; i >= 0; i--) {
+    const dt = new Date(today.getTime() - i * 86400000);
+    const key = dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+    const sends = sMap[key] || 0; const stops = oMap[key] || 0;
+    series.push({ dt: dt, sends: sends, stops: stops, rate: sends ? (stops / sends * 100) : null });
+  }
+  if (!series.some((x) => x.sends > 0)) { el.innerHTML = ''; return; }
+  const W = 760, H = 150, padL = 34, padT = 12, padB = 24;
+  const chartH = H - padT - padB, chartW = W - padL - 10;
+  const maxY = Math.max(3.2, ...series.map((x) => x.rate || 0)) * 1.12;
+  const xFor = (i) => padL + chartW * (DAYS === 1 ? 0.5 : i / (DAYS - 1));
+  const yFor = (v) => padT + chartH - (Math.min(v, maxY) / maxY) * chartH;
+  const colour = (r) => r < 1 ? '#17a673' : (r <= 3 ? '#d97706' : '#b91c1c');
+  // guide lines at 1% (healthy) and 3% (watch)
+  let g = '';
+  [[1, '#17a673', 'healthy 1%'], [3, '#d97706', 'watch 3%']].forEach((gl) => {
+    if (gl[0] > maxY) return; const y = yFor(gl[0]);
+    g += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - 10) + '" y2="' + y + '" stroke="' + gl[1] + '" stroke-dasharray="4 4" opacity="0.5"/>'
+      + '<text x="' + (W - 12) + '" y="' + (y - 3) + '" font-size="9" fill="' + gl[1] + '" text-anchor="end">' + gl[2] + '</text>';
+  });
+  // the line through days that had sends
+  const pts = series.map((x, i) => x.rate != null ? { x: xFor(i), y: yFor(x.rate), r: x.rate, i: i } : null).filter(Boolean);
+  let line = '';
+  if (pts.length > 1) line = '<polyline points="' + pts.map((p) => p.x + ',' + p.y).join(' ') + '" fill="none" stroke="#5e7bea" stroke-width="2"/>';
+  let dots = '';
+  pts.forEach((p) => { dots += '<circle cx="' + p.x + '" cy="' + p.y + '" r="3.5" fill="' + colour(p.r) + '"><title>' + fmtStamp(series[p.i].dt) + ' · ' + (Math.round(p.r * 10) / 10) + '% (' + series[p.i].stops + '/' + series[p.i].sends + ')</title></circle>'; });
+  let xlab = '';
+  series.forEach((x, i) => { if (i % 3 === 0 || i === DAYS - 1) xlab += '<text x="' + xFor(i) + '" y="' + (H - 6) + '" font-size="8" fill="#94a3b8" text-anchor="middle">' + x.dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + '</text>'; });
+  const last = [...series].reverse().find((x) => x.rate != null);
+  const lastTxt = last ? (Math.round(last.rate * 10) / 10) + '%' : 'n/a';
+  el.innerHTML = '<div class="ov-rev-head" style="margin-top:22px">🚦 STOP rate trend <span class="muted" style="font-weight:400;font-size:12px">· last 14 days · latest <b>' + esc(lastTxt) + '</b>. Keep it under ~1%.</span></div>'
+    + '<svg class="strend" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">'
+    + '<line x1="' + padL + '" y1="' + (padT + chartH) + '" x2="' + (W - 10) + '" y2="' + (padT + chartH) + '" stroke="#e5e9f0"/>'
+    + g + line + dots + xlab + '</svg>';
+}
 async function loadHourly() {
   // the charts follow the same date filter as the tiles (default = last 30 days when none picked)
   const r = smsRange;
@@ -2923,7 +2967,7 @@ async function loadHourly() {
   const label = r ? r.label : 'last 30 days';
   try {
     const d = await (await fetch('/api/sms-campaign?hourly=1&hfrom=' + encodeURIComponent(from) + '&hto=' + encodeURIComponent(to))).json();
-    if (d) { renderHourly(d.hourly, label); renderIndustry(d.industry, label); renderExperiments(d.messages, d.today); }
+    if (d) { renderHourly(d.hourly, label); renderStopTrend(d.stopTrend); renderIndustry(d.industry, label); renderExperiments(d.messages, d.today); }
   } catch (e) { /* leave empty */ }
 }
 
