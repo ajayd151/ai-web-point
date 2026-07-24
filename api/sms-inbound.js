@@ -60,6 +60,21 @@ async function setCrmStatus(key, status, noteText) {
   } catch (e) { /* the reply itself is already stored */ }
 }
 
+// Best-effort first name IF the person signed their reply ("this is Dave", "Dave here", "- Dave").
+// SMS carries no name, so this is the only way we ever learn it. Heuristic + safe: returns '' unless
+// it is clearly a name, never a common word.
+function nameFromBody(b) {
+  const s = String(b || '').replace(/\s+/g, ' ').trim();
+  if (!s) return '';
+  const STOP = /^(yes|no|yeah|nope|thanks|thank|please|hi|hello|hey|ok|okay|sure|stop|start|the|and|call|website|site|here|not|maybe|sorry|cheers|regards)$/i;
+  const m = s.match(/\b(?:i['’ ]?a?m|this is|it['’ ]?s|my name is|names?|call me)\s+([A-Za-z][a-z]{1,15})\b/i)
+    || s.match(/\b([A-Z][a-z]{1,15})\s+here\b/)
+    || s.match(/(?:regards|thanks|thank you|cheers|from|[-–—])\s*,?\s*([A-Z][a-z]{1,15})\s*[.!]?$/);
+  if (!m) return '';
+  const n = m[1];
+  if (STOP.test(n) || n.length < 2) return '';
+  return n.charAt(0).toUpperCase() + n.slice(1).toLowerCase();
+}
 async function readJson(path) {
   try {
     const { blobs } = await list({ prefix: path });
@@ -107,7 +122,7 @@ module.exports = async (req, res) => {
   }
 
   const verdict = await classify(body);
-  await recordInbound({ from: from, body: body, matchedKey: matched && matched.key, matchedName: matched && matched.name, verdict: verdict });
+  await recordInbound({ from: from, body: body, matchedKey: matched && matched.key, matchedName: matched && matched.name, verdict: verdict, personName: nameFromBody(body) });
 
   if (verdict === 'stop') {
     await addOptout(from, 'reply');

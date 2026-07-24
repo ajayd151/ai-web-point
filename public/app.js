@@ -3523,7 +3523,7 @@ function renderSmsJourney(rows) {
 function renderSmsReplies(rows) {
   const el = $('sms-replies'); if (!el) return;
   if (!rows.length) { el.innerHTML = '<p class="muted">No replies yet.</p>'; return; }
-  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>When</th><th>From</th><th>Message</th><th>Read as</th></tr></thead><tbody>' +
+  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>When</th><th>From</th><th>Name</th><th>Message</th><th>Read as</th></tr></thead><tbody>' +
     rows.map((r) => {
       // link opt-out = a tap on the unsubscribe link (verdict optout-link). Older rows logged it
       // as 'stop' with the "[opted out via link]" body, so relabel those too rather than call a
@@ -3534,7 +3534,8 @@ function renderSmsReplies(rows) {
         : (r.verdict === 'negative' ? '<span class="sms-v neg">❌ negative</span>'
         : (r.verdict === 'stop' ? '<span class="sms-v neg">🚫 STOP</span>' : '<span class="sms-v">–</span>')));
       const body = isLink ? 'Opted out via link' : (r.body || '');
-      return '<tr><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(fmtPhone(r.from_phone || '')) + '</span>') : esc(fmtPhone(r.from_phone || ''))) + '</td><td>' + esc(body) + '</td><td>' + v + '</td></tr>';
+      const pname = r.person_name ? esc(r.person_name) : '<span class="muted">–</span>';
+      return '<tr><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(fmtPhone(r.from_phone || '')) + '</span>') : esc(fmtPhone(r.from_phone || ''))) + '</td><td>' + pname + '</td><td>' + esc(body) + '</td><td>' + v + '</td></tr>';
     }).join('') +
     '</tbody></table></div>';
 }
