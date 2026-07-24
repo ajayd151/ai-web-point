@@ -11,7 +11,7 @@ const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey, londonHour } = require('../lib/digest');
 const { getDailyUsage } = require('../lib/db');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, rangeStats, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -68,6 +68,7 @@ module.exports = async (req, res) => {
     const callNow = (await readyToCall(200)).filter((r) => !TERMINAL[(idx[r.key] && idx[r.key].status) || '']);
     if (q.count) { res.status(200).json({ readyCount: callNow.length }); return; }
     if (q.hourly) { res.status(200).json({ hourly: await hourlyBreakdown(30), industry: await byIndustry(), messages: await messageStats(), today: todayKey(new Date()) }); return; }
+    if (q.statsFrom && q.statsTo) { res.status(200).json({ totals: await rangeStats(String(q.statsFrom), String(q.statsTo)) }); return; }
     const oc = await optoutCounts();
     const brake = (await readJson('sms/_breaker.json')) || {};
     const brakeActive = brake.until && new Date(brake.until).getTime() > Date.now();

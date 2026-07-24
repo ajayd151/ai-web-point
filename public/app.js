@@ -2805,7 +2805,8 @@ async function loadSmsAdmin(opts) {
     renderSmsNumbers(d.numbers || [], d.primaryNumber || '', !!d.isOwner);
     fillSmsFromPicker(d.numbers || [], d.primaryNumber || '');
     renderCapRow(d.dailyCap != null ? d.dailyCap : 100, d.capExtra || 0, d.sentToday || 0);
-    renderSmsStats(d.campaigns || [], d.readyCount || 0, d.stopCount || 0, d.linkOptouts || 0, d.brake || null);
+    smsStatsCache = { rows: d.campaigns || [], readyCount: d.readyCount || 0, stopCount: d.stopCount || 0, linkOptouts: d.linkOptouts || 0, brake: d.brake || null };
+    applyStatRange();
     renderSmsCampaigns(d.campaigns || []);
     renderSmsReplies(d.replies || []);
     renderSmsCallNow(d.callNow || []);
@@ -3127,8 +3128,8 @@ function fillSmsFromPicker(numbers, primary) {
   // only force a deliberate choice when there is more than one number; with just the default,
   // auto-select it so nobody gets blocked with no real option to pick
   if (pool.length) opts.push('<option value="">— Choose a number —</option>');
-  if (primary) opts.push('<option value="' + esc(primary) + '">Default · ' + esc(primary) + '</option>');
-  pool.forEach((n) => opts.push('<option value="' + esc(n.phone) + '">' + esc(n.label ? (n.label + ' · ' + n.phone) : n.phone) + ' · cap ' + (Number(n.cap) || 0) + '/day</option>'));
+  if (primary) opts.push('<option value="' + esc(primary) + '">Default · ' + esc(fmtPhone(primary)) + '</option>');
+  pool.forEach((n) => opts.push('<option value="' + esc(n.phone) + '">' + esc(n.label ? (n.label + ' · ' + fmtPhone(n.phone)) : fmtPhone(n.phone)) + ' · cap ' + (Number(n.cap) || 0) + '/day</option>'));
   sel.innerHTML = opts.join('');
   if (keep) sel.value = keep;
   else if (!pool.length && primary) sel.value = primary; // single number -> pre-selected, no friction
@@ -3138,11 +3139,11 @@ function fillSmsFromPicker(numbers, primary) {
 function renderSmsNumbers(numbers, primary, isOwner) {
   const el = $('sms-numbers'); if (!el) return;
   if (!isOwner) { el.innerHTML = ''; return; }
-  const rows = (numbers || []).map((n) => '<div class="num-row"><span class="num-phone">' + esc(n.phone) + (n.label ? ' <span class="muted">' + esc(n.label) + '</span>' : '') + '</span>'
+  const rows = (numbers || []).map((n) => '<div class="num-row"><span class="num-phone">' + esc(fmtPhone(n.phone)) + (n.label ? ' <span class="muted">' + esc(n.label) + '</span>' : '') + '</span>'
     + '<span class="num-cap">cap <input type="number" min="1" max="1000" value="' + (Number(n.cap) || 20) + '" onchange="smsNumberCap(\'' + esc(n.phone) + '\', this.value)">/day</span>'
     + '<button type="button" class="linkbtn num-rm" onclick="smsManageNumber(\'remove\',\'' + esc(n.phone) + '\')">✕ remove</button></div>').join('');
   el.innerHTML = '<div class="ov-rev-head">📱 Sending numbers</div>'
-    + '<p class="muted view-sub">Default: <b>' + esc(primary || 'not set') + '</b>. Add more numbers to run campaigns in parallel, each paces its OWN daily cap (start a new one low, e.g. 20, and raise it as it warms up).</p>'
+    + '<p class="muted view-sub">Default: <b>' + esc(primary ? fmtPhone(primary) : 'not set') + '</b>. Add more numbers to run campaigns in parallel, each paces its OWN daily cap (start a new one low, e.g. 20, and raise it as it warms up).</p>'
     + '<div class="num-list">' + (rows || '<span class="muted">No extra numbers yet.</span>') + '</div>'
     + '<div class="num-add"><input id="sms-num-phone" type="tel" placeholder="+447..."><input id="sms-num-label" type="text" placeholder="Label (e.g. Salons London)"><input id="sms-num-cap" type="number" min="1" max="1000" value="20" title="Daily cap"><button class="ghost sm" type="button" onclick="smsAddNumber()">➕ Add number</button></div>'
     + '<p class="num-warn">⚠️ Also set this number\'s Messaging webhook in Twilio to <b>/api/sms-inbound</b>, or replies to it will not come through.</p>';
@@ -3298,16 +3299,54 @@ async function smsCreate() {
   if (b) { b.textContent = 'Schedule campaign'; b.disabled = true; }
   smsPreviewOk = false;
 }
-function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake) {
+// ---- Overview date filter (Today / Yesterday / 7d / 30d / All / custom) ----
+var smsStatsCache = null; var smsRange = null;
+function drStartOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function renderDateRange() {
+  const el = $('sms-daterange'); if (!el) return;
+  const cur = smsRange ? smsRange.key : 'all';
+  const chip = (k, l) => '<button class="dr-chip' + (cur === k ? ' on' : '') + '" type="button" onclick="setStatRange(\'' + k + '\')">' + l + '</button>';
+  el.innerHTML = '<span class="dr-lbl">Show:</span>'
+    + chip('today', 'Today') + chip('yesterday', 'Yesterday') + chip('7d', 'Last 7 days') + chip('30d', 'Last 30 days') + chip('all', 'All time')
+    + '<span class="dr-custom"><input type="date" id="dr-from"><span class="muted">to</span><input type="date" id="dr-to">'
+    + '<button class="dr-chip' + (cur === 'custom' ? ' on' : '') + '" type="button" onclick="setStatRange(\'custom\', ($(\'dr-from\')||{}).value, ($(\'dr-to\')||{}).value)">Apply</button></span>';
+}
+function setStatRange(key, cf, ct) {
+  if (key === 'all') { smsRange = null; applyStatRange(); return; }
+  const t0 = drStartOfDay(new Date()); const tomorrow = new Date(t0.getTime() + 86400000);
+  let from, to, label;
+  if (key === 'today') { from = t0; to = tomorrow; label = 'today'; }
+  else if (key === 'yesterday') { from = new Date(t0.getTime() - 86400000); to = t0; label = 'yesterday'; }
+  else if (key === '7d') { from = new Date(t0.getTime() - 6 * 86400000); to = tomorrow; label = 'last 7 days'; }
+  else if (key === '30d') { from = new Date(t0.getTime() - 29 * 86400000); to = tomorrow; label = 'last 30 days'; }
+  else if (key === 'custom') { if (!cf || !ct) { alert('Pick both dates.'); return; } from = drStartOfDay(new Date(cf)); to = new Date(drStartOfDay(new Date(ct)).getTime() + 86400000); label = cf + ' to ' + ct; }
+  else return;
+  smsRange = { key: key, from: from.toISOString(), to: to.toISOString(), label: label };
+  applyStatRange();
+}
+async function applyStatRange() {
+  renderDateRange();
+  const c = smsStatsCache; if (!c) return;
+  if (!smsRange) { renderSmsStats(c.rows, c.readyCount, c.stopCount, c.linkOptouts, c.brake, null); return; }
+  try {
+    const d = await (await fetch('/api/sms-campaign?statsFrom=' + encodeURIComponent(smsRange.from) + '&statsTo=' + encodeURIComponent(smsRange.to))).json();
+    renderSmsStats(c.rows, c.readyCount, c.stopCount, c.linkOptouts, c.brake, Object.assign({ label: smsRange.label }, (d && d.totals) || {}));
+  } catch (e) { renderSmsStats(c.rows, c.readyCount, c.stopCount, c.linkOptouts, c.brake, null); }
+}
+function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake, range) {
   const el = $('sms-stats'); if (!el) return;
   if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet, stats appear once one is running.</p>'; return; }
   const t = { total: 0, sent: 0, linked: 0, delivered: 0, failed: 0, positive: 0, negative: 0, hot: 0, nudged: 0 };
   rows.forEach((c) => { Object.keys(t).forEach((k) => { t[k] += Number(c[k]) || 0; }); });
   const remaining = Math.max(0, t.total - t.sent - t.failed);
+  // a date filter overrides the funnel numbers with the range's totals (Left-to-send + Ready-to-call
+  // stay live, they are "now" concepts, not a past range)
+  if (range) { t.sent = range.sent || 0; t.delivered = range.delivered || 0; t.positive = range.positive || 0; t.negative = range.negative || 0; t.nudged = range.nudged || 0; t.hot = 0; stopCount = range.stop || 0; linkOptouts = range.link || 0; }
+  const sentSub = range ? esc(range.label || 'range') : (t.total + ' in total');
   const replied = t.positive + t.negative;
   const noReply = Math.max(0, t.sent - replied);
   const tiles =
-    ovTile('📤', t.sent, 'Sent', t.total + ' in total') +
+    ovTile('📤', t.sent, 'Sent', sentSub) +
     ovTile('✅', t.delivered, 'Delivered', t.sent ? Math.round((t.delivered / t.sent) * 100) + '% of sent' : '') +
     ovTile('⏳', remaining, 'Left to send', 'queued for later') +
     ovTile('👍', t.positive, 'Positive replies', t.hot ? (t.hot + ' after the mockup') : '') +
@@ -3362,7 +3401,7 @@ function renderSmsCampaigns(rows) {
       const isDefaultNum = !c.from_number || c.from_number === smsPrimaryNum;
       const numCell = isDefaultNum
         ? '<span class="sms-num-cell" title="' + esc(smsPrimaryNum || '') + '">Default</span>'
-        : '<span class="sms-num-cell" title="' + esc(c.from_number) + '">' + esc(smsNumbersMap[c.from_number] || c.from_number) + '</span>';
+        : '<span class="sms-num-cell" title="' + esc(c.from_number) + '">' + esc(smsNumbersMap[c.from_number] || fmtPhone(c.from_number)) + '</span>';
       return '<tr><td><b>' + esc(c.name || ('#' + c.id)) + '</b><span class="muted" style="display:block;font-size:11px">by ' + esc(noteAuthor(c.created_by || '')) + '</span></td>' +
         '<td>' + typeCell + '</td>' +
         '<td>' + numCell + '</td>' +
@@ -3386,7 +3425,7 @@ function renderSmsCallNow(rows) {
       const stage = r.post_reply === 'positive' ? '🔥 Yes AFTER seeing the mockup' : (r.link_sent_at ? 'Sent the mockup, awaiting reply' : '✅ Said yes to seeing it');
       return '<tr><td><b>' + esc(r.name || '') + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span></td>' +
         '<td>' + stage + '</td>' +
-        '<td>' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞 ' + esc(r.phone) + '</a>' : '') + '</td>' +
+        '<td>' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') + '</td>' +
         '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td>' +
         '<td><button class="mini rc-pounce sms-fullsite" data-idx="' + i + '" title="Build them the full website with Pounce">🐆 Full website</button></td></tr>';
     }).join('') + '</tbody></table></div>';
@@ -3399,6 +3438,22 @@ function renderSmsCallNow(rows) {
 }
 // short date+time stamp, e.g. "23 Jul, 18:42" (UK). Empty string if no timestamp.
 function fmtStamp(ts) { if (!ts) return ''; try { return new Date(ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
+// Pretty phone number for DISPLAY only (storage/href stay raw): +447769653318 -> "+44 7769 653 318".
+function fmtPhone(raw) {
+  const s = String(raw == null ? '' : raw).trim();
+  const d = s.replace(/[^\d+]/g, '');
+  if (!d) return s;
+  let cc = '+44', nat = '';
+  if (d[0] === '+') {
+    if (d.indexOf('+44') === 0) { cc = '+44'; nat = d.slice(3); }
+    else { const m = d.match(/^(\+\d{1,3})(\d+)$/); if (!m) return s; cc = m[1]; nat = m[2]; }
+  } else if (d.indexOf('44') === 0 && d.length >= 12) { cc = '+44'; nat = d.slice(2); }
+  else if (d[0] === '0') { cc = '+44'; nat = d.slice(1); }
+  else { nat = d; }
+  nat = nat.replace(/\D/g, '');
+  const groups = (cc === '+44' && nat.length === 10) ? [nat.slice(0, 4), nat.slice(4, 7), nat.slice(7)] : (nat.match(/.{1,3}/g) || [nat]);
+  return (cc + ' ' + groups.join(' ')).trim();
+}
 // Per-person funnel: each step shows the date/time it happened (or · if not done yet).
 function renderSmsJourney(rows) {
   const el = $('sms-journey'); if (!el) return;
@@ -3443,7 +3498,7 @@ function renderSmsReplies(rows) {
         : (r.verdict === 'negative' ? '<span class="sms-v neg">❌ negative</span>'
         : (r.verdict === 'stop' ? '<span class="sms-v neg">🚫 STOP</span>' : '<span class="sms-v">–</span>')));
       const body = isLink ? 'Opted out via link' : (r.body || '');
-      return '<tr><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.from_phone || '') + '</span>') : esc(r.from_phone || '')) + '</td><td>' + esc(body) + '</td><td>' + v + '</td></tr>';
+      return '<tr><td>' + esc(fmtDate(r.at)) + '</td><td>' + (r.matched_name ? ('<b>' + esc(r.matched_name) + '</b><span class="muted" style="display:block;font-size:11px">' + esc(fmtPhone(r.from_phone || '')) + '</span>') : esc(fmtPhone(r.from_phone || ''))) + '</td><td>' + esc(body) + '</td><td>' + v + '</td></tr>';
     }).join('') +
     '</tbody></table></div>';
 }
@@ -4621,7 +4676,7 @@ function renderDossier(d, lead) {
   const loc = b.location || (lead && lead.location) || '';
   const mapsU = g.mapsUrl || (lead && lead.mapsUrl) || mapsLink({ name: b.name, location: loc });
   let cActs = '';
-  if (phone) cActs += `<a class="dos-act call" href="tel:${esc(phone)}">📞 Call ${esc(phone)}</a>`;
+  if (phone) cActs += `<a class="dos-act call" href="tel:${esc(phone)}">📞 Call ${esc(fmtPhone(phone))}</a>`;
   if (mobile) { const msg = fillWaMessage(loadSettings().followUp, { name: b.name, location: loc, category: b.category }, tagLink((lead && lead.viewUrl) || '', 'w'), (lead && lead.who) || ''); cActs += `<a class="dos-act wa" target="_blank" rel="noopener" href="https://wa.me/${toWaNumber(phone)}?text=${encodeURIComponent(msg)}">📱 WhatsApp</a>`; }
   cActs += `<a class="dos-act" target="_blank" rel="noopener" href="${esc(mapsU)}">📍 Maps</a>`;
   const contact = `<div class="dos-contact"><div class="dos-cline">${phone ? '📞 <b>' + esc(phone) + '</b>' : '<span class="muted">No phone on file</span>'}${loc ? ' · ' + esc(loc) : ''}</div><div class="dos-acts">${cActs}</div></div>`;
@@ -4940,7 +4995,7 @@ function renderLeadShell(l) {
   const mobile = phone && window.BizData.isUkMobile(phone);
   const blocked = isBlocked(l);
   let acts = '';
-  if (phone && !blocked) acts += `<a class="lead-act call" href="tel:${esc(phone)}">📞 Call ${esc(phone)}</a>`;
+  if (phone && !blocked) acts += `<a class="lead-act call" href="tel:${esc(phone)}">📞 Call ${esc(fmtPhone(phone))}</a>`;
   if (mobile && !blocked) {
     const msg = fillWaMessage(loadSettings().followUp, { name: l.name, location: l.location, category: l.category }, tagLink(l.viewUrl || '', 'w'), l.who);
     acts += `<a class="lead-act wa" target="_blank" rel="noopener" href="https://wa.me/${toWaNumber(phone)}?text=${encodeURIComponent(msg)}">📱 WhatsApp</a>`;
@@ -5366,7 +5421,7 @@ function renderCallList() {
     const opts = LEAD_STATUSES.map(([v, l]) => `<option value="${esc(v)}"${v === st ? ' selected' : ''}>${esc(l)}</option>`).join('');
     const critBits = c.crit ? [c.crit.industry, c.crit.location, c.crit.website === 'none' ? 'no website' : c.crit.website, c.crit.phone, (c.crit.ratingsFrom != null || c.crit.ratingsTo != null) ? ('ratings ' + (c.crit.ratingsFrom != null ? c.crit.ratingsFrom : '0') + '-' + (c.crit.ratingsTo != null ? c.crit.ratingsTo : 'any')) : ''].filter(Boolean).join(' · ') : '';
     tr.innerHTML = `<td title="${critBits ? 'Found by: ' + esc(critBits) : ''}"><button class="lead-name">${esc(humaniseBusinessName(c.name) || c.name)}</button><div class="muted st-area">${c.tag ? '<span class="call-tag">🏷️ ' + esc(c.tag) + '</span> ' : ''}📍 ${esc(c.location || '')}${c.category ? ' · ' + esc(c.category) : ''}</div></td>` +
-      `<td>${c.phone ? `<a class="call-tel" href="tel:${esc(String(c.phone).replace(/[^\d+]/g, ''))}">📞 ${esc(c.phone)}</a>` : '<span class="muted">No phone</span>'}</td>` +
+      `<td>${c.phone ? `<a class="call-tel" href="tel:${esc(String(c.phone).replace(/[^\d+]/g, ''))}">📞 ${esc(fmtPhone(c.phone))}</a>` : '<span class="muted">No phone</span>'}</td>` +
       `<td><select class="call-status leads-statusf">${opts}</select></td>` +
       `<td><button class="ghost sm call-notes">📝 Notes</button></td>` +
       `<td class="w-acts">${(callsData.prowled && callsData.prowled.has(c.key))
