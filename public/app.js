@@ -2973,6 +2973,20 @@ async function loadHourly() {
 
 // ----- Message experiments: compare opener versions on real data, gated at 100 sends -----
 var EXPERIMENT_MIN = 100; // no conclusions below this many sends per version
+// Declare a winner between opener versions, but ONLY once each has real volume and the gap is
+// meaningful, never crown a version off 1-2 extra yeses.
+function winnerCallout(list) {
+  if (!list || list.length < 2) return '';
+  const ready = list.map((v, i) => ({ n: i + 1, sent: Number(v.sent) || 0, yes: Number(v.yes) || 0, stop: Number(v.stop) || 0 })).filter((v) => v.sent >= EXPERIMENT_MIN);
+  if (ready.length < 2) return '<div class="exp-win low">🏆 No winner yet, at least two versions need ' + EXPERIMENT_MIN + '+ sends to compare fairly. Keep them running.</div>';
+  ready.sort((a, b) => (b.yes / b.sent) - (a.yes / a.sent));
+  const L = ready[0], R = ready[1];
+  const lr = L.yes / L.sent * 100, rr = R.yes / R.sent * 100, lstop = L.stop / L.sent * 100;
+  const rate = (x) => (Math.round(x * 10) / 10) + '%';
+  const meaningful = (L.yes - R.yes) >= 3 && (lr - rr) >= 2; // clear margin, not noise
+  if (meaningful) return '<div class="exp-win good">🏆 <strong>v' + L.n + ' is winning</strong> · ' + rate(lr) + ' yes vs ' + rate(rr) + ' for v' + R.n + ' · STOP ' + rate(lstop) + '. Worth making v' + L.n + ' your live opener.</div>';
+  return '<div class="exp-win">🤝 v' + L.n + ' is just ahead (' + rate(lr) + ' vs ' + rate(rr) + '), but it is too close to call. Give them more sends before you decide.</div>';
+}
 var expLiveText = {};     // the live opener per campaign, so Suggest always rewrites THAT
 // Ready-to-run gentler openers (from the 2026-07-22 review). One-click to load, then Schedule.
 var EXP_STARTERS = [
@@ -3005,6 +3019,7 @@ function renderExperiments(versions, today) {
     const started = list.filter((v) => !isSched(v));
     const live = started.length ? started[started.length - 1] : list[list.length - 1];
     html += '<div class="exp-camp"><div class="exp-camp-name">' + esc(camp.name) + '</div>';
+    html += winnerCallout(list);
     // versions table (full message, no truncation)
     html += '<div class="tgt-scroll"><table class="cust-table exp-table"><thead><tr><th>Version</th><th>Message</th><th class="num">Sent</th><th class="num">Yes</th><th class="num">STOP</th><th class="num">Opt-out</th><th>Status</th></tr></thead><tbody>';
     list.forEach((v, i) => {
