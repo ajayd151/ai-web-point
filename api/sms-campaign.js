@@ -67,7 +67,12 @@ module.exports = async (req, res) => {
     const idx = (await readJson('notes/_index.json')) || {};
     const callNow = (await readyToCall(200)).filter((r) => !TERMINAL[(idx[r.key] && idx[r.key].status) || '']);
     if (q.count) { res.status(200).json({ readyCount: callNow.length }); return; }
-    if (q.hourly) { res.status(200).json({ hourly: await hourlyBreakdown(30), industry: await byIndustry(), messages: await messageStats(), today: todayKey(new Date()) }); return; }
+    if (q.hourly) {
+      const hto = q.hto ? String(q.hto) : new Date(Date.now() + 86400000).toISOString();
+      const hfrom = q.hfrom ? String(q.hfrom) : new Date(Date.now() - 30 * 86400000).toISOString();
+      res.status(200).json({ hourly: await hourlyBreakdown(hfrom, hto), industry: await byIndustry(hfrom, hto), messages: await messageStats(), today: todayKey(new Date()) });
+      return;
+    }
     if (q.statsFrom && q.statsTo) { res.status(200).json({ totals: await rangeStats(String(q.statsFrom), String(q.statsTo)) }); return; }
     if (q.metric) { res.status(200).json({ records: await metricRecords(String(q.metric), String(q.mfrom || '1970-01-01'), String(q.mto || '9999-01-01'), 400) }); return; }
     const oc = await optoutCounts();

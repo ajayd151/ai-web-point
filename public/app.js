@@ -2842,7 +2842,7 @@ let _enrichTimer = null;
 // Hour-of-day chart on the Analytics tab (last 30 days, UK time). Two small SVG bar charts:
 // sends per hour, and the responses (yes / no / STOP / link opt-out) per hour, so you can see
 // which times land best.
-function renderHourly(hours) {
+function renderHourly(hours, label) {
   const el = $('sms-hourly'); if (!el) return;
   if (!hours || !hours.length) { el.innerHTML = ''; return; }
   const total = hours.reduce((a, x) => a + x.sends + x.positive + x.negative + x.stop + x.optout, 0);
@@ -2886,7 +2886,7 @@ function renderHourly(hours) {
     + '<span><i style="background:#dc7b7b"></i> No</span>'
     + '<span><i style="background:#b91c1c"></i> STOP</span>'
     + '<span><i style="background:#7c3aed"></i> Opt-out link</span></div>';
-  el.innerHTML = '<div class="ov-rev-head" style="margin-top:22px">🕐 By hour of day <span class="muted" style="font-weight:400;font-size:12px">· last 30 days, UK time. Hover a bar for the numbers.</span></div>'
+  el.innerHTML = '<div class="ov-rev-head" style="margin-top:22px">🕐 By hour of day <span class="muted" style="font-weight:400;font-size:12px">· ' + esc(label || 'last 30 days') + ', UK time. Hover a bar for the numbers.</span></div>'
     + bestWindowCallout(hours)
     + legend
     + '<div class="hourly-chart"><div class="hourly-lbl">Sent</div><svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + sends + hLabels + '</svg></div>'
@@ -2916,7 +2916,15 @@ function bestWindowCallout(hours) {
   return '<div class="best-window low">🎯 <strong>Best time to send:</strong> replies are still too spread out to name a clear window. Give it a few more days.</div>';
 }
 async function loadHourly() {
-  try { const d = await (await fetch('/api/sms-campaign?hourly=1')).json(); if (d) { renderHourly(d.hourly); renderIndustry(d.industry); renderExperiments(d.messages, d.today); } } catch (e) { /* leave empty */ }
+  // the charts follow the same date filter as the tiles (default = last 30 days when none picked)
+  const r = smsRange;
+  const from = r ? r.from : new Date(Date.now() - 30 * 86400000).toISOString();
+  const to = r ? r.to : new Date(Date.now() + 86400000).toISOString();
+  const label = r ? r.label : 'last 30 days';
+  try {
+    const d = await (await fetch('/api/sms-campaign?hourly=1&hfrom=' + encodeURIComponent(from) + '&hto=' + encodeURIComponent(to))).json();
+    if (d) { renderHourly(d.hourly, label); renderIndustry(d.industry, label); renderExperiments(d.messages, d.today); }
+  } catch (e) { /* leave empty */ }
 }
 
 // ----- Message experiments: compare opener versions on real data, gated at 100 sends -----
@@ -3045,7 +3053,7 @@ async function smsImplementMsg(btn, cid) {
   } catch (e) { btn.disabled = false; btn.textContent = old; }
 }
 // Reply performance by industry/niche tag: which niches say yes, so targeting can lean in.
-function renderIndustry(rows) {
+function renderIndustry(rows, label) {
   const el = $('sms-industry'); if (!el) return;
   rows = (rows || []).filter((r) => (Number(r.sent) || 0) > 0);
   if (!rows.length) { el.innerHTML = ''; return; }
@@ -3059,7 +3067,7 @@ function renderIndustry(rows) {
       + '<td class="num"><span class="ind-rate' + (thin ? ' thin' : '') + '"><span style="width:' + Math.min(100, rate) + '%"></span></span>' + rate + '%' + (thin ? '<span class="ind-thin" title="Small sample, treat with caution">·</span>' : '') + '</td>'
       + '<td class="num">' + no + '</td></tr>';
   }).join('');
-  el.innerHTML = '<div class="ov-rev-head" style="margin-top:22px">🏷️ By industry / niche <span class="muted" style="font-weight:400;font-size:12px">· which tags reply best. Yes rate needs a decent number of sends to mean much.</span></div>'
+  el.innerHTML = '<div class="ov-rev-head" style="margin-top:22px">🏷️ By industry / niche <span class="muted" style="font-weight:400;font-size:12px">· ' + esc(label || 'last 30 days') + ' · which tags reply best.</span></div>'
     + '<div class="tgt-scroll"><table class="cust-table ind-table"><thead><tr><th>Niche</th><th class="num">Sent</th><th class="num">Yes</th><th class="num">Yes rate</th><th class="num">No</th></tr></thead><tbody>' + body + '</tbody></table></div>';
 }
 // Daily-cap row on the Analytics tab: shows the standing cap + any one-day boost, with a button
@@ -3313,7 +3321,7 @@ function renderDateRange() {
     + '<button class="dr-chip' + (cur === 'custom' ? ' on' : '') + '" type="button" onclick="setStatRange(\'custom\', ($(\'dr-from\')||{}).value, ($(\'dr-to\')||{}).value)">Apply</button></span>';
 }
 function setStatRange(key, cf, ct) {
-  if (key === 'all') { smsRange = null; applyStatRange(); return; }
+  if (key === 'all') { smsRange = null; applyStatRange(); loadHourly(); return; }
   const t0 = drStartOfDay(new Date()); const tomorrow = new Date(t0.getTime() + 86400000);
   let from, to, label;
   if (key === 'today') { from = t0; to = tomorrow; label = 'today'; }
@@ -3324,6 +3332,7 @@ function setStatRange(key, cf, ct) {
   else return;
   smsRange = { key: key, from: from.toISOString(), to: to.toISOString(), label: label };
   applyStatRange();
+  loadHourly();
 }
 async function applyStatRange() {
   renderDateRange();
