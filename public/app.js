@@ -3404,7 +3404,10 @@ async function applyStatRange() {
 }
 function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake, range) {
   const el = $('sms-stats'); if (!el) return;
-  if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet, stats appear once one is running.</p>'; return; }
+  rows = rows || [];
+  // only bail on the empty state in the default (All-time) view; a date range renders from its own
+  // server totals, so it must still work even when the campaigns list is momentarily empty
+  if (!rows.length && !range) { el.innerHTML = '<p class="muted">No campaigns yet, stats appear once one is running.</p>'; return; }
   const t = { total: 0, sent: 0, linked: 0, delivered: 0, failed: 0, positive: 0, negative: 0, hot: 0, nudged: 0 };
   rows.forEach((c) => { Object.keys(t).forEach((k) => { t[k] += Number(c[k]) || 0; }); });
   const remaining = Math.max(0, t.total - t.sent - t.failed);
