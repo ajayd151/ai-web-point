@@ -2189,7 +2189,7 @@ $('rs-clear').addEventListener('click', () => {
 renderRecentSearches();
 renderSpendMeter();
 refreshServerCosts(); // pull the real workspace total (incl. background SMS) on load
-setInterval(() => { if (authed) refreshServerCosts(); }, 120000); // and keep it fresh
+setInterval(() => { if (authed) refreshServerCosts(); }, 300000); // and keep it fresh
 
 // ---- performance dashboard -----------------------------------------------
 // Generic best-practice tips (NOT based on your data, general outreach advice)
@@ -2790,7 +2790,7 @@ async function loadSmsAdmin(opts) {
   loadCallCounts();
   if (!opts.poll) loadHourly(); // heavier aggregate: only on open/Refresh, not the 20s poll
   try {
-    const r = await fetch('/api/sms-campaign');
+    const r = await fetch('/api/sms-campaign' + (opts.poll ? '?light=1' : '')); // light poll skips the heavy journey query
     const d = await r.json();
     if (d.error) { const el = $('sms-campaigns'); if (el) el.innerHTML = '<p class="muted">' + esc(d.error) + '</p>'; return; }
     const note = $('sms-twilio-note');
@@ -2811,7 +2811,7 @@ async function loadSmsAdmin(opts) {
     smsRepliesCache = d.replies || [];
     renderSmsReplies(d.replies || []);
     renderSmsCallNow(d.callNow || []);
-    renderSmsJourney(d.journey || []);
+    if (d.journey) renderSmsJourney(d.journey); // absent on the light poll; keep the last render
     setSmsReadyBadge(d.readyCount != null ? d.readyCount : (d.callNow || []).length);
   } catch (e) { /* leave as is */ }
 }
@@ -5768,10 +5768,10 @@ function updateTabTitle() {
 }
 document.addEventListener('visibilitychange', updateTabTitle);
 setInterval(() => { if (authed) loadHotLeads(); }, 180000); // refresh the count every 3 min so it catches new ones while you're away
-setInterval(() => { if (authed) refreshSmsReady(); }, 180000); // green SMS-ready badge kept fresh
+setInterval(() => { if (authed) refreshSmsReady(); }, 300000); // green SMS-ready badge kept fresh
 // while the SMS pane is open, live-refresh the campaigns / replies / ready-to-call every 20s so
 // the sent count climbs in front of you without a manual refresh
-setInterval(() => { const p = document.getElementById('admin-sms'); if (authed && p && !p.classList.contains('hidden')) loadSmsAdmin({ poll: true }); }, 20000);
+setInterval(() => { const p = document.getElementById('admin-sms'); if (authed && p && !p.classList.contains('hidden')) loadSmsAdmin({ poll: true }); }, 60000);
 function dowName(d) { return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d] || ''; }
 function fmtHourClient(h) { const a = h < 12 ? 'a' : 'p'; const hr = h % 12 === 0 ? 12 : h % 12; return hr + a; }
 function dashBars(items, labelFn, valFn, highlightMax) {

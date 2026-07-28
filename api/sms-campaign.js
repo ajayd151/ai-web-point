@@ -86,7 +86,7 @@ module.exports = async (req, res) => {
     res.status(200).json({
       campaigns: await listCampaigns(),
       replies: await listInbound(100),
-      journey: await journey(200),
+      journey: q.light ? undefined : await journey(200), // heavy join, skipped on the frequent poll
       callNow: callNow.slice(0, 50),
       readyCount: callNow.length,
       stopCount: oc.reply,            // STOP texts, the number carriers police
