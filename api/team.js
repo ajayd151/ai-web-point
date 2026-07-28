@@ -6,7 +6,7 @@
 //   POST {action:'suspend'|'unsuspend'|'remove', email}
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped, PERM_KEYS, cleanLimits } = require('../lib/access');
-const { listTeamMembers, addTeamMember, setTeamSuspended, setTeamPermissions, removeTeamMember, getUserByEmail } = require('../lib/db');
+const { listTeamMembers, teamDebug, addTeamMember, setTeamSuspended, setTeamPermissions, removeTeamMember, getUserByEmail } = require('../lib/db');
 const { sendTeamInviteEmail, sendTeamAddedAdminEmail } = require('../lib/email');
 const { createClerkUser } = require('../lib/clerkadmin');
 const crypto = require('crypto');
@@ -36,6 +36,7 @@ module.exports = async (req, res) => {
   const owner = acct.email; // the account this team belongs to
 
   if (req.method === 'GET') {
+    if (req.query && req.query.debug === '1') { res.status(200).json({ owner: owner, diag: await teamDebug() }); return; }
     res.status(200).json({ members: await listTeamMembers(owner) });
     return;
   }
