@@ -2189,7 +2189,7 @@ $('rs-clear').addEventListener('click', () => {
 renderRecentSearches();
 renderSpendMeter();
 refreshServerCosts(); // pull the real workspace total (incl. background SMS) on load
-setInterval(() => { if (authed) refreshServerCosts(); }, 300000); // and keep it fresh
+setInterval(() => { if (authed) refreshServerCosts(); }, 1200000); // and keep it fresh
 
 // ---- performance dashboard -----------------------------------------------
 // Generic best-practice tips (NOT based on your data, general outreach advice)
@@ -5768,7 +5768,7 @@ function updateTabTitle() {
 }
 document.addEventListener('visibilitychange', updateTabTitle);
 setInterval(() => { if (authed) loadHotLeads(); }, 180000); // refresh the count every 3 min so it catches new ones while you're away
-setInterval(() => { if (authed) refreshSmsReady(); }, 300000); // green SMS-ready badge kept fresh
+setInterval(() => { if (authed) refreshSmsReady(); }, 1200000); // green SMS-ready badge kept fresh
 // while the SMS pane is open, live-refresh the campaigns / replies / ready-to-call every 20s so
 // the sent count climbs in front of you without a manual refresh
 setInterval(() => { const p = document.getElementById('admin-sms'); if (authed && p && !p.classList.contains('hidden')) loadSmsAdmin({ poll: true }); }, 60000);
