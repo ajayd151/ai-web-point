@@ -3417,13 +3417,17 @@ function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake, range) 
   const sentSub = range ? esc(range.label || 'range') : (t.total + ' in total');
   const replied = t.positive + t.negative;
   const noReply = Math.max(0, t.sent - replied);
+  // % of everyone we have texted, so each reply tile is judged on the same base as the STOP tile.
+  const pctOf = (n) => (t.sent ? (n / t.sent * 100) : 0);
+  const pctStr = (n) => { const p = pctOf(n); return (p > 0 && p < 10 ? p.toFixed(1) : Math.round(p)) + '% of sent'; };
+  const joinSub = (a, b) => [a, b].filter(Boolean).join(' · ');
   const tiles =
     ovTile('📤', t.sent, 'Sent', sentSub, 'sent') +
     ovTile('✅', t.delivered, 'Delivered', t.sent ? Math.round((t.delivered / t.sent) * 100) + '% of sent' : '', 'delivered') +
     ovTile('⏳', remaining, 'Left to send', 'queued for later', 'left') +
-    ovTile('👍', t.positive, 'Positive replies', t.hot ? (t.hot + ' after the mockup') : '', 'positive') +
-    ovTile('👎', t.negative, 'Negative replies', '', 'negative') +
-    ovTile('🤫', noReply, 'No reply yet', t.nudged ? (t.nudged + ' nudged') : '', 'noreply') +
+    ovTile('👍', t.positive, 'Positive replies', t.sent ? joinSub(pctStr(t.positive), t.hot ? (t.hot + ' after the mockup') : '') : (t.hot ? (t.hot + ' after the mockup') : ''), 'positive') +
+    ovTile('👎', t.negative, 'Negative replies', t.sent ? pctStr(t.negative) : '', 'negative') +
+    ovTile('🤫', noReply, 'No reply yet', t.sent ? joinSub(pctStr(noReply), t.nudged ? (t.nudged + ' nudged') : '') : (t.nudged ? (t.nudged + ' nudged') : ''), 'noreply') +
     ovTile('📞', readyCount || 0, 'Ready to call', 'waiting for you', 'ready') +
     (function () {
       const stops = Number(stopCount) || 0;
@@ -3456,6 +3460,25 @@ function renderSmsStats(rows, readyCount, stopCount, linkOptouts, brake, range) 
       + ' <button class="brake-resume" type="button" onclick="smsResumeCold()">▶️ Resume now</button></div>';
   }
   el.innerHTML = banner + '<div class="ov-stats">' + tiles + '</div>' + bar;
+  // Volume-health verdict on the cap row: answers "is it safe to raise the daily cap?" in one line,
+  // from the two numbers that actually gate it (STOP rate + delivery). All-time view only.
+  if (!range) {
+    const cap = $('sms-caprow');
+    if (cap) {
+      const old = cap.querySelector('.cap-health'); if (old) old.remove();
+      const stopRate = t.sent ? (Number(stopCount) || 0) / t.sent * 100 : 0;
+      const delivRate = t.sent ? (t.delivered / t.sent * 100) : 0;
+      let verdict, cls;
+      if (t.sent < 200) { verdict = 'gathering data, hold until ~200 sent'; cls = 'warn'; }
+      else if (stopRate < 1 && delivRate >= 90) { verdict = 'healthy, safe to raise the cap'; cls = 'good'; }
+      else if (stopRate <= 2 && delivRate >= 85) { verdict = 'OK, hold and watch STOP + delivery'; cls = 'warn'; }
+      else { verdict = 'too hot, do not raise, lower volume'; cls = 'bad'; }
+      const badge = document.createElement('div');
+      badge.className = 'cap-health ' + cls;
+      badge.innerHTML = '🚦 STOP <strong>' + stopRate.toFixed(1) + '%</strong> · Delivered <strong>' + Math.round(delivRate) + '%</strong> — ' + esc(verdict);
+      cap.appendChild(badge);
+    }
+  }
   if (!el.dataset.drillwired) {
     el.dataset.drillwired = '1';
     el.addEventListener('click', (e) => { const tile = e.target.closest('.ov-clk'); if (tile && tile.dataset.metric) openMetricDrill(tile.dataset.metric, tile.dataset.label || ''); });
