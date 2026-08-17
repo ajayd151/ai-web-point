@@ -1539,6 +1539,13 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .rc-note { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 10px; padding: 9px 11px; font: inherit; font-size: 14px; resize: vertical; }
 .rc-pop-foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; }
 .rc-setstatus { font-size: 12px; padding: 5px 10px; white-space: nowrap; }
+/* Keep the call-list table from overflowing so the phone number never gets clipped */
+.rc-table .rc-said { max-width: 230px; }
+.rc-table .rc-statuscell { white-space: nowrap; }
+.rc-table .rc-statuscell .rc-chip { vertical-align: middle; }
+.rc-table .rc-statuscell .rc-setstatus { margin-left: 8px; vertical-align: middle; }
+.rc-table .rc-callcell { white-space: nowrap; }
+.rc-table .rc-callcell .call-tel { white-space: nowrap; font-weight: 700; }
 
 /* SMS hourly charts */
 .hourly-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: #475569; margin: 4px 0 10px; }

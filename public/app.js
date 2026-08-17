@@ -3623,15 +3623,14 @@ function renderSmsCallNow(rows) {
     return '<tr><td><b>' + esc(r.name || '') + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span></td>' +
       '<td>' + stage + '</td>' +
       '<td class="rc-said">' + (said ? '“' + esc(said.slice(0, 90)) + (said.length > 90 ? '…' : '') + '”' : '<span class="muted">–</span>') + '</td>' +
-      '<td><span class="rc-chip st-' + esc(meta.tab) + '">' + meta.emoji + ' ' + esc(meta.label) + '</span></td>' +
-      '<td><button class="ghost sm rc-setstatus" data-idx="' + gi + '">Update ▾</button></td>' +
-      '<td>' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') + '</td>' +
+      '<td class="rc-statuscell"><span class="rc-chip st-' + esc(meta.tab) + '">' + meta.emoji + ' ' + esc(meta.label) + '</span><button class="ghost sm rc-setstatus" data-idx="' + gi + '">Update ▾</button></td>' +
+      '<td class="rc-callcell">' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') + '</td>' +
       '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td>' +
-      '<td><button class="mini rc-pounce sms-fullsite" data-idx="' + gi + '" title="Build them the full website with Pounce">🐆 Full website</button></td></tr>';
+      '<td><button class="mini rc-pounce sms-fullsite" data-idx="' + gi + '" title="Build them the full website with Pounce">🐆 Full site</button></td></tr>';
   }).join('');
   el.innerHTML = '<div class="rc-tabs">' + tabsHtml + '</div>' +
-    '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Business</th><th>Stage</th><th>Their reply</th><th>Status</th><th></th><th>Call</th><th>Mockup</th><th>Full site</th></tr></thead><tbody>' +
-    (bodyHtml || '<tr><td colspan="8" class="muted" style="padding:14px">Nobody in this tab yet.</td></tr>') +
+    '<div class="tgt-scroll"><table class="cust-table rc-table"><thead><tr><th>Business</th><th>Stage</th><th>Their reply</th><th>Status</th><th>Call</th><th>Mockup</th><th>Full site</th></tr></thead><tbody>' +
+    (bodyHtml || '<tr><td colspan="7" class="muted" style="padding:14px">Nobody in this tab yet.</td></tr>') +
     '</tbody></table></div>';
   el.querySelectorAll('.rc-tab').forEach((b) => b.addEventListener('click', () => { smsCallTab = b.dataset.tab; renderSmsCallNow(smsCallNowRows); }));
   el.querySelectorAll('.rc-setstatus').forEach((b) => b.addEventListener('click', () => openCallStatus(Number(b.dataset.idx))));
