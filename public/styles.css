@@ -1544,8 +1544,10 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .rc-table .rc-statuscell { white-space: nowrap; }
 .rc-table .rc-statuscell .rc-chip { vertical-align: middle; }
 .rc-table .rc-statuscell .rc-setstatus { margin-left: 8px; vertical-align: middle; }
-.rc-table .rc-callcell { white-space: nowrap; }
-.rc-table .rc-callcell .call-tel { white-space: nowrap; font-weight: 700; }
+.rc-calllink { display: inline-block; margin-top: 5px; white-space: nowrap; font-weight: 700; font-size: 14px; }
+.rc-table .rc-replied { white-space: nowrap; font-size: 12px; color: #475569; }
+.rc-table .rc-links { white-space: nowrap; }
+.rc-table .rc-links .sms-fullsite { margin-left: 10px; }
 
 /* SMS hourly charts */
 .hourly-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: #475569; margin: 4px 0 10px; }

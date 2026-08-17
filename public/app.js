@@ -3614,23 +3614,28 @@ function renderSmsCallNow(rows) {
   const tabsHtml = SMS_CALL_TABS
     .filter((t) => t.id === 'tocall' || t.id === 'all' || counts[t.id] > 0)
     .map((t) => '<button class="rc-tab' + (smsCallTab === t.id ? ' on' : '') + '" data-tab="' + t.id + '">' + t.label + ' <span class="rc-tabn">' + (counts[t.id] || 0) + '</span></button>').join('');
-  const visible = smsCallNowRows.filter((r) => smsCallTab === 'all' || smsTabOf(r.status || '') === smsCallTab);
+  const visible = smsCallNowRows
+    .filter((r) => smsCallTab === 'all' || smsTabOf(r.status || '') === smsCallTab)
+    .sort((a, b) => String(a.reply_at || '').localeCompare(String(b.reply_at || ''))); // oldest at the top, newest at the bottom
   const bodyHtml = visible.map((r) => {
     const gi = smsCallNowRows.indexOf(r);
     const meta = smsStatusMeta(r.status || '');
     const stage = r.post_reply === 'positive' ? '🔥 Yes AFTER seeing the mockup' : (r.link_sent_at ? 'Sent the mockup, awaiting reply' : '✅ Said yes to seeing it');
     const said = replyByPhone[String(r.phone || '')] || '';
-    return '<tr><td><b>' + esc(r.name || '') + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span></td>' +
+    // Phone lives INSIDE the business cell (far left) so it can never be pushed off the right edge.
+    return '<tr><td><b>' + esc(r.name || '') + '</b>' +
+        '<span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span>' +
+        (r.phone ? '<a class="call-tel rc-calllink" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') + '</td>' +
+      '<td class="rc-replied">' + (r.reply_at ? esc(fmtStamp(r.reply_at)) : '<span class="muted">–</span>') + '</td>' +
       '<td>' + stage + '</td>' +
       '<td class="rc-said">' + (said ? '“' + esc(said.slice(0, 90)) + (said.length > 90 ? '…' : '') + '”' : '<span class="muted">–</span>') + '</td>' +
       '<td class="rc-statuscell"><span class="rc-chip st-' + esc(meta.tab) + '">' + meta.emoji + ' ' + esc(meta.label) + '</span><button class="ghost sm rc-setstatus" data-idx="' + gi + '">Update ▾</button></td>' +
-      '<td class="rc-callcell">' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') + '</td>' +
-      '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td>' +
-      '<td><button class="mini rc-pounce sms-fullsite" data-idx="' + gi + '" title="Build them the full website with Pounce">🐆 Full site</button></td></tr>';
+      '<td class="rc-links">' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '<span class="muted">–</span>') +
+        '<button class="mini rc-pounce sms-fullsite" data-idx="' + gi + '" title="Build them the full website with Pounce">🐆 Full site</button></td></tr>';
   }).join('');
   el.innerHTML = '<div class="rc-tabs">' + tabsHtml + '</div>' +
-    '<div class="tgt-scroll"><table class="cust-table rc-table"><thead><tr><th>Business</th><th>Stage</th><th>Their reply</th><th>Status</th><th>Call</th><th>Mockup</th><th>Full site</th></tr></thead><tbody>' +
-    (bodyHtml || '<tr><td colspan="7" class="muted" style="padding:14px">Nobody in this tab yet.</td></tr>') +
+    '<div class="tgt-scroll"><table class="cust-table rc-table"><thead><tr><th>Business</th><th>Replied</th><th>Stage</th><th>Their reply</th><th>Status</th><th>Mockup / site</th></tr></thead><tbody>' +
+    (bodyHtml || '<tr><td colspan="6" class="muted" style="padding:14px">Nobody in this tab yet.</td></tr>') +
     '</tbody></table></div>';
   el.querySelectorAll('.rc-tab').forEach((b) => b.addEventListener('click', () => { smsCallTab = b.dataset.tab; renderSmsCallNow(smsCallNowRows); }));
   el.querySelectorAll('.rc-setstatus').forEach((b) => b.addEventListener('click', () => openCallStatus(Number(b.dataset.idx))));
