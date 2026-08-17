@@ -3587,9 +3587,22 @@ var SMS_STATUS_BTNS = ['contacted', 'interested', 'appointment-link-sent', 'meet
 function smsStatusMeta(v) { for (var i = 0; i < SMS_STATUS.length; i++) { if (SMS_STATUS[i].v === (v || '')) return SMS_STATUS[i]; } return SMS_STATUS[0]; }
 function smsTabOf(v) { return smsStatusMeta(v).tab; }
 var smsCallTab = 'tocall';
+// Statuses you just set, kept locally and re-applied over incoming poll data until the server's
+// blob index catches up (its reads lag writes by a beat). Without this, the next 60s poll would
+// briefly revert a status you just changed, which looked like "it didn't save until I refreshed".
+var smsLocalStatus = {};
+function callRowKey(r) { return (r && (r.key || r.slug || slugFromUrl(r.view_url))) || ''; }
 function renderSmsCallNow(rows) {
   const el = $('sms-callnow'); if (!el) return;
   smsCallNowRows = rows || [];
+  // overlay any just-set statuses; drop the override once the server agrees so it stays authoritative
+  smsCallNowRows.forEach((r) => {
+    const k = callRowKey(r);
+    if (k && smsLocalStatus[k] != null) {
+      if ((r.status || '') === smsLocalStatus[k]) delete smsLocalStatus[k];
+      else r.status = smsLocalStatus[k];
+    }
+  });
   if (!smsCallNowRows.length) { el.innerHTML = '<p class="muted">Nobody yet. Positive repliers appear here automatically.</p>'; return; }
   // latest reply text per phone, from the replies feed, so you see what they said without switching tab
   const replyByPhone = {};
@@ -3641,25 +3654,26 @@ function openCallStatus(idx) {
     '<div class="rc-pop-foot"><span id="rc-pop-msg" class="muted"></span><button id="rc-pop-save" class="primary">Save</button></div></div>';
   showMetricModal('Update: ' + esc(r.name || 'lead'), body);
   let picked = cur;
+  const key = callRowKey(r); const nm = r.name || '';
   const box = $('metric-modal');
   box.querySelectorAll('.rc-opt').forEach((b) => b.addEventListener('click', () => { picked = b.dataset.v; box.querySelectorAll('.rc-opt').forEach((x) => x.classList.toggle('on', x === b)); }));
-  $('rc-pop-save').addEventListener('click', () => saveCallStatus(idx, picked, ($('rc-note') && $('rc-note').value) || ''));
+  $('rc-pop-save').addEventListener('click', () => saveCallStatus(key, nm, picked, ($('rc-note') && $('rc-note').value) || ''));
 }
-async function saveCallStatus(idx, status, comment) {
-  const r = smsCallNowRows[idx]; if (!r) return;
-  const key = r.key || r.slug || slugFromUrl(r.view_url);
+async function saveCallStatus(key, name, status, comment) {
   const msg = $('rc-pop-msg'); const save = $('rc-pop-save');
   if (!key) { if (msg) msg.textContent = 'This lead has no record to attach a status to.'; return; }
   if (save) { save.disabled = true; save.textContent = 'Saving…'; }
   try {
-    const payload = { slug: key, name: r.name || '', status: status };
+    const payload = { slug: key, name: name || '', status: status };
     const c = String(comment || '').trim(); if (c) payload.comment = c;
     const res = await fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (!res.ok) throw new Error('save failed');
-    r.status = status;                                              // reflect locally at once
+    smsLocalStatus[key] = status;                                  // hold it over lagging polls
+    const row = smsCallNowRows.find((x) => callRowKey(x) === key); // find by lead, not a stale index
+    if (row) row.status = status;                                  // reflect locally at once
     if (callsData && callsData.statuses) callsData.statuses[key] = status; // keep other CRM views in sync
     closeMetricModal();
-    smsCallTab = smsTabOf(status);                                  // jump to where we just filed them
+    smsCallTab = smsTabOf(status);                                 // jump to where we just filed them
     renderSmsCallNow(smsCallNowRows);
     setSmsReadyBadge(smsCallNowRows.filter((x) => !x.status).length);
   } catch (e) { if (msg) msg.textContent = '⚠️ Could not save, try again.'; if (save) { save.disabled = false; save.textContent = 'Save'; } }
