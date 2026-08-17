@@ -3622,21 +3622,27 @@ function renderSmsCallNow(rows) {
     const meta = smsStatusMeta(r.status || '');
     const stage = r.post_reply === 'positive' ? '🔥 Yes AFTER seeing the mockup' : (r.link_sent_at ? 'Sent the mockup, awaiting reply' : '✅ Said yes to seeing it');
     const said = replyByPhone[String(r.phone || '')] || '';
-    // Phone lives INSIDE the business cell (far left) so it can never be pushed off the right edge.
-    return '<tr><td><b>' + esc(r.name || '') + '</b>' +
-        '<span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span>' +
-        (r.phone ? '<a class="call-tel rc-calllink" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') + '</td>' +
-      '<td class="rc-replied">' + (r.reply_at ? esc(fmtStamp(r.reply_at)) : '<span class="muted">–</span>') + '</td>' +
-      '<td>' + stage + '</td>' +
-      '<td class="rc-said">' + (said ? '“' + esc(said.slice(0, 90)) + (said.length > 90 ? '…' : '') + '”' : '<span class="muted">–</span>') + '</td>' +
-      '<td class="rc-statuscell"><span class="rc-chip st-' + esc(meta.tab) + '">' + meta.emoji + ' ' + esc(meta.label) + '</span><button class="ghost sm rc-setstatus" data-idx="' + gi + '">Update ▾</button></td>' +
-      '<td class="rc-links">' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '<span class="muted">–</span>') +
-        '<button class="mini rc-pounce sms-fullsite" data-idx="' + gi + '" title="Build them the full website with Pounce">🐆 Full site</button></td></tr>';
+    return '<div class="rc-card">' +
+      '<div class="rc-card-top">' +
+        '<div class="rc-biz"><div class="rc-name">' + esc(r.name || '') + '</div>' +
+          (r.location ? '<div class="rc-loc">' + esc(r.location) + '</div>' : '') + '</div>' +
+        '<span class="rc-chip st-' + esc(meta.tab) + '">' + meta.emoji + ' ' + esc(meta.label) + '</span>' +
+      '</div>' +
+      '<div class="rc-card-meta">' +
+        (r.reply_at ? '<span class="rc-meta">🕐 Replied ' + esc(fmtStamp(r.reply_at)) + '</span>' : '') +
+        '<span class="rc-meta">📨 ' + stage + '</span>' +
+      '</div>' +
+      (said ? '<div class="rc-reply">“' + esc(said.slice(0, 200)) + (said.length > 200 ? '…' : '') + '”</div>' : '') +
+      '<div class="rc-card-actions">' +
+        (r.phone ? '<a class="rc-act rc-phone" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') +
+        (r.view_url ? '<a class="rc-act rc-view" href="' + esc(r.view_url) + '" target="_blank" rel="noopener">👁 View mockup</a>' : '') +
+        '<button class="rc-act rc-fullsite sms-fullsite" data-idx="' + gi + '" title="Build them the full website with Pounce">🐆 Full site</button>' +
+        '<button class="rc-act rc-update rc-setstatus" data-idx="' + gi + '">✏️ Update status</button>' +
+      '</div>' +
+    '</div>';
   }).join('');
   el.innerHTML = '<div class="rc-tabs">' + tabsHtml + '</div>' +
-    '<div class="tgt-scroll"><table class="cust-table rc-table"><thead><tr><th>Business</th><th>Replied</th><th>Stage</th><th>Their reply</th><th>Status</th><th>Mockup / site</th></tr></thead><tbody>' +
-    (bodyHtml || '<tr><td colspan="6" class="muted" style="padding:14px">Nobody in this tab yet.</td></tr>') +
-    '</tbody></table></div>';
+    '<div class="rc-cards">' + (bodyHtml || '<p class="muted" style="padding:14px">Nobody in this tab yet.</p>') + '</div>';
   el.querySelectorAll('.rc-tab').forEach((b) => b.addEventListener('click', () => { smsCallTab = b.dataset.tab; renderSmsCallNow(smsCallNowRows); }));
   el.querySelectorAll('.rc-setstatus').forEach((b) => b.addEventListener('click', () => openCallStatus(Number(b.dataset.idx))));
   el.querySelectorAll('.sms-fullsite').forEach((b) => b.addEventListener('click', () => {

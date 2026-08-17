@@ -1538,16 +1538,26 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .rc-note-l { display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 5px; }
 .rc-note { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 10px; padding: 9px 11px; font: inherit; font-size: 14px; resize: vertical; }
 .rc-pop-foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; }
-.rc-setstatus { font-size: 12px; padding: 5px 10px; white-space: nowrap; }
-/* Keep the call-list table from overflowing so the phone number never gets clipped */
-.rc-table .rc-said { max-width: 230px; }
-.rc-table .rc-statuscell { white-space: nowrap; }
-.rc-table .rc-statuscell .rc-chip { vertical-align: middle; }
-.rc-table .rc-statuscell .rc-setstatus { margin-left: 8px; vertical-align: middle; }
-.rc-calllink { display: inline-block; margin-top: 5px; white-space: nowrap; font-weight: 700; font-size: 14px; }
-.rc-table .rc-replied { white-space: nowrap; font-size: 12px; color: #475569; }
-.rc-table .rc-links { white-space: nowrap; }
-.rc-table .rc-links .sms-fullsite { margin-left: 10px; }
+/* Call list as spaced cards, so every record is boxed, clearly separated, and nothing clips */
+.rc-cards { display: flex; flex-direction: column; gap: 12px; }
+.rc-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(15,23,42,.05); }
+.rc-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.rc-name { font-weight: 800; font-size: 15px; color: #0f172a; line-height: 1.25; }
+.rc-loc { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+.rc-card-top .rc-chip { flex: none; }
+.rc-card-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 10px; }
+.rc-meta { font-size: 12.5px; color: #64748b; }
+.rc-reply { margin-top: 10px; padding: 9px 12px; background: #f8fafc; border-left: 3px solid #cbd5e1; border-radius: 0 8px 8px 0; font-style: italic; color: #334155; font-size: 13.5px; line-height: 1.4; }
+.rc-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.rc-act { appearance: none; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; padding: 8px 13px; border-radius: 10px; cursor: pointer; text-decoration: none; border: 1px solid #e2e8f0; background: #fff; color: #334155; }
+.rc-act:hover { background: #f8fafc; }
+.rc-phone { color: #0f766e; border-color: #99f6e4; background: #f0fdfa; font-size: 14px; }
+.rc-phone:hover { background: #ccfbf1; }
+.rc-view { color: #4338ca; border-color: #c7d2fe; background: #eef2ff; }
+.rc-view:hover { background: #e0e7ff; }
+.rc-update { margin-left: auto; background: #0f766e; border-color: #0f766e; color: #fff; }
+.rc-update:hover { background: #0e6b64; }
+@media (max-width: 560px) { .rc-update { margin-left: 0; } .rc-act { flex: 1 1 auto; justify-content: center; } }
 
 /* SMS hourly charts */
 .hourly-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: #475569; margin: 4px 0 10px; }
