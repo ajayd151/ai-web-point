@@ -1540,7 +1540,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .rc-pop-foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; }
 /* Call list as spaced cards, so every record is boxed, clearly separated, and nothing clips */
 .rc-cards { display: flex; flex-direction: column; gap: 12px; }
-.rc-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 3px rgba(15,23,42,.05); }
+.rc-card { background: #fff; border: 1.5px solid #0f766e; border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 4px rgba(15,118,110,.12); }
 .rc-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .rc-name { font-weight: 800; font-size: 15px; color: #0f172a; line-height: 1.25; }
 .rc-loc { font-size: 12px; color: #94a3b8; margin-top: 2px; }
