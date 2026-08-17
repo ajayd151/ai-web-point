@@ -1512,6 +1512,33 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .cap-health.good { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 .cap-health.warn { background: #fff8ec; color: #b45309; border: 1px solid #fde68a; }
 .cap-health.bad { background: #fef2f2; color: #b91c1c; border: 1px solid #f5b5b5; }
+/* Call-list status tabs */
+.rc-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.rc-tab { appearance: none; border: 1px solid #e2e8f0; background: #fff; color: #475569; font-size: 13px; font-weight: 600; padding: 6px 11px; border-radius: 999px; cursor: pointer; }
+.rc-tab:hover { background: #f8fafc; }
+.rc-tab.on { background: #0f766e; border-color: #0f766e; color: #fff; }
+.rc-tabn { display: inline-block; min-width: 17px; text-align: center; font-size: 11px; font-weight: 700; padding: 0 5px; border-radius: 999px; background: rgba(15,118,110,.1); color: #0f766e; margin-left: 2px; }
+.rc-tab.on .rc-tabn { background: rgba(255,255,255,.25); color: #fff; }
+/* Status chip in a row */
+.rc-chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 999px; white-space: nowrap; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.rc-chip.st-tocall { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+.rc-chip.st-spoke { background: #f5f3ff; color: #6d28d9; border-color: #ddd6fe; }
+.rc-chip.st-interested { background: #fff7ed; color: #c2410c; border-color: #fed7aa; }
+.rc-chip.st-booked { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
+.rc-chip.st-callback { background: #fefce8; color: #a16207; border-color: #fde68a; }
+.rc-chip.st-noanswer { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
+.rc-chip.st-notint { background: #fef2f2; color: #b91c1c; border-color: #f5b5b5; }
+/* Update-status popup (inside the shared metric modal) */
+.rc-status-pop { min-width: 300px; }
+.rc-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.rc-opt { appearance: none; border: 1px solid #e2e8f0; background: #fff; color: #334155; font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 10px; cursor: pointer; text-align: left; }
+.rc-opt:hover { background: #f8fafc; border-color: #cbd5e1; }
+.rc-opt.on { background: #0f766e; border-color: #0f766e; color: #fff; }
+.rc-opt-clear { color: #64748b; }
+.rc-note-l { display: block; font-size: 12px; font-weight: 600; color: #64748b; margin-bottom: 5px; }
+.rc-note { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 10px; padding: 9px 11px; font: inherit; font-size: 14px; resize: vertical; }
+.rc-pop-foot { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin-top: 12px; }
+.rc-setstatus { font-size: 12px; padding: 5px 10px; white-space: nowrap; }
 
 /* SMS hourly charts */
 .hourly-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: #475569; margin: 4px 0 10px; }

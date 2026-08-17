@@ -3557,30 +3557,112 @@ function renderSmsCampaigns(rows) {
 }
 var smsCallNowRows = []; var smsRepliesCache = [];
 function slugFromUrl(u) { const m = String(u || '').match(/\/v\/([a-z0-9-]+)/i); return m ? m[1] : ''; }
+// ---- Call list: CRM statuses + notes -------------------------------------------------------
+// Every status writes to the SAME /api/note store the Lead Profile / Prowl use (keyed by the
+// lead's own key), so a status set here shows everywhere and nothing is stranded.
+var SMS_STATUS = [
+  { v: '',                      label: 'To call',                     emoji: '📞', tab: 'tocall' },
+  { v: 'contacted',             label: 'Spoke to them',               emoji: '💬', tab: 'spoke' },
+  { v: 'interested',            label: 'Interested / wants demo',     emoji: '🔥', tab: 'interested' },
+  { v: 'appointment-link-sent', label: 'Booking link sent',           emoji: '🔗', tab: 'interested' },
+  { v: 'meeting-booked',        label: 'Appointment booked',          emoji: '📅', tab: 'booked' },
+  { v: 'won',                   label: 'Won',                         emoji: '🎉', tab: 'booked' },
+  { v: 'callback',              label: 'Call back later',             emoji: '⏰', tab: 'callback' },
+  { v: 'no-answer',             label: "Couldn't get hold of them",   emoji: '📵', tab: 'noanswer' },
+  { v: 'invalid-phone',         label: 'Wrong number',                emoji: '☎️', tab: 'noanswer' },
+  { v: 'not-interested',        label: 'Not interested',              emoji: '🚫', tab: 'notint' },
+  { v: 'declined',              label: 'Not interested (via mockup)', emoji: '🚫', tab: 'notint' },
+  { v: 'lost',                  label: 'Lost',                        emoji: '❌', tab: 'notint' },
+  { v: 'dnd',                   label: 'Do not contact',              emoji: '⛔', tab: 'notint' },
+];
+// The tabs across the top of the call list. To-call + All always show; the rest appear once used.
+var SMS_CALL_TABS = [
+  { id: 'tocall', label: '📞 To call' }, { id: 'spoke', label: '💬 Spoke to' },
+  { id: 'interested', label: '🔥 Interested' }, { id: 'booked', label: '📅 Booked' },
+  { id: 'callback', label: '⏰ Callback' }, { id: 'noanswer', label: "📵 Couldn't reach" },
+  { id: 'notint', label: '🚫 Not interested' }, { id: 'all', label: '📋 All' },
+];
+// The dispositions offered in the Update popup (declined is prospect-triggered, so not a manual one).
+var SMS_STATUS_BTNS = ['contacted', 'interested', 'appointment-link-sent', 'meeting-booked', 'won', 'callback', 'no-answer', 'not-interested', 'invalid-phone', 'dnd'];
+function smsStatusMeta(v) { for (var i = 0; i < SMS_STATUS.length; i++) { if (SMS_STATUS[i].v === (v || '')) return SMS_STATUS[i]; } return SMS_STATUS[0]; }
+function smsTabOf(v) { return smsStatusMeta(v).tab; }
+var smsCallTab = 'tocall';
 function renderSmsCallNow(rows) {
   const el = $('sms-callnow'); if (!el) return;
   smsCallNowRows = rows || [];
-  if (!rows.length) { el.innerHTML = '<p class="muted">Nobody yet. Positive repliers appear here automatically.</p>'; return; }
+  if (!smsCallNowRows.length) { el.innerHTML = '<p class="muted">Nobody yet. Positive repliers appear here automatically.</p>'; return; }
   // latest reply text per phone, from the replies feed, so you see what they said without switching tab
   const replyByPhone = {};
   (smsRepliesCache || []).forEach((rp) => { const p = String(rp.from_phone || ''); if (p && !replyByPhone[p] && rp.body && rp.verdict !== 'optout-link') replyByPhone[p] = rp.body; });
-  el.innerHTML = '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Business</th><th>Stage</th><th>Their reply</th><th>Call</th><th>Mockup</th><th>Full site</th></tr></thead><tbody>' +
-    rows.map((r, i) => {
-      const stage = r.post_reply === 'positive' ? '🔥 Yes AFTER seeing the mockup' : (r.link_sent_at ? 'Sent the mockup, awaiting reply' : '✅ Said yes to seeing it');
-      const said = replyByPhone[String(r.phone || '')] || '';
-      return '<tr><td><b>' + esc(r.name || '') + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span></td>' +
-        '<td>' + stage + '</td>' +
-        '<td class="rc-said">' + (said ? '“' + esc(said.slice(0, 90)) + (said.length > 90 ? '…' : '') + '”' : '<span class="muted">–</span>') + '</td>' +
-        '<td>' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') + '</td>' +
-        '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td>' +
-        '<td><button class="mini rc-pounce sms-fullsite" data-idx="' + i + '" title="Build them the full website with Pounce">🐆 Full website</button></td></tr>';
-    }).join('') + '</tbody></table></div>';
+  // per-tab counts
+  const counts = { all: 0 }; SMS_CALL_TABS.forEach((t) => { counts[t.id] = counts[t.id] || 0; });
+  smsCallNowRows.forEach((r) => { const tab = smsTabOf(r.status || ''); counts[tab] = (counts[tab] || 0) + 1; counts.all++; });
+  if (smsCallTab !== 'all' && !counts[smsCallTab]) smsCallTab = counts.tocall ? 'tocall' : 'all'; // don't strand the user on an emptied tab
+  const tabsHtml = SMS_CALL_TABS
+    .filter((t) => t.id === 'tocall' || t.id === 'all' || counts[t.id] > 0)
+    .map((t) => '<button class="rc-tab' + (smsCallTab === t.id ? ' on' : '') + '" data-tab="' + t.id + '">' + t.label + ' <span class="rc-tabn">' + (counts[t.id] || 0) + '</span></button>').join('');
+  const visible = smsCallNowRows.filter((r) => smsCallTab === 'all' || smsTabOf(r.status || '') === smsCallTab);
+  const bodyHtml = visible.map((r) => {
+    const gi = smsCallNowRows.indexOf(r);
+    const meta = smsStatusMeta(r.status || '');
+    const stage = r.post_reply === 'positive' ? '🔥 Yes AFTER seeing the mockup' : (r.link_sent_at ? 'Sent the mockup, awaiting reply' : '✅ Said yes to seeing it');
+    const said = replyByPhone[String(r.phone || '')] || '';
+    return '<tr><td><b>' + esc(r.name || '') + '</b><span class="muted" style="display:block;font-size:11px">' + esc(r.location || '') + '</span></td>' +
+      '<td>' + stage + '</td>' +
+      '<td class="rc-said">' + (said ? '“' + esc(said.slice(0, 90)) + (said.length > 90 ? '…' : '') + '”' : '<span class="muted">–</span>') + '</td>' +
+      '<td><span class="rc-chip st-' + esc(meta.tab) + '">' + meta.emoji + ' ' + esc(meta.label) + '</span></td>' +
+      '<td><button class="ghost sm rc-setstatus" data-idx="' + gi + '">Update ▾</button></td>' +
+      '<td>' + (r.phone ? '<a class="call-tel" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') + '</td>' +
+      '<td>' + (r.view_url ? '<a href="' + esc(r.view_url) + '" target="_blank" rel="noopener">view</a>' : '–') + '</td>' +
+      '<td><button class="mini rc-pounce sms-fullsite" data-idx="' + gi + '" title="Build them the full website with Pounce">🐆 Full website</button></td></tr>';
+  }).join('');
+  el.innerHTML = '<div class="rc-tabs">' + tabsHtml + '</div>' +
+    '<div class="tgt-scroll"><table class="cust-table"><thead><tr><th>Business</th><th>Stage</th><th>Their reply</th><th>Status</th><th></th><th>Call</th><th>Mockup</th><th>Full site</th></tr></thead><tbody>' +
+    (bodyHtml || '<tr><td colspan="8" class="muted" style="padding:14px">Nobody in this tab yet.</td></tr>') +
+    '</tbody></table></div>';
+  el.querySelectorAll('.rc-tab').forEach((b) => b.addEventListener('click', () => { smsCallTab = b.dataset.tab; renderSmsCallNow(smsCallNowRows); }));
+  el.querySelectorAll('.rc-setstatus').forEach((b) => b.addEventListener('click', () => openCallStatus(Number(b.dataset.idx))));
   el.querySelectorAll('.sms-fullsite').forEach((b) => b.addEventListener('click', () => {
     const r = smsCallNowRows[Number(b.dataset.idx)]; if (!r) return;
     const slug = r.slug || slugFromUrl(r.view_url) || r.key;
     if (!slug) { alert('This lead has no mockup yet, so there is nothing to build the full site from.'); return; }
     openPounce({ slug: slug, name: r.name || '', location: r.location || '', category: r.category || '', phone: r.phone || '', phones: r.phone ? [r.phone] : [], viewUrl: r.view_url || '' });
   }));
+}
+// Quick status + note popup for one call-list lead.
+function openCallStatus(idx) {
+  const r = smsCallNowRows[idx]; if (!r) return;
+  const cur = r.status || '';
+  const opts = SMS_STATUS_BTNS.map((v) => { const m = smsStatusMeta(v); return '<button class="rc-opt' + (cur === v ? ' on' : '') + '" data-v="' + v + '">' + m.emoji + ' ' + esc(m.label) + '</button>'; }).join('') +
+    '<button class="rc-opt rc-opt-clear' + (cur === '' ? ' on' : '') + '" data-v="">↩︎ Back to To-call</button>';
+  const body = '<div class="rc-status-pop"><div class="rc-opts">' + opts + '</div>' +
+    '<label class="rc-note-l">Add a note (optional)</label>' +
+    '<textarea id="rc-note" class="rc-note" rows="3" placeholder="e.g. Spoke to the owner, not interested right now, try again in spring."></textarea>' +
+    '<div class="rc-pop-foot"><span id="rc-pop-msg" class="muted"></span><button id="rc-pop-save" class="primary">Save</button></div></div>';
+  showMetricModal('Update: ' + esc(r.name || 'lead'), body);
+  let picked = cur;
+  const box = $('metric-modal');
+  box.querySelectorAll('.rc-opt').forEach((b) => b.addEventListener('click', () => { picked = b.dataset.v; box.querySelectorAll('.rc-opt').forEach((x) => x.classList.toggle('on', x === b)); }));
+  $('rc-pop-save').addEventListener('click', () => saveCallStatus(idx, picked, ($('rc-note') && $('rc-note').value) || ''));
+}
+async function saveCallStatus(idx, status, comment) {
+  const r = smsCallNowRows[idx]; if (!r) return;
+  const key = r.key || r.slug || slugFromUrl(r.view_url);
+  const msg = $('rc-pop-msg'); const save = $('rc-pop-save');
+  if (!key) { if (msg) msg.textContent = 'This lead has no record to attach a status to.'; return; }
+  if (save) { save.disabled = true; save.textContent = 'Saving…'; }
+  try {
+    const payload = { slug: key, name: r.name || '', status: status };
+    const c = String(comment || '').trim(); if (c) payload.comment = c;
+    const res = await fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error('save failed');
+    r.status = status;                                              // reflect locally at once
+    if (callsData && callsData.statuses) callsData.statuses[key] = status; // keep other CRM views in sync
+    closeMetricModal();
+    smsCallTab = smsTabOf(status);                                  // jump to where we just filed them
+    renderSmsCallNow(smsCallNowRows);
+    setSmsReadyBadge(smsCallNowRows.filter((x) => !x.status).length);
+  } catch (e) { if (msg) msg.textContent = '⚠️ Could not save, try again.'; if (save) { save.disabled = false; save.textContent = 'Save'; } }
 }
 // short date+time stamp, e.g. "23 Jul, 18:42" (UK). Empty string if no timestamp.
 function fmtStamp(ts) { if (!ts) return ''; try { return new Date(ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }

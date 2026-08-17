@@ -63,10 +63,14 @@ module.exports = async (req, res) => {
     if (q.id) { res.status(200).json({ items: await campaignItems(Number(q.id)) }); return; }
     // Ready-to-call = positive repliers you have NOT yet dealt with (still Interested-ish). Once
     // you book/dismiss them their status moves on and they drop off, so the green badge self-clears.
-    const TERMINAL = { 'meeting-booked': 1, 'appointment-link-sent': 1, won: 1, lost: 1, 'not-interested': 1, declined: 1, 'invalid-phone': 1, dnd: 1 };
+    // We KEEP dealt-with leads in the list (tagged with their status) so the call-list tabs
+    // (Not interested / Callback / Booked ...) have something to show. The green "to call" badge
+    // counts only leads with NO status yet (brand new positive repliers), so it still self-clears
+    // the moment you disposition someone.
     const idx = (await readJson('notes/_index.json')) || {};
-    const callNow = (await readyToCall(200)).filter((r) => !TERMINAL[(idx[r.key] && idx[r.key].status) || '']);
-    if (q.count) { res.status(200).json({ readyCount: callNow.length }); return; }
+    const callAll = (await readyToCall(200)).map((r) => Object.assign({}, r, { status: (idx[r.key] && idx[r.key].status) || '' }));
+    const readyCount = callAll.filter((r) => !r.status).length; // untouched "to call" only
+    if (q.count) { res.status(200).json({ readyCount: readyCount }); return; }
     if (q.hourly) {
       const hto = q.hto ? String(q.hto) : new Date(Date.now() + 86400000).toISOString();
       const hfrom = q.hfrom ? String(q.hfrom) : new Date(Date.now() - 30 * 86400000).toISOString();
@@ -87,8 +91,8 @@ module.exports = async (req, res) => {
       campaigns: await listCampaigns(),
       replies: await listInbound(100),
       journey: q.light ? undefined : await journey(200), // heavy join, skipped on the frequent poll
-      callNow: callNow.slice(0, 50),
-      readyCount: callNow.length,
+      callNow: callAll.slice(0, 200),
+      readyCount: readyCount,
       stopCount: oc.reply,            // STOP texts, the number carriers police
       linkOptouts: oc.link,           // soft opt-outs (a tap on the link) - proof it works
       brake: brakeActive ? { paused: true, until: brake.until, rate: brake.rate, stops: brake.stops, sent: brake.sent } : { paused: false },
