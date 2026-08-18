@@ -4,7 +4,7 @@
 // Sends only happen inside working hours (Mon-Fri, 09:00-17:59 UK) and inside the daily 'sms'
 // cap from Admin > Limits. Without Twilio keys, mockups still build but sends wait, so a campaign
 // can be prepared before the account exists.
-const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, campaignKeys, addItemsToCampaign, stampToppedUp, stopWindow, ensureBaseVersions, currentMsg } = require('../lib/smsdb');
+const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, dueFunnelAck, dueFunnelSite, markFunnelAck, markFunnelSite, optoutSet, campaignKeys, addItemsToCampaign, stampToppedUp, stopWindow, ensureBaseVersions, currentMsg } = require('../lib/smsdb');
 const { buildAudience } = require('../lib/smsaudience');
 const { sendSms, smsConfigured, lookupPhone, optOutUrl } = require('../lib/sms');
 const { list, put } = require('@vercel/blob');
@@ -60,6 +60,13 @@ function isCron(req) {
 // evening read). Override with SMS_SEND_FROM_HOUR / SMS_SEND_TO_HOUR.
 const SEND_FROM = Math.max(0, Math.min(23, Number(process.env.SMS_SEND_FROM_HOUR) || 8));
 const SEND_TO = Math.max(SEND_FROM + 1, Math.min(24, Number(process.env.SMS_SEND_TO_HOUR) || 20));
+// Auto-funnel timings (env-overridable). After a positive reply: a holding message, then an
+// auto-built full website. OWNER_MOBILE gets an alert on every unreviewed auto-send.
+const FUNNEL_ACK_MIN = Math.max(0, Number(process.env.SMS_FUNNEL_ACK_MIN) || 2);
+const FUNNEL_SITE_MIN = Math.max(1, Number(process.env.SMS_FUNNEL_SITE_MIN) || 90);
+const FUNNEL_SITES_PER_TICK = 1;   // a full build is heavy (AI copy + hero image), one per tick
+const OWNER_MOBILE = process.env.OWNER_MOBILE || '';
+const FUNNEL_ACK_MSG = "Hi {business}, that's brilliant. I am going to get your full one-page website ready now, I just need to tweak a few bits. I will send you the link to take a look at shortly. Bear with me.";
 function londonHM(now) {
   const f = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date(now));
   const h = Number((f.find((p) => p.type === 'hour') || {}).value || 0);
@@ -177,6 +184,26 @@ async function enrichCallList() {
     await put('calls/_enrich.json', JSON.stringify(ctrl), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
   } catch (e) { /* next tick retries */ }
   return todo.length;
+}
+
+// Build the full one-page website by calling our own /api/pounce with a server-minted owner cookie.
+// Reuses the whole Pounce pipeline. Mints a slug from the business if the lead never got a mockup.
+async function buildFullSite(base, item) {
+  const cookie = 'aiwp=' + encodeURIComponent(sign(ownerEmail(), Date.now()));
+  const slug = item.slug || (String(item.name || 'site').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 56) + '-' + String(item.key || Date.now()).replace(/[^a-z0-9]/gi, '').slice(-6));
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), 200000);
+  try {
+    const r = await fetch(base + '/api/pounce', {
+      method: 'POST', signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ slug: slug, name: item.name, location: item.location, category: item.category, phone: item.phone, auto: true }),
+    });
+    clearTimeout(to);
+    const d = await r.json().catch(() => ({}));
+    if (r.ok && (d.siteUrl || d.slug)) return { ok: true, siteUrl: d.siteUrl || (base + '/s/' + (d.slug || slug)) };
+    return { ok: false, error: (d && d.error) || ('pounce failed ' + r.status) };
+  } catch (e) { clearTimeout(to); return { ok: false, error: (e && e.message) || 'pounce error' }; }
 }
 
 // Generate one mockup by calling our own /api/generate with a server-minted owner cookie.
@@ -335,6 +362,46 @@ module.exports = async (req, res) => {
         await logActivity(who, owner, 'message_sent', it.name + ' (nudge ' + (count + 1) + ', no reply)', it.name);
         out.nudged = (out.nudged || 0) + 1; sentThisTick++;
       } else { await markNudged(it.id, count + 1); out.held.push('nudge failed: ' + r.error); }
+    }
+  }
+
+  // ---- Auto-funnel: positive reply -> holding message (~2 min) -> auto-built full website (~90 min).
+  // Owner-toggled (sms/_funnel.json). Respects the send window and opt-outs; each step fires once.
+  if (smsConfigured() && !brake.paused) {
+    let funnelOn = false;
+    try { funnelOn = !!((await readJson('sms/_funnel.json')) || {}).enabled; } catch (e) { /* off */ }
+    if (funnelOn) {
+      let outs = new Set();
+      try { outs = await optoutSet(); } catch (e) { /* fail open */ }
+      // (a) the human-sounding holding message
+      try {
+        const acks = inSendWindow(now) ? await dueFunnelAck(FUNNEL_ACK_MIN, 15) : [];
+        for (const it of acks) {
+          if (outs.has(it.phone)) { await markFunnelAck(it.id); continue; }
+          const r = await sendSms(it.phone, renderMessage(FUNNEL_ACK_MSG, it, base), base, it.from_number || PRIMARY);
+          if (r.ok) { await markFunnelAck(it.id); await bumpDailyUsage(owner, 'cost:sms', 1, day); await logActivity(owner, owner, 'message_sent', it.name + ' (auto holding message)', it.name, { auto: 1 }); out.funnelAck = (out.funnelAck || 0) + 1; }
+          else out.held.push('funnel ack failed: ' + r.error);
+        }
+      } catch (e) { out.held.push('funnel ack error'); }
+      // (b) auto-build the full website and text it over
+      try {
+        const sites = inSendWindow(now) ? await dueFunnelSite(FUNNEL_SITE_MIN, FUNNEL_SITES_PER_TICK) : [];
+        for (const it of sites) {
+          if (outs.has(it.phone)) { await markFunnelSite(it.id, ''); continue; }
+          const b = await buildFullSite(base, it);
+          if (!b.ok) { out.held.push('funnel site build failed: ' + b.error); continue; } // retry next tick
+          const tpl = 'Hi {business}, here is the full website I built for you: ' + b.siteUrl + '. What do you think? Could we jump on a quick call to go through it? Tell me anything you would like changed.';
+          const r = await sendSms(it.phone, renderMessage(tpl, it, base), base, it.from_number || PRIMARY);
+          if (r.ok) {
+            await markFunnelSite(it.id, b.siteUrl);
+            await bumpDailyUsage(owner, 'cost:sms', 1, day); await bumpDailyUsage(owner, 'cost:pounce', 1, day);
+            await logActivity(owner, owner, 'message_sent', it.name + ' (AUTO-built website sent)', it.name, { auto: 1 });
+            out.funnelSite = (out.funnelSite || 0) + 1;
+            // alert the owner so an unreviewed auto-send can be spot-checked
+            if (OWNER_MOBILE) { try { await sendSms(OWNER_MOBILE, 'Sophie auto-built a website for ' + (it.name || 'a lead') + ' and texted it to them: ' + b.siteUrl + ' . Please check it looks right.', base, PRIMARY); } catch (e) { /* best effort */ } }
+          } else out.held.push('funnel site send failed: ' + r.error);
+        }
+      } catch (e) { out.held.push('funnel site error'); }
     }
   }
 

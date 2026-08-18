@@ -11,7 +11,7 @@ const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey, londonHour } = require('../lib/digest');
 const { getDailyUsage, bumpDailyUsage, logActivity } = require('../lib/db');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall, leadTimeline, lastSendNumber } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall, leadTimeline, lastSendNumber, markFunnelSiteByLead } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -103,6 +103,7 @@ module.exports = async (req, res) => {
       isApprover: approver,
       primaryNumber: process.env.TWILIO_FROM || '',
       sender: process.env.SMS_SENDER || 'Sophie',
+      funnelEnabled: !!((await readJson('sms/_funnel.json')) || {}).enabled,
       numbers: await readNumbers(),
       approvals: approver ? (await readApprovals()).filter((r) => r.status === 'pending') : [],
       approvers: isComped(acct.email) ? await readApprovers() : undefined,
@@ -277,7 +278,20 @@ module.exports = async (req, res) => {
     if (!r.ok) { res.status(200).json({ error: 'Twilio refused it: ' + (r.error || 'unknown') }); return; }
     try { await bumpDailyUsage(acct.email, 'cost:sms', 1, todayKey(new Date())); } catch (e) {}
     try { await logActivity(acct.email, acct.email, 'message_sent', (body.name || mob) + ' (website link)', body.name || mob); } catch (e) {}
+    try { await markFunnelSiteByLead(mob, String(body.key || ''), ''); } catch (e) {} // stop the auto-funnel double-sending
     res.status(200).json({ ok: true });
+    return;
+  }
+
+  if (action === 'manageFunnel') {
+    if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
+    const cur = (await readJson('sms/_funnel.json')) || {};
+    if (body.enabled !== undefined) {
+      cur.enabled = !!body.enabled; cur.at = new Date().toISOString(); cur.by = acct.email;
+      try { await put('sms/_funnel.json', JSON.stringify(cur), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
+      catch (e) { res.status(500).json({ error: 'Could not save.' }); return; }
+    }
+    res.status(200).json({ ok: true, enabled: !!cur.enabled });
     return;
   }
 

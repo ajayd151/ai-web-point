@@ -2809,6 +2809,7 @@ async function loadSmsAdmin(opts) {
     renderApprovers(d.approvers, !!d.isOwner);
     smsPrimaryNum = d.primaryNumber || '';
     smsSender = d.sender || smsSender;
+    smsFunnelOn = !!d.funnelEnabled; smsIsOwner = !!d.isOwner;
     smsNumbersMap = {}; (d.numbers || []).forEach((n) => { if (n && n.phone) smsNumbersMap[n.phone] = n.label || n.phone; });
     renderSmsNumbers(d.numbers || [], d.primaryNumber || '', !!d.isOwner);
     fillSmsFromPicker(d.numbers || [], d.primaryNumber || '');
@@ -3534,7 +3535,7 @@ function showMetricModal(title, body) {
   $('mm-title').innerHTML = title; $('mm-body').innerHTML = body; m.style.display = 'flex';
 }
 function closeMetricModal() { const m = $('metric-modal'); if (m) m.style.display = 'none'; }
-var smsNumbersMap = {}; var smsPrimaryNum = ''; var smsSender = 'Sophie';
+var smsNumbersMap = {}; var smsPrimaryNum = ''; var smsSender = 'Sophie'; var smsFunnelOn = false; var smsIsOwner = false;
 function renderSmsCampaigns(rows) {
   const el = $('sms-campaigns'); if (!el) return;
   if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet.</p>'; return; }
@@ -3598,6 +3599,8 @@ var smsCallTab = 'tocall';
 // slug -> live site URL, for leads whose full website has already been built with Pounce.
 // Lets the call list show "View site" + "Text them the site" instead of "Full site".
 var smsBuiltSites = null;
+// Mirror of the worker's holding-message text, so the History trail shows the same wording.
+var FUNNEL_ACK_MSG = "Hi {business}, that's brilliant. I am going to get your full one-page website ready now, I just need to tweak a few bits. I will send you the link to take a look at shortly. Bear with me.";
 async function ensureBuiltSites() {
   if (smsBuiltSites) return smsBuiltSites;
   smsBuiltSites = {}; // set now so a re-render mid-fetch does not trigger a second load
@@ -3641,7 +3644,7 @@ function renderSmsCallNow(rows) {
     const meta = smsStatusMeta(r.status || '');
     const stage = r.post_reply === 'positive' ? '🔥 Yes AFTER seeing the mockup' : (r.link_sent_at ? 'Sent the mockup, awaiting reply' : '✅ Said yes to seeing it');
     const said = replyByPhone[String(r.phone || '')] || '';
-    const builtUrl = smsBuiltSites ? (smsBuiltSites[callSiteSlug(r)] || '') : '';
+    const builtUrl = (smsBuiltSites ? (smsBuiltSites[callSiteSlug(r)] || '') : '') || r.funnel_site_url || '';
     return '<div class="rc-card">' +
       '<div class="rc-card-top">' +
         '<div class="rc-biz"><div class="rc-name">' + esc(r.name || '') + '</div>' +
@@ -3651,6 +3654,7 @@ function renderSmsCallNow(rows) {
       '<div class="rc-card-meta">' +
         (r.reply_at ? '<span class="rc-meta">🕐 Replied ' + esc(fmtStamp(r.reply_at)) + '</span>' : '') +
         '<span class="rc-meta">📨 ' + stage + '</span>' +
+        (r.funnel_site_at ? '<span class="rc-auto">🤖 Auto-built &amp; sent</span>' : (r.funnel_ack_at ? '<span class="rc-auto">💬 Auto reply sent</span>' : '')) +
       '</div>' +
       (said ? '<div class="rc-reply">“' + esc(said.slice(0, 200)) + (said.length > 200 ? '…' : '') + '”</div>' : '') +
       '<div class="rc-card-actions">' +
@@ -3665,7 +3669,10 @@ function renderSmsCallNow(rows) {
       '</div>' +
     '</div>';
   }).join('');
-  el.innerHTML = '<div class="rc-tabs">' + tabsHtml + '</div>' +
+  const funnelBar = smsIsOwner
+    ? '<div class="funnel-bar' + (smsFunnelOn ? ' on' : '') + '"><div class="funnel-txt"><b>🤖 Auto-funnel ' + (smsFunnelOn ? 'ON' : 'OFF') + '</b> · on a positive reply, ' + esc(smsSender) + ' auto-sends a holding text, then auto-builds &amp; texts the full website ~90 min later.</div><button class="funnel-toggle" onclick="toggleFunnel()">' + (smsFunnelOn ? 'Turn OFF' : 'Turn ON') + '</button></div>'
+    : '';
+  el.innerHTML = funnelBar + '<div class="rc-tabs">' + tabsHtml + '</div>' +
     '<div class="rc-cards">' + (bodyHtml || '<p class="muted" style="padding:14px">Nobody in this tab yet.</p>') + '</div>';
   el.querySelectorAll('.rc-tab').forEach((b) => b.addEventListener('click', () => { smsCallTab = b.dataset.tab; renderSmsCallNow(smsCallNowRows); }));
   el.querySelectorAll('.rc-setstatus').forEach((b) => b.addEventListener('click', () => openCallStatus(Number(b.dataset.idx))));
@@ -3678,6 +3685,18 @@ function renderSmsCallNow(rows) {
   }));
   el.querySelectorAll('.rc-sendsite').forEach((b) => b.addEventListener('click', () => openSendSite(Number(b.dataset.idx))));
   el.querySelectorAll('.rc-history').forEach((b) => b.addEventListener('click', () => openLeadHistory(Number(b.dataset.idx))));
+}
+async function toggleFunnel() {
+  const turningOn = !smsFunnelOn;
+  const msg = turningOn
+    ? 'Turn the auto-funnel ON?\n\nOn every positive reply, ' + smsSender + ' will automatically text a holding message, then auto-build and TEXT the full website to the prospect (no manual review). You get an alert SMS each time.'
+    : 'Turn the auto-funnel OFF?\n\nPositive replies will go back to needing manual handling.';
+  if (!confirm(msg)) return;
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'manageFunnel', enabled: turningOn }) })).json();
+    if (d && d.ok !== undefined) { smsFunnelOn = !!d.enabled; renderSmsCallNow(smsCallNowRows); }
+    else alert((d && d.error) || 'Could not change it.');
+  } catch (e) { alert('Could not change it, try again.'); }
 }
 // Full audit trail for one lead: every send, reply, open, note and status, in order.
 async function openLeadHistory(idx) {
@@ -3692,6 +3711,8 @@ async function openLeadHistory(idx) {
     if (it.sent_at) ev.push({ at: it.sent_at, ic: '📤', title: 'Opening message sent', detail: fillTpl(it.opener_msg, it) });
     if (it.link_sent_at) ev.push({ at: it.link_sent_at, ic: '🖼️', title: 'Mockup sent', detail: fillTpl(it.link_message || 'Here it is: {link}', it), link: it.view_url || '', linkLabel: 'View the mockup they got' });
     if (it.nudged_at) ev.push({ at: it.nudged_at, ic: '🔔', title: 'Nudge sent', detail: fillTpl(it.nudge_message, it) });
+    if (it.funnel_ack_at) ev.push({ at: it.funnel_ack_at, ic: '💬', title: 'Auto holding message sent', detail: fillTpl(FUNNEL_ACK_MSG, it) });
+    if (it.funnel_site_at) ev.push({ at: it.funnel_site_at, ic: '🤖', title: 'Auto-built & sent the full website', detail: 'Sophie built and texted the site automatically.', link: it.funnel_site_url || '', linkLabel: 'Open the website' });
   });
   if (t.views && t.views.first_view) ev.push({ at: t.views.first_view, ic: '👁️', title: 'Opened the mockup', detail: (t.views.n > 1 ? ('Opened ' + t.views.n + ' times, last ' + fmtStamp(t.views.last_view)) : '') });
   (t.inbound || []).forEach((m) => { const v = m.verdict; const ic = v === 'positive' ? '😊' : (v === 'negative' ? '😕' : (v === 'stop' ? '🛑' : '💬')); ev.push({ at: m.at, ic: ic, title: 'Customer replied' + (m.person_name ? ' (' + m.person_name + ')' : ''), detail: m.body || '', pos: v === 'positive' }); });
