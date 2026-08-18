@@ -3688,21 +3688,39 @@ async function openLeadHistory(idx) {
   } catch (e) { if ($('mm-body')) $('mm-body').innerHTML = '<p class="muted" style="padding:12px 2px">Could not load the history.</p>'; return; }
   const t = (d && d.timeline) || {}; const ev = [];
   (t.items || []).forEach((it) => {
-    if (it.sent_at) ev.push({ at: it.sent_at, ic: '📤', title: 'First message sent' });
-    if (it.link_sent_at) ev.push({ at: it.link_sent_at, ic: '🖼️', title: 'Mockup sent' });
-    if (it.nudged_at) ev.push({ at: it.nudged_at, ic: '🔔', title: 'Nudge sent' });
+    if (it.sent_at) ev.push({ at: it.sent_at, ic: '📤', title: 'Opening message sent', detail: fillTpl(it.opener_msg, it) });
+    if (it.link_sent_at) ev.push({ at: it.link_sent_at, ic: '🖼️', title: 'Mockup sent', detail: fillTpl(it.link_message || 'Here it is: {link}', it), link: it.view_url || '', linkLabel: 'View the mockup they got' });
+    if (it.nudged_at) ev.push({ at: it.nudged_at, ic: '🔔', title: 'Nudge sent', detail: fillTpl(it.nudge_message, it) });
   });
   if (t.views && t.views.first_view) ev.push({ at: t.views.first_view, ic: '👁️', title: 'Opened the mockup', detail: (t.views.n > 1 ? ('Opened ' + t.views.n + ' times, last ' + fmtStamp(t.views.last_view)) : '') });
   (t.inbound || []).forEach((m) => { const v = m.verdict; const ic = v === 'positive' ? '😊' : (v === 'negative' ? '😕' : (v === 'stop' ? '🛑' : '💬')); ev.push({ at: m.at, ic: ic, title: 'Customer replied' + (m.person_name ? ' (' + m.person_name + ')' : ''), detail: m.body || '', pos: v === 'positive' }); });
   if (t.optout) ev.push({ at: t.optout.at, ic: '🔕', title: 'Opted out' + (t.optout.source === 'link' ? ' (via link)' : '') });
-  if (d.site && d.site.createdAt) ev.push({ at: d.site.createdAt, ic: '🐆', title: 'Full website built' });
+  if (d.site && d.site.createdAt) ev.push({ at: d.site.createdAt, ic: '🐆', title: 'Full website built', detail: (d.site.mode === 'published' ? 'Published live' : 'Private preview'), link: d.site.url || '', linkLabel: 'Open the website' });
   const notes = (d && d.notes) || {};
   (notes.comments || []).forEach((c) => ev.push({ at: c.at, ic: '📝', title: 'Note' + (c.by ? ' (' + c.by + ')' : ''), detail: c.text || '' }));
   if (notes.status && notes.statusAt) { const m = smsStatusMeta(notes.status); ev.push({ at: notes.statusAt, ic: (m && m.emoji) || '🏷️', title: 'Marked as ' + ((m && m.label) || notes.status) }); }
   ev.sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')));
   if (!ev.length) { if ($('mm-body')) $('mm-body').innerHTML = '<p class="muted" style="padding:12px 2px">No history recorded yet for this lead.</p>'; return; }
-  const html = '<div class="lead-tl">' + ev.map((e) => '<div class="tl-row' + (e.pos ? ' tl-pos' : '') + '"><div class="tl-ic">' + e.ic + '</div><div class="tl-main"><div class="tl-t">' + esc(e.title) + '</div>' + (e.detail ? '<div class="tl-d">' + esc(e.detail) + '</div>' : '') + '<div class="tl-time">' + esc(fmtStamp(e.at)) + '</div></div></div>').join('') + '</div>';
+  const html = '<div class="lead-tl">' + ev.map((e) =>
+    '<div class="tl-row' + (e.pos ? ' tl-pos' : '') + '"><div class="tl-ic">' + e.ic + '</div><div class="tl-main">' +
+    '<div class="tl-t">' + esc(e.title) + '</div>' +
+    (e.detail ? '<div class="tl-d">' + esc(e.detail) + '</div>' : '') +
+    (e.link ? '<div class="tl-link"><a href="' + esc(e.link) + '" target="_blank" rel="noopener">' + esc(e.linkLabel || 'Open link') + ' ↗</a></div>' : '') +
+    '<div class="tl-time">' + esc(fmtStamp(e.at)) + '</div></div></div>').join('') + '</div>';
   if ($('mm-body')) $('mm-body').innerHTML = html;
+}
+// Fill a message template with this lead's details, the same placeholders the sender uses, so the
+// trail shows (a faithful copy of) the actual text that went out.
+function fillTpl(tpl, it) {
+  if (!tpl) return '';
+  const biz = (typeof humaniseBusinessName === 'function' ? humaniseBusinessName(it.name || '') : (it.name || '')) || 'there';
+  return String(tpl)
+    .split('{business}').join(biz).split('{name}').join(biz)
+    .split('{industry}').join(it.category || 'business').split('{category}').join(it.category || 'business')
+    .split('{location}').join(it.location || 'your area')
+    .split('{reviews}').join((it.reviews != null && it.reviews !== '') ? String(it.reviews) : 'only a few')
+    .split('{rating}').join((it.rating != null && it.rating !== '') ? String(it.rating) : '')
+    .split('{link}').join(it.view_url || '');
 }
 // Text a lead the finished website with a friendly, editable prefilled message.
 function openSendSite(idx) {

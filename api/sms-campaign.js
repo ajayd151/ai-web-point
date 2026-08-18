@@ -288,7 +288,14 @@ module.exports = async (req, res) => {
     const keyClean = rawKey.replace(/[^a-z0-9-]/gi, '').slice(0, 120); // notes/<key>.json is stored slug-safe
     const t = await leadTimeline(phone, rawKey, slug);
     const notes = keyClean ? await readJson('notes/' + keyClean + '.json') : null;
-    const site = slug ? await readJson('sites/' + slug + '.json') : null;
+    const siteRaw = slug ? await readJson('sites/' + slug + '.json') : null;
+    let site = null;
+    if (siteRaw) {
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      const linkBase = process.env.LINK_DOMAIN ? `https://${process.env.LINK_DOMAIN}` : `https://${host}`;
+      const url = (siteRaw.mode === 'published' && siteRaw.subdomain) ? `https://${siteRaw.subdomain}.aiwebpoint.com` : `${linkBase}/s/${slug}`;
+      site = { createdAt: siteRaw.createdAt || '', mode: siteRaw.mode || 'preview', url: url };
+    }
     res.status(200).json({ timeline: t, notes: notes, site: site });
     return;
   }

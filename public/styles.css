@@ -1590,6 +1590,9 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .tl-main { flex: 1; }
 .tl-t { font-weight: 700; font-size: 14px; color: #1f2937; }
 .tl-d { margin-top: 3px; font-size: 13.5px; color: #334155; background: #f8fafc; border-radius: 8px; padding: 7px 10px; font-style: italic; }
+.tl-link { margin-top: 5px; font-size: 13px; }
+.tl-link a { color: #2563eb; font-weight: 700; text-decoration: none; }
+.tl-link a:hover { text-decoration: underline; }
 .tl-time { margin-top: 4px; font-size: 12px; color: #94a3b8; }
 .tl-pos { border-left-color: #34d399; }
 .tl-pos .tl-d { background: #ecfdf5; color: #065f46; }
