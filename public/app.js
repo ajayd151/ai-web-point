@@ -3729,7 +3729,7 @@ function openSendSite(idx) {
   if (!url) { alert('No built site found for this lead yet. Build it with Full site first.'); return; }
   if (!r.phone) { alert('This lead has no phone number on file.'); return; }
   const biz = (typeof humaniseBusinessName === 'function' ? humaniseBusinessName(r.name || '') : (r.name || '')) || 'there';
-  const msg = 'Hi ' + biz + ', here is the website we built for you: ' + url + '. What do you think? Happy to change anything you would like.';
+  const msg = 'Hi ' + biz + ', here is a free preview of a website we built for you: ' + url + '. Take a look and let me know what you think. Happy to change anything you would like. This is a preview and it stays live for 7 days. If you like it, we will make it permanent and get you a free domain name too. Just reply, or tell me a good time and I will give you a quick call to go through any final changes.';
   const body = '<div class="rc-status-pop">' +
     '<p class="muted" style="margin:0 0 8px">Text this to <b>' + esc(fmtPhone(r.phone)) + '</b>. Edit it if you like, then send.</p>' +
     '<textarea id="ss-msg" class="rc-note" rows="5">' + esc(msg) + '</textarea>' +
