@@ -65,8 +65,13 @@ function render(s) {
   const isPreview = s.mode !== 'published';
   const subBase = process.env.SUBSCRIBE_URL || 'https://aiwebpoint.com/subscribe';
   const subUrl = subBase + (subBase.indexOf('?') >= 0 ? '&' : '?') + 'source=' + encodeURIComponent(s.slug || '');
+  // Preview countdown: a live 7-day timer from when the site was built. The site is NOT actually
+  // removed, this is a FOMO nudge to prompt "keep it live" replies. Anchored to createdAt so it is
+  // stable across reloads. fit() re-measures the bar so the sticky header never hides under it.
+  const createdMs = s.createdAt ? Date.parse(s.createdAt) : NaN;
+  const expiresMs = (Number.isFinite(createdMs) ? createdMs : Date.now()) + 7 * 24 * 3600 * 1000;
   const previewBar = isPreview
-    ? `<div class="pvbar"><div class="pvbar-in"><span class="pv-txt"><b>👋 Like your new website${b.name ? ', ' + esc(b.name) : ''}?</b> 🚀 Founding-member offer, get it live this month.</span><a class="pv-cta" href="${esc(subUrl)}" target="_blank" rel="noopener" onclick="if(navigator.sendBeacon){navigator.sendBeacon('/api/track?slug=${encodeURIComponent(s.slug || '')}&e=signup');}">Yes, sign me up →</a></div></div>`
+    ? `<div class="pvbar" id="pvbar"><div class="pvbar-in"><span class="pv-txt">⏳ This is a free <b>preview website</b>. It switches off in <b id="pv-cd" class="pv-cd">7d</b> unless you keep it.</span><a class="pv-cta" href="${esc(subUrl)}" target="_blank" rel="noopener" onclick="if(navigator.sendBeacon){navigator.sendBeacon('/api/track?slug=${encodeURIComponent(s.slug || '')}&e=signup');}">Keep my website live →</a></div><div class="pvbar-sub">Want to keep it? Reply to our message or call us and we will make it permanent and set you up with a free domain name. Otherwise it will be switched off.</div><script>(function(){var exp=${expiresMs};function t(){var el=document.getElementById('pv-cd');if(!el)return;var ms=exp-Date.now();if(ms<=0){el.textContent='any time now';return;}var d=Math.floor(ms/86400000),h=Math.floor(ms%86400000/3600000),m=Math.floor(ms%3600000/60000),s=Math.floor(ms%60000/1000);el.textContent=d+'d '+h+'h '+m+'m '+s+'s';}t();setInterval(t,1000);function fit(){var bar=document.getElementById('pvbar');if(!bar)return;var hh=bar.offsetHeight;document.body.style.paddingTop=hh+'px';var hd=document.querySelector('header');if(hd)hd.style.top=hh+'px';}fit();window.addEventListener('resize',fit);setTimeout(fit,300);})();</script></div>`
     : '';
   const reviews = (s.reviews || []).length
     ? `<section id="reviews" class="reviews"><div class="wrap"><div class="sec-head"><div class="kicker" style="color:var(--amber)">Reviews</div><h2>What our customers say</h2>${googleBadge ? `<div class="gbadge-wrap">${googleBadge}</div>` : ''}</div><div class="rev-grid">${(s.reviews || []).map((r) => {
@@ -213,11 +218,13 @@ footer{background:#07142b;color:#aebbd2;padding:44px 0 26px}
 body{padding-bottom:56px}}
 .pvbar{position:fixed;top:0;left:0;right:0;z-index:200;background:linear-gradient(90deg,#0a1c3a,#15315c);border-bottom:2px solid var(--amber)}
 .pvbar-in{max-width:1140px;margin:0 auto;min-height:46px;padding:7px 22px;display:flex;align-items:center;justify-content:center;gap:16px}
-.pv-txt{color:#fff;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pv-txt b{color:#fff}
+.pv-txt{color:#fff;font-size:14px}.pv-txt b{color:#fff}
+.pv-cd{font-family:'Poppins',sans-serif;font-weight:800;color:var(--amber);font-size:15px;letter-spacing:.3px}
+.pvbar-sub{max-width:1140px;margin:0 auto;padding:0 22px 9px;color:#cdd8ec;font-size:12.5px;text-align:center;line-height:1.45}
 .pv-cta{flex:0 0 auto;background:linear-gradient(135deg,var(--amber),var(--amber-d));color:var(--acc-ink);font-weight:800;font-size:13.5px;padding:8px 16px;border-radius:8px;white-space:nowrap;animation:pvpulse 2s infinite}
 @keyframes pvpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,183,3,.55)}50%{box-shadow:0 0 0 9px rgba(255,183,3,0)}}
-body.preview{padding-top:46px}body.preview header{top:46px}
-@media(max-width:640px){.pv-txt{font-size:12px}.pvbar-in{gap:10px;padding:6px 12px}}
+body.preview{padding-top:70px}body.preview header{top:70px}
+@media(max-width:640px){.pv-txt{font-size:12.5px}.pv-cd{font-size:13.5px}.pvbar-in{gap:10px;padding:7px 12px;flex-wrap:wrap}.pvbar-sub{font-size:11.5px;padding:0 12px 8px}}
 </style></head><body${noindex ? ' class="preview"' : ''}>
 ${previewBar}
 <header><div class="wrap hbar">
