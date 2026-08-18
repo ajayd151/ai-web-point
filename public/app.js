@@ -18,13 +18,13 @@ let authed = false;
 const $ = (id) => document.getElementById(id);
 
 // ---- editable settings (message + CTA wording, saved per device) ---------
-const DEFAULT_FIRST_MSG = "Hi {name},\n\nI came across {business} while looking through {category} in {location}.\n\nI noticed you don't currently have a website, so I put together a website preview for your business:\n\n{link}\n\nI thought it might help you see what your business could look like online.\n\nIf you'd like me to show you how the rest of the website could look, just let me know.\n\nIf it's not something you're interested in, simply reply \"No\" and I won't contact you again.\n\nThanks,\n\nAjay";
+const DEFAULT_FIRST_MSG = "Hi {name},\n\nI came across {business} while looking through {category} in {location}.\n\nI noticed you don't currently have a website, so I put together a website preview for your business:\n\n{link}\n\nI thought it might help you see what your business could look like online.\n\nIf you'd like me to show you how the rest of the website could look, just let me know.\n\nIf it's not something you're interested in, simply reply \"No\" and I won't contact you again.\n\nThanks,\n\n{sender}";
 const SETTINGS_DEFAULTS = {
   waTemplates: [{ id: 'default', name: 'Default', body: DEFAULT_FIRST_MSG }], // multiple first-message templates
   lastTemplateId: 'default', // which one is selected by default when sending
   ctaHero: 'Request a demo of the full website',
   ctaBottom: 'Let me show you the full website over a call',
-  followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not, happy to jump on a quick call whenever suits.\n\nCheers,\nJames",
+  followUp: "Hi {name}, just following up on the free website preview I put together for {business}. Did you get a chance to take a look?\n\n{link}\n\nNo worries if not, happy to jump on a quick call whenever suits.\n\nCheers,\n{sender}",
   waCap: 3, // hard daily WhatsApp send cap (ban protection; low by design for experimenting)
   grammarFix: true, // AI tidies the first message's grammar when sent (default on)
   plan: 'apex', // membership tier driving result retention (owner defaults to top tier); Super Admin sets per customer later
@@ -2808,6 +2808,7 @@ async function loadSmsAdmin(opts) {
     renderApprovals(d.approvals || [], !!d.isApprover);
     renderApprovers(d.approvers, !!d.isOwner);
     smsPrimaryNum = d.primaryNumber || '';
+    smsSender = d.sender || smsSender;
     smsNumbersMap = {}; (d.numbers || []).forEach((n) => { if (n && n.phone) smsNumbersMap[n.phone] = n.label || n.phone; });
     renderSmsNumbers(d.numbers || [], d.primaryNumber || '', !!d.isOwner);
     fillSmsFromPicker(d.numbers || [], d.primaryNumber || '');
@@ -3533,7 +3534,7 @@ function showMetricModal(title, body) {
   $('mm-title').innerHTML = title; $('mm-body').innerHTML = body; m.style.display = 'flex';
 }
 function closeMetricModal() { const m = $('metric-modal'); if (m) m.style.display = 'none'; }
-var smsNumbersMap = {}; var smsPrimaryNum = '';
+var smsNumbersMap = {}; var smsPrimaryNum = ''; var smsSender = 'Sophie';
 function renderSmsCampaigns(rows) {
   const el = $('sms-campaigns'); if (!el) return;
   if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet.</p>'; return; }
@@ -3720,6 +3721,7 @@ function fillTpl(tpl, it) {
     .split('{location}').join(it.location || 'your area')
     .split('{reviews}').join((it.reviews != null && it.reviews !== '') ? String(it.reviews) : 'only a few')
     .split('{rating}').join((it.rating != null && it.rating !== '') ? String(it.rating) : '')
+    .split('{sender}').join(smsSender)
     .split('{link}').join(it.view_url || '');
 }
 // Text a lead the finished website with a friendly, editable prefilled message.
@@ -3729,7 +3731,7 @@ function openSendSite(idx) {
   if (!url) { alert('No built site found for this lead yet. Build it with Full site first.'); return; }
   if (!r.phone) { alert('This lead has no phone number on file.'); return; }
   const biz = (typeof humaniseBusinessName === 'function' ? humaniseBusinessName(r.name || '') : (r.name || '')) || 'there';
-  const msg = 'Hi ' + biz + ', here is a free preview of a website we built for you: ' + url + '. Take a look and let me know what you think. Happy to change anything you would like. This is a preview and it stays live for 7 days. If you like it, we will make it permanent and get you a free domain name too. Just reply, or tell me a good time and I will give you a quick call to go through any final changes.';
+  const msg = 'Hi ' + biz + ', here is a free preview of a website I built for you: ' + url + '. Take a look and let me know what you think. Happy to change anything you would like. This is a preview and it stays live for 7 days. If you like it, I will make it permanent and get you a free domain name too. Just reply, or tell me a good time and I will give you a quick call to go through any final changes.\n\nThanks,\n' + smsSender;
   const body = '<div class="rc-status-pop">' +
     '<p class="muted" style="margin:0 0 8px">Text this to <b>' + esc(fmtPhone(r.phone)) + '</b>. Edit it if you like, then send.</p>' +
     '<textarea id="ss-msg" class="rc-note" rows="5">' + esc(msg) + '</textarea>' +

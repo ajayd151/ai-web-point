@@ -102,6 +102,7 @@ module.exports = async (req, res) => {
       isOwner: isComped(acct.email),
       isApprover: approver,
       primaryNumber: process.env.TWILIO_FROM || '',
+      sender: process.env.SMS_SENDER || 'Sophie',
       numbers: await readNumbers(),
       approvals: approver ? (await readApprovals()).filter((r) => r.status === 'pending') : [],
       approvers: isComped(acct.email) ? await readApprovers() : undefined,
