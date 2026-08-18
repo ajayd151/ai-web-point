@@ -3659,6 +3659,7 @@ function renderSmsCallNow(rows) {
           ? '<a class="rc-act rc-view rc-sitelink" href="' + esc(builtUrl) + '" target="_blank" rel="noopener">🌐 View site</a>' +
             '<button class="rc-act rc-sendsite" data-idx="' + gi + '">📲 Text them the site</button>'
           : '<button class="rc-act rc-fullsite sms-fullsite" data-idx="' + gi + '" title="Build them the full website with Pounce">🐆 Full site</button>') +
+        '<button class="rc-act rc-history" data-idx="' + gi + '">🕓 History</button>' +
         '<button class="rc-act rc-update rc-setstatus" data-idx="' + gi + '">✏️ Update status</button>' +
       '</div>' +
     '</div>';
@@ -3675,6 +3676,33 @@ function renderSmsCallNow(rows) {
     openPounce({ slug: slug, name: r.name || '', location: r.location || '', category: r.category || '', phone: r.phone || '', phones: r.phone ? [r.phone] : [], viewUrl: r.view_url || '' });
   }));
   el.querySelectorAll('.rc-sendsite').forEach((b) => b.addEventListener('click', () => openSendSite(Number(b.dataset.idx))));
+  el.querySelectorAll('.rc-history').forEach((b) => b.addEventListener('click', () => openLeadHistory(Number(b.dataset.idx))));
+}
+// Full audit trail for one lead: every send, reply, open, note and status, in order.
+async function openLeadHistory(idx) {
+  const r = smsCallNowRows[idx]; if (!r) return;
+  showMetricModal('History: ' + esc(r.name || 'lead'), '<p class="muted" style="padding:12px 2px">Loading…</p>');
+  let d = {};
+  try {
+    d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'timeline', phone: r.phone || '', key: callRowKey(r), slug: callSiteSlug(r), name: r.name || '' }) })).json();
+  } catch (e) { if ($('mm-body')) $('mm-body').innerHTML = '<p class="muted" style="padding:12px 2px">Could not load the history.</p>'; return; }
+  const t = (d && d.timeline) || {}; const ev = [];
+  (t.items || []).forEach((it) => {
+    if (it.sent_at) ev.push({ at: it.sent_at, ic: '📤', title: 'First message sent' });
+    if (it.link_sent_at) ev.push({ at: it.link_sent_at, ic: '🖼️', title: 'Mockup sent' });
+    if (it.nudged_at) ev.push({ at: it.nudged_at, ic: '🔔', title: 'Nudge sent' });
+  });
+  if (t.views && t.views.first_view) ev.push({ at: t.views.first_view, ic: '👁️', title: 'Opened the mockup', detail: (t.views.n > 1 ? ('Opened ' + t.views.n + ' times, last ' + fmtStamp(t.views.last_view)) : '') });
+  (t.inbound || []).forEach((m) => { const v = m.verdict; const ic = v === 'positive' ? '😊' : (v === 'negative' ? '😕' : (v === 'stop' ? '🛑' : '💬')); ev.push({ at: m.at, ic: ic, title: 'Customer replied' + (m.person_name ? ' (' + m.person_name + ')' : ''), detail: m.body || '', pos: v === 'positive' }); });
+  if (t.optout) ev.push({ at: t.optout.at, ic: '🔕', title: 'Opted out' + (t.optout.source === 'link' ? ' (via link)' : '') });
+  if (d.site && d.site.createdAt) ev.push({ at: d.site.createdAt, ic: '🐆', title: 'Full website built' });
+  const notes = (d && d.notes) || {};
+  (notes.comments || []).forEach((c) => ev.push({ at: c.at, ic: '📝', title: 'Note' + (c.by ? ' (' + c.by + ')' : ''), detail: c.text || '' }));
+  if (notes.status && notes.statusAt) { const m = smsStatusMeta(notes.status); ev.push({ at: notes.statusAt, ic: (m && m.emoji) || '🏷️', title: 'Marked as ' + ((m && m.label) || notes.status) }); }
+  ev.sort((a, b) => String(a.at || '').localeCompare(String(b.at || '')));
+  if (!ev.length) { if ($('mm-body')) $('mm-body').innerHTML = '<p class="muted" style="padding:12px 2px">No history recorded yet for this lead.</p>'; return; }
+  const html = '<div class="lead-tl">' + ev.map((e) => '<div class="tl-row' + (e.pos ? ' tl-pos' : '') + '"><div class="tl-ic">' + e.ic + '</div><div class="tl-main"><div class="tl-t">' + esc(e.title) + '</div>' + (e.detail ? '<div class="tl-d">' + esc(e.detail) + '</div>' : '') + '<div class="tl-time">' + esc(fmtStamp(e.at)) + '</div></div></div>').join('') + '</div>';
+  if ($('mm-body')) $('mm-body').innerHTML = html;
 }
 // Text a lead the finished website with a friendly, editable prefilled message.
 function openSendSite(idx) {
@@ -3689,17 +3717,21 @@ function openSendSite(idx) {
     '<textarea id="ss-msg" class="rc-note" rows="5">' + esc(msg) + '</textarea>' +
     '<div class="rc-pop-foot"><span id="ss-note" class="muted"></span><button id="ss-send" class="primary">📲 Send SMS</button></div></div>';
   showMetricModal('Send the website to ' + esc(r.name || 'this lead'), body);
-  const phone = r.phone; const nm = r.name || '';
-  $('ss-send').addEventListener('click', () => sendSiteSms(phone, nm, ($('ss-msg') && $('ss-msg').value) || ''));
+  const phone = r.phone; const nm = r.name || ''; const key = callRowKey(r);
+  $('ss-send').addEventListener('click', () => sendSiteSms(phone, nm, key, ($('ss-msg') && $('ss-msg').value) || ''));
 }
-async function sendSiteSms(phone, name, message) {
+async function sendSiteSms(phone, name, key, message) {
   const btn = $('ss-send'); const note = $('ss-note');
   if (!String(message).trim()) { if (note) note.textContent = 'Write a message first.'; return; }
   if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
   try {
-    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sendSite', phone: phone, name: name, message: message }) })).json();
-    if (d && d.ok) { if (note) note.textContent = '✓ Sent'; setTimeout(closeMetricModal, 900); }
-    else { if (note) note.textContent = (d && d.error) || 'Could not send.'; if (btn) { btn.disabled = false; btn.textContent = '📲 Send SMS'; } }
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sendSite', phone: phone, name: name, key: key, message: message }) })).json();
+    if (d && d.ok) {
+      if (note) note.textContent = '✓ Sent';
+      // record it on the lead so it shows in the History trail
+      if (key) { try { fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: key, name: name, comment: 'Sent the finished website by SMS.' }) }); } catch (e) {} }
+      setTimeout(closeMetricModal, 900);
+    } else { if (note) note.textContent = (d && d.error) || 'Could not send.'; if (btn) { btn.disabled = false; btn.textContent = '📲 Send SMS'; } }
   } catch (e) { if (note) note.textContent = 'Could not send, try again.'; if (btn) { btn.disabled = false; btn.textContent = '📲 Send SMS'; } }
 }
 // Quick status + note popup for one call-list lead.

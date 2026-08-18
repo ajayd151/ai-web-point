@@ -11,7 +11,7 @@ const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey, londonHour } = require('../lib/digest');
 const { getDailyUsage, bumpDailyUsage, logActivity } = require('../lib/db');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall, leadTimeline, lastSendNumber } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -267,13 +267,29 @@ module.exports = async (req, res) => {
     if (!message) { res.status(400).json({ error: 'Write a message first.' }); return; }
     try { const outs = await optoutSet(); if (outs.has(mob)) { res.status(400).json({ error: 'That number has opted out, we cannot text them.' }); return; } } catch (e) { /* fail open on the opt-out check */ }
     const base = process.env.APP_BASE_URL || 'https://www.sitepounce.com';
+    // Reuse the number this lead was originally messaged from, so the follow-up stays in the same
+    // thread on their phone. Fall back to an explicit choice, then the primary number.
     const nums = await readNumbers();
-    const fromNum = (body.fromNumber && nums.some((n) => n.phone === body.fromNumber)) ? body.fromNumber : (process.env.TWILIO_FROM || '');
+    const original = await lastSendNumber(mob, String(body.key || ''));
+    const fromNum = original || ((body.fromNumber && nums.some((n) => n.phone === body.fromNumber)) ? body.fromNumber : (process.env.TWILIO_FROM || ''));
     const r = await sendSms(mob, message, base, fromNum);
     if (!r.ok) { res.status(200).json({ error: 'Twilio refused it: ' + (r.error || 'unknown') }); return; }
     try { await bumpDailyUsage(acct.email, 'cost:sms', 1, todayKey(new Date())); } catch (e) {}
     try { await logActivity(acct.email, acct.email, 'message_sent', (body.name || mob) + ' (website link)', body.name || mob); } catch (e) {}
     res.status(200).json({ ok: true });
+    return;
+  }
+
+  if (action === 'timeline') {
+    // Full audit trail for one lead: sends + replies + opens (DB), merged with notes + built site (blobs).
+    const phone = String(body.phone || '').trim();
+    const rawKey = String(body.key || '').trim();
+    const slug = String(body.slug || '').replace(/[^a-z0-9-]/gi, '').slice(0, 120);
+    const keyClean = rawKey.replace(/[^a-z0-9-]/gi, '').slice(0, 120); // notes/<key>.json is stored slug-safe
+    const t = await leadTimeline(phone, rawKey, slug);
+    const notes = keyClean ? await readJson('notes/' + keyClean + '.json') : null;
+    const site = slug ? await readJson('sites/' + slug + '.json') : null;
+    res.status(200).json({ timeline: t, notes: notes, site: site });
     return;
   }
 

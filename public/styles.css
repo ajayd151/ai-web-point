@@ -1582,6 +1582,17 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .rc-sitelink:hover { background: #ccfbf1; }
 .rc-sendsite { color: #fff; background: #2563eb; border-color: #2563eb; }
 .rc-sendsite:hover { background: #1d4ed8; }
+/* Lead audit-trail timeline (inside the shared modal) */
+.lead-tl { display: flex; flex-direction: column; }
+.tl-row { display: flex; gap: 12px; padding: 12px 2px; border-left: 2px solid #e2e8f0; margin-left: 6px; padding-left: 16px; position: relative; }
+.tl-row + .tl-row { margin-top: -1px; }
+.tl-ic { position: absolute; left: -13px; top: 12px; width: 24px; height: 24px; background: #fff; border: 1px solid #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.tl-main { flex: 1; }
+.tl-t { font-weight: 700; font-size: 14px; color: #1f2937; }
+.tl-d { margin-top: 3px; font-size: 13.5px; color: #334155; background: #f8fafc; border-radius: 8px; padding: 7px 10px; font-style: italic; }
+.tl-time { margin-top: 4px; font-size: 12px; color: #94a3b8; }
+.tl-pos { border-left-color: #34d399; }
+.tl-pos .tl-d { background: #ecfdf5; color: #065f46; }
 @media (max-width: 560px) { .rc-update { margin-left: 0; } .rc-act { flex: 1 1 auto; justify-content: center; } }
 
 /* SMS hourly charts */
