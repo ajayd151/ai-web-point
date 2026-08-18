@@ -284,6 +284,7 @@ async function refreshAccess() {
   // team members with the 'sms' permission may reach the SMS screen; the rest of Admin stays owner-only
   const canSms = isOwner || (acc.member && acc.perms && acc.perms.sms !== false);
   if ($('nav-admin')) $('nav-admin').classList.toggle('hidden', !(isOwner || canSms));
+  if ($('sn-grp-admin')) $('sn-grp-admin').classList.toggle('hidden', !(isOwner || canSms)); // hide the sidebar "Admin" label when there's nothing under it
   if (!isOwner && canSms) {
     // strip Admin down to just SMS for the member, and open it by default
     document.querySelectorAll('.admin-navbtn').forEach((b) => { if (b.dataset.adminview !== 'sms') b.classList.add('hidden'); });
@@ -2225,11 +2226,17 @@ function ddShowPane(v) {
   if (v === 'leads') loadOurLeads();
 }
 document.querySelectorAll('.dd-navbtn').forEach(function (b) { b.addEventListener('click', function () { ddShowPane(b.dataset.ddview); }); });
-document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
+document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => { showView(b.dataset.view); closeSidenav(); }));
+// Left sidebar: hamburger opens it on mobile, backdrop or a nav choice closes it.
+function openSidenav() { const s = $('sidenav'), bd = $('sidenav-backdrop'); if (s) s.classList.add('open'); if (bd) bd.classList.add('show'); }
+function closeSidenav() { const s = $('sidenav'), bd = $('sidenav-backdrop'); if (s) s.classList.remove('open'); if (bd) bd.classList.remove('show'); }
+{ const t = $('navToggle'); if (t) t.addEventListener('click', () => { const s = $('sidenav'); (s && s.classList.contains('open')) ? closeSidenav() : openSidenav(); }); }
+{ const bd = $('sidenav-backdrop'); if (bd) bd.addEventListener('click', closeSidenav); }
 // Home shortcut: the logo and the 🏠 Home button both go back to Search (the home page)
-function goHome() { showView('search'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+function goHome() { showView('search'); window.scrollTo({ top: 0, behavior: 'smooth' }); closeSidenav(); }
 { const h = $('home-btn'); if (h) h.addEventListener('click', goHome); }
 { const b = $('brand-home'); if (b) { b.addEventListener('click', goHome); b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goHome(); } }); } }
+{ const b = $('sidenav-brand'); if (b) { b.addEventListener('click', goHome); b.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goHome(); } }); } }
 
 // ---- 🔎 DeepDossier (private MVP) ----
 var ddRows = [];       // last result set (for CSV + sorting)

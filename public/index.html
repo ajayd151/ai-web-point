@@ -188,6 +188,7 @@
   </div>
 
   <header class="topbar">
+    <button id="navToggle" class="nav-toggle" type="button" aria-label="Menu">☰</button>
     <div class="brand brand-home" id="brand-home" role="button" tabindex="0" title="Back to Search (home)">
       <svg class="brandmark" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3 C14.6 3 7 10.6 7 20 C7 31.9 24 46 24 46 C24 46 41 31.9 41 20 C41 10.6 33.4 3 24 3 Z" fill="#0FB6A8"/><circle cx="24" cy="19.5" r="9.6" fill="#fff"/><path d="M25.6 10.8 L17.4 22 L22.6 22 L20.8 28.4 L30.6 16.6 L24.8 16.6 Z" fill="#FF6B6B"/></svg>
       <div>
@@ -281,18 +282,28 @@
     </div>
   </div>
 
-  <nav class="topnav">
-    <button class="navbtn active" data-view="search">🔍 Search</button>
-    <button class="navbtn" data-view="messages">💬 Templates</button>
-    <button class="navbtn" data-view="performance">📊 Performance</button>
-    <button class="navbtn" data-view="hotleads">🌡️ Warm Leads <span id="hot-count" class="navbadge hidden">0</span></button>
-    <button class="navbtn" data-view="calls">📞 Call List <span id="call-count" class="navbadge hidden">0</span></button>
-    <button class="navbtn" data-view="leads">👤 All Leads</button>
-    <button class="navbtn" data-view="websites">🌐 Websites</button>
-    <button class="navbtn" data-view="enquiries">📨 Enquiries <span id="enq-count" class="navbadge hidden">0</span></button>
-    <button class="navbtn navbtn-admin hidden" id="nav-admin" data-view="admin">⚙️ Admin <span id="sms-ready-nav" class="navbadge green hidden">0</span></button>
-    <button class="navbtn hidden" id="nav-deepdossier" data-view="deepdossier">🔎 DeepDossier</button>
-  </nav>
+  <div class="sidenav-backdrop" id="sidenav-backdrop"></div>
+  <aside class="sidenav" id="sidenav">
+    <div class="sidenav-brand" id="sidenav-brand" role="button" tabindex="0" title="Back to Search (home)">
+      <svg class="brandmark sn-mark" viewBox="0 0 48 48" aria-hidden="true"><path d="M24 3 C14.6 3 7 10.6 7 20 C7 31.9 24 46 24 46 C24 46 41 31.9 41 20 C41 10.6 33.4 3 24 3 Z" fill="#0FB6A8"/><circle cx="24" cy="19.5" r="9.6" fill="#fff"/><path d="M25.6 10.8 L17.4 22 L22.6 22 L20.8 28.4 L30.6 16.6 L24.8 16.6 Z" fill="#FF6B6B"/></svg>
+      <span class="sn-name">Site<span class="tealtext">Pounce</span></span>
+    </div>
+    <nav class="sidenav-links">
+      <div class="sidenav-group">Main</div>
+      <button class="navbtn active" data-view="search">🔍 Search</button>
+      <button class="navbtn" data-view="leads">👤 All Leads</button>
+      <button class="navbtn" data-view="hotleads">🌡️ Warm Leads <span id="hot-count" class="navbadge hidden">0</span></button>
+      <button class="navbtn" data-view="calls">📞 Call List <span id="call-count" class="navbadge hidden">0</span></button>
+      <button class="navbtn" data-view="enquiries">📨 Enquiries <span id="enq-count" class="navbadge hidden">0</span></button>
+      <button class="navbtn" data-view="websites">🌐 Websites</button>
+      <div class="sidenav-group">Insights</div>
+      <button class="navbtn" data-view="performance">📊 Performance</button>
+      <button class="navbtn" data-view="messages">💬 Templates</button>
+      <div class="sidenav-group" id="sn-grp-admin">Admin</div>
+      <button class="navbtn navbtn-admin hidden" id="nav-admin" data-view="admin">⚙️ Admin <span id="sms-ready-nav" class="navbadge green hidden">0</span></button>
+      <button class="navbtn hidden" id="nav-deepdossier" data-view="deepdossier">🔎 DeepDossier</button>
+    </nav>
+  </aside>
 
   <main>
     <div id="view-search" class="view">
