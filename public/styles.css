@@ -1550,6 +1550,17 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .rc-chip.st-noanswer { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
 .rc-chip.st-notint { background: #fef2f2; color: #b91c1c; border-color: #f5b5b5; }
 .rc-chip.st-hot { background: #fff1f2; color: #be123c; border-color: #fecdd3; font-weight: 800; }
+/* Global "hot lead replied to their website" flasher, floats over every page */
+.hot-flash { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; align-items: center; gap: 14px; max-width: 94vw; padding: 12px 16px; border-radius: 12px; background: #dc2626; color: #fff; box-shadow: 0 10px 34px rgba(220,38,38,.5); animation: hotpulse 1.15s ease-in-out infinite; }
+.hot-flash.hidden { display: none; }
+.hot-flash-txt { font-size: 14px; line-height: 1.3; }
+.hot-flash-txt b { font-size: 15px; }
+.hot-flash-go { appearance: none; border: none; background: #fff; color: #b91c1c; font-weight: 800; font-size: 13px; padding: 8px 14px; border-radius: 9px; cursor: pointer; white-space: nowrap; }
+.hot-flash-go:hover { background: #fee2e2; }
+.hot-flash-x { appearance: none; border: none; background: transparent; color: rgba(255,255,255,.85); font-size: 16px; line-height: 1; cursor: pointer; padding: 2px 4px; }
+@keyframes hotpulse { 0%, 100% { box-shadow: 0 10px 30px rgba(220,38,38,.4); transform: translateX(-50%) scale(1); } 50% { box-shadow: 0 12px 48px rgba(220,38,38,.9); transform: translateX(-50%) scale(1.035); } }
+@media (max-width: 560px) { .hot-flash { flex-wrap: wrap; top: 8px; padding: 10px 12px; } .hot-flash-txt { font-size: 12.5px; flex: 1 1 100%; } }
+@media (prefers-reduced-motion: reduce) { .hot-flash { animation: none; } }
 /* Update-status popup (inside the shared metric modal) */
 .rc-status-pop { min-width: 300px; }
 .rc-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }

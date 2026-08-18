@@ -71,6 +71,12 @@ module.exports = async (req, res) => {
     const callAll = (await readyToCall(200)).map((r) => Object.assign({}, r, { status: (idx[r.key] && idx[r.key].status) || '' }));
     const readyCount = callAll.filter((r) => !r.status).length; // untouched "to call" only
     if (q.count) { res.status(200).json({ readyCount: readyCount }); return; }
+    // Cheap poll for the global "hot lead" flasher: how many leads replied AFTER their auto-built site.
+    if (q.hot) {
+      const hot = Object.keys(idx).filter((k) => (idx[k] && idx[k].status) === 'site-reply');
+      res.status(200).json({ hot: hot.length });
+      return;
+    }
     if (q.hourly) {
       const hto = q.hto ? String(q.hto) : new Date(Date.now() + 86400000).toISOString();
       const hfrom = q.hfrom ? String(q.hfrom) : new Date(Date.now() - 30 * 86400000).toISOString();

@@ -300,6 +300,7 @@ async function refreshAccess() {
     loadServerMockups(); loadHotLeads(); loadCallList(); // saved mockups + warm-lead / call-list badges + card states
     pullTemplatesFromServer(); // shared templates: server copy wins over this device's cache
     if (acc.plan === 'owner') refreshSmsReady(); // green badge: positive SMS replies waiting
+    pollHotLeads(); // start the global hot-lead flasher
   }
   // resume a plan the user picked before signing up, but NEVER for someone who already has
   // access (a team member or existing subscriber must not be pushed into paying).
@@ -3850,6 +3851,7 @@ async function saveCallStatus(key, name, status, comment) {
     smsCallTab = smsTabOf(status);                                 // jump to where we just filed them
     renderSmsCallNow(smsCallNowRows);
     setSmsReadyBadge(smsCallNowRows.filter((x) => !x.status).length);
+    pollHotLeads(); // handling a hot lead should clear the flasher
   } catch (e) { if (msg) msg.textContent = '⚠️ Could not save, try again.'; if (save) { save.disabled = false; save.textContent = 'Save'; } }
 }
 // short date+time stamp, e.g. "23 Jul, 18:42" (UK). Empty string if no timestamp.
@@ -6062,6 +6064,37 @@ function updateTabTitle() {
 document.addEventListener('visibilitychange', updateTabTitle);
 setInterval(() => { if (authed) loadHotLeads(); }, 180000); // refresh the count every 3 min so it catches new ones while you're away
 setInterval(() => { if (authed) refreshSmsReady(); }, 1200000); // green SMS-ready badge kept fresh
+
+// ---- Global "hot lead" flasher: a reply came in AFTER we sent their auto-built website. This is
+// the close-the-deal moment, so it flashes on EVERY page until you go and deal with it. ----
+function canSeeHot() { const a = window.AIWP_ACCESS || {}; return !!(a.plan === 'owner' || (a.member && a.perms && a.perms.sms !== false)); }
+async function pollHotLeads() {
+  if (!authed || !canSeeHot()) return;
+  try { const d = await (await fetch('/api/sms-campaign?hot=1')).json(); showHotFlash((d && Number(d.hot)) || 0); } catch (e) {}
+}
+function showHotFlash(n) {
+  const el = $('hot-flash'); if (!el) return;
+  window._hotCount = n;
+  let dismissed = 0; try { dismissed = Number(localStorage.getItem('aiwp_hot_dismissed') || 0) || 0; } catch (e) {}
+  if (n > 0 && n > dismissed) { const c = $('hot-flash-n'); if (c) c.textContent = n; el.classList.remove('hidden'); }
+  else { el.classList.add('hidden'); if (n === 0) { try { localStorage.removeItem('aiwp_hot_dismissed'); } catch (e) {} } } // clear the ack once every hot lead is handled
+}
+function dismissHotFlash() { try { localStorage.setItem('aiwp_hot_dismissed', String(window._hotCount || 0)); } catch (e) {} const el = $('hot-flash'); if (el) el.classList.add('hidden'); }
+async function goToHotLeads() {
+  dismissHotFlash();
+  try {
+    if (typeof showView === 'function') showView('admin');
+    const ab = document.querySelector('.admin-navbtn[data-adminview="sms"]'); if (ab) ab.click();
+    setTimeout(() => {
+      const st = document.querySelector('.sms-tab[data-smstab="replies"]'); if (st) st.click();
+      smsCallTab = 'hot';
+      setTimeout(() => { try { renderSmsCallNow(smsCallNowRows); const el = $('sms-callnow'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {} }, 220);
+    }, 130);
+  } catch (e) {}
+}
+{ const g = $('hot-flash-go'); if (g) g.addEventListener('click', goToHotLeads); }
+{ const x = $('hot-flash-x'); if (x) x.addEventListener('click', dismissHotFlash); }
+setInterval(() => { pollHotLeads(); }, 45000); // check often, this is the money moment
 // while the SMS pane is open, live-refresh the campaigns / replies / ready-to-call every 20s so
 // the sent count climbs in front of you without a manual refresh
 setInterval(() => { const p = document.getElementById('admin-sms'); if (authed && p && !p.classList.contains('hidden')) loadSmsAdmin({ poll: true }); }, 60000);
