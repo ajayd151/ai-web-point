@@ -205,6 +205,7 @@ async function generateMockup(base, item) {
 
 function renderMessage(template, item, base) {
   const biz = humaniseBusinessName(item.name) || item.name;
+  const sender = process.env.SMS_SENDER || 'Sophie';
   let msg = String(template || '')
     .split('{business}').join(biz)
     .split('{name}').join(biz)                       // templates written for WhatsApp use {name}
@@ -213,8 +214,13 @@ function renderMessage(template, item, base) {
     .split('{location}').join(item.location || 'your area')
     .split('{reviews}').join((item.reviews != null && item.reviews !== '') ? String(item.reviews) : 'only a few')
     .split('{rating}').join((item.rating != null && item.rating !== '') ? String(item.rating) : '')
-    .split('{sender}').join(process.env.SMS_SENDER || 'Sophie')  // one consistent human persona across all outbound
+    .split('{sender}').join(sender)  // one consistent human persona across all outbound
     .split('{link}').join(item.view_url || '');
+  // Sign every message as one consistent person so all outreach looks like it comes from a real
+  // human, unless the message is already signed with that name (e.g. it used {sender}).
+  if (sender && msg && msg.toLowerCase().indexOf(sender.toLowerCase()) < 0) {
+    msg += '\n\nThanks,\n' + sender;
+  }
   // Opt-out footer, the SOFT opt-out. A tap-to-opt-out LINK instead of "reply STOP": a link click
   // does not count against the carrier opt-out metric the way a STOP text does, so the number stays
   // healthy. STOP still works silently for anyone who types it. We only skip adding the link if one

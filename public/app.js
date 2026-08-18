@@ -3715,7 +3715,7 @@ async function openLeadHistory(idx) {
 function fillTpl(tpl, it) {
   if (!tpl) return '';
   const biz = (typeof humaniseBusinessName === 'function' ? humaniseBusinessName(it.name || '') : (it.name || '')) || 'there';
-  return String(tpl)
+  let out = String(tpl)
     .split('{business}').join(biz).split('{name}').join(biz)
     .split('{industry}').join(it.category || 'business').split('{category}').join(it.category || 'business')
     .split('{location}').join(it.location || 'your area')
@@ -3723,6 +3723,8 @@ function fillTpl(tpl, it) {
     .split('{rating}').join((it.rating != null && it.rating !== '') ? String(it.rating) : '')
     .split('{sender}').join(smsSender)
     .split('{link}').join(it.view_url || '');
+  if (smsSender && out.toLowerCase().indexOf(smsSender.toLowerCase()) < 0) out += '\n\nThanks,\n' + smsSender; // mirror the sender's auto-sign
+  return out;
 }
 // Text a lead the finished website with a friendly, editable prefilled message.
 function openSendSite(idx) {
