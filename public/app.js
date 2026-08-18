@@ -2810,6 +2810,7 @@ async function loadSmsAdmin(opts) {
     smsPrimaryNum = d.primaryNumber || '';
     smsSender = d.sender || smsSender;
     smsFunnelOn = !!d.funnelEnabled; smsIsOwner = !!d.isOwner; smsFunnelAlert = d.funnelAlertMobile || '';
+    renderFunnelSettings();
     smsNumbersMap = {}; (d.numbers || []).forEach((n) => { if (n && n.phone) smsNumbersMap[n.phone] = n.label || n.phone; });
     renderSmsNumbers(d.numbers || [], d.primaryNumber || '', !!d.isOwner);
     fillSmsFromPicker(d.numbers || [], d.primaryNumber || '');
@@ -3669,19 +3670,7 @@ function renderSmsCallNow(rows) {
       '</div>' +
     '</div>';
   }).join('');
-  const funnelBar = smsIsOwner
-    ? '<div class="funnel-bar' + (smsFunnelOn ? ' on' : '') + '">' +
-        '<div class="funnel-row1"><div class="funnel-txt"><b>🤖 Auto-funnel ' + (smsFunnelOn ? 'ON' : 'OFF') + '</b> · on a positive reply, ' + esc(smsSender) + ' auto-sends a holding text, then auto-builds &amp; texts the full website ~90 min later.</div>' +
-          '<button class="funnel-toggle" onclick="toggleFunnel()">' + (smsFunnelOn ? 'Turn OFF' : 'Turn ON') + '</button></div>' +
-        '<div class="funnel-row2">' +
-          '<label class="funnel-mob">🔔 Alert my mobile <input id="funnel-alert" type="tel" placeholder="+447..." value="' + esc(smsFunnelAlert) + '" /></label>' +
-          '<button class="funnel-mini" onclick="saveFunnelAlert()">Save</button>' +
-          '<button class="funnel-mini catchup" onclick="funnelCatchUp()">⚡ Catch up waiting positives</button>' +
-          '<span id="funnel-msg" class="funnel-msg muted"></span>' +
-        '</div>' +
-      '</div>'
-    : '';
-  el.innerHTML = funnelBar + '<div class="rc-tabs">' + tabsHtml + '</div>' +
+  el.innerHTML = '<div class="rc-tabs">' + tabsHtml + '</div>' +
     '<div class="rc-cards">' + (bodyHtml || '<p class="muted" style="padding:14px">Nobody in this tab yet.</p>') + '</div>';
   el.querySelectorAll('.rc-tab').forEach((b) => b.addEventListener('click', () => { smsCallTab = b.dataset.tab; renderSmsCallNow(smsCallNowRows); }));
   el.querySelectorAll('.rc-setstatus').forEach((b) => b.addEventListener('click', () => openCallStatus(Number(b.dataset.idx))));
@@ -3695,6 +3684,22 @@ function renderSmsCallNow(rows) {
   el.querySelectorAll('.rc-sendsite').forEach((b) => b.addEventListener('click', () => openSendSite(Number(b.dataset.idx))));
   el.querySelectorAll('.rc-history').forEach((b) => b.addEventListener('click', () => openLeadHistory(Number(b.dataset.idx))));
 }
+// The auto-funnel control panel, rendered into the SMS Maintenance tab (owner only).
+function renderFunnelSettings() {
+  const el = $('sms-funnel-settings'); if (!el) return;
+  if (!smsIsOwner) { el.innerHTML = ''; return; }
+  el.innerHTML = '<div class="funnel-panel' + (smsFunnelOn ? ' on' : '') + '">' +
+    '<div class="funnel-p-head"><div><div class="funnel-p-title">🤖 Auto-funnel <span class="funnel-state">' + (smsFunnelOn ? 'ON' : 'OFF') + '</span></div>' +
+      '<div class="funnel-p-sub">On any positive reply, ' + esc(smsSender) + ' auto-sends a holding text, then auto-builds &amp; texts the full website about 90 minutes later. Nothing is reviewed first.</div></div>' +
+      '<button class="funnel-toggle" onclick="toggleFunnel()">' + (smsFunnelOn ? 'Turn OFF' : 'Turn ON') + '</button></div>' +
+    '<div class="funnel-p-row"><label class="funnel-mob">🔔 Alert my mobile <input id="funnel-alert" type="tel" placeholder="+447..." value="' + esc(smsFunnelAlert) + '" /></label>' +
+      '<button class="funnel-mini" onclick="saveFunnelAlert()">Save</button>' +
+      '<span class="funnel-hint muted">You get a text (business, their phone, the site link, the message) each time a site auto-sends.</span></div>' +
+    '<div class="funnel-p-row"><button class="funnel-mini catchup" onclick="funnelCatchUp()">⚡ Catch up waiting positives</button>' +
+      '<span class="funnel-hint muted">Build &amp; send to everyone who already replied positive but never got the auto-treatment.</span>' +
+      '<span id="funnel-msg" class="funnel-msg muted"></span></div>' +
+    '</div>';
+}
 async function toggleFunnel() {
   const turningOn = !smsFunnelOn;
   const msg = turningOn
@@ -3703,7 +3708,7 @@ async function toggleFunnel() {
   if (!confirm(msg)) return;
   try {
     const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'manageFunnel', enabled: turningOn }) })).json();
-    if (d && d.ok !== undefined) { smsFunnelOn = !!d.enabled; renderSmsCallNow(smsCallNowRows); }
+    if (d && d.ok !== undefined) { smsFunnelOn = !!d.enabled; renderFunnelSettings(); }
     else alert((d && d.error) || 'Could not change it.');
   } catch (e) { alert('Could not change it, try again.'); }
 }
