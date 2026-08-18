@@ -5,7 +5,7 @@
 const crypto = require('crypto');
 const { list, put } = require('@vercel/blob');
 const { recordInbound, addOptout, latestItemByPhone, setReply, setPostReply } = require('../lib/smsdb');
-const { ukMobile } = require('../lib/sms');
+const { ukMobile, sendSms } = require('../lib/sms');
 const { ownerEmail } = require('../lib/tenant');
 
 // What did they mean? Keyword fast-path first; the AI referee only for genuinely unclear replies.
@@ -128,19 +128,31 @@ module.exports = async (req, res) => {
     await addOptout(from, 'reply');
     if (matched) await setCrmStatus(matched.key, 'dnd', '🚫 Replied STOP. Opted out and marked Do Not Contact (DND).');
   } else if (item) {
-    // drive the workflow forward
+    // The money moment: a positive reply AFTER we auto-sent their full website. Give it its own
+    // "Replied to their website" status and text the owner so they can call and close.
+    const afterSite = !!(item.funnel_site_at && verdict === 'positive');
     if (item.link_sent_at) {
       // they have SEEN the mockup: this is the response that matters most
       await setPostReply(item.id, verdict);
-      if (verdict === 'positive' && matched) await setCrmStatus(matched.key, 'interested', '📱 SMS reply after seeing the mockup: "' + body + '" → CALL THEM');
+      if (verdict === 'positive' && matched) await setCrmStatus(matched.key, afterSite ? 'site-reply' : 'interested', afterSite ? ('🔥 REPLIED after we sent their full website: "' + body + '" → CALL AND CLOSE') : ('📱 SMS reply after seeing the mockup: "' + body + '" → CALL THEM'));
       if (verdict === 'negative' && matched) await setCrmStatus(matched.key, 'not-interested', '📱 Negative reply after the mockup: "' + body + '".');
     } else {
       // reply to the ask: a YES schedules the mockup link after the campaign's delay
       const linkDue = (verdict === 'positive' && item.mode === 'ask')
         ? new Date(Date.now() + (Number(item.link_delay_min) || 1) * 60000).toISOString() : null;
       await setReply(item.id, verdict, linkDue);
-      if (verdict === 'positive' && matched) await setCrmStatus(matched.key, 'interested', '📱 SMS reply: "' + body + '" (mockup link auto-sends in ' + (Number(item.link_delay_min) || 1) + ' min)');
+      if (verdict === 'positive' && matched) await setCrmStatus(matched.key, afterSite ? 'site-reply' : 'interested', afterSite ? ('🔥 REPLIED after we sent their full website: "' + body + '" → CALL AND CLOSE') : ('📱 SMS reply: "' + body + '" (mockup link auto-sends in ' + (Number(item.link_delay_min) || 1) + ' min)'));
       if (verdict === 'negative' && matched) await setCrmStatus(matched.key, 'not-interested', '📱 Negative reply: "' + body + '".');
+    }
+    if (afterSite) {
+      try {
+        const cfg = (await readJson('sms/_funnel.json')) || {};
+        const alertMobile = String(cfg.alertMobile || process.env.OWNER_MOBILE || '').trim();
+        if (alertMobile) {
+          const nm = (matched && matched.name) || item.name || 'A lead';
+          await sendSms(alertMobile, 'HOT LEAD, reply after their website\n\nBusiness: ' + nm + '\nTheir phone: ' + from + '\nThey said: "' + body + '"\nWebsite: ' + (item.funnel_site_url || '') + '\n\nTime to call and close.', process.env.APP_BASE_URL || 'https://www.sitepounce.com', process.env.TWILIO_FROM || '');
+        }
+      } catch (e) { /* best effort */ }
     }
   }
   // any reply that is not part of the workflow still lands in the notes

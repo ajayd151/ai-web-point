@@ -1549,6 +1549,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .rc-chip.st-callback { background: #fefce8; color: #a16207; border-color: #fde68a; }
 .rc-chip.st-noanswer { background: #f8fafc; color: #64748b; border-color: #e2e8f0; }
 .rc-chip.st-notint { background: #fef2f2; color: #b91c1c; border-color: #f5b5b5; }
+.rc-chip.st-hot { background: #fff1f2; color: #be123c; border-color: #fecdd3; font-weight: 800; }
 /* Update-status popup (inside the shared metric modal) */
 .rc-status-pop { min-width: 300px; }
 .rc-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }

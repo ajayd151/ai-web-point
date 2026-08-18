@@ -3572,6 +3572,7 @@ function slugFromUrl(u) { const m = String(u || '').match(/\/v\/([a-z0-9-]+)/i);
 // lead's own key), so a status set here shows everywhere and nothing is stranded.
 var SMS_STATUS = [
   { v: '',                      label: 'To call',                     emoji: '📞', tab: 'tocall' },
+  { v: 'site-reply',            label: 'Replied to their website',    emoji: '🔥', tab: 'hot' },
   { v: 'contacted',             label: 'Spoke to them',               emoji: '💬', tab: 'spoke' },
   { v: 'interested',            label: 'Interested / wants demo',     emoji: '🔥', tab: 'interested' },
   { v: 'appointment-link-sent', label: 'Booking link sent',           emoji: '🔗', tab: 'interested' },
@@ -3587,7 +3588,7 @@ var SMS_STATUS = [
 ];
 // The tabs across the top of the call list. To-call + All always show; the rest appear once used.
 var SMS_CALL_TABS = [
-  { id: 'tocall', label: '📞 To call' }, { id: 'spoke', label: '💬 Spoke to' },
+  { id: 'tocall', label: '📞 To call' }, { id: 'hot', label: '🔥 Replied to site' }, { id: 'spoke', label: '💬 Spoke to' },
   { id: 'interested', label: '🔥 Interested' }, { id: 'booked', label: '📅 Booked' },
   { id: 'callback', label: '⏰ Callback' }, { id: 'noanswer', label: "📵 Couldn't reach" },
   { id: 'notint', label: '🚫 Not interested' }, { id: 'all', label: '📋 All' },
