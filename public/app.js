@@ -3594,6 +3594,16 @@ var SMS_STATUS_BTNS = ['contacted', 'interested', 'appointment-link-sent', 'meet
 function smsStatusMeta(v) { for (var i = 0; i < SMS_STATUS.length; i++) { if (SMS_STATUS[i].v === (v || '')) return SMS_STATUS[i]; } return SMS_STATUS[0]; }
 function smsTabOf(v) { return smsStatusMeta(v).tab; }
 var smsCallTab = 'tocall';
+// slug -> live site URL, for leads whose full website has already been built with Pounce.
+// Lets the call list show "View site" + "Text them the site" instead of "Full site".
+var smsBuiltSites = null;
+async function ensureBuiltSites() {
+  if (smsBuiltSites) return smsBuiltSites;
+  smsBuiltSites = {}; // set now so a re-render mid-fetch does not trigger a second load
+  try { const d = await (await fetch('/api/sites')).json(); (d.sites || []).forEach((s) => { if (s.slug && s.url) smsBuiltSites[s.slug] = s.url; }); } catch (e) {}
+  return smsBuiltSites;
+}
+function callSiteSlug(r) { return (r && (r.slug || slugFromUrl(r.view_url))) || ''; }
 // Statuses you just set, kept locally and re-applied over incoming poll data until the server's
 // blob index catches up (its reads lag writes by a beat). Without this, the next 60s poll would
 // briefly revert a status you just changed, which looked like "it didn't save until I refreshed".
@@ -3610,6 +3620,7 @@ function renderSmsCallNow(rows) {
       else r.status = smsLocalStatus[k];
     }
   });
+  if (smsBuiltSites === null) ensureBuiltSites().then(() => renderSmsCallNow(smsCallNowRows)); // learn which leads already have a built site, then re-render
   if (!smsCallNowRows.length) { el.innerHTML = '<p class="muted">Nobody yet. Positive repliers appear here automatically.</p>'; return; }
   // latest reply text per phone, from the replies feed, so you see what they said without switching tab
   const replyByPhone = {};
@@ -3629,6 +3640,7 @@ function renderSmsCallNow(rows) {
     const meta = smsStatusMeta(r.status || '');
     const stage = r.post_reply === 'positive' ? '🔥 Yes AFTER seeing the mockup' : (r.link_sent_at ? 'Sent the mockup, awaiting reply' : '✅ Said yes to seeing it');
     const said = replyByPhone[String(r.phone || '')] || '';
+    const builtUrl = smsBuiltSites ? (smsBuiltSites[callSiteSlug(r)] || '') : '';
     return '<div class="rc-card">' +
       '<div class="rc-card-top">' +
         '<div class="rc-biz"><div class="rc-name">' + esc(r.name || '') + '</div>' +
@@ -3643,7 +3655,10 @@ function renderSmsCallNow(rows) {
       '<div class="rc-card-actions">' +
         (r.phone ? '<a class="rc-act rc-phone" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') +
         (r.view_url ? '<a class="rc-act rc-view" href="' + esc(r.view_url) + '" target="_blank" rel="noopener">👁 View mockup</a>' : '') +
-        '<button class="rc-act rc-fullsite sms-fullsite" data-idx="' + gi + '" title="Build them the full website with Pounce">🐆 Full site</button>' +
+        (builtUrl
+          ? '<a class="rc-act rc-view rc-sitelink" href="' + esc(builtUrl) + '" target="_blank" rel="noopener">🌐 View site</a>' +
+            '<button class="rc-act rc-sendsite" data-idx="' + gi + '">📲 Text them the site</button>'
+          : '<button class="rc-act rc-fullsite sms-fullsite" data-idx="' + gi + '" title="Build them the full website with Pounce">🐆 Full site</button>') +
         '<button class="rc-act rc-update rc-setstatus" data-idx="' + gi + '">✏️ Update status</button>' +
       '</div>' +
     '</div>';
@@ -3656,8 +3671,36 @@ function renderSmsCallNow(rows) {
     const r = smsCallNowRows[Number(b.dataset.idx)]; if (!r) return;
     const slug = r.slug || slugFromUrl(r.view_url) || r.key;
     if (!slug) { alert('This lead has no mockup yet, so there is nothing to build the full site from.'); return; }
+    smsBuiltSites = null; // a build may happen; refresh the built-site list on the next render
     openPounce({ slug: slug, name: r.name || '', location: r.location || '', category: r.category || '', phone: r.phone || '', phones: r.phone ? [r.phone] : [], viewUrl: r.view_url || '' });
   }));
+  el.querySelectorAll('.rc-sendsite').forEach((b) => b.addEventListener('click', () => openSendSite(Number(b.dataset.idx))));
+}
+// Text a lead the finished website with a friendly, editable prefilled message.
+function openSendSite(idx) {
+  const r = smsCallNowRows[idx]; if (!r) return;
+  const url = smsBuiltSites ? (smsBuiltSites[callSiteSlug(r)] || '') : '';
+  if (!url) { alert('No built site found for this lead yet. Build it with Full site first.'); return; }
+  if (!r.phone) { alert('This lead has no phone number on file.'); return; }
+  const biz = (typeof humaniseBusinessName === 'function' ? humaniseBusinessName(r.name || '') : (r.name || '')) || 'there';
+  const msg = 'Hi ' + biz + ', here is the website we built for you: ' + url + '. What do you think? Happy to change anything you would like.';
+  const body = '<div class="rc-status-pop">' +
+    '<p class="muted" style="margin:0 0 8px">Text this to <b>' + esc(fmtPhone(r.phone)) + '</b>. Edit it if you like, then send.</p>' +
+    '<textarea id="ss-msg" class="rc-note" rows="5">' + esc(msg) + '</textarea>' +
+    '<div class="rc-pop-foot"><span id="ss-note" class="muted"></span><button id="ss-send" class="primary">📲 Send SMS</button></div></div>';
+  showMetricModal('Send the website to ' + esc(r.name || 'this lead'), body);
+  const phone = r.phone; const nm = r.name || '';
+  $('ss-send').addEventListener('click', () => sendSiteSms(phone, nm, ($('ss-msg') && $('ss-msg').value) || ''));
+}
+async function sendSiteSms(phone, name, message) {
+  const btn = $('ss-send'); const note = $('ss-note');
+  if (!String(message).trim()) { if (note) note.textContent = 'Write a message first.'; return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sendSite', phone: phone, name: name, message: message }) })).json();
+    if (d && d.ok) { if (note) note.textContent = '✓ Sent'; setTimeout(closeMetricModal, 900); }
+    else { if (note) note.textContent = (d && d.error) || 'Could not send.'; if (btn) { btn.disabled = false; btn.textContent = '📲 Send SMS'; } }
+  } catch (e) { if (note) note.textContent = 'Could not send, try again.'; if (btn) { btn.disabled = false; btn.textContent = '📲 Send SMS'; } }
 }
 // Quick status + note popup for one call-list lead.
 function openCallStatus(idx) {

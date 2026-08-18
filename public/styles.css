@@ -1578,6 +1578,10 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .rc-view:hover { background: #e0e7ff; }
 .rc-update { margin-left: auto; background: #0f766e; border-color: #0f766e; color: #fff; }
 .rc-update:hover { background: #0e6b64; }
+.rc-sitelink { color: #0f766e; border-color: #99f6e4; background: #f0fdfa; }
+.rc-sitelink:hover { background: #ccfbf1; }
+.rc-sendsite { color: #fff; background: #2563eb; border-color: #2563eb; }
+.rc-sendsite:hover { background: #1d4ed8; }
 @media (max-width: 560px) { .rc-update { margin-left: 0; } .rc-act { flex: 1 1 auto; justify-content: center; } }
 
 /* SMS hourly charts */

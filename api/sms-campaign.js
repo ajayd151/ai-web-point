@@ -10,7 +10,7 @@ const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
 const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey, londonHour } = require('../lib/digest');
-const { getDailyUsage } = require('../lib/db');
+const { getDailyUsage, bumpDailyUsage, logActivity } = require('../lib/db');
 const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall } = require('../lib/smsdb');
 
 async function readJson(path) {
@@ -254,6 +254,26 @@ module.exports = async (req, res) => {
     const r = await sendSms(mob, 'Site Pounce test: your SMS is working. Reply anything and it will show in Admin > SMS. Reply STOP to opt out.', base);
     if (r.ok) res.status(200).json({ ok: true });
     else res.status(200).json({ error: 'Twilio refused it: ' + (r.error || 'unknown') });
+    return;
+  }
+
+  if (action === 'sendSite') {
+    // One-off manual SMS to a lead who has already replied (e.g. "here's the website we built").
+    // Not a campaign, so it does not touch the daily cap, but it still respects opt-outs.
+    if (!smsConfigured()) { res.status(400).json({ error: 'Twilio keys are not set yet.' }); return; }
+    const mob = ukMobile(body.phone);
+    if (!mob) { res.status(400).json({ error: 'That is not a valid UK mobile number.' }); return; }
+    const message = String(body.message || '').trim().slice(0, 640);
+    if (!message) { res.status(400).json({ error: 'Write a message first.' }); return; }
+    try { const outs = await optoutSet(); if (outs.has(mob)) { res.status(400).json({ error: 'That number has opted out, we cannot text them.' }); return; } } catch (e) { /* fail open on the opt-out check */ }
+    const base = process.env.APP_BASE_URL || 'https://www.sitepounce.com';
+    const nums = await readNumbers();
+    const fromNum = (body.fromNumber && nums.some((n) => n.phone === body.fromNumber)) ? body.fromNumber : (process.env.TWILIO_FROM || '');
+    const r = await sendSms(mob, message, base, fromNum);
+    if (!r.ok) { res.status(200).json({ error: 'Twilio refused it: ' + (r.error || 'unknown') }); return; }
+    try { await bumpDailyUsage(acct.email, 'cost:sms', 1, todayKey(new Date())); } catch (e) {}
+    try { await logActivity(acct.email, acct.email, 'message_sent', (body.name || mob) + ' (website link)', body.name || mob); } catch (e) {}
+    res.status(200).json({ ok: true });
     return;
   }
 
