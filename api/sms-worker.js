@@ -368,9 +368,10 @@ module.exports = async (req, res) => {
   // ---- Auto-funnel: positive reply -> holding message (~2 min) -> auto-built full website (~90 min).
   // Owner-toggled (sms/_funnel.json). Respects the send window and opt-outs; each step fires once.
   if (smsConfigured() && !brake.paused) {
-    let funnelOn = false;
-    try { funnelOn = !!((await readJson('sms/_funnel.json')) || {}).enabled; } catch (e) { /* off */ }
-    if (funnelOn) {
+    let funnelCfg = {};
+    try { funnelCfg = (await readJson('sms/_funnel.json')) || {}; } catch (e) { /* off */ }
+    const alertMobile = String(funnelCfg.alertMobile || OWNER_MOBILE || '').trim();
+    if (funnelCfg.enabled) {
       let outs = new Set();
       try { outs = await optoutSet(); } catch (e) { /* fail open */ }
       // (a) the human-sounding holding message
@@ -391,14 +392,15 @@ module.exports = async (req, res) => {
           const b = await buildFullSite(base, it);
           if (!b.ok) { out.held.push('funnel site build failed: ' + b.error); continue; } // retry next tick
           const tpl = 'Hi {business}, here is the full website I built for you: ' + b.siteUrl + '. What do you think? Could we jump on a quick call to go through it? Tell me anything you would like changed.';
-          const r = await sendSms(it.phone, renderMessage(tpl, it, base), base, it.from_number || PRIMARY);
+          const siteMsg = renderMessage(tpl, it, base);
+          const r = await sendSms(it.phone, siteMsg, base, it.from_number || PRIMARY);
           if (r.ok) {
             await markFunnelSite(it.id, b.siteUrl);
             await bumpDailyUsage(owner, 'cost:sms', 1, day); await bumpDailyUsage(owner, 'cost:pounce', 1, day);
             await logActivity(owner, owner, 'message_sent', it.name + ' (AUTO-built website sent)', it.name, { auto: 1 });
             out.funnelSite = (out.funnelSite || 0) + 1;
-            // alert the owner so an unreviewed auto-send can be spot-checked
-            if (OWNER_MOBILE) { try { await sendSms(OWNER_MOBILE, 'Sophie auto-built a website for ' + (it.name || 'a lead') + ' and texted it to them: ' + b.siteUrl + ' . Please check it looks right.', base, PRIMARY); } catch (e) { /* best effort */ } }
+            // alert the owner: business name, their phone, the site, and the exact message we sent
+            if (alertMobile) { try { await sendSms(alertMobile, 'AI Auto Website Sent\n\nBusiness: ' + (it.name || 'a lead') + '\nTheir phone: ' + (it.phone || '') + '\nWebsite: ' + b.siteUrl + '\n\nMessage sent:\n' + siteMsg, base, PRIMARY); } catch (e) { /* best effort */ } }
           } else out.held.push('funnel site send failed: ' + r.error);
         }
       } catch (e) { out.held.push('funnel site error'); }

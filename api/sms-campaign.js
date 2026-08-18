@@ -11,7 +11,7 @@ const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey, londonHour } = require('../lib/digest');
 const { getDailyUsage, bumpDailyUsage, logActivity } = require('../lib/db');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall, leadTimeline, lastSendNumber, markFunnelSiteByLead } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall, leadTimeline, lastSendNumber, markFunnelSiteByLead, backfillFunnel } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -87,6 +87,7 @@ module.exports = async (req, res) => {
     const capExtra = (boost.day === day && Number(boost.extra) > 0) ? Number(boost.extra) : 0;
     const dailyCap = await limitFor('sms', acct.email);
     const sentToday = await getDailyUsage(acct.email, 'sms', day);
+    const funnelCfg = (await readJson('sms/_funnel.json')) || {};
     res.status(200).json({
       campaigns: await listCampaigns(),
       replies: await listInbound(100),
@@ -103,7 +104,8 @@ module.exports = async (req, res) => {
       isApprover: approver,
       primaryNumber: process.env.TWILIO_FROM || '',
       sender: process.env.SMS_SENDER || 'Sophie',
-      funnelEnabled: !!((await readJson('sms/_funnel.json')) || {}).enabled,
+      funnelEnabled: funnelCfg.enabled === true,
+      funnelAlertMobile: funnelCfg.alertMobile || '',
       numbers: await readNumbers(),
       approvals: approver ? (await readApprovals()).filter((r) => r.status === 'pending') : [],
       approvers: isComped(acct.email) ? await readApprovers() : undefined,
@@ -286,12 +288,32 @@ module.exports = async (req, res) => {
   if (action === 'manageFunnel') {
     if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
     const cur = (await readJson('sms/_funnel.json')) || {};
-    if (body.enabled !== undefined) {
-      cur.enabled = !!body.enabled; cur.at = new Date().toISOString(); cur.by = acct.email;
+    let changed = false;
+    if (body.enabled !== undefined) { cur.enabled = !!body.enabled; changed = true; }
+    if (body.alertMobile !== undefined) { cur.alertMobile = String(body.alertMobile || '').trim().slice(0, 24); changed = true; }
+    if (changed) {
+      cur.at = new Date().toISOString(); cur.by = acct.email;
       try { await put('sms/_funnel.json', JSON.stringify(cur), { access: 'public', contentType: 'application/json', addRandomSuffix: false }); }
       catch (e) { res.status(500).json({ error: 'Could not save.' }); return; }
     }
-    res.status(200).json({ ok: true, enabled: !!cur.enabled });
+    res.status(200).json({ ok: true, enabled: !!cur.enabled, alertMobile: cur.alertMobile || '' });
+    return;
+  }
+
+  if (action === 'funnelBackfill') {
+    if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
+    // Catch up: build + send to everyone who already replied positive but never went through the
+    // funnel. Skip anyone already dispositioned to a terminal / not-interested status.
+    const idx = (await readJson('notes/_index.json')) || {};
+    const TERMINAL = { 'not-interested': 1, declined: 1, lost: 1, dnd: 1, 'invalid-phone': 1, won: 1, 'meeting-booked': 1, 'appointment-link-sent': 1 };
+    const excludeKeys = Object.keys(idx).filter((k) => TERMINAL[(idx[k] && idx[k].status) || '']);
+    if (body.run) {
+      const queued = await backfillFunnel(excludeKeys, true);
+      res.status(200).json({ ok: true, queued: queued });
+    } else {
+      const count = await backfillFunnel(excludeKeys, false);
+      res.status(200).json({ ok: true, count: count });
+    }
     return;
   }
 

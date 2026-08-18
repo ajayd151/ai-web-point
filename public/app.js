@@ -2809,7 +2809,7 @@ async function loadSmsAdmin(opts) {
     renderApprovers(d.approvers, !!d.isOwner);
     smsPrimaryNum = d.primaryNumber || '';
     smsSender = d.sender || smsSender;
-    smsFunnelOn = !!d.funnelEnabled; smsIsOwner = !!d.isOwner;
+    smsFunnelOn = !!d.funnelEnabled; smsIsOwner = !!d.isOwner; smsFunnelAlert = d.funnelAlertMobile || '';
     smsNumbersMap = {}; (d.numbers || []).forEach((n) => { if (n && n.phone) smsNumbersMap[n.phone] = n.label || n.phone; });
     renderSmsNumbers(d.numbers || [], d.primaryNumber || '', !!d.isOwner);
     fillSmsFromPicker(d.numbers || [], d.primaryNumber || '');
@@ -3535,7 +3535,7 @@ function showMetricModal(title, body) {
   $('mm-title').innerHTML = title; $('mm-body').innerHTML = body; m.style.display = 'flex';
 }
 function closeMetricModal() { const m = $('metric-modal'); if (m) m.style.display = 'none'; }
-var smsNumbersMap = {}; var smsPrimaryNum = ''; var smsSender = 'Sophie'; var smsFunnelOn = false; var smsIsOwner = false;
+var smsNumbersMap = {}; var smsPrimaryNum = ''; var smsSender = 'Sophie'; var smsFunnelOn = false; var smsIsOwner = false; var smsFunnelAlert = '';
 function renderSmsCampaigns(rows) {
   const el = $('sms-campaigns'); if (!el) return;
   if (!rows.length) { el.innerHTML = '<p class="muted">No campaigns yet.</p>'; return; }
@@ -3670,7 +3670,16 @@ function renderSmsCallNow(rows) {
     '</div>';
   }).join('');
   const funnelBar = smsIsOwner
-    ? '<div class="funnel-bar' + (smsFunnelOn ? ' on' : '') + '"><div class="funnel-txt"><b>🤖 Auto-funnel ' + (smsFunnelOn ? 'ON' : 'OFF') + '</b> · on a positive reply, ' + esc(smsSender) + ' auto-sends a holding text, then auto-builds &amp; texts the full website ~90 min later.</div><button class="funnel-toggle" onclick="toggleFunnel()">' + (smsFunnelOn ? 'Turn OFF' : 'Turn ON') + '</button></div>'
+    ? '<div class="funnel-bar' + (smsFunnelOn ? ' on' : '') + '">' +
+        '<div class="funnel-row1"><div class="funnel-txt"><b>🤖 Auto-funnel ' + (smsFunnelOn ? 'ON' : 'OFF') + '</b> · on a positive reply, ' + esc(smsSender) + ' auto-sends a holding text, then auto-builds &amp; texts the full website ~90 min later.</div>' +
+          '<button class="funnel-toggle" onclick="toggleFunnel()">' + (smsFunnelOn ? 'Turn OFF' : 'Turn ON') + '</button></div>' +
+        '<div class="funnel-row2">' +
+          '<label class="funnel-mob">🔔 Alert my mobile <input id="funnel-alert" type="tel" placeholder="+447..." value="' + esc(smsFunnelAlert) + '" /></label>' +
+          '<button class="funnel-mini" onclick="saveFunnelAlert()">Save</button>' +
+          '<button class="funnel-mini catchup" onclick="funnelCatchUp()">⚡ Catch up waiting positives</button>' +
+          '<span id="funnel-msg" class="funnel-msg muted"></span>' +
+        '</div>' +
+      '</div>'
     : '';
   el.innerHTML = funnelBar + '<div class="rc-tabs">' + tabsHtml + '</div>' +
     '<div class="rc-cards">' + (bodyHtml || '<p class="muted" style="padding:14px">Nobody in this tab yet.</p>') + '</div>';
@@ -3697,6 +3706,30 @@ async function toggleFunnel() {
     if (d && d.ok !== undefined) { smsFunnelOn = !!d.enabled; renderSmsCallNow(smsCallNowRows); }
     else alert((d && d.error) || 'Could not change it.');
   } catch (e) { alert('Could not change it, try again.'); }
+}
+async function saveFunnelAlert() {
+  const inp = $('funnel-alert'); const m = $('funnel-msg'); if (!inp) return;
+  const val = String(inp.value || '').trim();
+  if (m) m.textContent = 'Saving…';
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'manageFunnel', alertMobile: val }) })).json();
+    if (d && d.ok !== undefined) { smsFunnelAlert = d.alertMobile || ''; if (m) m.textContent = '✓ Saved'; setTimeout(() => { if (m) m.textContent = ''; }, 1800); }
+    else if (m) m.textContent = (d && d.error) || 'Could not save.';
+  } catch (e) { if (m) m.textContent = 'Could not save.'; }
+}
+async function funnelCatchUp() {
+  const m = $('funnel-msg'); if (m) m.textContent = 'Checking…';
+  let count = 0;
+  try { const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'funnelBackfill' }) })).json(); count = (d && d.count) || 0; } catch (e) { if (m) m.textContent = 'Could not check.'; return; }
+  if (m) m.textContent = '';
+  if (!count) { alert('No waiting positive leads to catch up. Everyone positive has already been through the funnel or is marked done.'); return; }
+  if (!smsFunnelOn) { alert(count + ' positive lead(s) are waiting, but the auto-funnel is OFF. Turn it ON first, then run catch-up.'); return; }
+  if (!confirm('Catch up ' + count + ' positive lead(s)?\n\n' + smsSender + ' will auto-build and TEXT each of them their full website over the next little while (paced, one every few minutes), and alert you each time.')) return;
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'funnelBackfill', run: true }) })).json();
+    if (d && d.ok) alert('Queued ' + (d.queued || 0) + ' lead(s). Their sites will build and send over the next little while, watch the chips and your alert texts.');
+    else alert((d && d.error) || 'Could not start catch-up.');
+  } catch (e) { alert('Could not start catch-up, try again.'); }
 }
 // Full audit trail for one lead: every send, reply, open, note and status, in order.
 async function openLeadHistory(idx) {
