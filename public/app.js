@@ -3583,6 +3583,7 @@ var SMS_STATUS = [
   { v: 'no-answer',             label: "Couldn't get hold of them",   emoji: '📵', tab: 'noanswer' },
   { v: 'invalid-phone',         label: 'Wrong number',                emoji: '☎️', tab: 'noanswer' },
   { v: 'not-interested',        label: 'Not interested',              emoji: '🚫', tab: 'notint' },
+  { v: 'has-website',           label: 'Already have a website',      emoji: '🌐', tab: 'notint' },
   { v: 'declined',              label: 'Not interested (via mockup)', emoji: '🚫', tab: 'notint' },
   { v: 'lost',                  label: 'Lost',                        emoji: '❌', tab: 'notint' },
   { v: 'dnd',                   label: 'Do not contact',              emoji: '⛔', tab: 'notint' },
@@ -3595,7 +3596,7 @@ var SMS_CALL_TABS = [
   { id: 'notint', label: '🚫 Not interested' }, { id: 'all', label: '📋 All' },
 ];
 // The dispositions offered in the Update popup (declined is prospect-triggered, so not a manual one).
-var SMS_STATUS_BTNS = ['contacted', 'interested', 'appointment-link-sent', 'meeting-booked', 'won', 'callback', 'no-answer', 'not-interested', 'invalid-phone', 'dnd'];
+var SMS_STATUS_BTNS = ['contacted', 'interested', 'appointment-link-sent', 'meeting-booked', 'won', 'callback', 'no-answer', 'not-interested', 'has-website', 'invalid-phone', 'dnd'];
 function smsStatusMeta(v) { for (var i = 0; i < SMS_STATUS.length; i++) { if (SMS_STATUS[i].v === (v || '')) return SMS_STATUS[i]; } return SMS_STATUS[0]; }
 function smsTabOf(v) { return smsStatusMeta(v).tab; }
 var smsCallTab = 'tocall';
