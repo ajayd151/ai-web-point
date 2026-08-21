@@ -1610,6 +1610,9 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .rc-view:hover { background: #e0e7ff; }
 .rc-message { color: #0369a1; border-color: #bae6fd; background: #f0f9ff; }
 .rc-message:hover { background: #e0f2fe; }
+.rm-inserts { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.rm-ins { appearance: none; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 8px; padding: 6px 11px; font-size: 12.5px; font-weight: 700; color: #334155; cursor: pointer; }
+.rm-ins:hover { background: #eef2ff; border-color: #c7d2fe; color: #4338ca; }
 .rc-update { margin-left: auto; background: #0f766e; border-color: #0f766e; color: #fff; }
 .rc-update:hover { background: #0e6b64; }
 .rc-sitelink { color: #0f766e; border-color: #99f6e4; background: #f0fdfa; }

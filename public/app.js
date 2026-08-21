@@ -3692,17 +3692,32 @@ function renderSmsCallNow(rows) {
   el.querySelectorAll('.rc-history').forEach((b) => b.addEventListener('click', () => openLeadHistory(Number(b.dataset.idx))));
 }
 // Free-text reply to a lead, e.g. you called and got no answer, so you text them instead.
+function rmInsert(text) {
+  const t = $('rm-msg'); if (!t || !text) return;
+  const s = (t.selectionStart != null) ? t.selectionStart : t.value.length;
+  const e = (t.selectionEnd != null) ? t.selectionEnd : t.value.length;
+  t.value = t.value.slice(0, s) + text + t.value.slice(e);
+  const pos = s + text.length; t.focus(); try { t.setSelectionRange(pos, pos); } catch (x) {}
+}
 function openSendMessage(idx) {
   const r = smsCallNowRows[idx]; if (!r) return;
   if (!r.phone) { alert('This lead has no phone number on file.'); return; }
   const biz = (typeof humaniseBusinessName === 'function' ? humaniseBusinessName(r.name || '') : (r.name || '')) || 'there';
   const prefill = 'Hi ' + biz + ', ';
+  const ourNum = smsPrimaryNum ? fmtPhone(smsPrimaryNum) : '';
+  const siteUrl = r.funnel_site_url || (smsBuiltSites ? (smsBuiltSites[callSiteSlug(r)] || '') : '') || '';
   const body = '<div class="rc-status-pop">' +
-    '<p class="muted" style="margin:0 0 8px">Text <b>' + esc(fmtPhone(r.phone)) + '</b> from your usual number. Type your message, then send.</p>' +
+    '<p class="muted" style="margin:0 0 8px">' + (ourNum ? 'Sending from <b>' + esc(ourNum) + '</b> · ' : '') + 'texting <b>' + esc(fmtPhone(r.phone)) + '</b></p>' +
+    '<div class="rm-inserts">' +
+      (ourNum ? '<button class="rm-ins" id="rm-ins-num" type="button">📞 Insert our number</button>' : '') +
+      (siteUrl ? '<button class="rm-ins" id="rm-ins-site" type="button">🌐 Insert website link</button>' : '') +
+    '</div>' +
     '<textarea id="rm-msg" class="rc-note" rows="5">' + esc(prefill) + '</textarea>' +
     '<div class="rc-pop-foot"><span id="rm-note" class="muted"></span><button id="rm-send" class="primary">📲 Send SMS</button></div></div>';
   showMetricModal('Message ' + esc(r.name || 'this lead'), body);
   setTimeout(() => { const t = $('rm-msg'); if (t) { t.focus(); try { t.setSelectionRange(t.value.length, t.value.length); } catch (e) {} } }, 60);
+  { const b = $('rm-ins-num'); if (b) b.addEventListener('click', () => rmInsert(ourNum)); }
+  { const b = $('rm-ins-site'); if (b) b.addEventListener('click', () => rmInsert(siteUrl)); }
   const phone = r.phone; const nm = r.name || ''; const key = callRowKey(r);
   $('rm-send').addEventListener('click', () => sendCustomMsg(phone, nm, key, ($('rm-msg') && $('rm-msg').value) || ''));
 }
