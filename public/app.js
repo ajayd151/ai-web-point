@@ -3707,7 +3707,7 @@ function openSendMessage(idx) {
   const ourNum = smsPrimaryNum ? fmtPhone(smsPrimaryNum) : '';
   const siteUrl = r.funnel_site_url || (smsBuiltSites ? (smsBuiltSites[callSiteSlug(r)] || '') : '') || '';
   const body = '<div class="rc-status-pop">' +
-    '<p class="muted" style="margin:0 0 8px">' + (ourNum ? 'Sending from <b>' + esc(ourNum) + '</b> · ' : '') + 'texting <b>' + esc(fmtPhone(r.phone)) + '</b></p>' +
+    '<p class="muted" style="margin:0 0 8px">' + (ourNum ? 'Sending from <b>' + esc(ourNum) + '</b> · ' : '') + 'texting <b>' + esc(fmtPhone(r.phone)) + '</b> · signs off as <b>' + esc(smsSender) + '</b></p>' +
     '<div class="rm-inserts">' +
       (ourNum ? '<button class="rm-ins" id="rm-ins-num" type="button">📞 Insert our number</button>' : '') +
       (siteUrl ? '<button class="rm-ins" id="rm-ins-site" type="button">🌐 Insert website link</button>' : '') +

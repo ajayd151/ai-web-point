@@ -274,8 +274,11 @@ module.exports = async (req, res) => {
     if (!smsConfigured()) { res.status(400).json({ error: 'Twilio keys are not set yet.' }); return; }
     const mob = ukMobile(body.phone);
     if (!mob) { res.status(400).json({ error: 'That is not a valid UK mobile number.' }); return; }
-    const message = String(body.message || '').trim().slice(0, 640);
+    let message = String(body.message || '').trim();
     if (!message) { res.status(400).json({ error: 'Write a message first.' }); return; }
+    const siteSender = process.env.SMS_SENDER || 'Sophie';
+    if (siteSender && message.toLowerCase().indexOf(siteSender.toLowerCase()) < 0) message += '\n\nThanks,\n' + siteSender;
+    message = message.slice(0, 640);
     try { const outs = await optoutSet(); if (outs.has(mob)) { res.status(400).json({ error: 'That number has opted out, we cannot text them.' }); return; } } catch (e) { /* fail open on the opt-out check */ }
     const base = process.env.APP_BASE_URL || 'https://www.sitepounce.com';
     // Reuse the number this lead was originally messaged from, so the follow-up stays in the same
@@ -298,8 +301,12 @@ module.exports = async (req, res) => {
     if (!smsConfigured()) { res.status(400).json({ error: 'Twilio keys are not set yet.' }); return; }
     const mob = ukMobile(body.phone);
     if (!mob) { res.status(400).json({ error: 'That is not a valid UK mobile number.' }); return; }
-    const message = String(body.message || '').trim().slice(0, 640);
+    let message = String(body.message || '').trim();
     if (!message) { res.status(400).json({ error: 'Write a message first.' }); return; }
+    // Sign off as the one persona (Sophie), unless the message already is signed with that name.
+    const sender = process.env.SMS_SENDER || 'Sophie';
+    if (sender && message.toLowerCase().indexOf(sender.toLowerCase()) < 0) message += '\n\nThanks,\n' + sender;
+    message = message.slice(0, 640);
     try { const outs = await optoutSet(); if (outs.has(mob)) { res.status(400).json({ error: 'That number has opted out, we cannot text them.' }); return; } } catch (e) { /* fail open */ }
     const base = process.env.APP_BASE_URL || 'https://www.sitepounce.com';
     const original = await lastSendNumber(mob, String(body.key || ''));
