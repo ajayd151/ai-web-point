@@ -3702,6 +3702,8 @@ function renderFunnelSettings() {
       '<span class="funnel-hint muted">You get a text (business, their phone, the site link, the message) each time a site auto-sends.</span></div>' +
     '<div class="funnel-p-row"><button class="funnel-mini catchup" onclick="funnelCatchUp()">⚡ Catch up waiting positives</button>' +
       '<span class="funnel-hint muted">Build &amp; send to everyone who already replied positive but never got the auto-treatment.</span></div>' +
+    '<div class="funnel-p-row"><button class="funnel-mini catchup" onclick="funnelNudgeNow()">📣 Send 48h nudge now (old sends)</button>' +
+      '<span class="funnel-hint muted">One-off: text the "did you get a chance to look?" nudge to every old auto-send not yet opened or replied.</span></div>' +
     '<div class="funnel-p-row"><button class="funnel-mini" onclick="funnelCheckDelivery()">🔄 Check delivery of past auto-sends</button>' +
       '<span class="funnel-hint muted">Looks each older auto-send up in Twilio and fills in ✓ Delivered / ✗ Not delivered.</span>' +
       '<span id="funnel-msg" class="funnel-msg muted"></span></div>' +
@@ -3728,6 +3730,20 @@ async function saveFunnelAlert() {
     if (d && d.ok !== undefined) { smsFunnelAlert = d.alertMobile || ''; if (m) m.textContent = '✓ Saved'; setTimeout(() => { if (m) m.textContent = ''; }, 1800); }
     else if (m) m.textContent = (d && d.error) || 'Could not save.';
   } catch (e) { if (m) m.textContent = 'Could not save.'; }
+}
+async function funnelNudgeNow() {
+  const m = $('funnel-msg'); if (m) m.textContent = 'Checking…';
+  let count = 0;
+  try { const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'funnelFollowupNow' }) })).json(); count = (d && d.count) || 0; } catch (e) { if (m) m.textContent = 'Could not check.'; return; }
+  if (m) m.textContent = '';
+  if (!count) { alert('No old auto-sends are waiting for a nudge. Everyone has either opened the site, replied, or already been nudged.'); return; }
+  if (!confirm('Send the "did you get a chance to look?" nudge NOW to ' + count + ' lead(s)?\n\nThese are people who were auto-sent a website but have not opened it or replied.')) return;
+  if (m) m.textContent = 'Sending…';
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'funnelFollowupNow', run: true }) })).json();
+    if (d && d.ok) { if (m) m.textContent = '✓ Sent ' + (d.sent || 0) + (d.remaining ? (' · ' + d.remaining + ' left, click again') : ''); }
+    else if (m) m.textContent = (d && d.error) || 'Could not send.';
+  } catch (e) { if (m) m.textContent = 'Could not send, try again.'; }
 }
 async function funnelCheckDelivery() {
   const m = $('funnel-msg'); if (m) m.textContent = 'Checking Twilio…';

@@ -6,12 +6,13 @@
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
-const { ukMobile, smsConfigured, sendSms, listMessagesTo } = require('../lib/sms');
+const { ukMobile, smsConfigured, sendSms, listMessagesTo, optOutUrl } = require('../lib/sms');
+const { humaniseBusinessName } = require('../lib/names');
 const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey, londonHour } = require('../lib/digest');
 const { getDailyUsage, bumpDailyUsage, logActivity } = require('../lib/db');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall, leadTimeline, lastSendNumber, markFunnelSiteByLead, backfillFunnel, funnelSitesNeedingDelivery, setFunnelDeliveryById } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall, leadTimeline, lastSendNumber, markFunnelSiteByLead, backfillFunnel, funnelSitesNeedingDelivery, setFunnelDeliveryById, dueFunnelFollowup, markFunnelFollowup } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -303,6 +304,33 @@ module.exports = async (req, res) => {
       catch (e) { res.status(500).json({ error: 'Could not save.' }); return; }
     }
     res.status(200).json({ ok: true, enabled: !!cur.enabled, alertMobile: cur.alertMobile || '' });
+    return;
+  }
+
+  if (action === 'funnelFollowupNow') {
+    if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
+    // One-off: text the "did you get a chance to look?" nudge NOW to every old auto-send that has
+    // not been opened or replied to, without waiting for the 48h timer. Skips opt-outs, fires once.
+    const leads = await dueFunnelFollowup(1, 20); // >1h old (all of them), not viewed, not replied since
+    if (!body.run) { res.status(200).json({ ok: true, count: leads.length }); return; }
+    if (!smsConfigured()) { res.status(400).json({ error: 'Twilio keys are not set yet.' }); return; }
+    const base = process.env.APP_BASE_URL || 'https://www.sitepounce.com';
+    const sender = process.env.SMS_SENDER || 'Sophie';
+    const FMSG = 'Hey {business}, just checking, did you get a chance to look at the website I made for you? No rush at all, just let me know what you think.';
+    let outs = new Set(); try { outs = await optoutSet(); } catch (e) { /* fail open */ }
+    const day = todayKey(new Date());
+    let sent = 0;
+    for (const it of leads) {
+      if (!it.phone) continue;
+      if (outs.has(it.phone)) { await markFunnelFollowup(it.id); continue; }
+      const biz = humaniseBusinessName(it.name) || it.name || 'there';
+      let msg = FMSG.split('{business}').join(biz);
+      if (msg.toLowerCase().indexOf(sender.toLowerCase()) < 0) msg += '\n\nThanks,\n' + sender;
+      msg += it.id ? ('\nNot interested? Opt out: ' + optOutUrl(base, it.id)) : '\nReply STOP to opt out';
+      const r = await sendSms(it.phone, msg.slice(0, 640), base, it.from_number || process.env.TWILIO_FROM || '');
+      if (r.ok) { await markFunnelFollowup(it.id); await bumpDailyUsage(acct.email, 'cost:sms', 1, day); await logActivity(acct.email, acct.email, 'message_sent', it.name + ' (48h website follow-up, one-off)', it.name, { auto: 1 }); sent++; }
+    }
+    res.status(200).json({ ok: true, sent: sent, remaining: Math.max(0, leads.length - sent) });
     return;
   }
 
