@@ -1608,6 +1608,8 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .rc-phone:hover { background: #ccfbf1; }
 .rc-view { color: #4338ca; border-color: #c7d2fe; background: #eef2ff; }
 .rc-view:hover { background: #e0e7ff; }
+.rc-message { color: #0369a1; border-color: #bae6fd; background: #f0f9ff; }
+.rc-message:hover { background: #e0f2fe; }
 .rc-update { margin-left: auto; background: #0f766e; border-color: #0f766e; color: #fff; }
 .rc-update:hover { background: #0e6b64; }
 .rc-sitelink { color: #0f766e; border-color: #99f6e4; background: #f0fdfa; }

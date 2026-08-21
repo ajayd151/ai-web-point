@@ -3665,6 +3665,7 @@ function renderSmsCallNow(rows) {
       (said ? '<div class="rc-reply">“' + esc(said.slice(0, 200)) + (said.length > 200 ? '…' : '') + '”</div>' : '') +
       '<div class="rc-card-actions">' +
         (r.phone ? '<a class="rc-act rc-phone" href="tel:' + esc(r.phone) + '">📞 ' + esc(fmtPhone(r.phone)) + '</a>' : '') +
+        (r.phone ? '<button class="rc-act rc-message" data-idx="' + gi + '">💬 Message</button>' : '') +
         (r.view_url ? '<a class="rc-act rc-view" href="' + esc(r.view_url) + '" target="_blank" rel="noopener">👁 View mockup</a>' : '') +
         (builtUrl
           ? '<a class="rc-act rc-view rc-sitelink" href="' + esc(builtUrl) + '" target="_blank" rel="noopener">🌐 View site</a>' +
@@ -3687,7 +3688,36 @@ function renderSmsCallNow(rows) {
     openPounce({ slug: slug, name: r.name || '', location: r.location || '', category: r.category || '', phone: r.phone || '', phones: r.phone ? [r.phone] : [], viewUrl: r.view_url || '' });
   }));
   el.querySelectorAll('.rc-sendsite').forEach((b) => b.addEventListener('click', () => openSendSite(Number(b.dataset.idx))));
+  el.querySelectorAll('.rc-message').forEach((b) => b.addEventListener('click', () => openSendMessage(Number(b.dataset.idx))));
   el.querySelectorAll('.rc-history').forEach((b) => b.addEventListener('click', () => openLeadHistory(Number(b.dataset.idx))));
+}
+// Free-text reply to a lead, e.g. you called and got no answer, so you text them instead.
+function openSendMessage(idx) {
+  const r = smsCallNowRows[idx]; if (!r) return;
+  if (!r.phone) { alert('This lead has no phone number on file.'); return; }
+  const biz = (typeof humaniseBusinessName === 'function' ? humaniseBusinessName(r.name || '') : (r.name || '')) || 'there';
+  const prefill = 'Hi ' + biz + ', ';
+  const body = '<div class="rc-status-pop">' +
+    '<p class="muted" style="margin:0 0 8px">Text <b>' + esc(fmtPhone(r.phone)) + '</b> from your usual number. Type your message, then send.</p>' +
+    '<textarea id="rm-msg" class="rc-note" rows="5">' + esc(prefill) + '</textarea>' +
+    '<div class="rc-pop-foot"><span id="rm-note" class="muted"></span><button id="rm-send" class="primary">📲 Send SMS</button></div></div>';
+  showMetricModal('Message ' + esc(r.name || 'this lead'), body);
+  setTimeout(() => { const t = $('rm-msg'); if (t) { t.focus(); try { t.setSelectionRange(t.value.length, t.value.length); } catch (e) {} } }, 60);
+  const phone = r.phone; const nm = r.name || ''; const key = callRowKey(r);
+  $('rm-send').addEventListener('click', () => sendCustomMsg(phone, nm, key, ($('rm-msg') && $('rm-msg').value) || ''));
+}
+async function sendCustomMsg(phone, name, key, message) {
+  const btn = $('rm-send'); const note = $('rm-note');
+  if (!String(message).trim()) { if (note) note.textContent = 'Write a message first.'; return; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'sendMessage', phone: phone, name: name, key: key, message: message }) })).json();
+    if (d && d.ok) {
+      if (note) note.textContent = '✓ Sent';
+      if (key) { try { fetch('/api/note', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: key, name: name, comment: 'Texted them: ' + message }) }); } catch (e) {} } // log it in History
+      setTimeout(closeMetricModal, 900);
+    } else { if (note) note.textContent = (d && d.error) || 'Could not send.'; if (btn) { btn.disabled = false; btn.textContent = '📲 Send SMS'; } }
+  } catch (e) { if (note) note.textContent = 'Could not send, try again.'; if (btn) { btn.disabled = false; btn.textContent = '📲 Send SMS'; } }
 }
 // The auto-funnel control panel, rendered into the SMS Maintenance tab (owner only).
 function renderFunnelSettings() {

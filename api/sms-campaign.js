@@ -292,6 +292,26 @@ module.exports = async (req, res) => {
     return;
   }
 
+  if (action === 'sendMessage') {
+    // Free-text 1:1 reply to a lead who is already in conversation (e.g. you called, no answer, so
+    // you text them). Sends from the number they know, respects opt-outs. Does NOT touch the funnel.
+    if (!smsConfigured()) { res.status(400).json({ error: 'Twilio keys are not set yet.' }); return; }
+    const mob = ukMobile(body.phone);
+    if (!mob) { res.status(400).json({ error: 'That is not a valid UK mobile number.' }); return; }
+    const message = String(body.message || '').trim().slice(0, 640);
+    if (!message) { res.status(400).json({ error: 'Write a message first.' }); return; }
+    try { const outs = await optoutSet(); if (outs.has(mob)) { res.status(400).json({ error: 'That number has opted out, we cannot text them.' }); return; } } catch (e) { /* fail open */ }
+    const base = process.env.APP_BASE_URL || 'https://www.sitepounce.com';
+    const original = await lastSendNumber(mob, String(body.key || ''));
+    const fromNum = original || (process.env.TWILIO_FROM || '');
+    const r = await sendSms(mob, message, base, fromNum);
+    if (!r.ok) { res.status(200).json({ error: 'Twilio refused it: ' + (r.error || 'unknown') }); return; }
+    try { await bumpDailyUsage(acct.email, 'cost:sms', 1, todayKey(new Date())); } catch (e) {}
+    try { await logActivity(acct.email, acct.email, 'message_sent', (body.name || mob) + ' (manual reply)', body.name || mob); } catch (e) {}
+    res.status(200).json({ ok: true });
+    return;
+  }
+
   if (action === 'manageFunnel') {
     if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
     const cur = (await readJson('sms/_funnel.json')) || {};
