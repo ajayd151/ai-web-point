@@ -3734,24 +3734,29 @@ async function saveFunnelAlert() {
 async function funnelNudgeNow() {
   const m = $('funnel-msg'); if (m) m.textContent = 'Checking…';
   let count = 0;
-  try { const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'funnelFollowupNow' }) })).json(); count = (d && d.count) || 0; } catch (e) { if (m) m.textContent = 'Could not check.'; return; }
+  try { const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'funnelFollowupNow' }) })).json(); count = (d && d.count) || 0; } catch (e) { if (m) m.textContent = ''; alert('Could not check, please try again.'); return; }
   if (m) m.textContent = '';
-  if (!count) { alert('No old auto-sends are waiting for a nudge. Everyone has either opened the site, replied, or already been nudged.'); return; }
-  if (!confirm('Send the "did you get a chance to look?" nudge NOW to ' + count + ' lead(s)?\n\nThese are people who were auto-sent a website but have not opened it or replied.')) return;
-  if (m) m.textContent = 'Sending…';
+  if (!count) { alert('Nothing to send right now.\n\nEveryone who was auto-sent a website has already opened it, replied, or been nudged already.'); return; }
+  if (!confirm('Send the "did you get a chance to look?" nudge NOW to ' + count + ' lead(s)?\n\nThese are people auto-sent a website who have not opened it or replied.')) return;
+  if (m) m.textContent = 'Sending, please wait…';
   try {
     const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'funnelFollowupNow', run: true }) })).json();
-    if (d && d.ok) { if (m) m.textContent = '✓ Sent ' + (d.sent || 0) + (d.remaining ? (' · ' + d.remaining + ' left, click again') : ''); }
-    else if (m) m.textContent = (d && d.error) || 'Could not send.';
-  } catch (e) { if (m) m.textContent = 'Could not send, try again.'; }
+    if (m) m.textContent = '';
+    if (d && d.ok) { alert('✓ Done. Nudge sent to ' + (d.sent || 0) + ' lead(s).' + (d.remaining ? ('\n\n' + d.remaining + ' still waiting, click the button again to send the next batch.') : '')); loadSmsAdmin({}); }
+    else alert((d && d.error) || 'Could not send, please try again.');
+  } catch (e) { if (m) m.textContent = ''; alert('Could not send, please try again.'); }
 }
 async function funnelCheckDelivery() {
-  const m = $('funnel-msg'); if (m) m.textContent = 'Checking Twilio…';
+  const m = $('funnel-msg'); if (m) m.textContent = 'Checking Twilio, please wait…';
   try {
     const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'funnelDeliveryBackfill' }) })).json();
-    if (d && d.ok) { if (m) m.textContent = '✓ Checked ' + (d.checked || 0) + ', updated ' + (d.updated || 0) + '. Reloading…'; setTimeout(() => loadSmsAdmin({}), 900); }
-    else if (m) m.textContent = (d && d.error) || 'Could not check.';
-  } catch (e) { if (m) m.textContent = 'Could not check, try again.'; }
+    if (m) m.textContent = '';
+    if (d && d.ok) {
+      let msg = 'Checked ' + (d.checked || 0) + ' past auto-send(s).\n\nFilled in the real delivery status for ' + (d.updated || 0) + ' of them.';
+      if ((d.checked || 0) > 0 && (d.updated || 0) === 0) msg += '\n\nTwilio had no match for these, they may be older than Twilio keeps, or were sent from a different number. I can look into it if you tell me this number.';
+      alert(msg); loadSmsAdmin({});
+    } else alert((d && d.error) || 'Could not check, please try again.');
+  } catch (e) { if (m) m.textContent = ''; alert('Could not check, please try again.'); }
 }
 async function funnelCatchUp() {
   const m = $('funnel-msg'); if (m) m.textContent = 'Checking…';
