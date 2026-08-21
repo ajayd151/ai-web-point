@@ -3692,6 +3692,15 @@ function renderSmsCallNow(rows) {
   el.querySelectorAll('.rc-history').forEach((b) => b.addEventListener('click', () => openLeadHistory(Number(b.dataset.idx))));
 }
 // Free-text reply to a lead, e.g. you called and got no answer, so you text them instead.
+// UK-local format for inserting a number in a message: +447380308128 -> "07380 308128" (no +44,
+// since everyone we target is UK). Falls back to the pretty format for anything unexpected.
+function ukLocal(raw) {
+  let s = String(raw == null ? '' : raw).replace(/[^\d+]/g, '');
+  if (s.indexOf('+44') === 0) s = '0' + s.slice(3);
+  else if (s.indexOf('44') === 0 && s.length >= 12) s = '0' + s.slice(2);
+  if (/^07\d{9}$/.test(s)) return s.slice(0, 5) + ' ' + s.slice(5);
+  return s || fmtPhone(raw);
+}
 function rmInsert(text) {
   const t = $('rm-msg'); if (!t || !text) return;
   const s = (t.selectionStart != null) ? t.selectionStart : t.value.length;
@@ -3703,21 +3712,25 @@ function openSendMessage(idx) {
   const r = smsCallNowRows[idx]; if (!r) return;
   if (!r.phone) { alert('This lead has no phone number on file.'); return; }
   const biz = (typeof humaniseBusinessName === 'function' ? humaniseBusinessName(r.name || '') : (r.name || '')) || 'there';
-  const prefill = 'Hi ' + biz + ', ';
-  const ourNum = smsPrimaryNum ? fmtPhone(smsPrimaryNum) : '';
+  const greeting = 'Hi ' + biz + ', ';
+  const signoff = '\n\nThanks,\n' + smsSender;
+  const prefill = greeting + '\n' + signoff; // greeting, a blank line to type into, then the sign-off
+  const ourNum = smsPrimaryNum ? ukLocal(smsPrimaryNum) : '';
   const siteUrl = r.funnel_site_url || (smsBuiltSites ? (smsBuiltSites[callSiteSlug(r)] || '') : '') || '';
   const body = '<div class="rc-status-pop">' +
-    '<p class="muted" style="margin:0 0 8px">' + (ourNum ? 'Sending from <b>' + esc(ourNum) + '</b> · ' : '') + 'texting <b>' + esc(fmtPhone(r.phone)) + '</b> · signs off as <b>' + esc(smsSender) + '</b></p>' +
+    '<p class="muted" style="margin:0 0 8px">' + (ourNum ? 'Sending from <b>' + esc(ourNum) + '</b> · ' : '') + 'texting <b>' + esc(ukLocal(r.phone)) + '</b></p>' +
     '<div class="rm-inserts">' +
       (ourNum ? '<button class="rm-ins" id="rm-ins-num" type="button">📞 Insert our number</button>' : '') +
       (siteUrl ? '<button class="rm-ins" id="rm-ins-site" type="button">🌐 Insert website link</button>' : '') +
+      '<button class="rm-ins" id="rm-ins-sign" type="button">✍️ Insert sign-off (' + esc(smsSender) + ')</button>' +
     '</div>' +
-    '<textarea id="rm-msg" class="rc-note" rows="5">' + esc(prefill) + '</textarea>' +
+    '<textarea id="rm-msg" class="rc-note" rows="6">' + esc(prefill) + '</textarea>' +
     '<div class="rc-pop-foot"><span id="rm-note" class="muted"></span><button id="rm-send" class="primary">📲 Send SMS</button></div></div>';
   showMetricModal('Message ' + esc(r.name || 'this lead'), body);
-  setTimeout(() => { const t = $('rm-msg'); if (t) { t.focus(); try { t.setSelectionRange(t.value.length, t.value.length); } catch (e) {} } }, 60);
+  setTimeout(() => { const t = $('rm-msg'); if (t) { t.focus(); try { t.setSelectionRange(greeting.length, greeting.length); } catch (e) {} } }, 60); // cursor after the greeting, ready to type
   { const b = $('rm-ins-num'); if (b) b.addEventListener('click', () => rmInsert(ourNum)); }
   { const b = $('rm-ins-site'); if (b) b.addEventListener('click', () => rmInsert(siteUrl)); }
+  { const b = $('rm-ins-sign'); if (b) b.addEventListener('click', () => rmInsert(signoff)); }
   const phone = r.phone; const nm = r.name || ''; const key = callRowKey(r);
   $('rm-send').addEventListener('click', () => sendCustomMsg(phone, nm, key, ($('rm-msg') && $('rm-msg').value) || ''));
 }
