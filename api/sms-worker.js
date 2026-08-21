@@ -4,7 +4,7 @@
 // Sends only happen inside working hours (Mon-Fri, 09:00-17:59 UK) and inside the daily 'sms'
 // cap from Admin > Limits. Without Twilio keys, mockups still build but sends wait, so a campaign
 // can be prepared before the account exists.
-const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, dueFunnelAck, dueFunnelSite, markFunnelAck, markFunnelSite, optoutSet, campaignKeys, addItemsToCampaign, stampToppedUp, stopWindow, ensureBaseVersions, currentMsg } = require('../lib/smsdb');
+const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, dueFunnelAck, dueFunnelSite, markFunnelAck, markFunnelSite, dueFunnelFollowup, markFunnelFollowup, optoutSet, campaignKeys, addItemsToCampaign, stampToppedUp, stopWindow, ensureBaseVersions, currentMsg } = require('../lib/smsdb');
 const { buildAudience } = require('../lib/smsaudience');
 const { sendSms, smsConfigured, lookupPhone, optOutUrl } = require('../lib/sms');
 const { list, put } = require('@vercel/blob');
@@ -67,6 +67,8 @@ const FUNNEL_SITE_MIN = Math.max(1, Number(process.env.SMS_FUNNEL_SITE_MIN) || 9
 const FUNNEL_SITES_PER_TICK = 1;   // a full build is heavy (AI copy + hero image), one per tick
 const OWNER_MOBILE = process.env.OWNER_MOBILE || '';
 const FUNNEL_ACK_MSG = "Hi {business}, that's brilliant. I am going to get your full one-page website ready now, I just need to tweak a few bits. I will send you the link to take a look at shortly. Bear with me.";
+const FUNNEL_FOLLOWUP_HOURS = Math.max(1, Number(process.env.SMS_FUNNEL_FOLLOWUP_HOURS) || 48);
+const FUNNEL_FOLLOWUP_MSG = "Hey {business}, just checking, did you get a chance to look at the website I made for you? No rush at all, just let me know what you think.";
 function londonHM(now) {
   const f = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date(now));
   const h = Number((f.find((p) => p.type === 'hour') || {}).value || 0);
@@ -404,6 +406,16 @@ module.exports = async (req, res) => {
           } else out.held.push('funnel site send failed: ' + r.error);
         }
       } catch (e) { out.held.push('funnel site error'); }
+      // (c) 48h "did you look?" nudge, only for those who have not opened the site or replied since
+      try {
+        const fups = inSendWindow(now) ? await dueFunnelFollowup(FUNNEL_FOLLOWUP_HOURS, 8) : [];
+        for (const it of fups) {
+          if (outs.has(it.phone)) { await markFunnelFollowup(it.id); continue; }
+          const r = await sendSms(it.phone, renderMessage(FUNNEL_FOLLOWUP_MSG, it, base), base, it.from_number || PRIMARY);
+          if (r.ok) { await markFunnelFollowup(it.id); await bumpDailyUsage(owner, 'cost:sms', 1, day); await logActivity(owner, owner, 'message_sent', it.name + ' (auto 48h website follow-up)', it.name, { auto: 1 }); out.funnelFollow = (out.funnelFollow || 0) + 1; }
+          else out.held.push('funnel follow-up failed: ' + r.error);
+        }
+      } catch (e) { out.held.push('funnel follow-up error'); }
     }
   }
 

@@ -6,12 +6,12 @@
 const { list, put } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { account, isComped } = require('../lib/access');
-const { ukMobile, smsConfigured, sendSms } = require('../lib/sms');
+const { ukMobile, smsConfigured, sendSms, listMessagesTo } = require('../lib/sms');
 const { buildAudience } = require('../lib/smsaudience');
 const { limitFor } = require('../lib/ratelimit');
 const { todayKey, londonHour } = require('../lib/digest');
 const { getDailyUsage, bumpDailyUsage, logActivity } = require('../lib/db');
-const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall, leadTimeline, lastSendNumber, markFunnelSiteByLead, backfillFunnel } = require('../lib/smsdb');
+const { createCampaign, listCampaigns, campaignItems, setCampaignStatus, sentKeys, optoutSet, optoutCounts, dedupeInbound, hourlyBreakdown, byIndustry, stopTrend, rangeStats, metricRecords, messageStats, addMsg, setCampaignMessage, journey, listInbound, readyToCall, leadTimeline, lastSendNumber, markFunnelSiteByLead, backfillFunnel, funnelSitesNeedingDelivery, setFunnelDeliveryById } = require('../lib/smsdb');
 
 async function readJson(path) {
   try {
@@ -303,6 +303,32 @@ module.exports = async (req, res) => {
       catch (e) { res.status(500).json({ error: 'Could not save.' }); return; }
     }
     res.status(200).json({ ok: true, enabled: !!cur.enabled, alertMobile: cur.alertMobile || '' });
+    return;
+  }
+
+  if (action === 'funnelDeliveryBackfill') {
+    if (!isComped(acct.email)) { res.status(403).json({ error: 'Owner only.' }); return; }
+    // One-off: look up each older auto-send in Twilio (by number) and record its real delivery status.
+    const items = await funnelSitesNeedingDelivery(40);
+    let updated = 0;
+    for (const it of items) {
+      const msgs = await listMessagesTo(it.phone, 50);
+      if (!msgs.length) continue;
+      const target = it.funnel_site_at ? new Date(it.funnel_site_at).getTime() : 0;
+      const slug = String(it.slug || '');
+      let best = null, bestScore = Infinity;
+      for (const m of msgs) {
+        if (String(m.direction || '').indexOf('outbound') < 0 || !m.status) continue;
+        const t = m.dateSent ? new Date(m.dateSent).getTime() : 0;
+        const dt = Math.abs(t - target);
+        const hasSlug = slug && m.body && m.body.indexOf(slug) >= 0;
+        const hasSite = m.body && m.body.indexOf('/s/') >= 0;
+        const score = (hasSlug ? 0 : (hasSite ? 300000 : 3600000)) + dt; // prefer exact site link, then any site link, then closest time
+        if (score < bestScore) { bestScore = score; best = m; }
+      }
+      if (best && bestScore < 2 * 3600000) { await setFunnelDeliveryById(it.id, best.status, best.sid); updated++; }
+    }
+    res.status(200).json({ ok: true, checked: items.length, updated: updated });
     return;
   }
 

@@ -3604,6 +3604,7 @@ var smsCallTab = 'tocall';
 var smsBuiltSites = null;
 // Mirror of the worker's holding-message text, so the History trail shows the same wording.
 var FUNNEL_ACK_MSG = "Hi {business}, that's brilliant. I am going to get your full one-page website ready now, I just need to tweak a few bits. I will send you the link to take a look at shortly. Bear with me.";
+var FUNNEL_FOLLOWUP_MSG = "Hey {business}, just checking, did you get a chance to look at the website I made for you? No rush at all, just let me know what you think.";
 async function ensureBuiltSites() {
   if (smsBuiltSites) return smsBuiltSites;
   smsBuiltSites = {}; // set now so a re-render mid-fetch does not trigger a second load
@@ -3700,7 +3701,9 @@ function renderFunnelSettings() {
       '<button class="funnel-mini" onclick="saveFunnelAlert()">Save</button>' +
       '<span class="funnel-hint muted">You get a text (business, their phone, the site link, the message) each time a site auto-sends.</span></div>' +
     '<div class="funnel-p-row"><button class="funnel-mini catchup" onclick="funnelCatchUp()">⚡ Catch up waiting positives</button>' +
-      '<span class="funnel-hint muted">Build &amp; send to everyone who already replied positive but never got the auto-treatment.</span>' +
+      '<span class="funnel-hint muted">Build &amp; send to everyone who already replied positive but never got the auto-treatment.</span></div>' +
+    '<div class="funnel-p-row"><button class="funnel-mini" onclick="funnelCheckDelivery()">🔄 Check delivery of past auto-sends</button>' +
+      '<span class="funnel-hint muted">Looks each older auto-send up in Twilio and fills in ✓ Delivered / ✗ Not delivered.</span>' +
       '<span id="funnel-msg" class="funnel-msg muted"></span></div>' +
     '</div>';
 }
@@ -3725,6 +3728,14 @@ async function saveFunnelAlert() {
     if (d && d.ok !== undefined) { smsFunnelAlert = d.alertMobile || ''; if (m) m.textContent = '✓ Saved'; setTimeout(() => { if (m) m.textContent = ''; }, 1800); }
     else if (m) m.textContent = (d && d.error) || 'Could not save.';
   } catch (e) { if (m) m.textContent = 'Could not save.'; }
+}
+async function funnelCheckDelivery() {
+  const m = $('funnel-msg'); if (m) m.textContent = 'Checking Twilio…';
+  try {
+    const d = await (await fetch('/api/sms-campaign', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'funnelDeliveryBackfill' }) })).json();
+    if (d && d.ok) { if (m) m.textContent = '✓ Checked ' + (d.checked || 0) + ', updated ' + (d.updated || 0) + '. Reloading…'; setTimeout(() => loadSmsAdmin({}), 900); }
+    else if (m) m.textContent = (d && d.error) || 'Could not check.';
+  } catch (e) { if (m) m.textContent = 'Could not check, try again.'; }
 }
 async function funnelCatchUp() {
   const m = $('funnel-msg'); if (m) m.textContent = 'Checking…';
@@ -3755,6 +3766,7 @@ async function openLeadHistory(idx) {
     if (it.nudged_at) ev.push({ at: it.nudged_at, ic: '🔔', title: 'Nudge sent', detail: fillTpl(it.nudge_message, it) });
     if (it.funnel_ack_at) ev.push({ at: it.funnel_ack_at, ic: '💬', title: 'Auto holding message sent', detail: fillTpl(FUNNEL_ACK_MSG, it) });
     if (it.funnel_site_at) ev.push({ at: it.funnel_site_at, ic: '🤖', title: 'Auto-built & sent the full website', detail: 'Sophie built and texted the site automatically.  ·  ' + deliveryLabel(it.funnel_site_delivery), link: it.funnel_site_url || '', linkLabel: 'Open the website' });
+    if (it.funnel_site_followup_at) ev.push({ at: it.funnel_site_followup_at, ic: '👋', title: 'Auto 48h follow-up sent', detail: fillTpl(FUNNEL_FOLLOWUP_MSG, it) });
   });
   if (t.views && t.views.first_view) ev.push({ at: t.views.first_view, ic: '👁️', title: 'Opened the mockup', detail: (t.views.n > 1 ? ('Opened ' + t.views.n + ' times, last ' + fmtStamp(t.views.last_view)) : '') });
   if (t.siteviews && t.siteviews.first_view) ev.push({ at: t.siteviews.first_view, ic: '🌐', title: 'Opened their WEBSITE', detail: (t.siteviews.n > 1 ? ('Opened ' + t.siteviews.n + ' times, last ' + fmtStamp(t.siteviews.last_view)) : 'Viewed the full website we built'), pos: true });
