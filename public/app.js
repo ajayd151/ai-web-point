@@ -3611,6 +3611,8 @@ async function ensureBuiltSites() {
   return smsBuiltSites;
 }
 function callSiteSlug(r) { return (r && (r.slug || slugFromUrl(r.view_url))) || ''; }
+// Twilio delivery status -> a short human label. Blank until Twilio reports back.
+function deliveryLabel(d) { d = String(d || '').toLowerCase(); if (d === 'delivered') return '✓ Delivered'; if (d === 'undelivered' || d === 'failed') return '✗ Not delivered'; if (d) return '• Sent (' + d + ')'; return '• Sent, awaiting delivery'; }
 // Statuses you just set, kept locally and re-applied over incoming poll data until the server's
 // blob index catches up (its reads lag writes by a beat). Without this, the next 60s poll would
 // briefly revert a status you just changed, which looked like "it didn't save until I refreshed".
@@ -3657,7 +3659,7 @@ function renderSmsCallNow(rows) {
       '<div class="rc-card-meta">' +
         (r.reply_at ? '<span class="rc-meta">🕐 Replied ' + esc(fmtStamp(r.reply_at)) + '</span>' : '') +
         '<span class="rc-meta">📨 ' + stage + '</span>' +
-        (r.funnel_site_at ? '<span class="rc-auto">🤖 Auto-built &amp; sent</span>' : (r.funnel_ack_at ? '<span class="rc-auto">💬 Auto reply sent</span>' : '')) +
+        (r.funnel_site_at ? '<span class="rc-auto">🤖 Auto-built &amp; sent ' + esc(fmtStamp(r.funnel_site_at)) + ' · ' + esc(deliveryLabel(r.funnel_site_delivery)) + '</span>' : (r.funnel_ack_at ? '<span class="rc-auto">💬 Auto reply sent ' + esc(fmtStamp(r.funnel_ack_at)) + '</span>' : '')) +
       '</div>' +
       (said ? '<div class="rc-reply">“' + esc(said.slice(0, 200)) + (said.length > 200 ? '…' : '') + '”</div>' : '') +
       '<div class="rc-card-actions">' +
@@ -3752,9 +3754,10 @@ async function openLeadHistory(idx) {
     if (it.link_sent_at) ev.push({ at: it.link_sent_at, ic: '🖼️', title: 'Mockup sent', detail: fillTpl(it.link_message || 'Here it is: {link}', it), link: it.view_url || '', linkLabel: 'View the mockup they got' });
     if (it.nudged_at) ev.push({ at: it.nudged_at, ic: '🔔', title: 'Nudge sent', detail: fillTpl(it.nudge_message, it) });
     if (it.funnel_ack_at) ev.push({ at: it.funnel_ack_at, ic: '💬', title: 'Auto holding message sent', detail: fillTpl(FUNNEL_ACK_MSG, it) });
-    if (it.funnel_site_at) ev.push({ at: it.funnel_site_at, ic: '🤖', title: 'Auto-built & sent the full website', detail: 'Sophie built and texted the site automatically.', link: it.funnel_site_url || '', linkLabel: 'Open the website' });
+    if (it.funnel_site_at) ev.push({ at: it.funnel_site_at, ic: '🤖', title: 'Auto-built & sent the full website', detail: 'Sophie built and texted the site automatically.  ·  ' + deliveryLabel(it.funnel_site_delivery), link: it.funnel_site_url || '', linkLabel: 'Open the website' });
   });
   if (t.views && t.views.first_view) ev.push({ at: t.views.first_view, ic: '👁️', title: 'Opened the mockup', detail: (t.views.n > 1 ? ('Opened ' + t.views.n + ' times, last ' + fmtStamp(t.views.last_view)) : '') });
+  if (t.siteviews && t.siteviews.first_view) ev.push({ at: t.siteviews.first_view, ic: '🌐', title: 'Opened their WEBSITE', detail: (t.siteviews.n > 1 ? ('Opened ' + t.siteviews.n + ' times, last ' + fmtStamp(t.siteviews.last_view)) : 'Viewed the full website we built'), pos: true });
   (t.inbound || []).forEach((m) => { const v = m.verdict; const ic = v === 'positive' ? '😊' : (v === 'negative' ? '😕' : (v === 'stop' ? '🛑' : '💬')); ev.push({ at: m.at, ic: ic, title: 'Customer replied' + (m.person_name ? ' (' + m.person_name + ')' : ''), detail: m.body || '', pos: v === 'positive' }); });
   if (t.optout) ev.push({ at: t.optout.at, ic: '🔕', title: 'Opted out' + (t.optout.source === 'link' ? ' (via link)' : '') });
   if (d.site && d.site.createdAt) ev.push({ at: d.site.createdAt, ic: '🐆', title: 'Full website built', detail: (d.site.mode === 'published' ? 'Published live' : 'Private preview'), link: d.site.url || '', linkLabel: 'Open the website' });

@@ -270,6 +270,7 @@ ${gallery}${reviews}${googleBand}${areaSec}${faqSec}
   <div class="foot-bot"><span>© 2026 ${esc(b.name)}. All rights reserved.</span><span>Powered by <a href="https://aiwebpoint.com/?source=${encodeURIComponent(s.slug || '')}" target="_blank" rel="noopener">aiwebpoint.com</a></span></div>
 </div></footer>
 ${mobileBar}
+<script>try{var _sv='/api/track?slug=${encodeURIComponent(s.slug || '')}&e=siteview';if(navigator.sendBeacon){navigator.sendBeacon(_sv);}else{fetch(_sv,{keepalive:true});}}catch(x){}</script>
 <script>function spSubmit(f,e){e.preventDefault();var d={slug:${JSON.stringify(s.slug || '')}};f.querySelectorAll('[name]').forEach(function(el){d[el.name]=el.value;});var ok=f.querySelector('.form-ok');if(ok)ok.style.display='block';var b=f.querySelector('button[type=submit]');if(b){b.disabled=true;b.textContent='Sent \\u2713';}try{fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(d),keepalive:true});}catch(x){}f.reset();return false;}</script>
 </body></html>`;
 }

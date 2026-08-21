@@ -395,7 +395,7 @@ module.exports = async (req, res) => {
           const siteMsg = renderMessage(tpl, it, base);
           const r = await sendSms(it.phone, siteMsg, base, it.from_number || PRIMARY);
           if (r.ok) {
-            await markFunnelSite(it.id, b.siteUrl);
+            await markFunnelSite(it.id, b.siteUrl, r.sid);
             await bumpDailyUsage(owner, 'cost:sms', 1, day); await bumpDailyUsage(owner, 'cost:pounce', 1, day);
             await logActivity(owner, owner, 'message_sent', it.name + ' (AUTO-built website sent)', it.name, { auto: 1 });
             out.funnelSite = (out.funnelSite || 0) + 1;
