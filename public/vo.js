@@ -98,7 +98,7 @@ async function voEditCampaign(id) {
   let c = null, runs = [], est = null, presets = [], templates = {}, running = [];
   if (id) { try { const d = await voApi('campaign', { id: id }); c = d.campaign; runs = d.runs || []; est = d.estimate; presets = d.presets || []; templates = d.templates || {}; VO.providers = d.providers || VO.providers; running = d.running || []; } catch (e) { alert(e.message); return; } }
   else { try { const d = await voApi('presets'); presets = d.presets || []; } catch (e) {} }
-  VO.campaign = c; VO.editTranslated = (c && c.keywords_translated) || null;
+  VO.campaign = c; VO.est = est; VO.editTranslated = (c && c.keywords_translated) || null;
   const sp = Object.assign({}, VO.profile || {}, (c && c.service_profile) || {});
   const ts = Object.assign({}, templates, (c && c.template_set) || {});
   const auto = (c && c.automation) || {};
@@ -225,8 +225,8 @@ async function voRunNow(campaignId) {
     const d = await voApi('runNow', { id: campaignId });
     const c = VO.campaign && VO.campaign.id === campaignId ? VO.campaign : (VO.campaigns.find((x) => x.id === campaignId) || { id: campaignId });
     if (!$('vo-runbox')) await voEditCampaign(campaignId);
+    if (d.done) { voToast('Run ' + d.status); await voLoadCampaigns(); await voEditCampaign(campaignId); voRenderRunBox(c, d.run, VO.est); return; }
     voRenderRunBox(c, d.run, null);
-    if (d.done) { voToast('Run ' + d.status); await voLoadCampaigns(); }
   } catch (e) { alert(e.message); }
 }
 function voPollRun(c, runId) {
@@ -235,8 +235,8 @@ function voPollRun(c, runId) {
     try {
       const d = await voApi('runStep', { id: runId });
       if (VO.pane !== 'edit' || !$('vo-runbox')) return;
+      if (d.done) { voToast('Run ' + d.status); await voLoadCampaigns(); await voEditCampaign(c.id); voRenderRunBox(c, d.run, VO.est); return; }
       voRenderRunBox(c, d.run, null);
-      if (d.done) { voToast('Run ' + d.status); await voLoadCampaigns(); }
     } catch (e) { const line = $('vo-runline'); if (line) line.innerHTML = '<span class="vo-no">' + esc(e.message) + '</span>'; }
   }, 1200);
 }
