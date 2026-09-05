@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.1.6",
+    "date": "2026-09-05",
+    "notes": [
+      "A small ? next to every field in the campaign form and the prospect page explains what it is and how to use it (hover or tap).",
+      "App files are no longer cached by the browser, so a new version shows on a normal refresh."
+    ]
+  },
+  {
     "version": "1.1.5",
     "date": "2026-09-05",
     "notes": [

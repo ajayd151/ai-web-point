@@ -34,6 +34,92 @@ document.querySelectorAll('.vo-tab').forEach((b) => b.addEventListener('click', 
 // ---- helpers ----
 var VO_NOIMG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='90'><rect width='100%' height='100%' fill='%23eef2f7'/><text x='50%' y='54%' font-size='11' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif'>no image</text></svg>";
 var VO_IMG_FALLBACK = ' onerror="this.onerror=null;this.src=VO_NOIMG"';
+
+// ---- Help bubbles: a "?" next to each field, hover or tap for a plain-English explanation ----
+var VO_HELP = {
+  'Name': 'Any name you like, for example "US Face Creams Sep 26". Only you see it.',
+  'Status': 'Draft = saved, not running. Active = runs (and scheduled runs fire). Paused = stops future runs and automation, keeps the data. Finished = done.',
+  'Owner': 'Who owns this campaign in your team. Optional.',
+  'Notes': 'Anything you want to remember about this campaign.',
+  'Industry': 'A label for what you are looking for, like "Face creams". Click Suggest keywords to turn it into search terms. The label itself is not used for searching.',
+  'Search keywords': 'The terms the Meta Ad Library and Apollo are searched with, one per line. Shopper terms work best ("retinol cream"), research terms do not ("retinol cream review"). These drive everything.',
+  'Country': 'Two-letter codes, comma separated (US, UK). Each country is searched separately.',
+  'Language of outreach': 'The language the messages are written in. For a non-English country the suggester also produces translated keywords.',
+  'Company size band': 'Headcount ranges to keep. Small DTC brands (1 to 50) are the sweet spot; over 200 employees is always disqualified.',
+  'Store platform': 'Shopify only lets us read the product list and photos automatically. Any keeps non-Shopify brands, but their products stay unknown.',
+  'Meta advertisers only': 'Tick to keep only brands running Meta (Facebook and Instagram) ads right now. The number is the minimum active ads to count.',
+  'Video advertisers only': 'Tick to keep only brands already running video ads. The percentage is the minimum share of their ads that are video.',
+  'Exclusion list (this campaign)': 'Brand names to skip for this campaign only. The global list in Settings applies everywhere.',
+  'Exclude brands already in any campaign': 'A brand can only belong to one campaign. Tick to skip brands another campaign already found.',
+  'Exclude my clients and competitors': 'Website domains to never contact, one per line, for example acme.com.',
+  'Seed brands (up to 10)': 'Domains of brands you wish you had more of. Their names are added to the ad search to find look-alikes.',
+  'Target prospects per run': 'How many NEW qualified prospects (score at or above the minimum) one run should produce. The run stops when it gets there.',
+  'Raw candidate cap per run': 'The most brands one run will look at before stopping, whatever the target says. Controls cost.',
+  'Cost cap per run (£)': 'The run stops when provider spend reaches this. The estimate above the form shows what a run should cost.',
+  'Minimum prospect score to keep': 'Out of 100. Brands below this are stored as Park and sorted to the bottom, not deleted.',
+  'Schedule': 'One-off runs when you click Run now. Daily, Weekly (tick the days) and Monthly run on their own at the run time, adding only new brands.',
+  'Run time': 'When a scheduled run starts, in the time zone shown. The worker checks every 10 minutes.',
+  'End condition': 'Optional. Stop scheduling after a date, or once the campaign holds this many prospects. Blank = until you pause it.',
+  'Re-check cadence (days)': 'How often existing prospects get their ad counts pulled again and their score refreshed, so stale brands drift down the list.',
+  'Founder/CEO if employees below': 'Contact rule. Below this headcount we go for the founder. Above it, the growth or paid-social lead first and the founder as second contact.',
+  'Accepted titles': 'Job titles that count as the growth or paid-social lead, one per line. Blank uses the built-in list.',
+  'Channels': 'Where you plan to reach people. LinkedIn is the main route, Email needs an address, Instagram is the fallback.',
+  'Fetch emails for': 'Revealing an email costs an Apollo credit. Only doing it for priority 1 to 3 saves credits.',
+  'I run …': 'The business name that goes into "I run X" in every message.',
+  'Service description': 'A few words after the name, for example "AI product videos".',
+  'Sender first name': 'The name the messages are signed with.',
+  'Sign-off': 'The word before the name, for example Thanks.',
+  'Offer line': 'Used in Follow-up 2: what you do and from how much.',
+  'Pilot line': 'Used in Follow-up 2: how a first small project works.',
+  'Free sample is': 'What the free sample is called, for example product video.',
+  'Email sender': 'The from address for emails sent from this campaign. Must be verified in SendGrid.',
+  'Default variant': 'A sends the video link. B asks permission first. Split test alternates.',
+  'Placeholders': 'Words in curly braces are filled in per prospect. Leave a box blank to use the default wording shown under it.',
+  'Auto follow-ups': 'On: Follow-up 1 and 2 go out on their own 3 and 7 days after Message 1. Off: they wait as drafts in Ready to send.',
+  'Notify me when a run finishes': 'Emails you a summary when a run ends.',
+  'Auto-send connection requests': 'Lets the worker send LinkedIn connection requests on its own, within the caps in Settings, for the top priorities only.',
+  'LinkedIn connection': 'Where the LinkedIn request stands. Applied = sent, Pending = no answer after 7 days, Connected = accepted. Set it by hand here, or the provider sets it.',
+  'Outreach stage': 'How far the conversation has got. Only the allowed next steps are listed, so it moves forward in order.',
+  'Outcome': 'The final result once you know it. Feeds the Results screen.',
+  'Add a note': 'A free-text note saved to the event trail.',
+  'Brand': 'The brand name as it appears in their ads.',
+  'Website': 'Their store domain. Changing it re-links the prospect to the new domain.',
+  'Category': 'What they sell, used in the message when there is no better observation.',
+  'Active Meta ads': 'How many ads they have live on Meta right now. The biggest single signal.',
+  'Video ads': 'How many of those are video. Video share = video divided by active.',
+  'New ads last 30d': 'Ads that started in the last 30 days, a sign they are producing creative.',
+  'Other paid channels (0-3)': 'How many other paid channels they use (Google, TikTok, Amazon ads). 0 to 3.',
+  'Creative style': 'Video-led (over 60% video), Mixed (20 to 60%), Static (under 20%).',
+  'SKUs': 'Number of products in their store.',
+  'Employees': 'Headcount. Sweet spot 11 to 50; over 200 is disqualified.',
+  'Monthly visits': 'Website visits a month if you know them. Blank scores 0.',
+  'Amazon reviews (hero)': 'Review count on their best-selling Amazon listing if you know it. Blank scores 0.',
+  'Shopify Plus': 'Y if they are on Shopify Plus (a sign of size).',
+  'Growth signals (0-3)': 'Count of hiring, funding or expansion signs, 0 to 3.',
+  'Pays for creative': 'Y if their ads show paid creators or UGC (#ad, "partner", "with").',
+  'Video sourcing': 'Where their video comes from. UGC creators is the best fit for us.',
+  'Creative gap (0, 4, 8)': '8 = stale or mostly static while spending, 4 = some gap, 0 = polished in-house output.',
+  'Trigger event': 'Y if something just happened (launch, funding, new hire) that makes now a good time.',
+  'Trigger note': 'What the trigger was.',
+  'DM name': 'The decision maker we write to.',
+  'DM title': 'Their job title.',
+  'DM LinkedIn': 'Their LinkedIn profile link.',
+  'DM active 90d': 'Have they posted or engaged on LinkedIn in the last 90 days? Y is easiest to reach.',
+  'DM email': 'Needed for Send by email.',
+  '2nd contact name': 'A second person to try if the first goes quiet.',
+  '2nd contact email': 'Their email.',
+  '2nd contact has email': 'Y adds accessibility points.',
+  'Gatekeeper': 'Y if an assistant or agency sits between you and the decision maker.',
+  'Brand Instagram': 'The brand Instagram link, the fallback channel.',
+  'Suggested product URL': 'The product the sample video is for.',
+  'Suggested product name': 'Its name, used in the messages.',
+  'Product photo check': 'Pass (n) = n real photos, Weak pass = only 2 clean, FAIL = fewer than 3, so the video would have nothing to work from.',
+  'Why this product': 'Why the rule picked it.',
+  'Observation (for the message)': 'The one personal line about their ads, written so it reads after "Came across". Edit it and the messages rebuild.',
+  'Disqualified reason': 'Filling this in scores the brand 0 and hides it. Clearing it brings it back.',
+};
+function voHelp(label) { const t = VO_HELP[String(label).replace(/<[^>]+>/g, '').trim()]; return t ? ' <span class="vo-q" tabindex="0" data-tip="' + esc(t) + '">?</span>' : ''; }
+
 var VO_PRIO_CLASS = { 'Must target': 'p1', 'Strong': 'p2', 'Possible': 'p3', 'Later': 'p4', 'Unlikely': 'p5', 'Skip': 'p6' };
 function voPrio(p) { return p.priority ? '<span class="vo-prio ' + (VO_PRIO_CLASS[p.priority] || '') + '">' + esc(p.priority) + '</span>' : '<span class="vo-prio p0">Unscored</span>'; }
 function voStamp(ts) { if (!ts) return ''; try { return new Date(ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
@@ -105,7 +191,7 @@ async function voEditCampaign(id) {
   const auto = (c && c.automation) || {};
   const end = (c && c.end_condition) || {};
   const v = (k, dflt) => (c && c[k] != null ? c[k] : dflt);
-  const row = (label, input, hint) => '<tr><th>' + label + (hint ? '<div class="muted vo-small">' + hint + '</div>' : '') + '</th><td>' + input + '</td></tr>';
+  const row = (label, input, hint) => '<tr><th>' + label + voHelp(label) + (hint ? '<div class="muted vo-small">' + hint + '</div>' : '') + '</th><td>' + input + '</td></tr>';
   const sec = (t) => '<tr class="vo-sec"><th colspan="2">' + t + '</th></tr>';
   const txt = (k, dflt, ph, extra) => '<input type="text" data-f="' + k + '" value="' + esc(v(k, dflt)) + '" placeholder="' + esc(ph || '') + '"' + (extra || '') + ' />';
   const num = (k, dflt) => '<input type="number" data-f="' + k + '" value="' + esc(v(k, dflt)) + '" style="width:120px" />';
@@ -338,7 +424,7 @@ function voRenderDetail(d) {
   const inp = (k, type, extra) => '<input type="' + (type || 'text') + '" data-e="' + k + '" value="' + esc(p[k] == null ? '' : p[k]) + '"' + (extra || '') + ' />';
   const yn = (k) => '<select data-e="' + k + '"><option value=""' + (p[k] == null ? ' selected' : '') + '>–</option><option value="Y"' + (p[k] === true ? ' selected' : '') + '>Y</option><option value="N"' + (p[k] === false ? ' selected' : '') + '>N</option></select>';
   const sel = (k, opts) => '<select data-e="' + k + '">' + opts.map((o) => '<option value="' + esc(o) + '"' + (String(p[k] == null ? '' : p[k]) === String(o) ? ' selected' : '') + '>' + esc(o || '–') + '</option>').join('') + '</select>';
-  const r = (label, control) => '<tr><th>' + label + '</th><td>' + control + '</td></tr>';
+  const r = (label, control) => '<tr><th>' + label + voHelp(label) + '</th><td>' + control + '</td></tr>';
   const stageNext = (d.stageNext && d.stageNext[p.outreach_stage]) || [];
   const stageOpts = [p.outreach_stage].concat(stageNext, ['Replied', 'Dead']).filter((x, i, a) => x && a.indexOf(x) === i);
   const conn = p.linkedin_connection_state || null;

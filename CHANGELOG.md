@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.1.6 (5 Sep 2026)
+- A small ? next to every field in the campaign form and the prospect page explains what it is and how to use it (hover or tap).
+- App files are no longer cached by the browser, so a new version shows on a normal refresh.
+
 ## 1.1.5 (5 Sep 2026)
 - Run now shows a Running state straight away: pulsing tiles, a spinner and a line saying which brand is being scored; the button is disabled until the run finishes.
 - Run now is the first button on the Campaigns list and the buttons wrap instead of scrolling off the edge.

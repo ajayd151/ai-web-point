@@ -1704,6 +1704,10 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; background: #fff; }
 .vo-card textarea { width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 11px; font: inherit; font-size: 13.5px; line-height: 1.45; }
 .vo-weights input[type=text] { max-width: 420px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+.vo-q { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #e2e8f0; color: #475569; font-size: 10px; font-weight: 800; cursor: help; position: relative; vertical-align: 1px; margin-left: 2px; }
+.vo-q:hover, .vo-q:focus { background: #0f766e; color: #fff; outline: none; }
+.vo-q::after { content: attr(data-tip); position: absolute; left: 0; top: 20px; z-index: 50; width: 280px; background: #0f172a; color: #fff; font-size: 12px; font-weight: 500; line-height: 1.4; padding: 8px 10px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.2); display: none; white-space: normal; text-align: left; }
+.vo-q:hover::after, .vo-q:focus::after { display: block; }
 .vo-help { font-size: 12px; color: #64748b; margin: 2px 0 8px; }
 /* Lead audit-trail timeline (inside the shared modal) */
 .lead-tl { display: flex; flex-direction: column; }
