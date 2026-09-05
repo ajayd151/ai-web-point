@@ -1638,7 +1638,9 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-fit { width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); background: #fff; }
 .vo-fit .vo-table { width: 100%; min-width: 0; table-layout: auto; font-size: 13px; }
 .vo-fit .vo-table th, .vo-fit .vo-table td { white-space: normal; word-break: normal; overflow-wrap: anywhere; padding: 8px 8px; vertical-align: top; }
-.vo-fit .vo-table th { font-size: 11px; }
+.vo-fit .vo-table th { font-size: 11px; overflow-wrap: normal; letter-spacing: 0; }
+.vo-prospects td { min-width: 90px; }
+.vo-prospects td:first-child { min-width: 140px; }
 .vo-campaigns td:first-child { min-width: 150px; }
 .vo-table td.num, .vo-table th.num { text-align: right; }
 .vo-table .vo-acts { white-space: normal; min-width: 180px; }

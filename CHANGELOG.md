@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.1.9 (5 Sep 2026)
+- Marking Msg 1 sent by hand now schedules Follow-up 1 (3 days) and Follow-up 2 (7 days) like the email and LinkedIn sends do; a reply or Dead cancels them.
+- Prospects table condensed to 8 readable columns so headers no longer break letter by letter.
+
 ## 1.1.8 (5 Sep 2026)
 - Prospect field help rewritten: each explains what the fact is, how to read the number and the points it earns. Labels renamed: Other paid channels (count), Growth signals (count), Creative gap (points).
 

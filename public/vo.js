@@ -373,17 +373,17 @@ function voRenderProspects() {
     '<label class="vo-chk"><input type="checkbox" id="vo-f-disq"' + (f.includeDisqualified ? ' checked' : '') + '/> Show disqualified</label></div>';
   const rows = VO.prospects.map((p) => '<tr data-id="' + p.id + '" class="vo-row">' +
     '<td><b>' + esc(p.brand) + '</b><div class="muted vo-small">' + esc(p.domain || '') + (p.source && p.source !== 'import' ? ' · ' + esc(p.source) : '') + '</div></td>' +
-    '<td>' + voPrio(p) + '</td><td class="num"><b>' + (p.priority_number == null ? '–' : p.priority_number) + '</b></td><td class="num">' + (p.score_total == null ? '–' : p.score_total) + '</td><td>' + esc(p.tier || '–') + '</td>' +
-    '<td>' + voLink(p.dm_linkedin, 'LinkedIn') + '</td><td>' + voLink(p.brand_instagram, 'Instagram') + '</td>' +
-    '<td>' + (p.linkedin_connection_state === 'Connected' ? '<span class="vo-yes">✓ Connected</span>' : esc(p.linkedin_connection_state || '–')) + '</td>' +
-    '<td>' + esc(p.creative_style || '–') + '</td><td class="vo-small">' + esc(p.product_photo_check || '–') + '</td>' +
-    '<td>' + voLink(p.suggested_product_url, p.suggested_product_name || 'product') + '</td>' +
+    '<td>' + voPrio(p) + '<div class="vo-small">No. <b>' + (p.priority_number == null ? '–' : p.priority_number) + '</b> · score <b>' + (p.score_total == null ? '–' : p.score_total) + '</b> · tier ' + esc(p.tier || '–') + '</div></td>' +
+    '<td class="vo-small">' + voLink(p.dm_linkedin, 'LinkedIn') + '<br>' + voLink(p.brand_instagram, 'Instagram') + '<br>' + (p.linkedin_connection_state === 'Connected' ? '<span class="vo-yes">✓ Connected</span>' : (p.linkedin_connection_state ? esc(p.linkedin_connection_state) : '<span class="muted">not requested</span>')) + '</td>' +
+    '<td>' + esc(p.creative_style || '–') + '</td>' +
+    '<td class="vo-small">' + voLink(p.suggested_product_url, p.suggested_product_name || 'product') + '<div>' + esc(p.product_photo_check || '–') + '</div></td>' +
     '<td>' + esc(p.dm_name || '–') + '<div class="muted vo-small">' + esc(p.dm_title || '') + '</div></td>' +
-    '<td>' + esc(p.outreach_stage || 'Not contacted') + (p.last_reply_at ? '<div class="vo-yes vo-small">replied ' + esc(voStamp(p.last_reply_at)) + '</div>' : '') + '</td><td class="vo-small">' + (p.last_event ? esc(p.last_event) + '<div class="muted">' + esc(voStamp(p.last_event_at)) + '</div>' : '<span class="muted">–</span>') + '</td></tr>').join('');
+    '<td>' + esc(p.outreach_stage || 'Not contacted') + (p.last_reply_at ? '<div class="vo-yes vo-small">replied ' + esc(voStamp(p.last_reply_at)) + '</div>' : '') + '</td>' +
+    '<td class="vo-small">' + (p.last_event ? esc(p.last_event) + '<div class="muted">' + esc(voStamp(p.last_event_at)) + '</div>' : '<span class="muted">–</span>') + '</td></tr>').join('');
   el.innerHTML = '<div class="vo-bar"><div><h3 style="margin:0">' + (camp ? esc(camp.name) + ' · prospects' : 'All prospects') + '</h3><p class="muted view-sub" style="margin:2px 0 0">Sorted by Priority Number, then score. ' + VO.prospects.length + ' shown' + (f.includeDisqualified ? '' : ', disqualified hidden') + '. Click a row to open it.</p></div>' +
     '<div>' + (camp ? '<button class="ghost" id="vo-p-edit">Edit campaign</button> ' : '') + '<button class="ghost" id="vo-p-back">← Campaigns</button></div></div>' + filters +
-    '<div class="vo-fit"><table class="cust-table vo-table vo-prospects"><thead><tr><th>Brand</th><th>Priority</th><th>Priority No.</th><th>Score</th><th>Tier</th><th>DM LinkedIn</th><th>Instagram</th><th>Connected?</th><th>Creative style</th><th>Product photo check</th><th>Suggested product</th><th>Decision maker</th><th>Outreach stage</th><th>Last event</th></tr></thead><tbody>' +
-    (rows || '<tr><td colspan="14" class="muted" style="padding:16px">Nobody here yet. Run the campaign, import the v12 tracker, or clear the filters.</td></tr>') + '</tbody></table></div>';
+    '<div class="vo-fit"><table class="cust-table vo-table vo-prospects"><thead><tr><th>Brand</th><th>Priority, number, score, tier</th><th>Links and connection</th><th>Creative style</th><th>Suggested product and photo check</th><th>Decision maker</th><th>Outreach stage</th><th>Last event</th></tr></thead><tbody>' +
+    (rows || '<tr><td colspan="8" class="muted" style="padding:16px">Nobody here yet. Run the campaign, import the v12 tracker, or clear the filters.</td></tr>') + '</tbody></table></div>';
   voOn('vo-p-back', 'click', () => voPane('campaigns'));
   voOn('vo-p-edit', 'click', () => voEditCampaign(camp.id));
   const rebind = (id, key) => { const x = $(id); if (x) x.addEventListener('change', () => { VO.filters[key] = x.type === 'checkbox' ? x.checked : x.value; voLoadProspects(); }); };

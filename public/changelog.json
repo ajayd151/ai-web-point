@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.1.9",
+    "date": "2026-09-05",
+    "notes": [
+      "Marking Msg 1 sent by hand now schedules Follow-up 1 (3 days) and Follow-up 2 (7 days) like the email and LinkedIn sends do; a reply or Dead cancels them.",
+      "Prospects table condensed to 8 readable columns (priority, number, score and tier in one cell; links and connection in one) so headers no longer break letter by letter."
+    ]
+  },
+  {
     "version": "1.1.8",
     "date": "2026-09-05",
     "notes": [
