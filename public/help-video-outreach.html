@@ -277,6 +277,7 @@
   <tr><th>You see</th><th>Do this</th></tr>
   <tr><td>A run shows errors</td><td>Open the Runs table on the campaign, the reason is in the last column. Clear prospects on a bad run and run again.</td></tr>
   <tr><td>A run seems stuck on the Apify pull</td><td>Large pulls take up to 8 minutes. If the page was closed, the worker continues it within 10 minutes. After 20 minutes the run uses whatever the pull has and carries on.</td></tr>
+  <tr><td>"Monthly usage hard limit exceeded" from Apify</td><td>The Apify plan's monthly allowance is used up (the free plan has $5). The run carries on scoring from the keyword sample, so ad counts read low. Upgrade the Apify plan or wait for the month to reset, then run again.</td></tr>
   <tr><td>A brand scored oddly</td><td>Open it, fix the fact, Save and recalculate.</td></tr>
   <tr><td>Messages read oddly</td><td>Edit the Observation line (it must read after "Came across"), or the message text, then Save edited message text.</td></tr>
   <tr><td>No contact on a brand</td><td>The run flags "find one by hand". Add DM name, title and LinkedIn in the editable fields.</td></tr>
