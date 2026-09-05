@@ -294,6 +294,7 @@ async function refreshAccess() {
   // 🔎 DeepDossier: private MVP, only the allow-listed account (server decides via /api/me).
   // Deep Dossier Leads lives as a left sub-menu inside this section, not a top tab.
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
+  if ($('nav-vo')) $('nav-vo').classList.toggle('hidden', !acc.videoOutreach); // Video Outreach: owner + allow-list only
   // team member: hide the controls they lack permission for + show a one-time professional-use notice
   applyMemberUI(acc);
   if (paid) {
@@ -2208,9 +2209,10 @@ let currentDashDays = 0;
 let lastDashboard = null;
 function showView(name) {
   window.AIWP_VIEW = name; // remembered so the feedback form can note which page you were on
-  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin', 'deepdossier'].forEach((v) => { const el = $('view-' + v); if (el) el.classList.toggle('hidden', v !== name); });
+  ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin', 'deepdossier', 'vo'].forEach((v) => { const el = $('view-' + v); if (el) el.classList.toggle('hidden', v !== name); });
   document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   if (name === 'deepdossier') ddShowPane('search'); // always open on the search sub-tab
+  if (name === 'vo' && typeof voShow === 'function') voShow(); // Video Outreach module (vo.js)
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'performance') loadDigest(); // the same morning summary the 8am email sends
   if (name === 'messages') { renderBlocked(); updateWaToday(); }

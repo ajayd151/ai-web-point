@@ -1,0 +1,33 @@
+{
+  "version": "v1-2026-09-05",
+  "A_need": {
+    "active_meta_ads": [[0, 0], [1, 5], [10, 10], [30, 15]],
+    "video_share": [[0.0, 0], [0.2, 4], [0.5000001, 8]],
+    "new_ads_30d": [[0, 0], [1, 4], [6, 7]],
+    "other_paid_channels": [[0, 0], [1, 3], [2, 5]],
+    "skus": [[0, 0], [3, 3], [10, 5]]
+  },
+  "B_afford": {
+    "employees": [[0, 0], [1, 2], [3, 5], [11, 8], [51, 5], [101, 0]],
+    "traffic_cap": 7,
+    "monthly_visits_30k": 2,
+    "amazon_reviews_1k": 2,
+    "shopify_plus": 3,
+    "growth_per_signal": 2,
+    "growth_cap": 5,
+    "pays_for_creative": 5
+  },
+  "C_fit": {
+    "creative_gap": "as_is",
+    "video_sourcing": {"UGC creators": 6, "AI tools": 3, "In-house": 0, "Unknown": 0},
+    "trigger_event": 6
+  },
+  "D_access": {
+    "dm_active_90d": {"Y": 8, "N": 4, "Not found": 0},
+    "second_contact_with_email": 4,
+    "no_gatekeeper": 3
+  },
+  "tiers": {"A": 75, "B": 55},
+  "priority": {"Must target": 75, "Strong": 65, "Possible": 55, "Later": 45, "Unlikely": 0},
+  "priority_number": {"Must target": 1, "Strong": 2, "Possible": 3, "Later": 4, "Unlikely": 5, "Skip": 6}
+}

@@ -42,6 +42,10 @@
     },
     "api/sms-suggest.js": {
       "maxDuration": 30
+    },
+    "api/vo.js": {
+      "maxDuration": 60,
+      "includeFiles": "docs/video-outreach/**"
     }
   },
   "crons": [

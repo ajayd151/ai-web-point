@@ -301,6 +301,7 @@
       <button class="navbtn" data-view="calls">📞 Call List <span id="call-count" class="navbadge hidden">0</span></button>
       <button class="navbtn" data-view="enquiries">📨 Enquiries <span id="enq-count" class="navbadge hidden">0</span></button>
       <button class="navbtn" data-view="websites">🌐 Websites</button>
+      <button class="navbtn hidden" id="nav-vo" data-view="vo">🎬 Video Outreach</button>
       <div class="sidenav-group">Insights</div>
       <button class="navbtn" data-view="performance">📊 Performance</button>
       <button class="navbtn" data-view="messages">💬 Templates</button>
@@ -988,6 +989,23 @@
       </div>
     </div>
 
+    <!-- VIDEO OUTREACH (spec v4, admin-only). Panes are rendered by vo.js -->
+    <div id="view-vo" class="view hidden">
+      <section class="panel vo-wrap">
+        <div class="vo-head">
+          <h2 class="view-title">🎬 Video Outreach</h2>
+          <div class="vo-tabs">
+            <button class="vo-tab active" data-vopane="campaigns" type="button">🗂️ Campaigns</button>
+            <button class="vo-tab" data-vopane="prospects" type="button">📋 All prospects</button>
+          </div>
+        </div>
+        <div id="vo-pane-campaigns" class="vo-pane"></div>
+        <div id="vo-pane-edit" class="vo-pane hidden"></div>
+        <div id="vo-pane-prospects" class="vo-pane hidden"></div>
+        <div id="vo-pane-detail" class="vo-pane hidden"></div>
+      </section>
+    </div>
+
     <!-- DEEPDOSSIER (private MVP, owner/allow-list only) -->
     <div id="view-deepdossier" class="view hidden">
       <div class="dd-wrap">
@@ -1252,5 +1270,6 @@
   </script>
   <script src="data.js"></script>
   <script src="app.js"></script>
+  <script src="vo.js"></script>
 </body>
 </html>
