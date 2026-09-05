@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.2.0",
+    "date": "2026-09-06",
+    "notes": [
+      "Live Meta Ad Library pulls run in the background on Apify and the run waits for them (a real pull takes 1 to 5 minutes), so runs no longer hit the 60-second limit.",
+      "Runs keep a sample of each provider's raw answer so field mapping can be checked."
+    ]
+  },
+  {
     "version": "1.1.10",
     "date": "2026-09-05",
     "notes": [

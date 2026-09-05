@@ -68,13 +68,13 @@ module.exports = async (req, res) => {
       if (c.status !== 'Active') await db.saveCampaign(owner, actor, { id: c.id, status: 'Active' });
       const run = await J.startRun(owner, actor, c, body.kind || 'sourcing');
       const r = await J.stepRun(owner, actor, run, 35000);
-      res.status(200).json({ ok: true, run: await db.getRun(owner, run.id), done: r.done, status: r.status }); return;
+      res.status(200).json({ ok: true, run: await db.getRun(owner, run.id), done: r.done, status: r.status, waiting: r.waiting || null }); return;
     }
     if (action === 'runStep') {
       const run = await db.getRun(owner, id); if (!run) { res.status(404).json({ error: 'Run not found.' }); return; }
       if (!['Running', 'Queued'].includes(run.status)) { res.status(200).json({ ok: true, run: run, done: true, status: run.status }); return; }
       const r = await J.stepRun(owner, actor, run, 35000);
-      res.status(200).json({ ok: true, run: await db.getRun(owner, run.id), done: r.done, status: r.status }); return;
+      res.status(200).json({ ok: true, run: await db.getRun(owner, run.id), done: r.done, status: r.status, waiting: r.waiting || null }); return;
     }
     if (action === 'runStatus') { const run = await db.getRun(owner, id); res.status(200).json({ run: run, done: !run || !['Running', 'Queued'].includes(run.status) }); return; }
     if (action === 'stopRun') { await db.stopRun(owner, id, 'Stopped by ' + actor); res.status(200).json({ ok: true, run: await db.getRun(owner, id) }); return; }
