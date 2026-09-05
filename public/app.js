@@ -295,6 +295,7 @@ async function refreshAccess() {
   // Deep Dossier Leads lives as a left sub-menu inside this section, not a top tab.
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
   if ($('nav-vo')) $('nav-vo').classList.toggle('hidden', !acc.videoOutreach); // Video Outreach: owner + allow-list only
+  if ($('app-version')) $('app-version').textContent = acc.version || ''; // subtle build stamp, bottom-left
   // team member: hide the controls they lack permission for + show a one-time professional-use notice
   applyMemberUI(acc);
   if (paid) {

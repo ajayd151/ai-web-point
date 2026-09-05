@@ -1,6 +1,7 @@
 // Tells the front-end who is signed in and whether they have paid access, so the
 // UI can show the app (subscribed) or the paywall (signed in, no plan yet). Read-only.
 const { account, canDeepDossier, canVideoOutreach } = require('../lib/access');
+const { buildStamp } = require('../lib/version');
 
 module.exports = async (req, res) => {
   const a = await account(req);
@@ -16,5 +17,6 @@ module.exports = async (req, res) => {
     mustChange: !!a.mustChange, // team member must set their own password on first login
     deepdossier: canDeepDossier(a.email), // private MVP: gates the hidden DeepDossier nav button
     videoOutreach: canVideoOutreach(a.email, a), // admin-only Video Outreach module (spec v4)
+    version: buildStamp(), // shown bottom-left in the sidebar
   });
 };
