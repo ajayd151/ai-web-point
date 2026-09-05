@@ -73,6 +73,7 @@ module.exports = async (req, res) => {
     if (action === 'runStep') {
       const run = await db.getRun(owner, id); if (!run) { res.status(404).json({ error: 'Run not found.' }); return; }
       if (!['Running', 'Queued'].includes(run.status)) { res.status(200).json({ ok: true, run: run, done: true, status: run.status }); return; }
+      if (!(await db.claimRun(run.id))) { res.status(200).json({ ok: true, run: run, done: false, status: run.status, waiting: 'busy' }); return; } // another step is working on it, poll again
       const r = await J.stepRun(owner, actor, run, 35000);
       res.status(200).json({ ok: true, run: await db.getRun(owner, run.id), done: r.done, status: r.status, waiting: r.waiting || null }); return;
     }

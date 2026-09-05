@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.2.2",
+    "date": "2026-09-06",
+    "notes": [
+      "Apollo people search moved to the current endpoint (the old one is refused for API callers), so contacts come back.",
+      "Apify per-brand count pass sends the page URL and settings in the shape the actor expects.",
+      "A run is stepped by one worker at a time (heartbeat), so the cron and the screen never process the same brands twice.",
+      "Merchandise is never picked as the sample product while a real product exists."
+    ]
+  },
+  {
     "version": "1.2.1",
     "date": "2026-09-06",
     "notes": [

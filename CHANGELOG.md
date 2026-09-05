@@ -2,6 +2,12 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.2.2 (6 Sep 2026)
+- Apollo people search moved to the current endpoint, so contacts come back.
+- Apify per-brand count pass sends the page URL and settings in the shape the actor expects.
+- A run is stepped by one worker at a time (heartbeat), so the cron and the screen never process the same brands twice.
+- Merchandise is never picked as the sample product while a real product exists.
+
 ## 1.2.1 (6 Sep 2026)
 - Live runs count each brand's own ads (newest 30) after the keyword search, so ad counts are real, not a sample.
 - Brand names come from the company record, not the ad page.
