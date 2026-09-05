@@ -1,6 +1,6 @@
 # Video Outreach, user guide
 
-SitePounce > Video Outreach finds ecommerce brands that advertise on Meta (Facebook and Instagram), scores them out of 100, picks the product a sample video should be made for, writes the LinkedIn and email messages, and tracks the outreach. You make the video outside SitePounce and paste the link in. Version 1.2.0, 6 September 2026.
+SitePounce > Video Outreach finds ecommerce brands that advertise on Meta (Facebook and Instagram), scores them out of 100, picks the product a sample video should be made for, writes the LinkedIn and email messages, and tracks the outreach. You make the video outside SitePounce and paste the link in. Version 1.2.3, 6 September 2026.
 
 ## 1. The whole loop in one picture
 
@@ -48,6 +48,12 @@ The tiles show raw candidates, processed, qualified, parked, disqualified and co
 6. Messages: connection note, Message A (video sent), Message B (permission first), two follow-ups.
 
 Stop rules: target reached, raw cap reached, cost cap reached. Runs are safe to leave: if you close the page the worker finishes the run within 10 minutes.
+
+## 3b. What a live run can and cannot score on its own
+
+A live run reads everything it can from the ads, the store and Apollo: active ads, video share, new ads, products and photos, headcount, the decision maker with title and LinkedIn link, hiring, and a launch push. Four signals in the score still need a human look, exactly as in the tracker: whether the decision maker is active on LinkedIn (8 points), other paid channels such as Google or TikTok (up to 5), whether they already pay creators (5), and any trigger event the run could not see (6). Without them most brands land at 40 to 55, so a fresh run will show mostly Later and Possible.
+
+Working method: open the top brands by score, spend a minute on each, fill those four fields in the editable list, click Save and recalculate. The best ones move into Strong and Must target and the messages stay as they are. Apollo's plan masks surnames in search, so each chosen contact is enriched once (1 credit) to get the full name and LinkedIn link.
 
 ## 4. Reading the prospects list
 
@@ -100,7 +106,7 @@ Keys live in Vercel > Settings > Environment Variables: `APIFY_TOKEN` (Meta Ad L
 
 ## 10. Costs to expect
 
-A 100-brand run: about £0.60 Apify, up to 200 Apollo credits, under £1 of AI. The estimate on the campaign page is calculated before you run. The cost cap stops a run that is spending more than expected.
+Measured on the first live runs (20 brands): about £1.60 in total, of which Apify £0.45 (the keyword pull plus a 30-ad count of each brand's own page), Apollo about 45 credits, AI under £0.20. A 100-brand run is roughly five times that. The estimate on the campaign page is calculated before you run and the cost cap stops a run that is spending more than expected. A run takes 3 to 8 minutes because the two Apify pulls run in the background.
 
 ## 11. If something looks wrong
 
