@@ -1636,7 +1636,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-bar .btn, .vo-bar .ghost.btn { display: inline-block; text-decoration: none; }
 .vo-small { font-size: 12px; }
 .vo-table td.num, .vo-table th.num { text-align: right; }
-.vo-table .vo-acts { white-space: nowrap; }
+.vo-table .vo-acts { white-space: normal; min-width: 260px; }
 .vo-table .vo-acts button { margin-right: 4px; }
 .vo-prospects tr.vo-row { cursor: pointer; }
 .vo-prospects tr.vo-row:hover { background: #f8fafc; }
@@ -1683,6 +1683,11 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-tile b { display: block; font-size: 20px; }
 .vo-tile span { font-size: 12px; color: #64748b; }
 .vo-tile.q { background: #dcfce7; border-color: #86efac; } .vo-tile.d { background: #fee2e2; border-color: #fecaca; } .vo-tile.c { background: #fef3c7; border-color: #fde68a; }
+@keyframes voPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.96); } }
+@keyframes voSpin { to { transform: rotate(360deg); } }
+.vo-tiles.working .vo-tile { border-style: dashed; }
+.vo-tiles.working .vo-tile b { animation: voPulse 1.2s ease-in-out infinite; }
+.vo-spin { display: inline-block; width: 13px; height: 13px; border: 2px solid #cbd5e1; border-top-color: #0f766e; border-radius: 50%; animation: voSpin .8s linear infinite; vertical-align: -2px; }
 .vo-est { display: inline-block; background: #f1f5f9; border-radius: 8px; padding: 6px 10px; font-size: 13px; margin: 4px 0; }
 .vo-est.over { background: #fee2e2; color: #991b1b; }
 .vo-ads { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }

@@ -74,9 +74,8 @@ function voRenderCampaigns() {
     '<td><span class="vo-status st-' + esc(c.status) + '">' + esc(c.status) + '</span>' + (c.last_run_at ? '<div class="muted vo-small">last run ' + esc(voStamp(c.last_run_at)) + '</div>' : '') + '</td>' +
     '<td class="num">' + (c.prospects_found || 0) + '</td><td class="num">' + (c.connected || 0) + '</td><td class="num">' + (c.replied || 0) + '</td>' +
     '<td class="num">' + voMoney(c.cost_to_date) + '</td>' +
-    '<td class="vo-acts"><button class="ghost sm" data-act="prospects">Prospects</button><button class="ghost sm" data-act="edit">Edit</button><button class="ghost sm" data-act="dup">Duplicate</button>' +
-      (c.status === 'Paused' ? '<button class="ghost sm" data-act="resume">Resume</button>' : '<button class="ghost sm" data-act="pause">Pause</button>') +
-      '<button class="primary sm" data-act="run"' + (Array.isArray(c.keywords) && c.keywords.length ? '' : ' disabled title="Add search keywords first"') + '>▶ Run now</button></td></tr>').join('');
+    '<td class="vo-acts"><button class="primary sm" data-act="run"' + (Array.isArray(c.keywords) && c.keywords.length ? '' : ' disabled title="Add search keywords first"') + '>▶ Run now</button><button class="ghost sm" data-act="prospects">Prospects</button><button class="ghost sm" data-act="edit">Edit</button><button class="ghost sm" data-act="dup">Duplicate</button>' +
+      (c.status === 'Paused' ? '<button class="ghost sm" data-act="resume">Resume</button>' : '<button class="ghost sm" data-act="pause">Pause</button>') + '</td></tr>').join('');
   el.innerHTML = '<div class="vo-bar"><p class="muted view-sub" style="margin:0">A campaign is a saved set of criteria. <b>Run now</b> sources brands from the Meta Ad Library and Apollo, scores them and drafts the messages. Without provider keys it runs in dry-run mode on the tracker data.</p>' +
     '<div><button class="primary" id="vo-new">＋ New campaign</button> <button class="ghost" id="vo-seed" title="Create a campaign and import the 74-row v12 tracker into it">📥 Import v12 tracker</button></div></div>' +
     (VO.campaigns.length ? '<div class="tgt-scroll"><table class="cust-table vo-table"><thead><tr><th>Name</th><th>Country</th><th>Schedule</th><th>Status</th><th>Prospects</th><th>Connected</th><th>Replied</th><th>Cost</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
@@ -209,28 +208,31 @@ function voRenderRunBox(c, run, est) {
   let html = '<div class="vo-progress">';
   if (est) html += '<div><span class="vo-est' + (est.over_cap ? ' over' : '') + '">Estimate per run: <b>' + voMoney(est.total) + '</b> (Apify ' + voMoney(est.apify) + ', Apollo ' + voMoney(est.apollo) + ' for ~' + est.apollo_credits + ' credits, AI ' + voMoney(est.ai) + ') for about ' + est.brands + ' brands' + (est.over_cap ? ', OVER the cost cap' : '') + '</span>' + (dryNote.length ? ' <span class="muted vo-small">dry run for ' + dryNote.join(', ') + ' (no key in Vercel), so those cost nothing and answer from the tracker data</span>' : '') + '</div>';
   if (run) {
-    const k = (run.counts || (run.state && run.state.counts)) || {}; const live = ['Running', 'Queued'].includes(run.status);
-    html += '<div class="vo-tiles"><div class="vo-tile"><b>' + (k.raw || 0) + '</b><span>raw candidates</span></div><div class="vo-tile"><b>' + (k.processed || 0) + '</b><span>processed</span></div><div class="vo-tile q"><b>' + (k.qualified || 0) + '</b><span>qualified</span></div><div class="vo-tile"><b>' + (k.parked || 0) + '</b><span>parked</span></div><div class="vo-tile d"><b>' + (k.disqualified || 0) + '</b><span>disqualified</span></div><div class="vo-tile c"><b>' + voMoney(run.actual_cost) + '</b><span>cost so far</span></div></div>' +
-      '<div id="vo-runline" class="vo-small">' + (live ? '⏳ Run ' + run.id + ' in progress…' : '✓ Run ' + run.id + ' ' + esc(run.status) + (run.state && run.state.stop ? ': ' + esc(run.state.stop) : '')) + (run.errors && run.errors.length ? ' <span class="vo-no">' + run.errors.length + ' error(s): ' + esc(run.errors[0]) + '</span>' : '') + '</div>' +
-      (live ? '<div style="margin-top:8px"><button class="ghost sm" id="vo-stop">■ Stop run</button></div>' : '<div style="margin-top:8px"><button class="ghost sm" id="vo-run-prospects">See the prospects →</button></div>');
+    const k = (run.counts || (run.state && run.state.counts)) || {}; const live = ['Running', 'Queued', 'Starting'].includes(run.status);
+    const st = run.state || {}; const phase = run.status === 'Starting' ? 'Starting the run, sourcing candidates from the Meta Ad Library and Apollo (this first step can take up to 40 seconds)' : (!st.sourced ? 'Sourcing candidates' : 'Scoring brand ' + Math.min((k.processed || 0) + 1, k.raw || 0) + ' of ' + (k.raw || 0) + ': ads, store products, contacts, product pick, messages');
+    html += '<div class="vo-tiles' + (live ? ' working' : '') + '"><div class="vo-tile"><b>' + (k.raw || 0) + '</b><span>raw candidates</span></div><div class="vo-tile"><b>' + (k.processed || 0) + '</b><span>processed</span></div><div class="vo-tile q"><b>' + (k.qualified || 0) + '</b><span>qualified</span></div><div class="vo-tile"><b>' + (k.parked || 0) + '</b><span>parked</span></div><div class="vo-tile d"><b>' + (k.disqualified || 0) + '</b><span>disqualified</span></div><div class="vo-tile c"><b>' + voMoney(run.actual_cost) + '</b><span>cost so far</span></div></div>' +
+      '<div id="vo-runline" class="vo-small">' + (live ? '<span class="vo-spin"></span> ' + (run.status === 'Starting' ? '' : 'Run ' + run.id + ' in progress. ') + esc(phase) + '…' : '✓ Run ' + run.id + ' ' + esc(run.status) + (run.state && run.state.stop ? ': ' + esc(run.state.stop) : '')) + (run.errors && run.errors.length ? ' <span class="vo-no">' + run.errors.length + ' error(s): ' + esc(run.errors[0]) + '</span>' : '') + '</div>' +
+      (live ? (run.status === 'Starting' ? '' : '<div style="margin-top:8px"><button class="ghost sm" id="vo-stop">■ Stop run</button></div>') : '<div style="margin-top:8px"><button class="ghost sm" id="vo-run-prospects">See the prospects →</button></div>');
   }
   html += '</div>';
   box.innerHTML = html;
   voOn('vo-stop', 'click', async () => { try { await voApi('stopRun', { id: run.id }); voToast('Stopping'); } catch (e) { alert(e.message); } });
   voOn('vo-run-prospects', 'click', () => voOpenProspects(c.id));
+  const rb = $('vo-run'); if (rb) { const busy = !!(run && ['Running', 'Queued', 'Starting'].includes(run.status)); rb.disabled = busy; rb.textContent = busy ? '⏳ Running…' : '▶ Run now'; }
   if (run && ['Running', 'Queued'].includes(run.status)) voPollRun(c, run.id);
 }
 async function voRunNow(campaignId) {
   const P = VO.providers || {};
   const msg = 'Start a sourcing run for this campaign now?' + (P.apify || P.apollo ? ' Provider credits will be spent up to the cost cap.' : ' No provider keys are set, so this is a dry run on the tracker data.');
   if (!confirm(msg)) return;
+  const c = VO.campaign && VO.campaign.id === campaignId ? VO.campaign : (VO.campaigns.find((x) => x.id === campaignId) || { id: campaignId });
+  if (!$('vo-runbox')) await voEditCampaign(campaignId);
+  voRenderRunBox(c, { id: '', status: 'Starting', counts: {}, actual_cost: 0 }, VO.est);
   try {
     const d = await voApi('runNow', { id: campaignId });
-    const c = VO.campaign && VO.campaign.id === campaignId ? VO.campaign : (VO.campaigns.find((x) => x.id === campaignId) || { id: campaignId });
-    if (!$('vo-runbox')) await voEditCampaign(campaignId);
     if (d.done) { voToast('Run ' + d.status); await voLoadCampaigns(); await voEditCampaign(campaignId); voRenderRunBox(c, d.run, VO.est); return; }
     voRenderRunBox(c, d.run, null);
-  } catch (e) { alert(e.message); }
+  } catch (e) { voRenderRunBox(c, null, VO.est); alert(e.message); }
 }
 function voPollRun(c, runId) {
   if (VO.poll) clearTimeout(VO.poll);

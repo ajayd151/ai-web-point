@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.1.5 (5 Sep 2026)
+- Run now shows a Running state straight away: pulsing tiles, a spinner and a line saying which brand is being scored; the button is disabled until the run finishes.
+- Run now is the first button on the Campaigns list and the buttons wrap instead of scrolling off the edge.
+
 ## 1.1.4 (5 Sep 2026)
 - Version number bottom-left is clickable and shows this history in the app.
 
