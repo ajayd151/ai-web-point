@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.2.3",
+    "date": "2026-09-06",
+    "notes": [
+      "Trigger event is set automatically when a brand is hiring a marketing role or has launched 10 or more ads this month, with the reason in the trigger note."
+    ]
+  },
+  {
     "version": "1.2.2",
     "date": "2026-09-06",
     "notes": [
