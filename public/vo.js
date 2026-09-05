@@ -296,7 +296,7 @@ function voRenderRunBox(c, run, est) {
   if (est) html += '<div><span class="vo-est' + (est.over_cap ? ' over' : '') + '">Estimate per run: <b>' + voMoney(est.total) + '</b> (Apify ' + voMoney(est.apify) + ', Apollo ' + voMoney(est.apollo) + ' for ~' + est.apollo_credits + ' credits, AI ' + voMoney(est.ai) + ') for about ' + est.brands + ' brands' + (est.over_cap ? ', OVER the cost cap' : '') + '</span>' + (dryNote.length ? ' <span class="muted vo-small">dry run for ' + dryNote.join(', ') + ' (no key in Vercel), so those cost nothing and answer from the tracker data</span>' : '') + '</div>';
   if (run) {
     const k = (run.counts || (run.state && run.state.counts)) || {}; const live = ['Running', 'Queued', 'Starting'].includes(run.status);
-    const st = run.state || {}; const phase = run.status === 'Starting' ? 'Starting the run, sourcing candidates from the Meta Ad Library and Apollo (this first step can take up to 40 seconds)' : (!st.sourced ? 'Sourcing candidates' : 'Scoring brand ' + Math.min((k.processed || 0) + 1, k.raw || 0) + ' of ' + (k.raw || 0) + ': ads, store products, contacts, product pick, messages');
+    const st = run.state || {}; const phase = run.status === 'Starting' ? 'Starting the run, sourcing candidates from the Meta Ad Library and Apollo (this first step can take up to 40 seconds)' : (!st.sourced ? (st.phase || 'Sourcing candidates') + (st.apify ? ', a live pull usually takes 1 to 5 minutes' : '') : 'Scoring brand ' + Math.min((k.processed || 0) + 1, k.raw || 0) + ' of ' + (k.raw || 0) + ': ads, store products, contacts, product pick, messages');
     html += '<div class="vo-tiles' + (live ? ' working' : '') + '"><div class="vo-tile"><b>' + (k.raw || 0) + '</b><span>raw candidates</span></div><div class="vo-tile"><b>' + (k.processed || 0) + '</b><span>processed</span></div><div class="vo-tile q"><b>' + (k.qualified || 0) + '</b><span>qualified</span></div><div class="vo-tile"><b>' + (k.parked || 0) + '</b><span>parked</span></div><div class="vo-tile d"><b>' + (k.disqualified || 0) + '</b><span>disqualified</span></div><div class="vo-tile c"><b>' + voMoney(run.actual_cost) + '</b><span>cost so far</span></div></div>' +
       '<div id="vo-runline" class="vo-small">' + (live ? '<span class="vo-spin"></span> ' + (run.status === 'Starting' ? '' : 'Run ' + run.id + ' in progress. ') + esc(phase) + '…' : '✓ Run ' + run.id + ' ' + esc(run.status) + (run.state && run.state.stop ? ': ' + esc(run.state.stop) : '')) + (run.errors && run.errors.length ? ' <span class="vo-no">' + run.errors.length + ' error(s): ' + esc(run.errors[0]) + '</span>' : '') + '</div>' +
       (live ? (run.status === 'Starting' ? '' : '<div style="margin-top:8px"><button class="ghost sm" id="vo-stop">■ Stop run</button></div>') : '<div style="margin-top:8px"><button class="ghost sm" id="vo-run-prospects">See the prospects →</button></div>');
@@ -328,9 +328,9 @@ function voPollRun(c, runId) {
       const d = await voApi('runStep', { id: runId });
       if (VO.pane !== 'edit' || !$('vo-runbox')) return;
       if (d.done) { voToast('Run ' + d.status); await voLoadCampaigns(); await voEditCampaign(c.id); voRenderRunBox(c, d.run, VO.est); return; }
-      voRenderRunBox(c, d.run, null);
+      VO.pollWaiting = !!d.waiting; voRenderRunBox(c, d.run, null);
     } catch (e) { const line = $('vo-runline'); if (line) line.innerHTML = '<span class="vo-no">' + esc(e.message) + '</span>'; }
-  }, 1200);
+  }, VO.pollWaiting ? 6000 : 1200); // poll gently while an Apify pull is running, quickly while scoring
 }
 
 // ---- Import (Appendix D) ----
