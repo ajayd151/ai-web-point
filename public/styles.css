@@ -49,7 +49,14 @@ body {
 
 /* ---- Left sidebar navigation (replaces the old top tab bar) ---- */
 .sidenav { position: fixed; top: 0; left: 0; bottom: 0; width: 214px; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 14px 12px 20px; overflow-y: auto; z-index: 60; }
-.sidenav-version { position: fixed; left: 14px; bottom: 8px; font-size: 11px; color: #b6c0cc; letter-spacing: .2px; user-select: all; z-index: 61; pointer-events: auto; }
+.changelog-box { position: fixed; inset: 0; background: rgba(15,23,42,.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; }
+.changelog-box.show { display: flex; }
+.changelog-inner { background: #fff; border-radius: 14px; max-width: 560px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 16px 20px; box-shadow: 0 20px 60px rgba(0,0,0,.25); font-size: 13.5px; }
+.changelog-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.changelog-v { border-top: 1px solid #f1f5f9; padding: 10px 0 4px; }
+.changelog-v ul { margin: 4px 0 0 18px; padding: 0; }
+.changelog-v li { margin: 2px 0; }
+.sidenav-version { cursor: pointer; position: fixed; left: 14px; bottom: 8px; font-size: 11px; color: #b6c0cc; letter-spacing: .2px; user-select: all; z-index: 61; pointer-events: auto; }
 .sidenav-brand { display: flex; align-items: center; gap: 9px; padding: 4px 6px 14px; cursor: pointer; }
 .sidenav-brand .sn-mark { width: 30px; height: 30px; }
 .sidenav-brand .sn-name { font-weight: 800; font-size: 18px; color: var(--ink); }

@@ -1,0 +1,8 @@
+[
+  { "version": "1.1.4", "date": "2026-09-05", "notes": ["Version number bottom-left is clickable and shows this history.", "Changelog kept in the repo (CHANGELOG.md) and in the app."] },
+  { "version": "1.1.3", "date": "2026-09-05", "notes": ["Clear prospects on a run now reports what it really removed and falls back to the run's time window."] },
+  { "version": "1.1.2", "date": "2026-09-05", "notes": ["AI observations cleaned so messages never read 'Came across Came across' or end with two full stops.", "Broken product or ad images show a grey 'no image' tile.", "Traffic proxy row in the score breakdown reads in words.", "Version number pinned to the bottom-left corner."] },
+  { "version": "1.1.1", "date": "2026-09-05", "notes": ["Brands with no named contact are kept and flagged 'find one by hand' (tracker rule) instead of disqualified.", "Delete a prospect from its page; Clear prospects on a finished run."] },
+  { "version": "1.1.0", "date": "2026-09-05", "notes": ["Video Outreach Phases 2 to 5: Apollo and Meta Ad Library sourcing, Shopify products and the photo rule, email sends with open tracking, resumable runs with progress tiles, scheduled campaigns, keyword suggester and presets, Results, weight tuning, template sets, plan gating, LinkedIn automation behind a provider switch.", "Fixed: sourced prospects failed to save (duplicate column).", "Version stamp added to the sidebar."] },
+  { "version": "1.0.0", "date": "2026-09-05", "notes": ["Video Outreach Phase 1: scoring engine, v12 tracker import, campaigns and prospects screens, prospect detail with messages, connection and stage tracking. 107 tests."] }
+]

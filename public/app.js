@@ -295,7 +295,7 @@ async function refreshAccess() {
   // Deep Dossier Leads lives as a left sub-menu inside this section, not a top tab.
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
   if ($('nav-vo')) $('nav-vo').classList.toggle('hidden', !acc.videoOutreach); // Video Outreach: owner + allow-list only
-  if ($('app-version')) $('app-version').textContent = acc.version || ''; // subtle build stamp, bottom-left
+  if ($('app-version')) { $('app-version').textContent = acc.version || ''; $('app-version').onclick = showChangelog; } // subtle build stamp, bottom-left, click for history
   // team member: hide the controls they lack permission for + show a one-time professional-use notice
   applyMemberUI(acc);
   if (paid) {
@@ -6471,3 +6471,16 @@ function restoreLastSearch() {
   try { renderWantMore(c.params.industry, c.params.expanded || []); } catch (e) { /* never break restore */ }
 }
 try { restoreLastSearch(); } catch (e) { /* a restore problem must never break the app */ }
+
+// Version history, from public/changelog.json, shown when the bottom-left version stamp is clicked.
+async function showChangelog() {
+  let list = [];
+  try { list = await (await fetch('/changelog.json?ts=' + Date.now(), { cache: 'no-store' })).json(); } catch (e) { list = []; }
+  let box = $('changelog-box');
+  if (!box) { box = document.createElement('div'); box.id = 'changelog-box'; box.className = 'changelog-box'; document.body.appendChild(box); }
+  box.innerHTML = '<div class="changelog-inner"><div class="changelog-head"><b>What changed</b><button class="ghost sm" id="changelog-close">Close</button></div>' +
+    (list.length ? list.map((v) => '<div class="changelog-v"><b>v' + esc(v.version) + '</b> <span class="muted">' + esc(v.date || '') + '</span><ul>' + (v.notes || []).map((n) => '<li>' + esc(n) + '</li>').join('') + '</ul></div>').join('') : '<p class="muted">No history file found.</p>') + '</div>';
+  box.classList.add('show');
+  $('changelog-close').onclick = () => box.classList.remove('show');
+  box.onclick = (e) => { if (e.target === box) box.classList.remove('show'); };
+}
