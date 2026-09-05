@@ -46,6 +46,10 @@
     "api/vo.js": {
       "maxDuration": 60,
       "includeFiles": "docs/video-outreach/**"
+    },
+    "api/vo-worker.js": {
+      "maxDuration": 300,
+      "includeFiles": "docs/video-outreach/**"
     }
   },
   "crons": [
@@ -56,6 +60,10 @@
     {
       "path": "/api/sms-worker",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/vo-worker",
+      "schedule": "*/10 * * * *"
     }
   ],
   "rewrites": [

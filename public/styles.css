@@ -1667,6 +1667,31 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-edit th { width: 230px; }
 .vo-toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 9px 16px; border-radius: 10px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 9999; }
 .vo-toast.show { opacity: 1; }
+.vo-banner { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 10px 14px; margin: 8px 0 12px; font-size: 13.5px; }
+.vo-banner.ok { background: #ecfdf5; border-color: #a7f3d0; color: #065f46; }
+.vo-progress { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin: 12px 0; background: #fff; }
+.vo-progress .vo-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 8px 0; }
+.vo-tile { border-radius: 10px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.vo-tile b { display: block; font-size: 20px; }
+.vo-tile span { font-size: 12px; color: #64748b; }
+.vo-tile.q { background: #dcfce7; border-color: #86efac; } .vo-tile.d { background: #fee2e2; border-color: #fecaca; } .vo-tile.c { background: #fef3c7; border-color: #fde68a; }
+.vo-est { display: inline-block; background: #f1f5f9; border-radius: 8px; padding: 6px 10px; font-size: 13px; margin: 4px 0; }
+.vo-est.over { background: #fee2e2; color: #991b1b; }
+.vo-ads { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.vo-ad { border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px; font-size: 12px; background: #fff; }
+.vo-ad img, .vo-gal img { width: 100%; height: 90px; object-fit: cover; border-radius: 6px; background: #f1f5f9; display: block; margin-bottom: 6px; }
+.vo-ad .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: #e0e7ff; color: #3730a3; margin-right: 4px; }
+.vo-gal { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; margin: 8px 0; }
+.vo-gal .g { font-size: 11px; color: #64748b; }
+.vo-gal .g.bad img { outline: 2px solid #fecaca; }
+.vo-kv { width: 100%; border-collapse: collapse; font-size: 13px; }
+.vo-kv th { text-align: left; padding: 6px 8px; font-weight: 700; color: #334155; border-bottom: 1px solid #f1f5f9; width: 240px; vertical-align: top; }
+.vo-kv td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; }
+.vo-ok { color: #065f46; font-weight: 700; } .vo-no { color: #b91c1c; font-weight: 700; }
+.vo-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; background: #fff; }
+.vo-card textarea { width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 11px; font: inherit; font-size: 13.5px; line-height: 1.45; }
+.vo-weights input[type=text] { max-width: 420px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+.vo-help { font-size: 12px; color: #64748b; margin: 2px 0 8px; }
 /* Lead audit-trail timeline (inside the shared modal) */
 .lead-tl { display: flex; flex-direction: column; }
 .tl-row { display: flex; gap: 12px; padding: 12px 2px; border-left: 2px solid #e2e8f0; margin-left: 6px; padding-left: 16px; position: relative; }

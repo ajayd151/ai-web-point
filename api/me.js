@@ -15,6 +15,6 @@ module.exports = async (req, res) => {
     perms: a.perms || {}, // permission map, used by the UI to hide what they can't do
     mustChange: !!a.mustChange, // team member must set their own password on first login
     deepdossier: canDeepDossier(a.email), // private MVP: gates the hidden DeepDossier nav button
-    videoOutreach: canVideoOutreach(a.email), // admin-only Video Outreach module (spec v4)
+    videoOutreach: canVideoOutreach(a.email, a), // admin-only Video Outreach module (spec v4)
   });
 };
