@@ -1663,7 +1663,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-form tr.vo-sec th { background: #f8fafc; color: #0f766e; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; padding: 12px 10px 6px; border-bottom: none; }
 .vo-chk { display: inline-flex; align-items: center; gap: 5px; margin-right: 12px; font-size: 13px; }
 .vo-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
-.vo-filters select, .vo-filters input { border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 9px; font: inherit; font-size: 13px; }
+.vo-filters select, .vo-filters input { width: auto; max-width: 220px; flex: 0 1 auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 9px; font: inherit; font-size: 13px; }
 .vo-file { cursor: pointer; }
 .vo-grid { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(320px, 1.2fr); gap: 24px; align-items: start; }
 @media (max-width: 960px) { .vo-grid { grid-template-columns: 1fr; } }
