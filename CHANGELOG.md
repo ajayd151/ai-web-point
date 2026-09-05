@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.2.5 (6 Sep 2026)
+- Help page with a menu and sub-sections (the Help tab in Video Outreach).
+
 ## 1.2.4 (6 Sep 2026)
 - Fixed: a run could fail to save when an ad's text was cut in the middle of an emoji. Text is cut on whole characters and broken characters are stripped before saving.
 

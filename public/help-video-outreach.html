@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Video Outreach help</title>
+<style>
+  :root { --ink: #0f172a; --muted: #64748b; --line: #e2e8f0; --teal: #0f766e; --bg: #f8fafc; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.55 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color: var(--ink); background: var(--bg); }
+  .wrap { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+  nav { position: sticky; top: 0; height: 100vh; overflow-y: auto; background: #fff; border-right: 1px solid var(--line); padding: 18px 14px 40px; }
+  nav h1 { font-size: 17px; margin: 4px 8px 14px; }
+  nav h1 small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; margin-top: 2px; }
+  nav .grp { margin: 6px 0; }
+  nav .grp > a { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; border-radius: 8px; color: var(--ink); text-decoration: none; font-weight: 700; font-size: 14px; }
+  nav .grp > a:hover, nav .grp > a.on { background: #ecfdf5; color: var(--teal); }
+  nav .grp > a .chev { font-size: 11px; color: var(--muted); transition: transform .15s; }
+  nav .grp.open > a .chev { transform: rotate(90deg); }
+  nav .sub { display: none; margin: 2px 0 6px 10px; border-left: 2px solid var(--line); }
+  nav .grp.open .sub { display: block; }
+  nav .sub a { display: block; padding: 5px 12px; color: var(--muted); text-decoration: none; font-size: 13px; }
+  nav .sub a:hover, nav .sub a.on { color: var(--teal); font-weight: 700; }
+  main { padding: 28px 44px 80px; max-width: 900px; }
+  h2 { font-size: 24px; margin: 34px 0 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+  h2:first-of-type { border-top: none; margin-top: 0; }
+  h3 { font-size: 17px; margin: 24px 0 8px; }
+  p { margin: 8px 0; }
+  ul, ol { margin: 6px 0 10px 22px; padding: 0; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: 14px; background: #fff; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #f1f5f9; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  code { background: #eef2f7; padding: 1px 5px; border-radius: 5px; font-size: 13px; }
+  .tip { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; padding: 10px 14px; margin: 12px 0; }
+  .warn { background: #fef3c7; border: 1px solid #fde68a; border-radius: 10px; padding: 10px 14px; margin: 12px 0; }
+  .flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0 18px; }
+  .flow div { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 13px; }
+  .flow div b { display: block; color: var(--teal); font-size: 12px; margin-bottom: 4px; }
+  .cl-v { border-top: 1px solid var(--line); padding: 10px 0 4px; }
+  .cl-v b { font-size: 15px; }
+  .cl-v span { color: var(--muted); font-size: 13px; margin-left: 6px; }
+  .topbar { display: none; }
+  @media (max-width: 860px) {
+    .wrap { grid-template-columns: 1fr; }
+    nav { position: relative; height: auto; border-right: none; border-bottom: 1px solid var(--line); }
+    main { padding: 20px 18px 60px; }
+  }
+  @media print { nav { display: none; } .wrap { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav id="nav">
+  <h1>🎬 Video Outreach<small>How it works and how to use it</small></h1>
+  <div class="grp open"><a href="#overview">Overview <span class="chev">▶</span></a><div class="sub"><a href="#overview-loop">The whole loop</a><a href="#overview-never">What it never does</a></div></div>
+  <div class="grp"><a href="#setup">Getting set up <span class="chev">▶</span></a><div class="sub"><a href="#setup-keys">Provider keys</a><a href="#setup-profile">Your service profile</a><a href="#setup-version">Which version am I on</a></div></div>
+  <div class="grp"><a href="#campaigns">Campaigns <span class="chev">▶</span></a><div class="sub"><a href="#campaigns-create">Creating one</a><a href="#campaigns-fields">The fields that matter</a><a href="#campaigns-schedule">Schedules</a><a href="#campaigns-templates">Message templates</a><a href="#campaigns-automation">Automation switches</a></div></div>
+  <div class="grp"><a href="#runs">Runs <span class="chev">▶</span></a><div class="sub"><a href="#runs-what">What a run does</a><a href="#runs-tiles">Reading the tiles</a><a href="#runs-stop">When it stops</a><a href="#runs-cost">What it costs</a><a href="#runs-clear">Redoing a run</a></div></div>
+  <div class="grp"><a href="#prospects">Prospects <span class="chev">▶</span></a><div class="sub"><a href="#prospects-list">The list</a><a href="#prospects-score">How the score works</a><a href="#prospects-page">The prospect page</a><a href="#prospects-hand">The four hand-checked signals</a></div></div>
+  <div class="grp"><a href="#outreach">Outreach <span class="chev">▶</span></a><div class="sub"><a href="#outreach-hand">By hand on LinkedIn</a><a href="#outreach-email">By email</a><a href="#outreach-auto">Automatic LinkedIn</a><a href="#outreach-accepted">After a connection is accepted</a><a href="#outreach-followups">Follow-ups</a><a href="#outreach-replies">Replies</a><a href="#outreach-limits">Safety limits</a></div></div>
+  <div class="grp"><a href="#results">Results and tuning <span class="chev">▶</span></a><div class="sub"><a href="#results-read">Reading Results</a><a href="#results-weights">Changing the weights</a></div></div>
+  <div class="grp"><a href="#settings">Settings <span class="chev">▶</span></a><div class="sub"><a href="#settings-what">What is on the screen</a></div></div>
+  <div class="grp"><a href="#trouble">If something looks wrong <span class="chev">▶</span></a><div class="sub"><a href="#trouble-list">Common cases</a></div></div>
+  <div class="grp"><a href="#history">Version history <span class="chev">▶</span></a><div class="sub"><a href="#history-list">All releases</a></div></div>
+</nav>
+<main>
+
+<h2 id="overview">Overview</h2>
+<p>Video Outreach finds ecommerce brands that advertise on Meta (Facebook and Instagram), scores them out of 100, picks the product a sample video should be made for, writes the LinkedIn and email messages, and tracks the outreach. You make the video outside SitePounce and paste the link in. It lives under the 🎬 Video Outreach button in the left sidebar.</p>
+
+<h3 id="overview-loop">The whole loop</h3>
+<div class="flow">
+  <div><b>1. Campaign</b>You say what to look for: keywords, country, size, caps.</div>
+  <div><b>2. Run</b>Pulls live ads, adds company and contact data, reads the store, scores, drafts messages. 3 to 10 minutes.</div>
+  <div><b>3. Prospects</b>A list sorted by Priority Number. Open one to see why, what to film, and the messages.</div>
+  <div><b>4. Connect</b>Send the LinkedIn request, by hand with Copy or automatically once a provider is connected.</div>
+  <div><b>5. Accepted</b>The brand appears on Ready to send with the draft of Message A.</div>
+  <div><b>6. Send</b>Paste the video link, check the words, click Send. Never without that click.</div>
+  <div><b>7. Follow-ups</b>Drafts at 3 and 7 days. You send them, or switch on auto follow-ups.</div>
+  <div><b>8. Reply</b>Stage moves to Replied, follow-ups cancel, you get an email. Then Call booked, Pilot, Client.</div>
+</div>
+
+<h3 id="overview-never">What it never does</h3>
+<ul>
+  <li>It never sends Message A (the one with the video) on its own. You paste the link and click Send.</li>
+  <li>It never answers a reply. It records it, cancels follow-ups and emails you.</li>
+  <li>It never sends follow-ups unless you switch on auto follow-ups for that campaign.</li>
+  <li>It never contacts a brand twice. A brand belongs to one campaign, and dedupe runs on every pull.</li>
+</ul>
+
+<h2 id="setup">Getting set up</h2>
+<h3 id="setup-keys">Provider keys</h3>
+<p>Keys live only in Vercel (Settings, Environment Variables). The Settings tab in the app shows each as set or not set, never the value. Without a key the provider answers from the tracker data (a dry run) and costs nothing.</p>
+<table>
+  <tr><th>Key</th><th>What it does</th><th>Needed?</th></tr>
+  <tr><td><code>APIFY_TOKEN</code></td><td>Reads the Meta Ad Library: active ads, video share, new ads, sample ads. 40 of the 100 points.</td><td>Yes</td></tr>
+  <tr><td><code>APOLLO_API_KEY</code></td><td>Company data, headcount, the decision maker with title and LinkedIn link, emails.</td><td>Yes</td></tr>
+  <tr><td><code>OPENAI_API_KEY</code></td><td>Keyword suggester, the one-line observation about their ads, homepage featured products.</td><td>Already set</td></tr>
+  <tr><td><code>SENDGRID_API_KEY</code> + <code>VO_EMAIL_FROM</code></td><td>Email sends from your own address (must be a verified sender).</td><td>For email</td></tr>
+  <tr><td><code>HUNTER_API_KEY</code></td><td>Double-checks emails. Apollo already flags verified emails, so leave it out until bounces are a problem.</td><td>No</td></tr>
+  <tr><td><code>VO_LINKEDIN_PROVIDER</code> + Unipile keys</td><td><code>unipile</code> for the real thing, <code>dryrun</code> to rehearse with simulate buttons.</td><td>For automatic LinkedIn</td></tr>
+</table>
+
+<h3 id="setup-profile">Your service profile</h3>
+<p>Settings, Default service profile: the business name that goes into "I run X", the sender first name, the sign-off, the offer and pilot lines, and the email sender. Every campaign starts from these and can override them.</p>
+
+<h3 id="setup-version">Which version am I on</h3>
+<p>Bottom-left of the sidebar, in faint text. Click it for the history of changes. When we talk about a fix, check that number first.</p>
+
+<h2 id="campaigns">Campaigns</h2>
+<h3 id="campaigns-create">Creating one</h3>
+<ol>
+  <li>Campaigns tab, <b>New campaign</b>.</li>
+  <li>Type the product area in Industry (for example "face creams") and click <b>Suggest keywords</b>. It writes 10 to 20 shopper search terms into the box.</li>
+  <li>Delete research phrases (review, dosage, vs powder). Keep buying phrases. These keywords drive the whole search, the Industry label does not.</li>
+  <li>Give it a name, leave the defaults, <b>Save</b>, then <b>Run now</b>.</li>
+</ol>
+<div class="tip">Hover any <b>?</b> next to a field for a plain-English explanation and, on prospect fields, the points it earns.</div>
+
+<h3 id="campaigns-fields">The fields that matter</h3>
+<table>
+  <tr><th>Field</th><th>What to put</th></tr>
+  <tr><td>Country</td><td>US by default. Comma separated for more. Each is searched separately, and non-English countries get translated keywords.</td></tr>
+  <tr><td>Company size band</td><td>Leave 1-10 and 11-50 ticked. Over 200 employees is always thrown out.</td></tr>
+  <tr><td>Store platform</td><td>Shopify only lets the product list and photos be read automatically. Any keeps other stores with the product picked by hand.</td></tr>
+  <tr><td>Meta advertisers only</td><td>Leave ticked. Minimum active ads 10.</td></tr>
+  <tr><td>Target prospects per run</td><td>How many new qualified brands (score 55 or more) one run should produce. Default 20.</td></tr>
+  <tr><td>Raw candidate cap</td><td>How many brands the run may look at before stopping. This is your main spend control. 100 for a first run.</td></tr>
+  <tr><td>Cost cap (£)</td><td>Second spend control. The run stops when provider spend reaches it.</td></tr>
+  <tr><td>Minimum score to keep</td><td>55. Below that a brand is parked (kept, sorted low), not deleted.</td></tr>
+  <tr><td>Founder/CEO if employees below</td><td>Contact rule. Small brands: the founder. Bigger: the growth or paid-social lead first, founder second.</td></tr>
+  <tr><td>Fetch emails for</td><td>Revealing an email costs an Apollo credit. Priority 1 to 3 only saves credits.</td></tr>
+</table>
+
+<h3 id="campaigns-schedule">Schedules</h3>
+<ul>
+  <li><b>One-off</b> runs when you click Run now.</li>
+  <li><b>Daily</b>, <b>Weekly</b> (tick the days) and <b>Monthly</b> (the 1st) run on their own at the run time in the chosen time zone. The worker checks every 10 minutes and starts the run after the run time. Each run only adds brands it has not seen before.</li>
+  <li><b>End condition</b>: stop after a date, or once the campaign holds N prospects. Blank means until you pause it.</li>
+  <li><b>Re-check cadence</b>: every 30 days existing prospects get fresh ad counts and a fresh score, so stale brands drift down.</li>
+</ul>
+
+<h3 id="campaigns-templates">Message templates</h3>
+<p>Leave the boxes blank to use the standard wording (shown in grey under each box). To change the wording for this campaign only, write your own using the placeholders <code>{first}</code> <code>{service_name}</code> <code>{observation}</code> <code>{product}</code> <code>{video_url}</code> <code>{signoff}</code> <code>{sender_first}</code> <code>{offer_line}</code> <code>{pilot_line}</code>. A blank line (or " / ") separates paragraphs. Every message is checked before it is stored: paragraphs separated, sign-off present, no link in the connection note, "[insert URL here]" in Message A until a video link is pasted.</p>
+
+<h3 id="campaigns-automation">Automation switches</h3>
+<ul>
+  <li><b>Auto follow-ups</b>: Follow-up 1 and 2 go out on their own 3 and 7 days after Message 1, on the channel Message 1 used. Off means they wait as drafts.</li>
+  <li><b>Notify me when a run finishes</b>: an email summary.</li>
+  <li><b>Auto-send connection requests</b> (only once a LinkedIn provider is connected): lets the worker send requests for priority 1 and 2 within the caps in Settings.</li>
+</ul>
+
+<h2 id="runs">Runs</h2>
+<h3 id="runs-what">What a run does</h3>
+<ol>
+  <li><b>Pull ads</b> from the Meta Ad Library for every keyword and country (about 10 ads per brand requested). This runs in the background on Apify and takes 1 to 8 minutes depending on size.</li>
+  <li><b>Count each brand</b>: the keyword search only shows a few ads per brand, so each brand's own page is counted (newest 30 active ads). Enough to place every scoring band.</li>
+  <li><b>Merge with Apollo</b> company search on domain, remove the exclusion list, household names and brands already in any campaign.</li>
+  <li>For every brand, in order: hard filters (country, exclusion list, over 200 employees, no active ads, no store), ad analysis (counts, video share, new ads, whether they pay creators, the AI writes the one personal line), store products and the photo rule, contacts (founder or growth lead, enriched once for the full name and LinkedIn link), score, messages.</li>
+</ol>
+
+<h3 id="runs-tiles">Reading the tiles</h3>
+<table>
+  <tr><th>Tile</th><th>Meaning</th></tr>
+  <tr><td>Raw candidates</td><td>Brands found after dedupe, capped by the raw candidate cap.</td></tr>
+  <tr><td>Processed</td><td>How many have been scored so far.</td></tr>
+  <tr><td>Qualified</td><td>New brands at or above the minimum score. The target counts these.</td></tr>
+  <tr><td>Parked</td><td>Below the minimum score. Kept, sorted low.</td></tr>
+  <tr><td>Disqualified</td><td>Failed a hard filter. Hidden unless you tick Show disqualified.</td></tr>
+  <tr><td>Cost so far</td><td>Provider spend recorded for this run.</td></tr>
+</table>
+<p>The line underneath says what it is doing. You can close the page: the worker finishes the run within 10 minutes.</p>
+
+<h3 id="runs-stop">When it stops</h3>
+<p>Done when the target is reached or every candidate is processed. Stopped (cap) when the raw cap or the cost cap is reached. Failed only on a provider error it cannot recover from, keeping everything processed so far. Stop run stops it by hand.</p>
+
+<h3 id="runs-cost">What it costs</h3>
+<p>Measured on 20-brand live runs: about £1.60 in total (Apify £0.45, Apollo about 45 credits, AI under £0.20). A 100-brand run is roughly five times that. The estimate on the campaign page is calculated before you run.</p>
+
+<h3 id="runs-clear">Redoing a run</h3>
+<p>On the campaign page, the Runs table lists every run with counts, cost and the reason it stopped. <b>Clear prospects</b> deletes what that run created so the campaign can run again without dedupe blocking the same brands. Use it for test runs or a run with bad keywords.</p>
+
+<h2 id="prospects">Prospects</h2>
+<h3 id="prospects-list">The list</h3>
+<p>Sorted by Priority Number (1 = Must target) then score. Filters for campaign, run, priority, connection, creative style, stage, and a search box. Disqualified brands are hidden unless you tick Show disqualified. Click a row to open it. All prospects shows every campaign in one list.</p>
+<table>
+  <tr><th>Priority</th><th>Score</th><th>Number</th></tr>
+  <tr><td>Must target</td><td>75 or more</td><td>1</td></tr>
+  <tr><td>Strong</td><td>65 to 74</td><td>2</td></tr>
+  <tr><td>Possible</td><td>55 to 64</td><td>3</td></tr>
+  <tr><td>Later</td><td>45 to 54</td><td>4</td></tr>
+  <tr><td>Unlikely</td><td>under 45</td><td>5</td></tr>
+  <tr><td>Skip</td><td>disqualified</td><td>6</td></tr>
+</table>
+
+<h3 id="prospects-score">How the score works</h3>
+<ul>
+  <li><b>A. Need for video volume (40)</b>: active Meta ads, video share, new ads in 30 days, other paid channels, number of products.</li>
+  <li><b>B. Ability to pay (25)</b>: headcount (11 to 50 is the sweet spot), traffic proxy (visits, Amazon reviews, Shopify Plus), growth signals, pays for creators.</li>
+  <li><b>C. Opportunity fit (20)</b>: creative gap, where their video comes from (UGC creators is the best fit), a trigger event.</li>
+  <li><b>D. Accessibility (15)</b>: decision maker active on LinkedIn, a second contact with email, no gatekeeper.</li>
+</ul>
+<p>Every signal and its points are listed on the prospect page. The weights can be changed in Settings.</p>
+
+<h3 id="prospects-page">The prospect page</h3>
+<p>Left: the score breakdown, the sample ads, Tracking (connection, stage, outcome, notes) and the event trail. Right: the suggested product with photo check and gallery, the Video URL box, the three messages with Copy and Send by email, the follow-ups, and every fact the run found, all editable. Fix a wrong fact, click Save and recalculate, and the score and messages update. Buttons at the top open the decision maker's LinkedIn profile and the brand Instagram.</p>
+
+<h3 id="prospects-hand">The four hand-checked signals</h3>
+<div class="warn">A live run reads everything it can, but four signals still need a minute of your time, exactly as in the tracker. Without them most brands land at 40 to 55 (Later and Possible). With them, the best move into Strong and Must target.</div>
+<ul>
+  <li><b>DM active 90d</b> (8 points for Y): open their LinkedIn profile, have they posted or engaged in the last 90 days?</li>
+  <li><b>Other paid channels</b> (up to 5): Google, TikTok, YouTube or Amazon ads besides Meta? Count them, 0 to 3.</li>
+  <li><b>Pays for creative</b> (5): do their ads show paid creators or UGC? The run sets Y when it sees #ad or "with", check the rest.</li>
+  <li><b>Trigger event</b> (6): the run sets it when they are hiring a marketing role or launched 10+ ads this month. Add any other (launch, funding).</li>
+</ul>
+<p>Working method: open the top brands by score, fill those four, Save and recalculate. Messages stay as they are.</p>
+
+<h2 id="outreach">Outreach</h2>
+<h3 id="outreach-hand">By hand on LinkedIn (no provider connected)</h3>
+<ol>
+  <li>Open the prospect, click <b>Copy</b> on the connection note, paste it into LinkedIn's connection request.</li>
+  <li>In Tracking set LinkedIn connection to <b>Applied</b>. The stage becomes Request sent.</li>
+  <li>When they accept, set it to <b>Connected</b>. The stage becomes Accepted and the brand appears on Ready to send.</li>
+  <li>Make the video, paste the link into Video URL, Save. Message A now carries the link.</li>
+  <li>On Ready to send click <b>Copy</b>, paste into LinkedIn, then <b>Mark Msg 1 sent</b>. Follow-up drafts are scheduled for 3 and 7 days later.</li>
+  <li>When they reply, set the stage to <b>Replied</b> (or Dead). Follow-ups cancel themselves.</li>
+</ol>
+
+<h3 id="outreach-email">By email</h3>
+<p>If the prospect has an email and a sender address is set, <b>Send by email</b> on Message A or B sends it from your address, records the send and the first open, sets the stage to Msg 1 and schedules the follow-up drafts. Message A needs the video link first.</p>
+
+<h3 id="outreach-auto">Automatic LinkedIn</h3>
+<p>Set <code>VO_LINKEDIN_PROVIDER</code> to <code>unipile</code> with its three keys (or <code>dryrun</code> to rehearse). Then, per campaign, tick <b>Auto-send connection requests</b> and choose up to which priority number. Every 10 minutes the worker then:</p>
+<ul>
+  <li>Sends <b>one</b> connection request per check, weekdays 8am to 6pm US Eastern, highest priority first, never above the daily cap (20, hard limit 25) or the weekly cap (100).</li>
+  <li>Checks for acceptances.</li>
+  <li>Marks a request Pending after 7 days and withdraws it after 21 days (the brand goes Dead unless you also used email or Instagram).</li>
+  <li>Reads new LinkedIn messages from your prospects.</li>
+</ul>
+
+<h3 id="outreach-accepted">After a connection is accepted</h3>
+<ol>
+  <li>The prospect becomes Connected, the stage Accepted, and the draft of Message A is refreshed with the latest observation.</li>
+  <li>It appears on <b>Ready to send</b> with the draft and a box for the video link.</li>
+  <li>You make the video, paste the link, check the words, click <b>Send on LinkedIn</b>. The message goes through the provider, the stage becomes Msg 1, and follow-up drafts are scheduled.</li>
+</ol>
+
+<h3 id="outreach-followups">Follow-ups</h3>
+<p>Follow-up 1 is due 3 days after Message 1, Follow-up 2 after 7 days. They appear under Due follow-ups on the Ready to send tab with Send now and Skip. If the campaign has auto follow-ups on, the worker sends them on the day. A reply, Call booked, Pilot, Client or Dead cancels any that are still due.</p>
+
+<h3 id="outreach-replies">Replies</h3>
+<p>A reply on LinkedIn (with a provider) sets the stage to Replied, stores the text on the prospect, cancels follow-ups and emails you the message. Nothing is sent back. Without a provider, set Replied by hand.</p>
+
+<h3 id="outreach-limits">Safety limits</h3>
+<p>Settings, LinkedIn caps: requests per day (hard limit 25), messages per day, requests per week, the priority cut-off and the send-window time zone. If LinkedIn or the provider reports a restriction or a checkpoint, everything pauses, a red banner appears at the top of Video Outreach, and you get an email. Resume from Settings once you have checked the account.</p>
+
+<h2 id="results">Results and tuning</h2>
+<h3 id="results-read">Reading Results</h3>
+<p>Reply, call and pilot rates by priority band and by message variant, against contacted prospects. If Possible replies as often as Strong, the 65 boundary is too strict. If B out-replies A, lead with permission.</p>
+<h3 id="results-weights">Changing the weights</h3>
+<p>Settings, Score weights. Bands read "from this value upwards scores this many points", written threshold:points. <b>Preview impact</b> shows how many of the 74 tracker brands would change band. <b>Save and re-score all</b> applies the new weights to every prospect. <b>Reset to v1</b> puts the original back.</p>
+
+<h2 id="settings">Settings</h2>
+<h3 id="settings-what">What is on the screen</h3>
+<ul>
+  <li><b>Providers</b>: each key set or not set, the AI model, the Apify actor, the LinkedIn provider with a Test connection button, and the plan gate.</li>
+  <li><b>Default service profile</b> and <b>Global exclusion list</b> (household names, one per line).</li>
+  <li><b>LinkedIn caps</b> and state (Running or Paused with the reason, and Resume).</li>
+  <li><b>Score weights</b> and <b>Industry presets</b> (keyword sets saved from a campaign).</li>
+</ul>
+
+<h2 id="trouble">If something looks wrong</h2>
+<h3 id="trouble-list">Common cases</h3>
+<table>
+  <tr><th>You see</th><th>Do this</th></tr>
+  <tr><td>A run shows errors</td><td>Open the Runs table on the campaign, the reason is in the last column. Clear prospects on a bad run and run again.</td></tr>
+  <tr><td>A run seems stuck on the Apify pull</td><td>Large pulls take up to 8 minutes. If the page was closed, the worker continues it within 10 minutes. After 20 minutes the run uses whatever the pull has and carries on.</td></tr>
+  <tr><td>A brand scored oddly</td><td>Open it, fix the fact, Save and recalculate.</td></tr>
+  <tr><td>Messages read oddly</td><td>Edit the Observation line (it must read after "Came across"), or the message text, then Save edited message text.</td></tr>
+  <tr><td>No contact on a brand</td><td>The run flags "find one by hand". Add DM name, title and LinkedIn in the editable fields.</td></tr>
+  <tr><td>Product photos say "no image"</td><td>Dry-run placeholders until provider keys are set, or the store blocks image links. The photo count still works.</td></tr>
+  <tr><td>Something changed after a deploy</td><td>Check the version bottom-left and click it for the history. A normal refresh picks up a new version.</td></tr>
+</table>
+
+<h2 id="history">Version history</h2>
+<h3 id="history-list">All releases</h3>
+<div id="changelog"><p class="muted">Loading…</p></div>
+
+</main>
+</div>
+<script>
+  // menu: open the group of the section in view, highlight the sub-item
+  var groups = Array.prototype.slice.call(document.querySelectorAll('#nav .grp'));
+  groups.forEach(function (g) { g.querySelector('a').addEventListener('click', function (e) { groups.forEach(function (x) { if (x !== g) x.classList.remove('open'); }); g.classList.add('open'); }); });
+  var links = Array.prototype.slice.call(document.querySelectorAll('#nav a[href^="#"]'));
+  var targets = links.map(function (a) { return document.getElementById(a.getAttribute('href').slice(1)); });
+  function spy() {
+    var y = window.scrollY + 90; var cur = null;
+    targets.forEach(function (t, i) { if (t && t.offsetTop <= y) cur = i; });
+    links.forEach(function (a, i) { a.classList.toggle('on', i === cur); });
+    if (cur != null) { var g = links[cur].closest('.grp'); groups.forEach(function (x) { x.classList.toggle('open', x === g); }); }
+  }
+  window.addEventListener('scroll', spy); spy();
+  // changelog from the app
+  fetch('/changelog.json?ts=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (list) {
+    var el = document.getElementById('changelog'); var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+    el.innerHTML = list.map(function (v) { return '<div class="cl-v"><b>v' + esc(v.version) + '</b><span>' + esc(v.date || '') + '</span><ul>' + (v.notes || []).map(function (n) { return '<li>' + esc(n) + '</li>'; }).join('') + '</ul></div>'; }).join('');
+  }).catch(function () { document.getElementById('changelog').textContent = 'History could not be loaded.'; });
+</script>
+</body>
+</html>

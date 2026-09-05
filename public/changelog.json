@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.2.5",
+    "date": "2026-09-06",
+    "notes": [
+      "Help page with a menu and sub-sections (the \ud83d\udcd6 Help tab in Video Outreach): how it all works, how to use it, what is automatic, costs, troubleshooting and the version history."
+    ]
+  },
+  {
     "version": "1.2.4",
     "date": "2026-09-06",
     "notes": [
