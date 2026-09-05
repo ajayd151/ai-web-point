@@ -85,37 +85,38 @@ var VO_HELP = {
   'Brand': 'The brand name as it appears in their ads.',
   'Website': 'Their store domain. Changing it re-links the prospect to the new domain.',
   'Category': 'What they sell, used in the message when there is no better observation.',
-  'Active Meta ads': 'How many ads they have live on Meta right now. The biggest single signal.',
-  'Video ads': 'How many of those are video. Video share = video divided by active.',
-  'New ads last 30d': 'Ads that started in the last 30 days, a sign they are producing creative.',
-  'Other paid channels (0-3)': 'How many other paid channels they use (Google, TikTok, Amazon ads). 0 to 3.',
-  'Creative style': 'Video-led (over 60% video), Mixed (20 to 60%), Static (under 20%).',
-  'SKUs': 'Number of products in their store.',
-  'Employees': 'Headcount. Sweet spot 11 to 50; over 200 is disqualified.',
-  'Monthly visits': 'Website visits a month if you know them. Blank scores 0.',
-  'Amazon reviews (hero)': 'Review count on their best-selling Amazon listing if you know it. Blank scores 0.',
-  'Shopify Plus': 'Y if they are on Shopify Plus (a sign of size).',
-  'Growth signals (0-3)': 'Count of hiring, funding or expansion signs, 0 to 3.',
-  'Pays for creative': 'Y if their ads show paid creators or UGC (#ad, "partner", "with").',
-  'Video sourcing': 'Where their video comes from. UGC creators is the best fit for us.',
-  'Creative gap (0, 4, 8)': '8 = stale or mostly static while spending, 4 = some gap, 0 = polished in-house output.',
-  'Trigger event': 'Y if something just happened (launch, funding, new hire) that makes now a good time.',
-  'Trigger note': 'What the trigger was.',
+  'Active Meta ads': 'A fact, not a filter: how many ads this brand has live on Facebook and Instagram today. Points: none = 0, 1 to 9 = 5, 10 to 29 = 10, 30 or more = 15. More live ads means more creative they need.',
+  'Video ads': 'How many of their live ads are video. We divide it by Active Meta ads to get the video share. Points: under 20% = 0, 20 to 50% = 4, over 50% = 8.',
+  'New ads last 30d': 'How many ads they started in the last 30 days, a sign they keep producing creative. Points: none = 0, 1 to 5 = 4, 6 or more = 7.',
+  'Creative style': 'Worked out from the video share: Video-led (over 60% video), Mixed (20 to 60%), Static (under 20%). Static brands get the "video would work harder" message hook.',
+  'SKUs': 'How many products they sell (their store\'s product count). Not a minimum, just the fact. Points: 1 to 2 = 0, 3 to 9 = 3, 10 or more = 5, because more products means more videos to make.',
+  'Employees': 'Their headcount. Points: 1 to 2 = 2, 3 to 10 = 5, 11 to 50 = 8 (the sweet spot), 51 to 100 = 5, over 100 = 0. Over 200 is disqualified: brands that size have in-house teams and agencies and are not our buyer.',
+  'Monthly visits': 'Website visits per month, if you know them (we do not look this up). 30,000 or more adds 2 points. Blank adds nothing.',
+  'Amazon reviews (hero)': 'Review count on their best-selling Amazon listing, if you know it. 1,000 or more adds 2 points. Blank adds nothing.',
+  'Shopify Plus': 'Y if they are on Shopify Plus, the paid tier bigger stores use. Adds 3 points. Together with visits and reviews this "traffic proxy" is capped at 7.',
+  'Pays for creative': 'Y if their ads show they already pay outside people for content (#ad, "partner", creator names in "X with Brand"). Worth 5 points, because they already have the budget habit.',
+  'Video sourcing': 'Where their video comes from today. UGC creators = 6 points (our closest replacement), AI tools = 3, In-house or Unknown = 0.',
+  'Trigger event': 'Y if something just happened that makes now a good moment: a launch, funding, a new marketing hire, a seasonal push. Worth 6 points.',
+  'Trigger note': 'What the trigger was, in a few words.',
   'DM name': 'The decision maker we write to.',
   'DM title': 'Their job title.',
   'DM LinkedIn': 'Their LinkedIn profile link.',
-  'DM active 90d': 'Have they posted or engaged on LinkedIn in the last 90 days? Y is easiest to reach.',
+  'DM active 90d': 'Has the decision maker posted or engaged on LinkedIn in the last 90 days? Y = 8 points (they will see a message), N = 4, Not found = 0.',
   'DM email': 'Needed for Send by email.',
   '2nd contact name': 'A second person to try if the first goes quiet.',
   '2nd contact email': 'Their email.',
-  '2nd contact has email': 'Y adds accessibility points.',
-  'Gatekeeper': 'Y if an assistant or agency sits between you and the decision maker.',
+  '2nd contact has email': 'Y if we have an email for a second person at the brand. Worth 4 points, because a second route in makes them easier to reach.',
+  'Gatekeeper': 'Y if an assistant, agency or PR person sits between you and the decision maker. No gatekeeper is worth 3 points.',
   'Brand Instagram': 'The brand Instagram link, the fallback channel.',
   'Suggested product URL': 'The product the sample video is for.',
   'Suggested product name': 'Its name, used in the messages.',
   'Product photo check': 'Pass (n) = n real photos, Weak pass = only 2 clean, FAIL = fewer than 3, so the video would have nothing to work from.',
   'Why this product': 'Why the rule picked it.',
   'Observation (for the message)': 'The one personal line about their ads, written so it reads after "Came across". Edit it and the messages rebuild.',
+  'Other paid channels (count)': 'How many paid channels they run BESIDES Meta: Google, TikTok, YouTube, Amazon ads. Type 0, 1, 2 or 3. Points: 0 = 0, 1 = 3, 2 or more = 5.',
+  'Growth signals (count)': 'How many signs the brand is growing: hiring marketing or growth roles, launching lots of new ads, running 30 or more ads, recent funding. Count them, 0 to 3. Each is worth 2 points, capped at 5.',
+  'Creative gap (points)': 'Our judgement of how much room there is to improve their ads. Pick 8 if the ads look stale, repetitive or mostly static while they are spending; 4 if there is some gap; 0 if the output is already polished. The number IS the points.',
+  'Editable fields': 'Everything the run found about this brand. Fix anything wrong and click Save and recalculate; the score on the left updates and the messages rebuild.',
   'Disqualified reason': 'Filling this in scores the brand 0 and hides it. Clearing it brings it back.',
 };
 function voHelp(label) { const t = VO_HELP[String(label).replace(/<[^>]+>/g, '').trim()]; return t ? ' <span class="vo-q" tabindex="0" data-tip="' + esc(t) + '">?</span>' : ''; }
@@ -457,12 +458,12 @@ function voRenderDetail(d) {
         msg('Connection note (max 300, no link)', 'connection_note', p.connection_note, 'note') + msg('Message A (video sent)', 'message_a', p.message_a) + msg('Message B (permission-led)', 'message_b', p.message_b) +
         '<details class="vo-details"><summary>Follow-ups (3 to 4 days, then 7 days)</summary>' + (d.followups ? msg('Follow-up 1', 'followup_1', d.followups.followup_1, 'fu') + msg('Follow-up 2', 'followup_2', d.followups.followup_2, 'fu') : '') + '</details>' +
         '<div class="vo-msgacts"><button class="ghost sm" id="vo-msg-save">Save edited message text</button> <button class="ghost sm" id="vo-msg-regen" title="Rebuild the three messages from the templates">↻ Regenerate from templates</button></div>' +
-        '<h4>Editable fields <span class="muted vo-small">saving recalculates the score</span></h4>' +
+        '<h4>Editable fields' + voHelp('Editable fields') + '</h4><p class="vo-help">Facts the run found about this brand. Each one feeds the score on the left (hover a ? to see the points). Fix anything wrong, then Save and recalculate.</p>' +
         '<table class="vo-form vo-edit"><tbody>' +
           r('Brand', inp('brand')) + r('Website', inp('website')) + r('Category', inp('category')) + r('Country', inp('country')) +
-          r('Active Meta ads', inp('active_meta_ads', 'number')) + r('Video ads', inp('video_ads', 'number')) + r('New ads last 30d', inp('new_ads_30d', 'number')) + r('Other paid channels (0-3)', inp('other_paid_channels', 'number')) + r('Creative style', sel('creative_style', [''].concat(E.creative_style || []))) +
-          r('SKUs', inp('skus', 'number')) + r('Employees', inp('employees', 'number')) + r('Monthly visits', inp('monthly_visits', 'number')) + r('Amazon reviews (hero)', inp('amazon_reviews_hero', 'number')) + r('Shopify Plus', yn('shopify_plus')) + r('Growth signals (0-3)', inp('growth_signals', 'number')) + r('Pays for creative', yn('pays_for_creative')) + r('Video sourcing', sel('video_sourcing', E.video_sourcing || [])) +
-          r('Creative gap (0, 4, 8)', sel('creative_gap', ['0', '4', '8'])) + r('Trigger event', yn('trigger_event')) + r('Trigger note', inp('trigger_note')) +
+          r('Active Meta ads', inp('active_meta_ads', 'number')) + r('Video ads', inp('video_ads', 'number')) + r('New ads last 30d', inp('new_ads_30d', 'number')) + r('Other paid channels (count)', inp('other_paid_channels', 'number')) + r('Creative style', sel('creative_style', [''].concat(E.creative_style || []))) +
+          r('SKUs', inp('skus', 'number')) + r('Employees', inp('employees', 'number')) + r('Monthly visits', inp('monthly_visits', 'number')) + r('Amazon reviews (hero)', inp('amazon_reviews_hero', 'number')) + r('Shopify Plus', yn('shopify_plus')) + r('Growth signals (count)', inp('growth_signals', 'number')) + r('Pays for creative', yn('pays_for_creative')) + r('Video sourcing', sel('video_sourcing', E.video_sourcing || [])) +
+          r('Creative gap (points)', sel('creative_gap', ['0', '4', '8'])) + r('Trigger event', yn('trigger_event')) + r('Trigger note', inp('trigger_note')) +
           r('DM name', inp('dm_name')) + r('DM title', inp('dm_title')) + r('DM LinkedIn', inp('dm_linkedin')) + r('DM active 90d', sel('dm_active_90d', E.dm_active_90d || [])) + r('DM email', inp('dm_email', 'email')) + r('2nd contact name', inp('second_contact_name')) + r('2nd contact email', inp('second_contact_email', 'email')) + r('2nd contact has email', yn('second_contact_has_email')) + r('Gatekeeper', yn('gatekeeper')) +
           r('Brand Instagram', inp('brand_instagram', 'url')) + r('Suggested product URL', inp('suggested_product_url', 'url')) + r('Suggested product name', inp('suggested_product_name')) + r('Product photo check', inp('product_photo_check')) + r('Why this product', inp('why_this_product')) + r('Observation (for the message)', inp('observation')) +
           r('Disqualified reason', inp('disqualified_reason')) + r('Notes', inp('notes')) +

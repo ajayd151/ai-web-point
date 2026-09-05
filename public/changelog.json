@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.1.8",
+    "date": "2026-09-05",
+    "notes": [
+      "Prospect field help rewritten: each explains what the fact is, how to read the number and the points it earns. Labels renamed: Other paid channels (count), Growth signals (count), Creative gap (points)."
+    ]
+  },
+  {
     "version": "1.1.7",
     "date": "2026-09-05",
     "notes": [

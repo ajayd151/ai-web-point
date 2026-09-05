@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.1.8 (5 Sep 2026)
+- Prospect field help rewritten: each explains what the fact is, how to read the number and the points it earns. Labels renamed: Other paid channels (count), Growth signals (count), Creative gap (points).
+
 ## 1.1.7 (5 Sep 2026)
 - Campaign, run, prospect and results tables fit the screen and wrap instead of scrolling left to right.
 
