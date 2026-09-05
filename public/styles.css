@@ -49,7 +49,7 @@ body {
 
 /* ---- Left sidebar navigation (replaces the old top tab bar) ---- */
 .sidenav { position: fixed; top: 0; left: 0; bottom: 0; width: 214px; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 14px 12px 20px; overflow-y: auto; z-index: 60; }
-.sidenav-version { margin-top: auto; padding: 14px 8px 0; font-size: 11px; color: #b6c0cc; letter-spacing: .2px; user-select: all; }
+.sidenav-version { position: fixed; left: 14px; bottom: 8px; font-size: 11px; color: #b6c0cc; letter-spacing: .2px; user-select: all; z-index: 61; pointer-events: auto; }
 .sidenav-brand { display: flex; align-items: center; gap: 9px; padding: 4px 6px 14px; cursor: pointer; }
 .sidenav-brand .sn-mark { width: 30px; height: 30px; }
 .sidenav-brand .sn-name { font-weight: 800; font-size: 18px; color: var(--ink); }

@@ -32,6 +32,8 @@ document.querySelectorAll('.vo-tab').forEach((b) => b.addEventListener('click', 
 }));
 
 // ---- helpers ----
+var VO_NOIMG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='90'><rect width='100%' height='100%' fill='%23eef2f7'/><text x='50%' y='54%' font-size='11' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif'>no image</text></svg>";
+var VO_IMG_FALLBACK = ' onerror="this.onerror=null;this.src=VO_NOIMG"';
 var VO_PRIO_CLASS = { 'Must target': 'p1', 'Strong': 'p2', 'Possible': 'p3', 'Later': 'p4', 'Unlikely': 'p5', 'Skip': 'p6' };
 function voPrio(p) { return p.priority ? '<span class="vo-prio ' + (VO_PRIO_CLASS[p.priority] || '') + '">' + esc(p.priority) + '</span>' : '<span class="vo-prio p0">Unscored</span>'; }
 function voStamp(ts) { if (!ts) return ''; try { return new Date(ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
@@ -310,19 +312,19 @@ async function voOpenProspect(id) {
 }
 function voSignalRows(group, labels) {
   if (!group) return '<tr><td colspan="3" class="muted">Unscored</td></tr>';
-  return Object.entries(group).map(([k, v]) => { const val = v && typeof v.value === 'object' && v.value !== null ? JSON.stringify(v.value) : String(v && v.value != null ? v.value : '–'); return '<tr><td>' + esc(labels[k] || k) + '</td><td class="vo-small">' + esc(val === 'true' ? 'yes' : (val === 'false' ? 'no' : val)) + '</td><td class="num"><b>' + (v ? v.points : 0) + '</b></td></tr>'; }).join('');
+  return Object.entries(group).map(([k, v]) => { const val = v && typeof v.value === 'object' && v.value !== null ? Object.entries(v.value).map(([a, b]) => a.replace(/_/g, ' ') + ' ' + (b == null ? 'blank' : (b === true ? 'yes' : (b === false ? 'no' : b)))).join(', ') : String(v && v.value != null ? v.value : '–'); return '<tr><td>' + esc(labels[k] || k) + '</td><td class="vo-small">' + esc(val === 'true' ? 'yes' : (val === 'false' ? 'no' : val)) + '</td><td class="num"><b>' + (v ? v.points : 0) + '</b></td></tr>'; }).join('');
 }
 function voAdCards(p) {
   const ads = Array.isArray(p.ad_samples) ? p.ad_samples : [];
   if (!ads.length) return '<p class="muted vo-small">No ad samples on this prospect' + (p.source === 'import' ? ' (imported from the tracker). Samples arrive when a sourcing run finds the brand in the Meta Ad Library.' : '.') + '</p>';
-  return '<div class="vo-ads">' + ads.slice(0, 10).map((a) => '<div class="vo-ad">' + (a.thumbnail ? '<img src="' + esc(a.thumbnail) + '" alt="" loading="lazy" />' : '') + '<span class="tag">' + (a.is_video ? '▶ video' : 'image') + '</span>' + (a.start_date ? '<span class="muted">' + esc(a.start_date) + '</span>' : '') + '<div>' + esc(String(a.copy || '').slice(0, 140)) + '</div>' + (a.link_url ? '<div>' + voLink(a.link_url, 'ad link') + '</div>' : '') + '</div>').join('') + '</div>';
+  return '<div class="vo-ads">' + ads.slice(0, 10).map((a) => '<div class="vo-ad">' + (a.thumbnail ? '<img src="' + esc(a.thumbnail) + '" alt="" loading="lazy"' + VO_IMG_FALLBACK + ' />' : '') + '<span class="tag">' + (a.is_video ? '▶ video' : 'image') + '</span>' + (a.start_date ? '<span class="muted">' + esc(a.start_date) + '</span>' : '') + '<div>' + esc(String(a.copy || '').slice(0, 140)) + '</div>' + (a.link_url ? '<div>' + voLink(a.link_url, 'ad link') + '</div>' : '') + '</div>').join('') + '</div>';
 }
 function voGallery(p) {
   const prods = Array.isArray(p.products) ? p.products : [];
   const prod = prods.find((x) => x.url === p.suggested_product_url) || prods[0];
   if (!prod) return '<p class="muted vo-small">' + (p.products_source === 'unknown' ? 'No Shopify products feed at this domain.' : 'Products arrive with a sourcing run, or click Refresh products.') + '</p>';
   const bad = /facts|ingredient|benefit|certif|testimonial|review|chart|compar|badge|label|slide|how-?to|sfp|nfp|infograph|supplement-facts|nutrition/i;
-  return '<div class="vo-gal">' + (prod.images || []).slice(0, 8).map((i) => { const name = String(i.src || '').split('/').pop().split('?')[0]; const isBad = bad.test(i.alt || '') || bad.test(name); return '<div class="g' + (isBad ? ' bad' : '') + '"><img src="' + esc(i.src) + '" alt="" loading="lazy" />' + (isBad ? 'infographic' : 'photo') + '</div>'; }).join('') + '</div><div class="vo-small muted">' + prods.length + ' product(s) in the feed · ' + (prod.images || []).length + ' image(s) on the pick, red outline = counted as an infographic</div>';
+  return '<div class="vo-gal">' + (prod.images || []).slice(0, 8).map((i) => { const name = String(i.src || '').split('/').pop().split('?')[0]; const isBad = bad.test(i.alt || '') || bad.test(name); return '<div class="g' + (isBad ? ' bad' : '') + '"><img src="' + esc(i.src) + '" alt="" loading="lazy"' + VO_IMG_FALLBACK + ' />' + (isBad ? 'infographic' : 'photo') + '</div>'; }).join('') + '</div><div class="vo-small muted">' + prods.length + ' product(s) in the feed · ' + (prod.images || []).length + ' image(s) on the pick, red outline = counted as an infographic' + (p.products_source === 'shopify' && prods[0] && /\/cdn\//.test(String((prods[0].images || [{}])[0].src || '')) && !/cdn\.shopify/.test(String((prods[0].images || [{}])[0].src || '')) ? '. Dry-run feed: the image links are placeholders until Apollo or Apify keys are set' : '') + '</div>';
 }
 function voRenderDetail(d) {
   const p = d.prospect; const E = VO.enums || {}; const bd = p.score_breakdown || null; const P = VO.providers || {}; const prof = d.profile || VO.profile || {};
