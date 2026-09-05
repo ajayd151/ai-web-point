@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.2.4",
+    "date": "2026-09-06",
+    "notes": [
+      "Fixed: a run could fail to save when an ad's text was cut in the middle of an emoji (Postgres rejected the JSON). Text is now cut on whole characters and broken characters are stripped before saving."
+    ]
+  },
+  {
     "version": "1.2.3",
     "date": "2026-09-06",
     "notes": [

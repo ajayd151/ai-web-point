@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.2.4 (6 Sep 2026)
+- Fixed: a run could fail to save when an ad's text was cut in the middle of an emoji. Text is cut on whole characters and broken characters are stripped before saving.
+
 ## 1.2.3 (6 Sep 2026)
 - Trigger event is set automatically when a brand is hiring a marketing role or has launched 10 or more ads this month.
 
