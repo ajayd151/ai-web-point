@@ -1,6 +1,6 @@
 # Video Outreach, user guide
 
-SitePounce > Video Outreach finds ecommerce brands that advertise on Meta (Facebook and Instagram), scores them out of 100, picks the product a sample video should be made for, writes the LinkedIn and email messages, and tracks the outreach. You make the video outside SitePounce and paste the link in. Version 1.2.3, 6 September 2026.
+SitePounce > Video Outreach finds ecommerce brands that advertise on Meta (Facebook and Instagram), scores them out of 100, picks the product a sample video should be made for, writes the LinkedIn and email messages, and tracks the outreach. You make the video outside SitePounce and paste the link in. Version 1.2.6, 6 September 2026. The same guide with a menu is in the app: the Help tab inside Video Outreach.
 
 ## 1. The whole loop in one picture
 
@@ -46,6 +46,8 @@ The tiles show raw candidates, processed, qualified, parked, disqualified and co
 4. Contacts: founder or CEO for small brands, the growth or paid-social lead for bigger ones, with a second contact. Emails are only revealed for priority 1 to 3 to save credits.
 5. Score: A need for video (40), B ability to pay (25), C fit (20), D accessibility (15). The breakdown is on every prospect.
 6. Messages: connection note, Message A (video sent), Message B (permission first), two follow-ups.
+
+If Apify's monthly allowance runs out mid-run, the per-brand count is skipped (the Runs table says so) and counts read low. Upgrade the Apify plan, then click **Refresh ad counts** on the campaign page: it re-pulls each brand's newest 30 ads and re-scores without a new run.
 
 Stop rules: target reached, raw cap reached, cost cap reached. Runs are safe to leave: if you close the page the worker finishes the run within 10 minutes.
 
