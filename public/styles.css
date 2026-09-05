@@ -1635,7 +1635,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin: 10px 0 14px; }
 .vo-bar .btn, .vo-bar .ghost.btn { display: inline-block; text-decoration: none; }
 .vo-small { font-size: 12px; }
-.vo-fit { width: 100%; overflow-x: auto; }
+.vo-fit { width: 100%; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); background: #fff; }
 .vo-fit .vo-table { width: 100%; min-width: 0; table-layout: auto; font-size: 13px; }
 .vo-fit .vo-table th, .vo-fit .vo-table td { white-space: normal; word-break: normal; overflow-wrap: anywhere; padding: 8px 8px; vertical-align: top; }
 .vo-fit .vo-table th { font-size: 11px; }
