@@ -2,6 +2,13 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.2.1 (6 Sep 2026)
+- Live runs count each brand's own ads (newest 30) after the keyword search, so ad counts are real, not a sample.
+- Brand names come from the company record, not the ad page.
+- The decision maker is enriched once per brand so the full name and LinkedIn link are present.
+- A store that is not on Shopify is kept instead of disqualified, per the spec's feed-or-cart rule.
+- Product picks prefer real products matching the campaign keywords over merchandise.
+
 ## 1.2.0 (6 Sep 2026)
 - Live Meta Ad Library pulls run in the background on Apify and the run waits for them, so runs no longer hit the 60-second limit.
 - Runs keep a sample of each provider's raw answer so field mapping can be checked.

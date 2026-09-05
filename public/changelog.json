@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.2.1",
+    "date": "2026-09-06",
+    "notes": [
+      "Live runs count each brand's own ads (newest 30) after the keyword search, so Active Meta ads, video share and new ads are real, not a sample.",
+      "Brand names come from the company record, not the ad page (which can be a creator or a blog).",
+      "The decision maker is enriched once per brand so the full name and LinkedIn link are present.",
+      "A store that is not on Shopify is kept (product picked by hand) instead of disqualified, per the spec's feed-or-cart rule.",
+      "Product picks prefer real products matching the campaign keywords over merchandise like tees and sets."
+    ]
+  },
+  {
     "version": "1.2.0",
     "date": "2026-09-06",
     "notes": [
