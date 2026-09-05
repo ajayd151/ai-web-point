@@ -134,7 +134,7 @@ module.exports = async (req, res) => {
     }
     if (action === 'runs') { res.status(200).json({ runs: await db.listRuns(owner, id) }); return; }
     if (action === 'deleteProspect') { const n = await db.deleteProspect(owner, id); res.status(200).json({ ok: true, deleted: n }); return; }
-    if (action === 'deleteRunProspects') { const run = await db.getRun(owner, id); if (!run) { res.status(404).json({ error: 'Run not found.' }); return; } const n = await db.deleteRunProspects(owner, id); res.status(200).json({ ok: true, deleted: n }); return; }
+    if (action === 'deleteRunProspects') { const run = await db.getRun(owner, id); if (!run) { res.status(404).json({ error: 'Run not found.' }); return; } const r = await db.deleteRunProspects(owner, id); res.status(200).json(Object.assign({ ok: true }, r)); return; }
 
     // ---- email (Phase 2) ----
     if (action === 'sendEmail') { const r = await J.sendEmail(owner, actor, id, body.kind, base); res.status(200).json(Object.assign(r, { prospect: await db.getProspect(owner, id) })); return; }
