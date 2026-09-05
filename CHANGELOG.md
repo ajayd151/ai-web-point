@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.1.7 (5 Sep 2026)
+- Campaign, run, prospect and results tables fit the screen and wrap instead of scrolling left to right.
+
 ## 1.1.6 (5 Sep 2026)
 - A small ? next to every field in the campaign form and the prospect page explains what it is and how to use it (hover or tap).
 - App files are no longer cached by the browser, so a new version shows on a normal refresh.

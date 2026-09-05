@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.1.7",
+    "date": "2026-09-05",
+    "notes": [
+      "Campaign, run, prospect and results tables fit the screen and wrap instead of scrolling left to right."
+    ]
+  },
+  {
     "version": "1.1.6",
     "date": "2026-09-05",
     "notes": [
