@@ -238,7 +238,8 @@ async function voEditCampaign(id) {
     row('Notify me when a run finishes', '<input type="checkbox" data-auto="notify_run_finished"' + (auto.notify_run_finished ? ' checked' : '') + ' /> email') +
     (liOn ? row('Auto-send connection requests', '<input type="checkbox" data-auto="auto_connect"' + (auto.auto_connect ? ' checked' : '') + ' /> only for priority number up to <input type="number" data-auto="max_priority" value="' + esc(auto.max_priority || 2) + '" style="width:70px" />', 'LinkedIn provider: ' + esc(P.linkedin) + (P.linkedin_configured ? ' (configured)' : ' (keys missing)') + '. Global caps live in Settings.') : row('LinkedIn automation', '<span class="muted">hidden until a LinkedIn provider is connected (VO_LINKEDIN_PROVIDER in Vercel)</span>')) +
     '</tbody></table>' +
-    (c ? '<div class="vo-bar" style="margin-top:16px"><h3 style="margin:0">Import prospects</h3><div><button class="ghost" id="vo-import-fix">📥 Import v12 tracker</button> <label class="ghost vo-file">📄 Import CSV <input type="file" id="vo-import-file" accept=".csv,text/csv" hidden /></label></div></div>' +
+    (c ? '<div class="vo-bar" style="margin-top:16px"><h3 style="margin:0">Ad counts</h3><div><button class="ghost" id="vo-recount" title="Re-pull each brand\'s own ads from the Meta Ad Library (newest 30) and re-score. Uses Apify.">↻ Refresh ad counts</button></div></div><p class="vo-help">Use after a run whose per-brand count was skipped (for example when Apify\'s allowance ran out), or to refresh stale counts. About 30 ad rows per brand on Apify.</p>' +
+      '<div class="vo-bar" style="margin-top:16px"><h3 style="margin:0">Import prospects</h3><div><button class="ghost" id="vo-import-fix">📥 Import v12 tracker</button> <label class="ghost vo-file">📄 Import CSV <input type="file" id="vo-import-file" accept=".csv,text/csv" hidden /></label></div></div>' +
       '<h3>Runs</h3>' + (runs.length ? '<div class="vo-fit"><table class="cust-table vo-table"><thead><tr><th>Started</th><th>Kind</th><th>Status</th><th>Raw</th><th>Qualified</th><th>Parked</th><th>Disq.</th><th>Cost</th><th>Stopped because / errors</th><th></th></tr></thead><tbody>' +
         runs.map((r) => { const k = r.counts || {}; return '<tr><td>' + esc(voStamp(r.started_at)) + '</td><td>' + esc(r.kind) + '</td><td>' + esc(r.status) + '</td><td class="num">' + (k.raw != null ? k.raw : (k.total || '')) + '</td><td class="num">' + (k.qualified != null ? k.qualified : (k.imported || '')) + '</td><td class="num">' + (k.parked || '') + '</td><td class="num">' + (k.disqualified || '') + '</td><td>' + voMoney(r.actual_cost) + '</td><td class="vo-small">' + esc((r.state && r.state.stop) || '') + (r.errors && r.errors.length ? '<div class="muted">' + esc(r.errors.slice(0, 3).join('; ')) + '</div>' : '') + '</td><td>' + (['Running', 'Queued'].includes(r.status) ? '' : '<button class="ghost sm vo-run-clear" data-run="' + r.id + '" title="Delete every prospect this run created so the campaign can run again">🗑 Clear prospects</button>') + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="muted">No runs yet.</p>') : '');
   const el = $('vo-pane-edit'); el.innerHTML = html; voPane('edit');
@@ -246,6 +247,19 @@ async function voEditCampaign(id) {
   voOn('vo-goprospects', 'click', () => voOpenProspects(c.id));
   voOn('vo-import-fix', 'click', () => voImport(c.id));
   voOn('vo-run', 'click', () => voRunNow(c.id));
+  voOn('vo-recount', 'click', async () => {
+    if (!confirm('Re-pull the live ad counts for every brand on this campaign? This uses Apify (about 30 rows per brand) and re-scores each one.')) return;
+    const b = $('vo-recount'); b.disabled = true; let done = 0;
+    try {
+      for (let i = 0; i < 200; i++) {
+        const r = await voApi('recountCampaign', { id: c.id, limit: 2 });
+        done += (r.rechecked || []).length; b.textContent = '↻ Refreshing… ' + done + ' done, ' + r.remaining + ' left';
+        if (r.blocked) { alert('Apify refused: ' + ((r.rechecked.find((x) => x.error) || {}).error || 'limit reached') + '. Upgrade the Apify plan and try again.'); break; }
+        if (!r.remaining || !(r.rechecked || []).length) break;
+      }
+      voToast('Ad counts refreshed for ' + done + ' brand(s)');
+    } catch (e) { alert(e.message); } finally { b.disabled = false; b.textContent = '↻ Refresh ad counts'; }
+  });
   voOn('vo-import-file', 'change', (e) => { const f = e.target.files && e.target.files[0]; if (f) { const rd = new FileReader(); rd.onload = () => voImport(c.id, String(rd.result || '')); rd.readAsText(f); } });
   voOn('vo-suggest', 'click', async () => {
     const ind = el.querySelector('[data-f="industry"]').value.trim(); if (!ind) { alert('Type the industry first.'); return; }

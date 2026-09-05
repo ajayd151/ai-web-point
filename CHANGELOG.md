@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.2.6 (6 Sep 2026)
+- Refresh ad counts button on the campaign page: re-pulls each brand's own ads (newest 30) and re-scores.
+- Prospects remember their Meta page id so recounts are exact.
+
 ## 1.2.5 (6 Sep 2026)
 - Help page with a menu and sub-sections (the Help tab in Video Outreach).
 

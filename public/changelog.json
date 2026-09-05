@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.2.6",
+    "date": "2026-09-06",
+    "notes": [
+      "Refresh ad counts button on the campaign page: re-pulls each brand's own ads (newest 30) and re-scores, for runs whose count pass was skipped.",
+      "Prospects remember their Meta page id so recounts are exact."
+    ]
+  },
+  {
     "version": "1.2.5",
     "date": "2026-09-06",
     "notes": [

@@ -57,7 +57,7 @@
   <div class="grp open"><a href="#overview">Overview <span class="chev">▶</span></a><div class="sub"><a href="#overview-loop">The whole loop</a><a href="#overview-never">What it never does</a></div></div>
   <div class="grp"><a href="#setup">Getting set up <span class="chev">▶</span></a><div class="sub"><a href="#setup-keys">Provider keys</a><a href="#setup-profile">Your service profile</a><a href="#setup-version">Which version am I on</a></div></div>
   <div class="grp"><a href="#campaigns">Campaigns <span class="chev">▶</span></a><div class="sub"><a href="#campaigns-create">Creating one</a><a href="#campaigns-fields">The fields that matter</a><a href="#campaigns-schedule">Schedules</a><a href="#campaigns-templates">Message templates</a><a href="#campaigns-automation">Automation switches</a></div></div>
-  <div class="grp"><a href="#runs">Runs <span class="chev">▶</span></a><div class="sub"><a href="#runs-what">What a run does</a><a href="#runs-tiles">Reading the tiles</a><a href="#runs-stop">When it stops</a><a href="#runs-cost">What it costs</a><a href="#runs-clear">Redoing a run</a></div></div>
+  <div class="grp"><a href="#runs">Runs <span class="chev">▶</span></a><div class="sub"><a href="#runs-what">What a run does</a><a href="#runs-tiles">Reading the tiles</a><a href="#runs-stop">When it stops</a><a href="#runs-cost">What it costs</a><a href="#runs-recount">Refreshing ad counts</a><a href="#runs-clear">Redoing a run</a></div></div>
   <div class="grp"><a href="#prospects">Prospects <span class="chev">▶</span></a><div class="sub"><a href="#prospects-list">The list</a><a href="#prospects-score">How the score works</a><a href="#prospects-page">The prospect page</a><a href="#prospects-hand">The four hand-checked signals</a></div></div>
   <div class="grp"><a href="#outreach">Outreach <span class="chev">▶</span></a><div class="sub"><a href="#outreach-hand">By hand on LinkedIn</a><a href="#outreach-email">By email</a><a href="#outreach-auto">Automatic LinkedIn</a><a href="#outreach-accepted">After a connection is accepted</a><a href="#outreach-followups">Follow-ups</a><a href="#outreach-replies">Replies</a><a href="#outreach-limits">Safety limits</a></div></div>
   <div class="grp"><a href="#results">Results and tuning <span class="chev">▶</span></a><div class="sub"><a href="#results-read">Reading Results</a><a href="#results-weights">Changing the weights</a></div></div>
@@ -178,6 +178,9 @@
 
 <h3 id="runs-cost">What it costs</h3>
 <p>Measured on 20-brand live runs: about £1.60 in total (Apify £0.45, Apollo about 45 credits, AI under £0.20). A 100-brand run is roughly five times that. The estimate on the campaign page is calculated before you run.</p>
+
+<h3 id="runs-recount">Refreshing ad counts</h3>
+<p>On the campaign page, <b>Refresh ad counts</b> re-pulls each brand's own newest 30 ads and re-scores it. Use it after a run whose per-brand count was skipped (the Runs table says so) or when counts look stale. About 30 Apify rows per brand.</p>
 
 <h3 id="runs-clear">Redoing a run</h3>
 <p>On the campaign page, the Runs table lists every run with counts, cost and the reason it stopped. <b>Clear prospects</b> deletes what that run created so the campaign can run again without dedupe blocking the same brands. Use it for test runs or a run with bad keywords.</p>

@@ -81,6 +81,10 @@ module.exports = async (req, res) => {
     if (action === 'stopRun') { await db.stopRun(owner, id, 'Stopped by ' + actor); res.status(200).json({ ok: true, run: await db.getRun(owner, id) }); return; }
     if (action === 'workerTick') { res.status(200).json({ ok: true, tick: await J.tick(owner, actor, { base: base, runBudgetMs: 30000 }) }); return; }
     if (action === 'recheckNow') { res.status(200).json({ ok: true, rechecked: await J.recheck(owner, actor, Number(body.limit) || 5) }); return; }
+    if (action === 'recountCampaign') { // "Refresh ad counts": re-pull each brand's own ads, a few per call, the UI loops until remaining is 0
+      const done = await J.recheck(owner, actor, Number(body.limit) || 2, { force: true, campaignId: id });
+      res.status(200).json({ ok: true, rechecked: done, remaining: await db.countRecountable(owner, id), blocked: done.some((d) => /hard limit|403/.test(d.error || '')) }); return;
+    }
 
     if (action === 'importCsv') {
       let campaign = id ? await db.getCampaign(owner, id) : null;
