@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.4.7 (6 Sep 2026)
+- A large photo of the product to film on the Ready to send card and the prospect page.
+
 ## 1.4.6 (6 Sep 2026)
 - Ask AI in the left menu under Video Outreach and as its own tab.
 

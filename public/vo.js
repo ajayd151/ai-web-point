@@ -134,7 +134,21 @@ function voHelp(label) { const t = VO_HELP[String(label).replace(/<[^>]+>/g, '')
 
 var VO_SENT_CLASS = { Positive: 'sp', Negative: 'sn', Question: 'sq', Neutral: 'su' };
 function voReplyChip(p) { return p.reply_sentiment ? '<span class="vo-reply ' + (VO_SENT_CLASS[p.reply_sentiment] || 'su') + '">' + esc(p.reply_sentiment) + ' reply</span>' : (p.last_reply_at ? '<span class="vo-reply su">Replied</span>' : ''); }
-function voShortlist(p) { const c = Array.isArray(p.product_candidates) ? p.product_candidates : []; if (!c.length) return ''; return '<div class="vo-shortlist"><b>Film this, in order:</b><ol>' + c.map((x) => '<li>' + voLink(x.url, x.name) + ' <span class="muted vo-small">' + esc(x.why) + ', ' + x.photos + ' real photos</span></li>').join('') + '</ol></div>'; }
+// first real photo of a product in the stored store feed, by product URL (or the pick when no URL given)
+function voProductImg(p, url) {
+  const prods = Array.isArray(p.products) ? p.products : [];
+  const bad = /facts|ingredient|benefit|certif|testimonial|review|chart|compar|badge|label|slide|how-?to|sfp|nfp|infograph|nutrition/i;
+  const prod = prods.find((x) => x.url === (url || p.suggested_product_url)) || null;
+  if (!prod) return '';
+  const img = (prod.images || []).find((i) => !bad.test(i.alt || '') && !bad.test(String(i.src || '').split('/').pop())) || (prod.images || [])[0];
+  return img && img.src ? img.src : '';
+}
+function voShortlist(p) {
+  const c = Array.isArray(p.product_candidates) ? p.product_candidates : []; if (!c.length) return '';
+  const hero = voProductImg(p, c[0].url);
+  return '<div class="vo-shortlist"><div class="vo-shortlist-grid">' + (hero ? '<a href="' + esc(c[0].url) + '" target="_blank" rel="noopener"><img class="vo-hero" src="' + esc(hero) + '" alt=""' + VO_IMG_FALLBACK + ' /></a>' : '<div class="vo-hero vo-hero-none">' + (p.source === 'demo' ? 'example, no photo' : 'no photo in the feed') + '</div>') +
+    '<div><b>Film this, in order:</b><ol>' + c.map((x, i) => { const im = i ? voProductImg(p, x.url) : ''; return '<li>' + (im ? '<img class="vo-thumb" src="' + esc(im) + '" alt=""' + VO_IMG_FALLBACK + ' /> ' : '') + voLink(x.url, x.name) + ' <span class="muted vo-small">' + esc(x.why) + ', ' + x.photos + ' real photos</span></li>'; }).join('') + '</ol></div></div></div>';
+}
 var VO_PRIO_CLASS = { 'Must target': 'p1', 'Strong': 'p2', 'Possible': 'p3', 'Later': 'p4', 'Unlikely': 'p5', 'Skip': 'p6' };
 function voPrio(p) { return p.priority ? '<span class="vo-prio ' + (VO_PRIO_CLASS[p.priority] || '') + '">' + esc(p.priority) + '</span>' : '<span class="vo-prio p0">Unscored</span>'; }
 function voStamp(ts) { if (!ts) return ''; try { return new Date(ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }

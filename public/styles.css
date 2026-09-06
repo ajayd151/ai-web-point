@@ -1652,6 +1652,11 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .navbtn-sub { padding-left: 34px !important; font-size: 13px !important; opacity: .9; }
 .vo-shortlist { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
 .vo-shortlist ol { margin: 4px 0 0 18px; padding: 0; }
+.vo-shortlist-grid { display: grid; grid-template-columns: 220px 1fr; gap: 14px; align-items: start; }
+.vo-hero { width: 220px; height: 220px; object-fit: cover; border-radius: 10px; background: #f1f5f9; display: block; }
+.vo-hero-none { display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 12px; border: 1px dashed #cbd5e1; }
+.vo-thumb { width: 36px; height: 36px; object-fit: cover; border-radius: 6px; vertical-align: middle; margin-right: 4px; background: #f1f5f9; }
+@media (max-width: 700px) { .vo-shortlist-grid { grid-template-columns: 1fr; } .vo-hero { width: 100%; height: 200px; } }
 .vo-card button[disabled], .vo-card button:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(1); }
 .vo-byhand { display: inline-block; margin-left: 10px; }
 .vo-byhand summary { cursor: pointer; color: #64748b; }
