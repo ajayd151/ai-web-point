@@ -1653,6 +1653,10 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-shortlist { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
 .vo-shortlist ol { margin: 4px 0 0 18px; padding: 0; }
 .vo-card.vo-focus { border: 2px solid #0f766e; box-shadow: 0 0 0 4px #ccfbf1; }
+.vo-askrow { display: flex; gap: 8px; margin: 6px 0 10px; }
+.vo-askrow input { flex: 1; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px; font: inherit; font-size: 14px; }
+.vo-askans { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 14px; line-height: 1.5; }
+.vo-askans p { margin: 6px 0; }
 .vo-helpframe { width: 100%; height: calc(100vh - 220px); min-height: 600px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .vo-table .vo-acts button { margin-right: 4px; }
 .vo-prospects tr.vo-row { cursor: pointer; }

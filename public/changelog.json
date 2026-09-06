@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.4.3",
+    "date": "2026-09-06",
+    "notes": [
+      "Ask AI on the Help and guide screen: answers from the guide and your live campaigns, remembers every question, drafts an FAQ entry you can add with one click (shown at the bottom of the guide), and logs feature ideas for the developer."
+    ]
+  },
+  {
     "version": "1.4.2",
     "date": "2026-09-06",
     "notes": [

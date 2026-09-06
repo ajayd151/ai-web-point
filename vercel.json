@@ -45,7 +45,7 @@
     },
     "api/vo.js": {
       "maxDuration": 60,
-      "includeFiles": "docs/video-outreach/**"
+      "includeFiles": "{docs/video-outreach/**,public/help-video-outreach.html}"
     },
     "api/vo-worker.js": {
       "maxDuration": 300,

@@ -189,6 +189,21 @@ module.exports = async (req, res) => {
     if (action === 'scoringImpact') { db.validateScoring(body.scoring || {}); res.status(200).json({ impact: db.scoringImpact(body.scoring) }); return; }
     if (action === 'saveScoring') { const r = await db.saveScoring(body.scoring || {}, actor); const n = body.rescore ? await db.rescoreAll(owner) : 0; res.status(200).json(Object.assign(r, { rescored: n })); return; }
     if (action === 'resetScoring') { const cfg = await db.resetScoring(); const n = await db.rescoreAll(owner); res.status(200).json({ ok: true, config: cfg, rescored: n }); return; }
+    if (action === 'ask') { // Ask AI on the Help screen
+      const q = String(body.question || '').trim(); if (!q) { res.status(400).json({ error: 'Type a question first.' }); return; }
+      let guide = ''; try { guide = fs.readFileSync(path.join(process.cwd(), 'public', 'help-video-outreach.html'), 'utf8').replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, ' ').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' '); } catch (e) { guide = ''; }
+      const camps = await db.listCampaigns(owner); const li = await db.linkedinSettings(); const rep = await db.reportData(owner);
+      const snapshot = { stamp: new Date().toISOString().slice(0, 13), version: require('../lib/version').APP_VERSION, providers: providers(), campaigns: camps.map((c) => ({ name: c.name, status: c.status, schedule: c.schedule, prospects: c.prospects_found, requested: c.requested, connected: c.connected, videos_sent: c.videos_sent, positive_replies: c.positive_replies, cost: c.cost_to_date, auto_connect: !!(c.automation && c.automation.auto_connect), max_priority: c.automation && c.automation.max_priority })), linkedin: { paused: li.paused, daily_requests: li.daily_requests, weekly_requests: li.weekly_requests, max_priority: li.max_priority, next_request_at: li.next_request_at }, waiting_for_video: rep.waiting.map((p) => p.brand), replies_open: rep.replied_open.map((p) => p.brand), followups_due: rep.followups_due, last_24h: rep.day, extra_faq: await db.faqExtra() };
+      const history = await db.listQuestions(owner, 8);
+      const a = await S.askAssistant(q, guide, snapshot, history);
+      const row = await db.saveQuestion(owner, actor, Object.assign({ question: q }, a));
+      res.status(200).json({ ok: true, item: row }); return;
+    }
+    if (action === 'askHistory') { res.status(200).json({ items: await db.listQuestions(owner, 30), faq: await db.faqExtra() }); return; }
+    if (action === 'faqAdd') { res.status(200).json({ ok: true, faq: await db.addFaq(owner, id) }); return; }
+    if (action === 'faqRemove') { res.status(200).json({ ok: true, faq: await db.removeFaq(Number(body.index)) }); return; }
+    if (action === 'faqExtra') { res.status(200).json({ faq: await db.faqExtra() }); return; }
+    if (action === 'markQuestion') { await db.markQuestion(owner, id, { helpful: body.helpful }); res.status(200).json({ ok: true }); return; }
     if (action === 'report') { res.status(200).json({ report: await db.reportData(owner) }); return; }
     if (action === 'sendReportNow') { res.status(200).json(await J.dailyReport(owner, actor, base, true)); return; }
     if (action === 'results') { res.status(200).json({ rows: await db.results(owner, body.campaignId || null), campaigns: await db.listCampaigns(owner) }); return; }

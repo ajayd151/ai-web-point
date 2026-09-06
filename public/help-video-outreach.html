@@ -57,7 +57,7 @@
   <div class="grp open"><a href="#overview">Overview <span class="chev">▶</span></a><div class="sub"><a href="#overview-loop">The whole loop</a><a href="#overview-never">What it never does</a></div></div>
   <div class="grp"><a href="#week">What happens, and when you step in <span class="chev">▶</span></a><div class="sub"><a href="#week-flow">The flow, day by day</a><a href="#week-you">Where you come in</a><a href="#week-not">If they do not connect</a></div></div>
   <div class="grp"><a href="#paths">Click paths and times <span class="chev">▶</span></a><div class="sub"><a href="#paths-list">Exact paths for every task</a><a href="#paths-times">Times of day</a><a href="#paths-campaign">Setting up a campaign, step by step</a></div></div>
-  <div class="grp"><a href="#faq">FAQs <span class="chev">▶</span></a><div class="sub"><a href="#faq-list">Common questions</a></div></div>
+  <div class="grp"><a href="#faq">FAQs <span class="chev">▶</span></a><div class="sub"><a href="#faq-list">Common questions</a><a href="#faq-extra">Your saved questions</a></div></div>
   <div class="grp"><a href="#setup">Getting set up <span class="chev">▶</span></a><div class="sub"><a href="#setup-keys">Provider keys</a><a href="#setup-profile">Your service profile</a><a href="#setup-version">Which version am I on</a></div></div>
   <div class="grp"><a href="#campaigns">Campaigns <span class="chev">▶</span></a><div class="sub"><a href="#campaigns-create">Creating one</a><a href="#campaigns-fields">The fields that matter</a><a href="#campaigns-schedule">Schedules</a><a href="#campaigns-templates">Message templates</a><a href="#campaigns-automation">Automation switches</a></div></div>
   <div class="grp"><a href="#runs">Runs <span class="chev">▶</span></a><div class="sub"><a href="#runs-what">What a run does</a><a href="#runs-tiles">Reading the tiles</a><a href="#runs-stop">When it stops</a><a href="#runs-cost">What it costs</a><a href="#runs-recount">Refreshing ad counts</a><a href="#runs-clear">Redoing a run</a></div></div>
@@ -384,6 +384,9 @@
   <tr><td>Something changed after a deploy</td><td>Check the version bottom-left and click it for the history. A normal refresh picks up a new version.</td></tr>
 </table>
 
+<h3 id="faq-extra">Questions you asked, kept as FAQs</h3>
+<div id="faq-extra-list"><p class="muted">Ask the AI on this screen; answers worth keeping appear here once you click Add to FAQs.</p></div>
+
 <h2 id="history">Version history</h2>
 <h3 id="history-list">All releases</h3>
 <div id="changelog"><p class="muted">Loading…</p></div>
@@ -403,6 +406,16 @@
     if (cur != null) { var g = links[cur].closest('.grp'); groups.forEach(function (x) { x.classList.toggle('open', x === g); }); }
   }
   window.addEventListener('scroll', spy); spy();
+  // extra FAQs saved from Ask AI (needs the app login; silently empty when opened on its own)
+  function loadExtraFaq() {
+    fetch('/api/vo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'faqExtra' }) }).then(function (r) { return r.json(); }).then(function (d) {
+      var el = document.getElementById('faq-extra-list'); var list = (d && d.faq) || []; if (!list.length) return;
+      var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+      el.innerHTML = '<table><tr><th>Question</th><th>Answer</th></tr>' + list.map(function (f) { return '<tr><td>' + esc(f.q) + '</td><td>' + esc(f.a).replace(/\n\n+/g, '<br><br>').replace(/\n- /g, '<br>• ') + '</td></tr>'; }).join('') + '</table>';
+    }).catch(function () {});
+  }
+  loadExtraFaq();
+  window.addEventListener('message', function (e) { if (e.data === 'vo-faq-refresh') loadExtraFaq(); });
   // changelog from the app
   fetch('/changelog.json?ts=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (list) {
     var el = document.getElementById('changelog'); var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };

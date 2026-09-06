@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.4.3 (6 Sep 2026)
+- Ask AI on the Help and guide screen: answers from the guide and live campaigns, remembers questions, drafts FAQ entries you approve, logs feature ideas.
+
 ## 1.4.2 (6 Sep 2026)
 - Film this, in order: a ranked shortlist of up to three products with reasons on the prospect page and the Ready to send card; the store is re-read at acceptance.
 

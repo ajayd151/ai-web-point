@@ -663,7 +663,38 @@ async function voOpenSettings() {
 // ---- Help (the guide with its menu, shown inside the app) ----
 function voOpenHelp() {
   const el = $('vo-pane-help'); voPane('help');
-  if (!el.querySelector('iframe')) el.innerHTML = '<iframe src="/help-video-outreach.html?ts=' + Date.now() + '" class="vo-helpframe" title="Video Outreach help"></iframe>';
+  if (!el.querySelector('iframe')) {
+    el.innerHTML = '<div class="vo-card vo-ask"><h4 style="margin:0 0 6px">🤖 Ask AI about Video Outreach</h4><p class="vo-help">Ask anything: how to do something, what a number means, what happens next. It answers from the guide and your live campaigns, remembers what you asked, and drafts an FAQ entry when a question is worth keeping. Ideas it cannot do are logged for the developer.</p>' +
+      '<div class="vo-askrow"><input type="text" id="vo-ask-q" placeholder="e.g. How do I add a second person to get the texts?" /><button class="primary" id="vo-ask-go">Ask</button></div><div id="vo-ask-answer"></div><div id="vo-ask-history"></div></div>' +
+      '<iframe src="/help-video-outreach.html?ts=' + Date.now() + '" class="vo-helpframe" title="Video Outreach help"></iframe>';
+    const ask = async () => {
+      const q = $('vo-ask-q').value.trim(); if (!q) { voStatus('Type a question first', 'err'); return; }
+      const b = $('vo-ask-go'); b.disabled = true; b.textContent = 'Thinking…'; $('vo-ask-answer').innerHTML = '<div class="muted vo-small">Reading the guide and your campaigns…</div>';
+      try { const r = await voApi('ask', { question: q }); voRenderAsk(r.item, true); $('vo-ask-q').value = ''; await voAskHistory(); } catch (e) { voStatus(e.message, 'err'); $('vo-ask-answer').innerHTML = ''; } finally { b.disabled = false; b.textContent = 'Ask'; }
+    };
+    voOn('vo-ask-go', 'click', ask);
+    $('vo-ask-q').addEventListener('keydown', (e) => { if (e.key === 'Enter') ask(); });
+    voAskHistory();
+  }
+}
+function voAskText(t) { return esc(String(t || '')).replace(/\n\n+/g, '</p><p>').replace(/\n- /g, '<br>• ').replace(/\n/g, '<br>'); }
+function voRenderAsk(item, fresh) {
+  const box = $('vo-ask-answer'); if (!box) return;
+  box.innerHTML = '<div class="vo-askans"><div class="vo-small muted">You asked: ' + esc(item.question) + '</div><p>' + voAskText(item.answer) + '</p>' +
+    (item.feature_request ? '<div class="vo-banner" style="margin:8px 0">💡 Logged as an idea for the developer: ' + esc(item.feature_request) + '</div>' : '') +
+    (item.faq_worthy && !item.added_to_faq ? '<div class="vo-banner ok" style="margin:8px 0"><b>Worth keeping?</b> Suggested FAQ: <i>' + esc(item.faq_question || item.question) + '</i> <button class="primary sm vo-faq-add" data-id="' + item.id + '">Add to FAQs</button></div>' : '') +
+    (item.added_to_faq ? '<div class="vo-small vo-yes">✓ in the FAQs</div>' : '') + '</div>';
+  box.querySelectorAll('.vo-faq-add').forEach((b) => b.addEventListener('click', async () => { try { await voApi('faqAdd', { id: Number(b.dataset.id) }); voStatus('Added to the FAQs at the bottom of the guide'); b.closest('.vo-banner').innerHTML = '✓ Added to the FAQs'; const f = document.querySelector('.vo-helpframe'); if (f) f.contentWindow.postMessage('vo-faq-refresh', '*'); } catch (e) { voStatus(e.message, 'err'); } }));
+}
+async function voAskHistory() {
+  const h = $('vo-ask-history'); if (!h) return;
+  try {
+    const r = await voApi('askHistory'); const items = r.items || [];
+    const ideas = items.filter((i) => i.feature_request);
+    h.innerHTML = (items.length ? '<details class="vo-details"><summary>Earlier questions (' + items.length + ')</summary><table class="vo-mini"><tbody>' + items.map((i) => '<tr><td class="vo-small muted" style="white-space:nowrap">' + esc(voStamp(i.at)) + '</td><td><b>' + esc(i.question) + '</b><div class="vo-small">' + voAskText(String(i.answer || '').slice(0, 400)) + '</div>' + (i.faq_worthy && !i.added_to_faq ? ' <button class="ghost sm vo-faq-add2" data-id="' + i.id + '">Add to FAQs</button>' : (i.added_to_faq ? '<span class="vo-small vo-yes"> ✓ in the FAQs</span>' : '')) + '</td></tr>').join('') + '</tbody></table></details>' : '') +
+      (ideas.length ? '<details class="vo-details"><summary>💡 Ideas logged for the developer (' + ideas.length + ')</summary><ul class="vo-small">' + ideas.map((i) => '<li>' + esc(i.feature_request) + ' <span class="muted">(' + esc(voStamp(i.at)) + ')</span></li>').join('') + '</ul></details>' : '');
+    h.querySelectorAll('.vo-faq-add2').forEach((b) => b.addEventListener('click', async () => { try { await voApi('faqAdd', { id: Number(b.dataset.id) }); voStatus('Added to the FAQs'); voAskHistory(); const f = document.querySelector('.vo-helpframe'); if (f) f.contentWindow.postMessage('vo-faq-refresh', '*'); } catch (e) { voStatus(e.message, 'err'); } }));
+  } catch (e) { h.innerHTML = ''; }
 }
 
 // ---- Quick check: the four hand-checked signals for every brand in one table ----
