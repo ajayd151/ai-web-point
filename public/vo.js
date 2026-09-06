@@ -13,7 +13,7 @@ async function voApi(action, payload) {
 }
 function voPane(name) {
   VO.pane = name;
-  ['campaigns', 'edit', 'prospects', 'detail', 'ready', 'results', 'settings'].forEach((p) => { const el = $('vo-pane-' + p); if (el) el.classList.toggle('hidden', p !== name); });
+  ['campaigns', 'edit', 'prospects', 'detail', 'ready', 'results', 'settings', 'help'].forEach((p) => { const el = $('vo-pane-' + p); if (el) el.classList.toggle('hidden', p !== name); });
   const tab = name === 'edit' ? 'campaigns' : (name === 'detail' ? 'prospects' : name);
   document.querySelectorAll('.vo-tab').forEach((b) => b.classList.toggle('active', b.dataset.vopane === tab));
   try { window.scrollTo({ top: 0 }); } catch (e) {}
@@ -28,6 +28,7 @@ document.querySelectorAll('.vo-tab').forEach((b) => b.addEventListener('click', 
   else if (t === 'ready') voOpenReady();
   else if (t === 'results') voOpenResults();
   else if (t === 'settings') voOpenSettings();
+  else if (t === 'help') voOpenHelp();
   else voPane('campaigns');
 }));
 
@@ -172,14 +173,14 @@ function voRenderCampaigns() {
     '<td><b>' + esc(c.name) + '</b><div class="muted vo-small">' + esc(c.industry || '') + (Array.isArray(c.keywords) && c.keywords.length ? ' · ' + c.keywords.length + ' keywords' : '') + '</div></td>' +
     '<td>' + esc((c.countries || []).join(', ')) + '</td>' +
     '<td>' + voSchedText(c) + '</td>' +
-    '<td><span class="vo-status st-' + esc(c.status) + '">' + esc(c.status) + '</span>' + (c.last_run_at ? '<div class="muted vo-small">last run ' + esc(voStamp(c.last_run_at)) + '</div>' : '') + '</td>' +
-    '<td class="num">' + (c.prospects_found || 0) + '</td><td class="num">' + (c.connected || 0) + '</td><td class="num">' + (c.replied || 0) + '</td>' +
-    '<td class="num">' + voMoney(c.cost_to_date) + '</td>' +
-    '<td class="vo-acts"><button class="primary sm" data-act="run"' + (Array.isArray(c.keywords) && c.keywords.length ? '' : ' disabled title="Add search keywords first"') + '>▶ Run now</button><button class="ghost sm" data-act="prospects">Prospects</button><button class="ghost sm" data-act="edit">Edit</button><button class="ghost sm" data-act="dup">Duplicate</button>' +
-      (c.status === 'Paused' ? '<button class="ghost sm" data-act="resume">Resume</button>' : '<button class="ghost sm" data-act="pause">Pause</button>') + '</td></tr>').join('');
+    '<td><span class="vo-status st-' + esc(c.status) + '">' + esc(c.status) + '</span>' + (c.last_run_at ? '<div class="muted vo-small">last run ' + esc(voStamp(c.last_run_at)) + '</div>' : '') + (c.automation && c.automation.auto_connect ? '<div class="vo-small vo-yes">auto requests on</div>' : '') + '</td>' +
+    '<td class="num">' + (c.prospects_found || 0) + '</td><td class="num">' + (c.requested || 0) + '</td><td class="num">' + (c.connected || 0) + '</td><td class="num"><span class="vo-reply sp">' + (c.positive_replies || 0) + '</span></td><td class="num">' + Math.max(0, (c.replied || 0) - (c.positive_replies || 0)) + '</td>' +
+    '<td class="num nowrap">' + voMoney(c.cost_to_date) + '</td>' +
+    '<td class="vo-acts"><div class="vo-actrow"><button class="primary sm" data-act="run"' + (Array.isArray(c.keywords) && c.keywords.length ? '' : ' disabled title="Add search keywords first"') + '>▶ Run now</button><button class="ghost sm" data-act="prospects">Prospects</button><button class="ghost sm" data-act="edit">Edit</button>' +
+      (c.status === 'Paused' ? '<button class="ghost sm" data-act="resume">Resume</button>' : '<button class="ghost sm" data-act="pause">Pause</button>') + '<button class="ghost sm" data-act="dup" title="Copy the settings into a new campaign">Duplicate</button></div></td></tr>').join('');
   el.innerHTML = '<div class="vo-bar"><p class="muted view-sub" style="margin:0">A campaign is a saved set of criteria. <b>Run now</b> sources brands from the Meta Ad Library and Apollo, scores them and drafts the messages. Without provider keys it runs in dry-run mode on the tracker data.</p>' +
     '<div><button class="primary" id="vo-new">＋ New campaign</button> <button class="ghost" id="vo-seed" title="Create a campaign and import the 74-row v12 tracker into it">📥 Import v12 tracker</button></div></div>' +
-    (VO.campaigns.length ? '<div class="vo-fit"><table class="cust-table vo-table vo-campaigns"><thead><tr><th>Name</th><th>Country</th><th>Schedule</th><th>Status</th><th>Prospects</th><th>Connected</th><th>Replied</th><th>Cost</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+    (VO.campaigns.length ? '<div class="vo-fit"><table class="cust-table vo-table vo-campaigns vo-zebra"><thead><tr><th>Name</th><th>Country</th><th>Schedule</th><th>Status</th><th class="num">Prospects</th><th class="num">Requested</th><th class="num">Connected</th><th class="num">Positive replies</th><th class="num">Other replies</th><th class="num">Cost</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>'
       : '<p class="muted" style="padding:14px 0">No campaigns yet. Click <b>Import v12 tracker</b> to seed the first one with the 74 researched brands (59 qualified, 15 disqualified), or <b>New campaign</b>.</p>');
   voOn('vo-new', 'click', () => voEditCampaign(null));
   voOn('vo-seed', 'click', () => voImport(null));
@@ -640,4 +641,10 @@ async function voOpenSettings() {
   voOn('vo-w-save', 'click', async () => { if (!confirm('Save these weights and re-score every prospect?')) return; try { const r = await voApi('saveScoring', { scoring: collect(), rescore: true }); voStatus('Saved as ' + r.config.version + '. ' + impactText(r.impact) + ' Re-scored ' + r.rescored + ' prospect(s).'); voOpenSettings(); } catch (e) { voStatus(e.message, 'err'); } });
   voOn('vo-w-reset', 'click', async () => { if (!confirm('Reset the weights to the v1 config and re-score every prospect?')) return; try { const r = await voApi('resetScoring'); voToast('Reset, re-scored ' + r.rescored); voOpenSettings(); } catch (e) { voStatus(e.message, 'err'); } });
   el.querySelectorAll('.vo-preset-del').forEach((b) => b.addEventListener('click', async () => { const id = Number(b.closest('tr').dataset.pid); if (!confirm('Delete this preset?')) return; try { await voApi('deletePreset', { id: id }); voOpenSettings(); } catch (e) { voStatus(e.message, 'err'); } }));
+}
+
+// ---- Help (the guide with its menu, shown inside the app) ----
+function voOpenHelp() {
+  const el = $('vo-pane-help'); voPane('help');
+  if (!el.querySelector('iframe')) el.innerHTML = '<iframe src="/help-video-outreach.html?ts=' + Date.now() + '" class="vo-helpframe" title="Video Outreach help"></iframe>';
 }

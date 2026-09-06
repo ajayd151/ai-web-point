@@ -55,6 +55,8 @@
 <nav id="nav">
   <h1>🎬 Video Outreach<small>How it works and how to use it</small></h1>
   <div class="grp open"><a href="#overview">Overview <span class="chev">▶</span></a><div class="sub"><a href="#overview-loop">The whole loop</a><a href="#overview-never">What it never does</a></div></div>
+  <div class="grp"><a href="#week">What happens, and when you step in <span class="chev">▶</span></a><div class="sub"><a href="#week-flow">The flow, day by day</a><a href="#week-you">Where you come in</a><a href="#week-not">If they do not connect</a></div></div>
+  <div class="grp"><a href="#faq">FAQs <span class="chev">▶</span></a><div class="sub"><a href="#faq-list">Common questions</a></div></div>
   <div class="grp"><a href="#setup">Getting set up <span class="chev">▶</span></a><div class="sub"><a href="#setup-keys">Provider keys</a><a href="#setup-profile">Your service profile</a><a href="#setup-version">Which version am I on</a></div></div>
   <div class="grp"><a href="#campaigns">Campaigns <span class="chev">▶</span></a><div class="sub"><a href="#campaigns-create">Creating one</a><a href="#campaigns-fields">The fields that matter</a><a href="#campaigns-schedule">Schedules</a><a href="#campaigns-templates">Message templates</a><a href="#campaigns-automation">Automation switches</a></div></div>
   <div class="grp"><a href="#runs">Runs <span class="chev">▶</span></a><div class="sub"><a href="#runs-what">What a run does</a><a href="#runs-tiles">Reading the tiles</a><a href="#runs-stop">When it stops</a><a href="#runs-cost">What it costs</a><a href="#runs-recount">Refreshing ad counts</a><a href="#runs-clear">Redoing a run</a></div></div>
@@ -89,6 +91,47 @@
   <li>It never sends follow-ups unless you switch on auto follow-ups for that campaign.</li>
   <li>It never contacts a brand twice. A brand belongs to one campaign, and dedupe runs on every pull.</li>
 </ul>
+
+
+<h2 id="week">What happens, and when you step in</h2>
+<h3 id="week-flow">The flow, day by day</h3>
+<div class="flow">
+  <div><b>Day 0, a run</b>Finds brands advertising on Meta for your keywords, scores them, finds the decision maker and writes the messages. You: nothing, or check the top brands.</div>
+  <div><b>Weekdays, 8am to 6pm US time</b>Sends ONE connection request every 10 minutes to priority 1 to 3 brands that have a LinkedIn contact, up to 20 a day. Highest score first. You: nothing.</div>
+  <div><b>Someone accepts</b>Text to you and Aryan: "you have a new lead for ShekiPro". Email too. The brand moves to Ready to send with Message A drafted. <b>You: make the video.</b></div>
+  <div><b>Ready to send</b><b>You: paste the video link, read the message, click Send.</b> Message A goes out through your LinkedIn. Follow-up drafts are scheduled.</div>
+  <div><b>Day +3 and +7</b>Follow-up 1 and 2 appear as drafts under Due follow-ups. You: click Send now, or turn on auto follow-ups on the campaign and they go alone.</div>
+  <div><b>They reply</b>Read as Positive, Negative, Question or Neutral. Positive and Question text you both. Follow-ups cancel. <b>You: answer them on LinkedIn, set Call booked, Pilot, Client.</b></div>
+  <div><b>No answer after 7 days</b>Request marked Pending. Still nothing at 21 days: request withdrawn, brand marked Dead. You: nothing.</div>
+  <div><b>Every 30 days</b>Ad counts refreshed and scores updated so stale brands drift down. You: nothing.</div>
+</div>
+<h3 id="week-you">Where you come in</h3>
+<ol>
+  <li><b>After a run:</b> open the top brands and fill the four hand-checked signals (DM active, other paid channels, pays for creators, trigger). Two minutes each. Add a contact where the run found none.</li>
+  <li><b>When the "new lead" text arrives:</b> make the AI video for the product named in the text.</li>
+  <li><b>Ready to send:</b> paste the link, click Send. This is the only send that ever needs you.</li>
+  <li><b>Due follow-ups:</b> click Send now on the day, unless auto follow-ups is on.</li>
+  <li><b>When a reply text arrives:</b> answer them yourself on LinkedIn, then set the stage on the prospect so Results stay true.</li>
+</ol>
+<h3 id="week-not">If they do not connect</h3>
+<p>Nothing is chased on LinkedIn. After 7 days the request shows Pending; after 21 days it is withdrawn and the brand goes Dead, unless you have used email or Instagram with them, in which case it just stays as it is. If they have an email on file you can send Message B by email from the prospect page at any point.</p>
+
+<h2 id="faq">FAQs</h2>
+<h3 id="faq-list">Common questions</h3>
+<table>
+  <tr><th>Question</th><th>Answer</th></tr>
+  <tr><td>Will it send anything today?</td><td>Only weekdays, 8am to 6pm US Eastern (1pm to 11pm UK). Weekends nothing goes out.</td></tr>
+  <tr><td>How many requests a day?</td><td>One every 10 minutes inside that window, up to the daily cap in Settings (20, hard limit 25) and 100 a week.</td></tr>
+  <tr><td>Which brands get a request?</td><td>Priority 1 to 3 (Must target, Strong, Possible) that have a LinkedIn contact, on campaigns with "Auto-send connection requests" ticked. Change the priority cut-off on the campaign or in Settings.</td></tr>
+  <tr><td>Why has a good brand not been contacted?</td><td>No LinkedIn contact on it, or its score is below Possible. Open it, add the contact or fill the hand-checked signals.</td></tr>
+  <tr><td>Does it ever send the video message on its own?</td><td>No. Message A only goes when you paste the link and click Send.</td></tr>
+  <tr><td>Does it answer replies?</td><td>No. It records them, reads the tone, texts and emails you.</td></tr>
+  <tr><td>Where do new brands come from each week?</td><td>Set the campaign Schedule to Weekly (or Daily). Each run only adds brands it has not seen. Daily at raw cap 100 uses about 200 Apollo credits a day, so Weekly is the sensible default.</td></tr>
+  <tr><td>What does it cost to run?</td><td>About £3 of Apify and 200 Apollo credits per 100 brands found, plus Unipile's monthly fee for the LinkedIn link.</td></tr>
+  <tr><td>What if LinkedIn complains?</td><td>Everything pauses on its own, a red banner appears, you get an email. Check your LinkedIn account, then Resume in Settings.</td></tr>
+  <tr><td>Can someone else get the alerts?</td><td>Yes. Settings, Reply alerts by SMS: one line per person, first name then mobile.</td></tr>
+  <tr><td>I tested something and want a clean prospect.</td><td>Open it and click Reset outreach. It goes back to Not contacted; the event trail stays.</td></tr>
+</table>
 
 <h2 id="setup">Getting set up</h2>
 <h3 id="setup-keys">Provider keys</h3>
