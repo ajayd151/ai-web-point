@@ -82,6 +82,7 @@ var VO_HELP = {
   'Outreach stage': 'How far the conversation has got. Only the allowed next steps are listed, so it moves forward in order.',
   'Outcome': 'The final result once you know it. Feeds the Results screen.',
   'Add a note': 'A free-text note saved to the event trail.',
+  'Record a reply': 'Paste a reply you received yourself. The prospect moves to Replied, follow-ups are cancelled, and the reply is read as Positive, Negative, Question or Neutral so you can see at a glance who to call first. With a LinkedIn provider connected this happens on its own.',
   'Brand': 'The brand name as it appears in their ads.',
   'Website': 'Their store domain. Changing it re-links the prospect to the new domain.',
   'Category': 'What they sell, used in the message when there is no better observation.',
@@ -125,6 +126,8 @@ var VO_HELP = {
 };
 function voHelp(label) { const t = VO_HELP[String(label).replace(/<[^>]+>/g, '').trim()]; return t ? ' <span class="vo-q" tabindex="0" data-tip="' + esc(t) + '">?</span>' : ''; }
 
+var VO_SENT_CLASS = { Positive: 'sp', Negative: 'sn', Question: 'sq', Neutral: 'su' };
+function voReplyChip(p) { return p.reply_sentiment ? '<span class="vo-reply ' + (VO_SENT_CLASS[p.reply_sentiment] || 'su') + '">' + esc(p.reply_sentiment) + ' reply</span>' : (p.last_reply_at ? '<span class="vo-reply su">Replied</span>' : ''); }
 var VO_PRIO_CLASS = { 'Must target': 'p1', 'Strong': 'p2', 'Possible': 'p3', 'Later': 'p4', 'Unlikely': 'p5', 'Skip': 'p6' };
 function voPrio(p) { return p.priority ? '<span class="vo-prio ' + (VO_PRIO_CLASS[p.priority] || '') + '">' + esc(p.priority) + '</span>' : '<span class="vo-prio p0">Unscored</span>'; }
 function voStamp(ts) { if (!ts) return ''; try { return new Date(ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return ''; } }
@@ -405,7 +408,7 @@ function voRenderProspects() {
     '<td>' + esc(p.creative_style || '–') + '</td>' +
     '<td class="vo-small">' + voLink(p.suggested_product_url, p.suggested_product_name || 'product') + '<div>' + esc(p.product_photo_check || '–') + '</div></td>' +
     '<td>' + esc(p.dm_name || '–') + '<div class="muted vo-small">' + esc(p.dm_title || '') + '</div></td>' +
-    '<td>' + esc(p.outreach_stage || 'Not contacted') + (p.last_reply_at ? '<div class="vo-yes vo-small">replied ' + esc(voStamp(p.last_reply_at)) + '</div>' : '') + '</td>' +
+    '<td>' + esc(p.outreach_stage || 'Not contacted') + (p.last_reply_at ? '<div class="vo-small">' + voReplyChip(p) + ' ' + esc(voStamp(p.last_reply_at)) + '</div>' : '') + '</td>' +
     '<td class="vo-small">' + (p.last_event ? esc(p.last_event) + '<div class="muted">' + esc(voStamp(p.last_event_at)) + '</div>' : '<span class="muted">–</span>') + '</td></tr>').join('');
   el.innerHTML = '<div class="vo-bar"><div><h3 style="margin:0">' + (camp ? esc(camp.name) + ' · prospects' : 'All prospects') + '</h3><p class="muted view-sub" style="margin:2px 0 0">Sorted by Priority Number, then score. ' + VO.prospects.length + ' shown' + (f.includeDisqualified ? '' : ', disqualified hidden') + '. Click a row to open it.</p></div>' +
     '<div>' + (camp ? '<button class="ghost" id="vo-p-edit">Edit campaign</button> ' : '') + '<button class="ghost" id="vo-p-back">← Campaigns</button></div></div>' + filters +
@@ -462,7 +465,7 @@ function voRenderDetail(d) {
       '<p class="muted view-sub" style="margin:2px 0 0">' + esc(p.category || '') + ' · ' + esc(p.country || '') + ' · ' + voLink(p.website || p.domain, p.domain) + (p.disqualified_reason ? ' · <span class="vo-disq">Disqualified: ' + esc(p.disqualified_reason) + '</span>' : '') + (p.email_sent_at ? ' · ✉️ emailed ' + esc(voStamp(p.email_sent_at)) : '') + (p.email_opened_at ? ' · <span class="vo-yes">👀 opened ' + esc(voStamp(p.email_opened_at)) + '</span>' : '') + '</p></div>' +
       '<div><button class="ghost" id="vo-d-back">← Prospects</button> <button class="ghost" id="vo-d-delete" title="Remove this prospect and its events">🗑 Delete</button> ' + (p.dm_linkedin ? '<a class="ghost btn" href="' + esc(/^https?:/i.test(p.dm_linkedin) ? p.dm_linkedin : 'https://' + p.dm_linkedin) + '" target="_blank" rel="noopener">in LinkedIn profile ↗</a> ' : '<button class="ghost" disabled>No LinkedIn on file</button> ') +
       (p.brand_instagram ? '<a class="ghost btn" href="' + esc(p.brand_instagram) + '" target="_blank" rel="noopener">📸 Instagram ↗</a>' : '<button class="ghost" disabled title="Add the brand Instagram in the editable fields">📸 No Instagram yet</button>') + '</div></div>' +
-    (p.last_reply_text ? '<div class="vo-banner ok">💬 <b>Reply ' + esc(voStamp(p.last_reply_at)) + ':</b> ' + esc(p.last_reply_text) + '</div>' : '') +
+    (p.last_reply_text ? '<div class="vo-banner ' + (p.reply_sentiment === 'Negative' ? '' : 'ok') + '">💬 ' + voReplyChip(p) + ' <b>' + esc(voStamp(p.last_reply_at)) + '</b>' + (p.reply_summary ? ' · ' + esc(p.reply_summary) : '') + '<div style="margin-top:4px">' + esc(p.last_reply_text) + '</div></div>' : '') +
     '<div class="vo-grid">' +
       '<div class="vo-col">' +
         '<h4>Score breakdown <span class="muted vo-small">' + esc(p.score_version || '') + '</span></h4>' +
@@ -474,6 +477,7 @@ function voRenderDetail(d) {
           r('Outreach stage', '<select id="vo-stage">' + stageOpts.map((o) => '<option' + (o === p.outreach_stage ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select> <select id="vo-variant"><option value="">variant…</option>' + (E.variant_used || []).map((o) => '<option' + (p.variant_used === o ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select> <button class="ghost sm" id="vo-stage-save">Set</button><div class="muted vo-small">Only the allowed next steps are listed.</div>') +
           r('Outcome', '<select id="vo-outcome">' + (E.outcome || [null]).map((o) => '<option value="' + (o || '') + '"' + ((p.outcome || '') === (o || '') ? ' selected' : '') + '>' + (o || '–') + '</option>').join('') + '</select> <button class="ghost sm" id="vo-outcome-save">Set</button>') +
           r('Add a note', '<input type="text" id="vo-note" placeholder="what happened" /> <button class="ghost sm" id="vo-note-save">Add</button>') +
+          r('Record a reply', '<textarea id="vo-reply" rows="3" placeholder="paste what they replied (LinkedIn or email)"></textarea><button class="ghost sm" id="vo-reply-save">Save reply</button><div class="muted vo-small">Marks Replied, reads it as Positive, Negative, Question or Neutral, cancels follow-ups.</div>') +
         '</tbody></table>' +
         '<h4>Events</h4>' + ((p.events || []).length ? '<table class="vo-mini"><tbody>' + p.events.map((e) => '<tr><td class="vo-small muted">' + esc(voStamp(e.at)) + '</td><td><b>' + esc(e.step) + '</b>' + (e.channel ? ' <span class="muted">' + esc(e.channel) + '</span>' : '') + (e.detail ? '<div class="vo-small">' + esc(e.detail) + '</div>' : '') + (e.response ? '<div class="vo-small">' + esc(e.response) + '</div>' : '') + '</td></tr>').join('') + '</tbody></table>' : '<p class="muted vo-small">No events yet.</p>') +
       '</div>' +
@@ -506,6 +510,7 @@ function voRenderDetail(d) {
   act('vo-conn-save', async () => { await voApi('setConnectionState', { id: p.id, state: $('vo-conn').value || null }); voToast('Connection state set'); });
   act('vo-stage-save', async () => { await voApi('setStage', { id: p.id, stage: $('vo-stage').value, variant_used: $('vo-variant').value || undefined }); voToast('Stage set'); });
   act('vo-outcome-save', async () => { await voApi('setOutcome', { id: p.id, outcome: $('vo-outcome').value || null }); voToast('Outcome set'); });
+  act('vo-reply-save', async () => { const t = $('vo-reply').value.trim(); if (!t) throw new Error('Paste the reply first'); const r2 = await voApi('recordReply', { id: p.id, text: t }); voStatus(r2.sentiment + ' reply recorded' + (r2.summary ? ': ' + r2.summary : ''), r2.sentiment === 'Negative' ? 'note' : 'ok'); });
   act('vo-note-save', async () => { const n = $('vo-note').value.trim(); if (!n) throw new Error('Type a note first'); await voApi('addNote', { id: p.id, note: n }); voToast('Note added'); });
   act('vo-msg-save', async () => { const fields = {}; el.querySelectorAll('textarea[data-msg]').forEach((t) => { if (['connection_note', 'message_a', 'message_b'].includes(t.dataset.msg)) fields[t.dataset.msg] = t.value; }); await voApi('updateProspect', { id: p.id, fields: fields }); voToast('Messages saved'); });
   act('vo-msg-regen', async () => { await voApi('updateProspect', { id: p.id, fields: { observation: p.observation || '' } }); voToast('Messages rebuilt'); });

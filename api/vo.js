@@ -122,6 +122,12 @@ module.exports = async (req, res) => {
     if (action === 'setStage') { const p = await db.setStage(owner, actor, id, String(body.stage || ''), { note: body.note, variant_used: body.variant_used, channel: body.channel }); res.status(200).json({ ok: true, prospect: p }); return; }
     if (action === 'setConnectionState') { const p = await db.setConnectionState(owner, actor, id, body.state || null, { note: body.note }); res.status(200).json({ ok: true, prospect: p }); return; }
     if (action === 'setOutcome') { const p = await db.setOutcome(owner, actor, id, body.outcome || null, body.note); res.status(200).json({ ok: true, prospect: p }); return; }
+    if (action === 'recordReply') { // a reply you saw yourself (email or LinkedIn by hand): stored, classified, stage Replied
+      const p0 = await db.getProspect(owner, id); if (!p0) { res.status(404).json({ error: 'Prospect not found.' }); return; }
+      const cls = await S.classifyReply(body.text, { brand: p0.brand });
+      const p = await db.recordReply(owner, actor, id, String(body.text || ''), null, cls);
+      res.status(200).json({ ok: true, prospect: p, sentiment: cls.sentiment, summary: cls.summary }); return;
+    }
     if (action === 'addNote') {
       const p = await db.getProspect(owner, id); if (!p) { res.status(404).json({ error: 'Prospect not found.' }); return; }
       await db.addEvent(owner, actor, p, { step: 'note', detail: String(body.note || '').slice(0, 2000), channel: body.channel || null });

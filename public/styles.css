@@ -1655,6 +1655,8 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-status { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: #f1f5f9; color: #475569; }
 .vo-status.st-Active { background: #dcfce7; color: #065f46; } .vo-status.st-Paused { background: #fef3c7; color: #92400e; } .vo-status.st-Finished { background: #e2e8f0; color: #334155; }
 .vo-yes { color: #065f46; font-weight: 700; }
+.vo-reply { display: inline-block; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.vo-reply.sp { background: #dcfce7; color: #065f46; } .vo-reply.sn { background: #fee2e2; color: #b91c1c; } .vo-reply.sq { background: #fef3c7; color: #92400e; } .vo-reply.su { background: #f1f5f9; color: #475569; }
 .vo-disq { color: #b91c1c; font-weight: 700; }
 .vo-form { width: 100%; border-collapse: collapse; margin-top: 6px; }
 .vo-form th { text-align: left; font-weight: 700; font-size: 13px; color: #334155; padding: 8px 12px 8px 0; width: 260px; vertical-align: top; border-bottom: 1px solid #f1f5f9; }

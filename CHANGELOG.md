@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.3.1 (6 Sep 2026)
+- Replies are read as Positive, Negative, Question or Neutral: a coloured chip on the prospect and in the list, the email alert subject says which, and a one-line summary.
+- Record a reply box on the prospect page for replies you received yourself.
+
 ## 1.3.0 (6 Sep 2026)
 - No more fading toasts or pop-up messages in Video Outreach: one bold status line under the tabs stays on screen until the next action. Confirm boxes remain only before spending credits, sending, or deleting.
 
