@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.3.0",
+    "date": "2026-09-06",
+    "notes": [
+      "No more fading toasts or pop-up messages in Video Outreach: one bold status line under the tabs stays on screen (green done, red problem) until the next action. Confirm boxes remain only before spending credits, sending, or deleting."
+    ]
+  },
+  {
     "version": "1.2.9",
     "date": "2026-09-06",
     "notes": [

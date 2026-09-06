@@ -134,9 +134,16 @@ function voLines(s) { return String(s || '').split(/\r?\n|,/).map((x) => x.trim(
 function voMoney(n) { return '£' + Number(n || 0).toFixed(2); }
 async function voCopy(btn, text) {
   try { await navigator.clipboard.writeText(text); const o = btn.textContent; btn.textContent = '✓ Copied'; setTimeout(() => { btn.textContent = o; }, 1400); }
-  catch (e) { alert('Could not copy, select the text and copy it by hand.'); }
+  catch (e) { voStatus('Could not copy, select the text and copy it by hand.', 'err'); }
 }
-function voToast(msg) { const t = $('vo-toast') || (function () { const d = document.createElement('div'); d.id = 'vo-toast'; d.className = 'vo-toast'; document.body.appendChild(d); return d; })(); t.textContent = msg; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2400); }
+// One inline status line under the tabs. It stays until the next action replaces it: green = done, red = problem, amber = note.
+function voStatus(msg, kind) {
+  const el = $('vo-status'); if (!el) return;
+  el.className = 'vo-status ' + (kind === 'err' ? 'err' : (kind === 'note' ? 'note' : 'ok'));
+  el.innerHTML = (kind === 'err' ? '✗ ' : (kind === 'note' ? 'ℹ ' : '✓ ')) + esc(String(msg || '')) + ' <span class="vo-status-t">' + esc(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })) + '</span>';
+  el.classList.remove('hidden');
+}
+function voToast(msg) { voStatus(msg, 'ok'); }
 function voBanner() {
   const el = $('vo-banner'); if (!el) return;
   const li = VO.linkedin || {};
@@ -181,14 +188,14 @@ function voRenderCampaigns() {
       if (act === 'dup') { await voApi('duplicateCampaign', { id: id }); voToast('Duplicated'); return voLoadCampaigns(); }
       if (act === 'pause' || act === 'resume') { await voApi('setCampaignStatus', { id: id, status: act === 'pause' ? 'Paused' : 'Active' }); return voLoadCampaigns(); }
       if (act === 'run') { await voEditCampaign(id); return voRunNow(id); }
-    } catch (err) { alert(err.message); }
+    } catch (err) { voStatus(err.message, 'err'); }
   }));
 }
 
 // ---- Campaign edit (5.2), the 2.1 form as table rows ----
 async function voEditCampaign(id) {
   let c = null, runs = [], est = null, presets = [], templates = {}, running = [];
-  if (id) { try { const d = await voApi('campaign', { id: id }); c = d.campaign; runs = d.runs || []; est = d.estimate; presets = d.presets || []; templates = d.templates || {}; VO.providers = d.providers || VO.providers; running = d.running || []; } catch (e) { alert(e.message); return; } }
+  if (id) { try { const d = await voApi('campaign', { id: id }); c = d.campaign; runs = d.runs || []; est = d.estimate; presets = d.presets || []; templates = d.templates || {}; VO.providers = d.providers || VO.providers; running = d.running || []; } catch (e) { voStatus(e.message, 'err'); return; } }
   else { try { const d = await voApi('presets'); presets = d.presets || []; } catch (e) {} }
   VO.campaign = c; VO.est = est; VO.editTranslated = (c && c.keywords_translated) || null;
   const sp = Object.assign({}, VO.profile || {}, (c && c.service_profile) || {});
@@ -259,16 +266,16 @@ async function voEditCampaign(id) {
         const r = await voApi('recountCampaign', { id: c.id, limit: 1 });
         done += (r.rechecked || []).length; const last = (r.rechecked || [])[0];
         b.textContent = '⏳ Refreshing… ' + done + ' done, ' + r.remaining + ' left' + (last ? ' (' + last.brand + (last.ads != null ? ': ' + last.ads + ' ads' : (last.error ? ': ' + last.error.slice(0, 40) : '')) + ')' : '');
-        if (r.blocked) { alert('Apify refused: ' + ((r.rechecked.find((x) => x.error) || {}).error || 'limit reached') + '. Upgrade the Apify plan and try again.'); break; }
+        if (r.blocked) { voStatus('Apify refused: ' + ((r.rechecked.find((x) => x.error) || {}).error || 'limit reached') + '. Upgrade the Apify plan and try again.', 'err'); break; }
         if (!r.remaining || !(r.rechecked || []).length) break;
       }
-      alert(done ? 'Ad counts refreshed for ' + done + ' brand(s). Open Prospects to see the new scores.' : 'Every brand on this campaign was already counted in the last hour, nothing to do. Open Prospects to see the scores.');
+      voStatus(done ? 'Ad counts refreshed for ' + done + ' brand(s). Open Prospects to see the new scores.' : 'Every brand on this campaign was already counted in the last hour, nothing to do. Open Prospects to see the scores.');
       await voLoadCampaigns(); voEditCampaign(c.id);
-    } catch (e) { alert(e.message); } finally { b.disabled = false; b.textContent = '↻ Refresh ad counts'; }
+    } catch (e) { voStatus(e.message, 'err'); } finally { b.disabled = false; b.textContent = '↻ Refresh ad counts'; }
   });
   voOn('vo-import-file', 'change', (e) => { const f = e.target.files && e.target.files[0]; if (f) { const rd = new FileReader(); rd.onload = () => voImport(c.id, String(rd.result || '')); rd.readAsText(f); } });
   voOn('vo-suggest', 'click', async () => {
-    const ind = el.querySelector('[data-f="industry"]').value.trim(); if (!ind) { alert('Type the industry first.'); return; }
+    const ind = el.querySelector('[data-f="industry"]').value.trim(); if (!ind) { voStatus('Type the industry first.', 'err'); return; }
     const b = $('vo-suggest'); b.disabled = true; b.textContent = 'Thinking…';
     try {
       const countries = voLines(el.querySelector('[data-f="countries"]').value); const lang = el.querySelector('[data-f="language"]').value;
@@ -276,16 +283,16 @@ async function voEditCampaign(id) {
       const box = el.querySelector('[data-f="keywords"]'); const cur = voLines(box.value); r.keywords.forEach((k) => { if (!cur.includes(k)) cur.push(k); }); box.value = cur.join('\n');
       if (r.translated && Object.keys(r.translated).length) { VO.editTranslated = r.translated; $('vo-translated').textContent = 'Translated keywords ready for: ' + Object.keys(r.translated).join(', ') + ' (saved with the campaign)'; }
       voToast((r.dry ? 'AI is off, a basic list was added' : r.keywords.length + ' keywords suggested') + '. Edit, then save.');
-    } catch (err) { alert(err.message); } finally { b.disabled = false; b.textContent = '✨ Suggest keywords'; }
+    } catch (err) { voStatus(err.message, 'err'); } finally { b.disabled = false; b.textContent = '✨ Suggest keywords'; }
   });
   voOn('vo-preset-load', 'click', () => { const p = presets.find((x) => String(x.id) === $('vo-preset').value); if (!p) return; const box = el.querySelector('[data-f="keywords"]'); box.value = (p.keywords || []).join('\n'); if (p.translations) VO.editTranslated = p.translations; if (!el.querySelector('[data-f="industry"]').value) el.querySelector('[data-f="industry"]').value = p.name; voToast('Preset loaded'); });
-  voOn('vo-preset-save', 'click', async () => { const kws = voLines(el.querySelector('[data-f="keywords"]').value); if (!kws.length) { alert('No keywords to save.'); return; } const name = prompt('Preset name', el.querySelector('[data-f="industry"]').value || ''); if (!name) return; try { await voApi('savePreset', { name: name, keywords: kws, translations: VO.editTranslated || {} }); voToast('Preset saved'); } catch (err) { alert(err.message); } });
+  voOn('vo-preset-save', 'click', async () => { const kws = voLines(el.querySelector('[data-f="keywords"]').value); if (!kws.length) { voStatus('No keywords to save.', 'err'); return; } const name = prompt('Preset name', el.querySelector('[data-f="industry"]').value || ''); if (!name) return; try { await voApi('savePreset', { name: name, keywords: kws, translations: VO.editTranslated || {} }); voToast('Preset saved'); } catch (err) { voStatus(err.message, 'err'); } });
   if (c) { voRenderRunBox(c, running[0] || null, est); }
-  el.querySelectorAll('.vo-run-clear').forEach((b) => b.addEventListener('click', async () => { const rid = Number(b.dataset.run); if (!confirm('Delete every prospect created by run ' + rid + '? Their events go too. Use this to redo a test run.')) return; try { const r = await voApi('deleteRunProspects', { id: rid }); alert('Deleted ' + r.deleted + ' prospect(s) (' + r.how + '), ' + r.remaining + ' left on this campaign.'); await voLoadCampaigns(); voEditCampaign(c.id); } catch (e) { alert(e.message); } }));
+  el.querySelectorAll('.vo-run-clear').forEach((b) => b.addEventListener('click', async () => { const rid = Number(b.dataset.run); if (!confirm('Delete every prospect created by run ' + rid + '? Their events go too. Use this to redo a test run.')) return; try { const r = await voApi('deleteRunProspects', { id: rid }); voStatus('Deleted ' + r.deleted + ' prospect(s) (' + r.how + '), ' + r.remaining + ' left on this campaign.'); await voLoadCampaigns(); voEditCampaign(c.id); } catch (e) { voStatus(e.message, 'err'); } }));
   voOn('vo-save', 'click', async () => {
     const data = voCollectCampaign(el, c);
-    if (!data.name) { alert('Give the campaign a name.'); return; }
-    try { const d = await voApi('saveCampaign', { campaign: data }); VO.campaign = d.campaign; voToast('Saved'); await voLoadCampaigns(); voEditCampaign(d.campaign.id); } catch (e) { alert(e.message); }
+    if (!data.name) { voStatus('Give the campaign a name.', 'err'); return; }
+    try { const d = await voApi('saveCampaign', { campaign: data }); VO.campaign = d.campaign; voToast('Saved'); await voLoadCampaigns(); voEditCampaign(d.campaign.id); } catch (e) { voStatus(e.message, 'err'); }
   });
 }
 function voCollectCampaign(el, c) {
@@ -323,7 +330,7 @@ function voRenderRunBox(c, run, est) {
   }
   html += '</div>';
   box.innerHTML = html;
-  voOn('vo-stop', 'click', async () => { try { await voApi('stopRun', { id: run.id }); voToast('Stopping'); } catch (e) { alert(e.message); } });
+  voOn('vo-stop', 'click', async () => { try { await voApi('stopRun', { id: run.id }); voToast('Stopping'); } catch (e) { voStatus(e.message, 'err'); } });
   voOn('vo-run-prospects', 'click', () => voOpenProspects(c.id));
   const rb = $('vo-run'); if (rb) { const busy = !!(run && ['Running', 'Queued', 'Starting'].includes(run.status)); rb.disabled = busy; rb.textContent = busy ? '⏳ Running…' : '▶ Run now'; }
   if (run && ['Running', 'Queued'].includes(run.status)) voPollRun(c, run.id);
@@ -339,7 +346,7 @@ async function voRunNow(campaignId) {
     const d = await voApi('runNow', { id: campaignId });
     if (d.done) { voToast('Run ' + d.status); await voLoadCampaigns(); await voEditCampaign(campaignId); voRenderRunBox(c, d.run, VO.est); return; }
     voRenderRunBox(c, d.run, null);
-  } catch (e) { voRenderRunBox(c, null, VO.est); alert(e.message); }
+  } catch (e) { voRenderRunBox(c, null, VO.est); voStatus(e.message, 'err'); }
 }
 function voPollRun(c, runId) {
   if (VO.poll) clearTimeout(VO.poll);
@@ -360,10 +367,10 @@ async function voImport(campaignId, csvText) {
   try {
     const d = await voApi('importCsv', { id: campaignId || 0, csvText: csvText || undefined });
     const c = d.counts || {};
-    alert('Imported ' + (c.imported || 0) + ' prospect(s)' + (c.disqualified ? ' (' + c.disqualified + ' disqualified, hidden by default)' : '') + (c.skipped_duplicate ? ', ' + c.skipped_duplicate + ' already existed' : '') + (c.failed ? ', ' + c.failed + ' failed' : '') + '.');
+    voStatus('Imported ' + (c.imported || 0) + ' prospect(s)' + (c.disqualified ? ' (' + c.disqualified + ' disqualified, hidden by default)' : '') + (c.skipped_duplicate ? ', ' + c.skipped_duplicate + ' already existed' : '') + (c.failed ? ', ' + c.failed + ' failed' : '') + '.');
     await voLoadCampaigns();
     voOpenProspects(d.campaign.id);
-  } catch (e) { alert(e.message); }
+  } catch (e) { voStatus(e.message, 'err'); }
 }
 
 // ---- Prospects (5.3) ----
@@ -373,7 +380,7 @@ async function voOpenProspects(campaignId) {
   voPane('prospects');
 }
 async function voLoadProspects() {
-  try { const d = await voApi('prospects', { campaignId: VO.filters.campaignId || undefined, filters: VO.filters }); VO.prospects = d.prospects || []; VO.enums = d.enums || VO.enums; } catch (e) { VO.prospects = []; alert(e.message); }
+  try { const d = await voApi('prospects', { campaignId: VO.filters.campaignId || undefined, filters: VO.filters }); VO.prospects = d.prospects || []; VO.enums = d.enums || VO.enums; } catch (e) { VO.prospects = []; voStatus(e.message, 'err'); }
   voRenderProspects();
 }
 function voRenderProspects() {
@@ -414,7 +421,7 @@ function voRenderProspects() {
 
 // ---- Prospect detail (5.3b), full-width pane ----
 async function voOpenProspect(id) {
-  let d; try { d = await voApi('prospect', { id: id }); } catch (e) { alert(e.message); return; }
+  let d; try { d = await voApi('prospect', { id: id }); } catch (e) { voStatus(e.message, 'err'); return; }
   VO.prospect = d.prospect; VO.enums = d.enums || VO.enums; VO.placeholder = d.placeholder || VO.placeholder; VO.providers = d.providers || VO.providers;
   voRenderDetail(d);
   voPane('detail');
@@ -491,10 +498,10 @@ function voRenderDetail(d) {
       '</div></div>';
   const el = $('vo-pane-detail'); el.innerHTML = html;
   voOn('vo-d-back', 'click', () => { voLoadProspects().then(() => voPane('prospects')); });
-  voOn('vo-d-delete', 'click', async () => { if (!confirm('Delete ' + p.brand + ' and its events? If a run finds the brand again it will come back.')) return; try { await voApi('deleteProspect', { id: p.id }); voToast('Deleted'); await voLoadProspects(); voPane('prospects'); } catch (e) { alert(e.message); } });
+  voOn('vo-d-delete', 'click', async () => { if (!confirm('Delete ' + p.brand + ' and its events? If a run finds the brand again it will come back.')) return; try { await voApi('deleteProspect', { id: p.id }); voToast('Deleted'); await voLoadProspects(); voPane('prospects'); } catch (e) { voStatus(e.message, 'err'); } });
   el.querySelectorAll('.vo-copy').forEach((b) => b.addEventListener('click', () => { const ta = el.querySelector('textarea[data-msg="' + b.dataset.copy + '"]'); voCopy(b, ta ? ta.value : ''); }));
   const refresh = async () => { const full = await voApi('prospect', { id: p.id }); VO.prospect = full.prospect; voRenderDetail(full); };
-  const act = (id, fn) => voOn(id, 'click', async () => { try { await fn(); await refresh(); } catch (e) { alert(e.message); } });
+  const act = (id, fn) => voOn(id, 'click', async () => { try { await fn(); await refresh(); } catch (e) { voStatus(e.message, 'err'); } });
   act('vo-video-save', async () => { await voApi('setVideoUrl', { id: p.id, url: $('vo-video').value }); voToast('Video URL saved, Message A updated'); });
   act('vo-conn-save', async () => { await voApi('setConnectionState', { id: p.id, state: $('vo-conn').value || null }); voToast('Connection state set'); });
   act('vo-stage-save', async () => { await voApi('setStage', { id: p.id, stage: $('vo-stage').value, variant_used: $('vo-variant').value || undefined }); voToast('Stage set'); });
@@ -512,11 +519,11 @@ function voRenderDetail(d) {
   });
   el.querySelectorAll('.vo-email').forEach((b) => b.addEventListener('click', async () => {
     const kind = b.dataset.kind; const text = el.querySelector('textarea[data-msg="' + kind + '"]').value;
-    if (kind === 'message_a' && !p.video_url) { alert('Paste the video URL first, Message A goes out with the link in it.'); return; }
+    if (kind === 'message_a' && !p.video_url) { voStatus('Paste the video URL first, Message A goes out with the link in it.', 'err'); return; }
     if (!confirm('Email ' + (kind === 'message_a' ? 'Message A' : 'Message B') + ' to ' + p.dm_email + ' now?')) return;
-    try { await voApi('updateProspect', { id: p.id, fields: { [kind]: text } }); const r2 = await voApi('sendEmail', { id: p.id, kind: kind }); voToast('Sent: ' + r2.subject); await refresh(); } catch (e) { alert(e.message); }
+    try { await voApi('updateProspect', { id: p.id, fields: { [kind]: text } }); const r2 = await voApi('sendEmail', { id: p.id, kind: kind }); voToast('Sent: ' + r2.subject); await refresh(); } catch (e) { voStatus(e.message, 'err'); }
   }));
-  el.querySelectorAll('.vo-sim').forEach((b) => b.addEventListener('click', async () => { try { await voApi('simulate', { id: p.id, what: b.dataset.what }); voToast('Simulated ' + b.dataset.what); await refresh(); } catch (e) { alert(e.message); } }));
+  el.querySelectorAll('.vo-sim').forEach((b) => b.addEventListener('click', async () => { try { await voApi('simulate', { id: p.id, what: b.dataset.what }); voToast('Simulated ' + b.dataset.what); await refresh(); } catch (e) { voStatus(e.message, 'err'); } }));
 }
 
 // ---- Ready to send (4.9 step 4) + due follow-ups ----
@@ -538,19 +545,19 @@ async function voOpenReady() {
     '<h3 style="margin-top:20px">Due follow-ups <span class="muted vo-small">(3 days and 7 days after Message 1; drafts until sent)</span></h3>' +
     (tasks ? '<div class="vo-fit"><table class="cust-table vo-table"><thead><tr><th>Brand</th><th>Which</th><th>Channel</th><th>Due</th><th>Stage</th><th></th></tr></thead><tbody>' + tasks + '</tbody></table></div>' : '<p class="muted">No follow-ups due today.</p>');
   voOn('vo-ready-refresh', 'click', voOpenReady);
-  voOn('vo-li-tick', 'click', async () => { try { const r = await voApi('linkedinTick'); const t = r.tick || {}; alert(t.enabled === false ? 'Provider not configured.' : 'Checked: ' + (t.accepted || 0) + ' accepted, ' + (t.replies || 0) + ' replies, ' + (t.requests || 0) + ' request(s) sent' + (t.skipped ? ' (' + t.skipped + ')' : '') + (t.error_send || t.error_accept || t.error_replies ? '. Error: ' + (t.error_send || t.error_accept || t.error_replies) : '')); voOpenReady(); } catch (e) { alert(e.message); } });
+  voOn('vo-li-tick', 'click', async () => { try { const r = await voApi('linkedinTick'); const t = r.tick || {}; voStatus(t.enabled === false ? 'Provider not configured.' : 'Checked: ' + (t.accepted || 0) + ' accepted, ' + (t.replies || 0) + ' replies, ' + (t.requests || 0) + ' request(s) sent' + (t.skipped ? ' (' + t.skipped + ')' : '') + (t.error_send || t.error_accept || t.error_replies ? '. Error: ' + (t.error_send || t.error_accept || t.error_replies) : '')); voOpenReady(); } catch (e) { voStatus(e.message, 'err'); } });
   el.querySelectorAll('.vo-card').forEach((card) => {
     const id = Number(card.dataset.id);
     card.querySelector('.vo-open').addEventListener('click', () => voOpenProspect(id));
     card.querySelector('.vo-ready-copy').addEventListener('click', (e) => voCopy(e.target, card.querySelector('.vo-ready-text').value));
-    card.querySelector('.vo-ready-mark').addEventListener('click', async () => { try { const url = card.querySelector('.vo-ready-url').value.trim(); if (url) await voApi('setVideoUrl', { id: id, url: url }); await voApi('updateProspect', { id: id, fields: { message_a: card.querySelector('.vo-ready-text').value } }); await voApi('setStage', { id: id, stage: 'Msg 1', variant_used: 'A video sent', channel: 'LinkedIn' }); voToast('Marked as sent'); voOpenReady(); } catch (e) { alert(e.message); } });
-    const s = card.querySelector('.vo-ready-send'); if (s) s.addEventListener('click', async () => { const url = card.querySelector('.vo-ready-url').value.trim(); if (!/^https:\/\//i.test(url)) { alert('Paste an https:// video URL first.'); return; } if (!confirm('Send Message A on LinkedIn now?')) return; try { await voApi('linkedinSend', { id: id, url: url, text: card.querySelector('.vo-ready-text').value }); voToast('Sent'); voOpenReady(); } catch (e) { alert(e.message); } });
+    card.querySelector('.vo-ready-mark').addEventListener('click', async () => { try { const url = card.querySelector('.vo-ready-url').value.trim(); if (url) await voApi('setVideoUrl', { id: id, url: url }); await voApi('updateProspect', { id: id, fields: { message_a: card.querySelector('.vo-ready-text').value } }); await voApi('setStage', { id: id, stage: 'Msg 1', variant_used: 'A video sent', channel: 'LinkedIn' }); voToast('Marked as sent'); voOpenReady(); } catch (e) { voStatus(e.message, 'err'); } });
+    const s = card.querySelector('.vo-ready-send'); if (s) s.addEventListener('click', async () => { const url = card.querySelector('.vo-ready-url').value.trim(); if (!/^https:\/\//i.test(url)) { voStatus('Paste an https:// video URL first.', 'err'); return; } if (!confirm('Send Message A on LinkedIn now?')) return; try { await voApi('linkedinSend', { id: id, url: url, text: card.querySelector('.vo-ready-text').value }); voToast('Sent'); voOpenReady(); } catch (e) { voStatus(e.message, 'err'); } });
   });
   el.querySelectorAll('tr[data-eid]').forEach((tr) => {
     const eid = Number(tr.dataset.eid); const id = Number(tr.dataset.id);
     tr.querySelector('.vo-fu-open').addEventListener('click', () => voOpenProspect(id));
-    tr.querySelector('.vo-fu-skip').addEventListener('click', async () => { try { await voApi('skipFollowup', { eventId: eid }); voOpenReady(); } catch (e) { alert(e.message); } });
-    tr.querySelector('.vo-fu-send').addEventListener('click', async () => { if (!confirm('Send this follow-up now?')) return; try { const r = await voApi('sendFollowup', { eventId: eid }); voToast(r.stage + ' sent'); voOpenReady(); } catch (e) { alert(e.message); } });
+    tr.querySelector('.vo-fu-skip').addEventListener('click', async () => { try { await voApi('skipFollowup', { eventId: eid }); voOpenReady(); } catch (e) { voStatus(e.message, 'err'); } });
+    tr.querySelector('.vo-fu-send').addEventListener('click', async () => { if (!confirm('Send this follow-up now?')) return; try { const r = await voApi('sendFollowup', { eventId: eid }); voToast(r.stage + ' sent'); voOpenReady(); } catch (e) { voStatus(e.message, 'err'); } });
   });
 }
 
@@ -603,11 +610,11 @@ async function voOpenSettings() {
       '<tr class="vo-sec"><th colspan="2">Tiers and priority thresholds</th></tr>' + wrow('Tier A from', 'T.A', sc.tiers ? sc.tiers.A : '') + wrow('Tier B from', 'T.B', sc.tiers ? sc.tiers.B : '') + ['Must target', 'Strong', 'Possible', 'Later'].map((k) => wrow(k + ' from', 'P.' + k, sc.priority ? sc.priority[k] : '')).join('') +
     '</tbody></table><div id="vo-w-impact" class="vo-help" style="margin-top:8px"></div><button class="ghost sm" id="vo-w-preview">Preview impact</button> <button class="primary sm" id="vo-w-save">Save and re-score all</button> <button class="ghost sm" id="vo-w-reset">Reset to v1</button></div>' +
     '<div class="vo-card"><h4 style="margin:0 0 8px">Industry presets</h4>' + ((d.presets || []).length ? '<table class="vo-kv"><tbody>' + d.presets.map((p) => '<tr data-pid="' + p.id + '"><th>' + esc(p.name) + '</th><td><span class="vo-small">' + esc((p.keywords || []).join(', ')) + '</span> <button class="ghost sm vo-preset-del">Delete</button></td></tr>').join('') + '</tbody></table>' : '<p class="muted vo-small">None yet. Save keywords as a preset from a campaign.</p>') + '</div>';
-  voOn('vo-li-test', 'click', async () => { try { const r = await voApi('linkedinTest'); alert((r.ok ? '✓ ' : '✗ ') + r.detail); } catch (e) { alert(e.message); } });
-  voOn('vo-li-resume', 'click', async () => { try { await voApi('linkedinResume'); voToast('Resumed'); voOpenSettings(); } catch (e) { alert(e.message); } });
-  voOn('vo-prof-save', 'click', async () => { const prof = {}; el.querySelectorAll('[data-p]').forEach((i) => { prof[i.dataset.p] = i.value; }); try { await voApi('saveProfile', { profile: prof }); voToast('Profile saved'); } catch (e) { alert(e.message); } });
-  voOn('vo-excl-save', 'click', async () => { try { await voApi('saveExclusions', { exclusions: voLines($('vo-excl').value) }); voToast('Exclusions saved'); } catch (e) { alert(e.message); } });
-  voOn('vo-li-save', 'click', async () => { const o = {}; el.querySelectorAll('[data-li]').forEach((i) => { o[i.dataset.li] = i.value; }); try { await voApi('saveLinkedinSettings', { linkedin: o }); voToast('Caps saved'); voOpenSettings(); } catch (e) { alert(e.message); } });
+  voOn('vo-li-test', 'click', async () => { try { const r = await voApi('linkedinTest'); voStatus((r.ok ? '✓ ' : '✗ ') + r.detail); } catch (e) { voStatus(e.message, 'err'); } });
+  voOn('vo-li-resume', 'click', async () => { try { await voApi('linkedinResume'); voToast('Resumed'); voOpenSettings(); } catch (e) { voStatus(e.message, 'err'); } });
+  voOn('vo-prof-save', 'click', async () => { const prof = {}; el.querySelectorAll('[data-p]').forEach((i) => { prof[i.dataset.p] = i.value; }); try { await voApi('saveProfile', { profile: prof }); voToast('Profile saved'); } catch (e) { voStatus(e.message, 'err'); } });
+  voOn('vo-excl-save', 'click', async () => { try { await voApi('saveExclusions', { exclusions: voLines($('vo-excl').value) }); voToast('Exclusions saved'); } catch (e) { voStatus(e.message, 'err'); } });
+  voOn('vo-li-save', 'click', async () => { const o = {}; el.querySelectorAll('[data-li]').forEach((i) => { o[i.dataset.li] = i.value; }); try { await voApi('saveLinkedinSettings', { linkedin: o }); voToast('Caps saved'); voOpenSettings(); } catch (e) { voStatus(e.message, 'err'); } });
   const collect = () => {
     const g = (k) => { const x = el.querySelector('[data-w="' + k + '"]'); return x ? x.value : ''; }; const n = (k) => Number(g(k));
     const cfg = { version: sc.version || 'v1', A_need: {}, B_afford: { employees: voParseBands(g('B.employees')) }, C_fit: { creative_gap: 'as_is', video_sourcing: {}, trigger_event: n('C.trigger_event') }, D_access: { dm_active_90d: {}, second_contact_with_email: n('D.second_contact_with_email'), no_gatekeeper: n('D.no_gatekeeper') },
@@ -619,8 +626,8 @@ async function voOpenSettings() {
     return cfg;
   };
   const impactText = (im) => im.changed === 0 ? '✓ No tracker brand changes priority band with these weights.' : im.changed + ' of ' + im.rows + ' tracker brands would change band: ' + im.moves.join('; ') + (im.changed > im.moves.length ? ' …' : '');
-  voOn('vo-w-preview', 'click', async () => { try { const r = await voApi('scoringImpact', { scoring: collect() }); $('vo-w-impact').textContent = impactText(r.impact); } catch (e) { alert(e.message); } });
-  voOn('vo-w-save', 'click', async () => { if (!confirm('Save these weights and re-score every prospect?')) return; try { const r = await voApi('saveScoring', { scoring: collect(), rescore: true }); alert('Saved as ' + r.config.version + '. ' + impactText(r.impact) + ' Re-scored ' + r.rescored + ' prospect(s).'); voOpenSettings(); } catch (e) { alert(e.message); } });
-  voOn('vo-w-reset', 'click', async () => { if (!confirm('Reset the weights to the v1 config and re-score every prospect?')) return; try { const r = await voApi('resetScoring'); voToast('Reset, re-scored ' + r.rescored); voOpenSettings(); } catch (e) { alert(e.message); } });
-  el.querySelectorAll('.vo-preset-del').forEach((b) => b.addEventListener('click', async () => { const id = Number(b.closest('tr').dataset.pid); if (!confirm('Delete this preset?')) return; try { await voApi('deletePreset', { id: id }); voOpenSettings(); } catch (e) { alert(e.message); } }));
+  voOn('vo-w-preview', 'click', async () => { try { const r = await voApi('scoringImpact', { scoring: collect() }); $('vo-w-impact').textContent = impactText(r.impact); } catch (e) { voStatus(e.message, 'err'); } });
+  voOn('vo-w-save', 'click', async () => { if (!confirm('Save these weights and re-score every prospect?')) return; try { const r = await voApi('saveScoring', { scoring: collect(), rescore: true }); voStatus('Saved as ' + r.config.version + '. ' + impactText(r.impact) + ' Re-scored ' + r.rescored + ' prospect(s).'); voOpenSettings(); } catch (e) { voStatus(e.message, 'err'); } });
+  voOn('vo-w-reset', 'click', async () => { if (!confirm('Reset the weights to the v1 config and re-score every prospect?')) return; try { const r = await voApi('resetScoring'); voToast('Reset, re-scored ' + r.rescored); voOpenSettings(); } catch (e) { voStatus(e.message, 'err'); } });
+  el.querySelectorAll('.vo-preset-del').forEach((b) => b.addEventListener('click', async () => { const id = Number(b.closest('tr').dataset.pid); if (!confirm('Delete this preset?')) return; try { await voApi('deletePreset', { id: id }); voOpenSettings(); } catch (e) { voStatus(e.message, 'err'); } }));
 }

@@ -1682,6 +1682,11 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-msgacts { margin: 8px 0 4px; }
 .vo-details summary { cursor: pointer; font-weight: 700; font-size: 13.5px; margin: 6px 0; }
 .vo-edit th { width: 230px; }
+.vo-status { border-radius: 10px; padding: 9px 14px; margin: 8px 0 12px; font-size: 14px; font-weight: 700; }
+.vo-status.ok { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+.vo-status.err { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+.vo-status.note { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+.vo-status .vo-status-t { font-weight: 500; color: #64748b; font-size: 12px; margin-left: 8px; }
 .vo-toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%); background: #0f172a; color: #fff; padding: 9px 16px; border-radius: 10px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 9999; }
 .vo-toast.show { opacity: 1; }
 .vo-banner { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; border-radius: 10px; padding: 10px 14px; margin: 8px 0 12px; font-size: 13.5px; }
