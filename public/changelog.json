@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.3.3",
+    "date": "2026-09-06",
+    "notes": [
+      "Settings shows set or not set for each of the three Unipile variables and for the email sender."
+    ]
+  },
+  {
     "version": "1.3.2",
     "date": "2026-09-06",
     "notes": [

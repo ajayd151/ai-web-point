@@ -17,7 +17,7 @@ const M = require('../lib/vo-messages');
 
 const FIXTURES = ['docs/video-outreach/video_outreach_fixtures_v12.csv'].map((p) => [path.join(process.cwd(), p), path.join(__dirname, '..', p)]).flat();
 function readFixtures() { for (const p of FIXTURES) { try { return fs.readFileSync(p, 'utf8'); } catch (e) { /* try next */ } } return ''; }
-function providers() { const s = S.providerStatus(); const P = L.provider(); return Object.assign(s, { linkedin: L.providerName() || 'off', linkedin_configured: !!(P && P.configured()), plan_gate: videoOutreachPlans() }); }
+function providers() { const s = S.providerStatus(); const P = L.provider(); return Object.assign(s, { linkedin: L.providerName() || 'off', linkedin_configured: !!(P && P.configured()), unipile: { dsn: !!process.env.UNIPILE_DSN, api_key: !!process.env.UNIPILE_API_KEY, account_id: !!process.env.UNIPILE_ACCOUNT_ID }, email_from: !!(process.env.VO_EMAIL_FROM), plan_gate: videoOutreachPlans() }); }
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
