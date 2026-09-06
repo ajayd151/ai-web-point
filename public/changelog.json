@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.3.2",
+    "date": "2026-09-06",
+    "notes": [
+      "SMS reply alerts: add mobiles in Settings and get a text on Positive and Question replies (or every reply) saying who replied, via which channel, what they want and what to do next."
+    ]
+  },
+  {
     "version": "1.3.1",
     "date": "2026-09-06",
     "notes": [

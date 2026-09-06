@@ -126,7 +126,8 @@ module.exports = async (req, res) => {
       const p0 = await db.getProspect(owner, id); if (!p0) { res.status(404).json({ error: 'Prospect not found.' }); return; }
       const cls = await S.classifyReply(body.text, { brand: p0.brand });
       const p = await db.recordReply(owner, actor, id, String(body.text || ''), null, cls);
-      res.status(200).json({ ok: true, prospect: p, sentiment: cls.sentiment, summary: cls.summary }); return;
+      let alerts = { sms: 0 }; try { alerts = await J.replyAlerts(owner, p0, cls, body.channel || 'LinkedIn', base); } catch (e) {}
+      res.status(200).json({ ok: true, prospect: p, sentiment: cls.sentiment, summary: cls.summary, sms: alerts.sms }); return;
     }
     if (action === 'addNote') {
       const p = await db.getProspect(owner, id); if (!p) { res.status(404).json({ error: 'Prospect not found.' }); return; }
@@ -176,9 +177,10 @@ module.exports = async (req, res) => {
 
     // ---- settings (5.4) and results (5.5), Phase 4 weight tuning ----
     if (action === 'config' || action === 'settings') {
-      res.status(200).json({ scoring: await db.scoringConfig(), defaultScoring: require('../lib/vo-score').loadConfig(require('../lib/vo-score').DEFAULT_CONFIG_PATH), profile: await db.serviceProfile(null), exclusions: await db.globalExclusions(), linkedin: await db.linkedinSettings(), presets: await db.listPresets(owner), providers: providers(), templates: M.DEFAULT_TEMPLATES, limits: { hard_daily_requests: L.HARD_DAILY_REQUESTS } }); return;
+      res.status(200).json({ scoring: await db.scoringConfig(), defaultScoring: require('../lib/vo-score').loadConfig(require('../lib/vo-score').DEFAULT_CONFIG_PATH), profile: await db.serviceProfile(null), exclusions: await db.globalExclusions(), linkedin: await db.linkedinSettings(), alerts: await db.getConfig('alerts', { mobiles: [], all_replies: false }), presets: await db.listPresets(owner), providers: providers(), templates: M.DEFAULT_TEMPLATES, limits: { hard_daily_requests: L.HARD_DAILY_REQUESTS } }); return;
     }
     if (action === 'saveProfile') { const ok = await db.setConfig('service_profile', Object.assign({}, M.DEFAULT_PROFILE, body.profile || {})); res.status(200).json({ ok: ok, profile: await db.serviceProfile(null) }); return; }
+    if (action === 'saveAlerts') { const mobiles = (body.mobiles || []).map((m) => String(m).replace(/[^+\d]/g, '')).filter((m) => m.length >= 10); await db.setConfig('alerts', { mobiles: mobiles, all_replies: !!body.all_replies }); res.status(200).json({ ok: true, alerts: await db.getConfig('alerts', {}) }); return; }
     if (action === 'saveExclusions') { const list = (body.exclusions || []).map((x) => String(x).trim()).filter(Boolean); await db.setConfig('exclusions', list); res.status(200).json({ ok: true, exclusions: list }); return; }
     if (action === 'saveLinkedinSettings') { const s = await db.linkedinSettings(); const n = body.linkedin || {}; const lim = L.limits(n); await db.setConfig('linkedin', Object.assign({}, s, lim, { timezone: n.timezone || s.timezone || 'America/New_York' })); res.status(200).json({ ok: true, linkedin: await db.linkedinSettings() }); return; }
     if (action === 'scoringImpact') { db.validateScoring(body.scoring || {}); res.status(200).json({ impact: db.scoringImpact(body.scoring) }); return; }
