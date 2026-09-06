@@ -186,6 +186,7 @@ module.exports = async (req, res) => {
     }
     if (action === 'saveProfile') { const ok = await db.setConfig('service_profile', Object.assign({}, M.DEFAULT_PROFILE, body.profile || {})); res.status(200).json({ ok: ok, profile: await db.serviceProfile(null) }); return; }
     if (action === 'saveAlerts') { const mobiles = (body.mobiles || []).map((m) => String(m).trim()).filter((m) => /\d{9,}/.test(m.replace(/\s+/g, ''))); await db.setConfig('alerts', { mobiles: mobiles, all_replies: !!body.all_replies }); res.status(200).json({ ok: true, alerts: await db.getConfig('alerts', {}) }); return; }
+    if (action === 'regenerateMessages') { res.status(200).json({ ok: true, rebuilt: await db.regenerateMessages(owner, actor) }); return; }
     if (action === 'saveExclusions') { const list = (body.exclusions || []).map((x) => String(x).trim()).filter(Boolean); await db.setConfig('exclusions', list); res.status(200).json({ ok: true, exclusions: list }); return; }
     if (action === 'saveLinkedinSettings') { const s = await db.linkedinSettings(); const n = body.linkedin || {}; const lim = L.limits(n); await db.setConfig('linkedin', Object.assign({}, s, lim, { timezone: n.timezone || s.timezone || 'America/New_York' })); res.status(200).json({ ok: true, linkedin: await db.linkedinSettings() }); return; }
     if (action === 'scoringImpact') { db.validateScoring(body.scoring || {}); res.status(200).json({ impact: db.scoringImpact(body.scoring) }); return; }

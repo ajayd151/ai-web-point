@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.4.8",
+    "date": "2026-09-06",
+    "notes": [
+      "Messages sign off \"Aj, Co-founder at Shekipro\" (sender title is a profile field). Rebuild all messages button in Settings rewrites every prospect's messages from the current profile."
+    ]
+  },
+  {
     "version": "1.4.7",
     "date": "2026-09-06",
     "notes": [
