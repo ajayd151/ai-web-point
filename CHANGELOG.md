@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.3.8 (6 Sep 2026)
+- Acceptance alerts read "new ShekiPro connection".
+
 ## 1.3.7 (6 Sep 2026)
 - Campaigns table reads as a funnel: Prospects, Requested, Connected, Videos sent, Positive replies, Other replies.
 

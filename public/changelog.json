@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.3.8",
+    "date": "2026-09-06",
+    "notes": [
+      "Acceptance alerts now read \"new ShekiPro connection\" in the text and the email subject."
+    ]
+  },
+  {
     "version": "1.3.7",
     "date": "2026-09-06",
     "notes": [
