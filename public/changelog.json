@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.4.5",
+    "date": "2026-09-06",
+    "notes": [
+      "Ready to send: with a LinkedIn provider connected the card shows Send on LinkedIn only; Copy and Mark Msg 1 sent sit behind a small \"send by hand instead\" link."
+    ]
+  },
+  {
     "version": "1.4.4",
     "date": "2026-09-06",
     "notes": [

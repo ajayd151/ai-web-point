@@ -1653,6 +1653,9 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-shortlist { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
 .vo-shortlist ol { margin: 4px 0 0 18px; padding: 0; }
 .vo-card button[disabled], .vo-card button:disabled { opacity: .45; cursor: not-allowed; filter: grayscale(1); }
+.vo-byhand { display: inline-block; margin-left: 10px; }
+.vo-byhand summary { cursor: pointer; color: #64748b; }
+.vo-byhand[open] summary { margin-bottom: 4px; }
 .vo-card.vo-demo { border-style: dashed; border-color: #fde68a; background: #fffdf5; }
 .vo-card.vo-focus { border: 2px solid #0f766e; box-shadow: 0 0 0 4px #ccfbf1; }
 .vo-askrow { display: flex; gap: 8px; margin: 6px 0 10px; }
