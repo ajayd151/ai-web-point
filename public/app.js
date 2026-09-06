@@ -296,6 +296,7 @@ async function refreshAccess() {
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
   if ($('nav-vo')) $('nav-vo').classList.toggle('hidden', !acc.videoOutreach); // Video Outreach: owner + allow-list only
   if ($('nav-vo-help')) $('nav-vo-help').classList.toggle('hidden', !acc.videoOutreach);
+  if ($('nav-vo-ask')) $('nav-vo-ask').classList.toggle('hidden', !acc.videoOutreach);
   if ($('app-version')) { $('app-version').textContent = acc.version || ''; $('app-version').onclick = showChangelog; } // subtle build stamp, bottom-left, click for history
   // team member: hide the controls they lack permission for + show a one-time professional-use notice
   applyMemberUI(acc);
@@ -2216,6 +2217,7 @@ function showView(name) {
   if (name === 'deepdossier') ddShowPane('search'); // always open on the search sub-tab
   if (name === 'vo' && typeof voShow === 'function') voShow(); // Video Outreach module (vo.js)
   if (name === 'vo' && window.__voSub === 'help' && typeof voOpenHelp === 'function') { window.__voSub = null; setTimeout(voOpenHelp, 50); }
+  if (name === 'vo' && window.__voSub === 'ask' && typeof voOpenAsk === 'function') { window.__voSub = null; setTimeout(voOpenAsk, 50); }
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'performance') loadDigest(); // the same morning summary the 8am email sends
   if (name === 'messages') { renderBlocked(); updateWaToday(); }

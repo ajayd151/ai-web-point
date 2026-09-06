@@ -13,15 +13,15 @@ async function voApi(action, payload) {
 }
 function voPane(name) {
   VO.pane = name;
-  ['campaigns', 'edit', 'prospects', 'detail', 'ready', 'results', 'settings', 'help'].forEach((p) => { const el = $('vo-pane-' + p); if (el) el.classList.toggle('hidden', p !== name); });
+  ['campaigns', 'edit', 'prospects', 'detail', 'ready', 'results', 'settings', 'help', 'ask'].forEach((p) => { const el = $('vo-pane-' + p); if (el) el.classList.toggle('hidden', p !== name); });
   const tab = name === 'edit' ? 'campaigns' : (name === 'detail' ? 'prospects' : name);
   document.querySelectorAll('.vo-tab').forEach((b) => b.classList.toggle('active', b.dataset.vopane === tab));
   try { window.scrollTo({ top: 0 }); } catch (e) {}
 }
 async function voShow() {
   await voLoadCampaigns();
-  const m = String(location.hash || '').match(/^#vo-(ready|help)(?:-(\d+))?$/);
-  if (m) { VO.loaded = true; if (m[1] === 'help') return voOpenHelp(); VO.readyFocus = m[2] ? Number(m[2]) : null; return voOpenReady(); }
+  const m = String(location.hash || '').match(/^#vo-(ready|help|ask)(?:-(\d+))?$/);
+  if (m) { VO.loaded = true; if (m[1] === 'help') return voOpenHelp(); if (m[1] === 'ask') return voOpenAsk(); VO.readyFocus = m[2] ? Number(m[2]) : null; return voOpenReady(); }
   if (!VO.loaded) { voPane('campaigns'); VO.loaded = true; }
 }
 // arriving on a #vo-... link (from the SMS or email) opens Video Outreach straight away
@@ -33,6 +33,7 @@ document.querySelectorAll('.vo-tab').forEach((b) => b.addEventListener('click', 
   else if (t === 'results') voOpenResults();
   else if (t === 'settings') voOpenSettings();
   else if (t === 'help') voOpenHelp();
+  else if (t === 'ask') voOpenAsk();
   else voPane('campaigns');
 }));
 
@@ -664,21 +665,30 @@ async function voOpenSettings() {
 }
 
 // ---- Help (the guide with its menu, shown inside the app) ----
+// The Ask AI box, used on its own screen (left menu) and at the top of Help
+function voAskBoxHtml() {
+  return '<div class="vo-card vo-ask"><h4 style="margin:0 0 6px">🤖 Ask AI about Video Outreach</h4><p class="vo-help">Ask anything: how to do something, what a number means, what happens next. It answers from the guide and your live campaigns, remembers what you asked, and drafts an FAQ entry when a question is worth keeping. Ideas it cannot do are logged for the developer.</p>' +
+    '<div class="vo-askrow"><input type="text" id="vo-ask-q" placeholder="e.g. How do I add a second person to get the texts?" /><button class="primary" id="vo-ask-go">Ask</button></div><div id="vo-ask-answer"></div><div id="vo-ask-history"></div></div>';
+}
+function voWireAsk() {
+  const ask = async () => {
+    const q = $('vo-ask-q').value.trim(); if (!q) { voStatus('Type a question first', 'err'); return; }
+    const b = $('vo-ask-go'); b.disabled = true; b.textContent = 'Thinking…'; $('vo-ask-answer').innerHTML = '<div class="muted vo-small">Reading the guide and your campaigns…</div>';
+    try { const r = await voApi('ask', { question: q }); voRenderAsk(r.item, true); $('vo-ask-q').value = ''; await voAskHistory(); } catch (e) { voStatus(e.message, 'err'); $('vo-ask-answer').innerHTML = ''; } finally { b.disabled = false; b.textContent = 'Ask'; }
+  };
+  voOn('vo-ask-go', 'click', ask);
+  const q = $('vo-ask-q'); if (q) { q.addEventListener('keydown', (e) => { if (e.key === 'Enter') ask(); }); q.focus(); }
+  voAskHistory();
+}
+function voOpenAsk() {
+  const el = $('vo-pane-ask'); voPane('ask');
+  el.innerHTML = voAskBoxHtml() + '<p class="vo-help">The full guide, with click paths, times of day and FAQs, is under Help and guide.</p>';
+  voWireAsk();
+}
 function voOpenHelp() {
   const el = $('vo-pane-help'); voPane('help');
-  if (!el.querySelector('iframe')) {
-    el.innerHTML = '<div class="vo-card vo-ask"><h4 style="margin:0 0 6px">🤖 Ask AI about Video Outreach</h4><p class="vo-help">Ask anything: how to do something, what a number means, what happens next. It answers from the guide and your live campaigns, remembers what you asked, and drafts an FAQ entry when a question is worth keeping. Ideas it cannot do are logged for the developer.</p>' +
-      '<div class="vo-askrow"><input type="text" id="vo-ask-q" placeholder="e.g. How do I add a second person to get the texts?" /><button class="primary" id="vo-ask-go">Ask</button></div><div id="vo-ask-answer"></div><div id="vo-ask-history"></div></div>' +
-      '<iframe src="/help-video-outreach.html?ts=' + Date.now() + '" class="vo-helpframe" title="Video Outreach help"></iframe>';
-    const ask = async () => {
-      const q = $('vo-ask-q').value.trim(); if (!q) { voStatus('Type a question first', 'err'); return; }
-      const b = $('vo-ask-go'); b.disabled = true; b.textContent = 'Thinking…'; $('vo-ask-answer').innerHTML = '<div class="muted vo-small">Reading the guide and your campaigns…</div>';
-      try { const r = await voApi('ask', { question: q }); voRenderAsk(r.item, true); $('vo-ask-q').value = ''; await voAskHistory(); } catch (e) { voStatus(e.message, 'err'); $('vo-ask-answer').innerHTML = ''; } finally { b.disabled = false; b.textContent = 'Ask'; }
-    };
-    voOn('vo-ask-go', 'click', ask);
-    $('vo-ask-q').addEventListener('keydown', (e) => { if (e.key === 'Enter') ask(); });
-    voAskHistory();
-  }
+  el.innerHTML = voAskBoxHtml() + '<iframe src="/help-video-outreach.html?ts=' + Date.now() + '" class="vo-helpframe" title="Video Outreach help"></iframe>';
+  voWireAsk();
 }
 function voAskText(t) { return esc(String(t || '')).replace(/\n\n+/g, '</p><p>').replace(/\n- /g, '<br>• ').replace(/\n/g, '<br>'); }
 function voRenderAsk(item, fresh) {

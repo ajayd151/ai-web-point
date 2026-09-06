@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.4.6",
+    "date": "2026-09-06",
+    "notes": [
+      "Ask AI has its own entry in the left menu under Video Outreach and its own tab, always one click away. The Help screen keeps a copy at the top."
+    ]
+  },
+  {
     "version": "1.4.5",
     "date": "2026-09-06",
     "notes": [
