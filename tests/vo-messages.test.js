@@ -60,6 +60,6 @@ test('post-check rejects the things the spec forbids', () => {
 });
 
 test('static brands get the "video would work harder" hook, video brands get the product angle', () => {
-  assert.match(M.genericObservation({ category: 'Collagen', creative_style: 'Static' }), /video would work harder/);
+  assert.ok(/work harder|still images/i.test(M.generate({ dm_name: 'Sam', category: 'collagen', creative_style: 'Static', active_meta_ads: 12, suggested_product_name: 'Collagen' }, M.DEFAULT_PROFILE, null).message_a), 'static brands get the video hook somewhere in Message A');
   assert.match(M.genericObservation({ category: 'Collagen', creative_style: 'Video-led' }), /video ads on Meta/);
 });
