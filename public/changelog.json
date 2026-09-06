@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.2.7",
+    "date": "2026-09-06",
+    "notes": [
+      "Refresh ad counts shows progress from the first click: the brand it is on and its new ad count."
+    ]
+  },
+  {
     "version": "1.2.6",
     "date": "2026-09-06",
     "notes": [

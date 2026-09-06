@@ -249,11 +249,12 @@ async function voEditCampaign(id) {
   voOn('vo-run', 'click', () => voRunNow(c.id));
   voOn('vo-recount', 'click', async () => {
     if (!confirm('Re-pull the live ad counts for every brand on this campaign? This uses Apify (about 30 rows per brand) and re-scores each one.')) return;
-    const b = $('vo-recount'); b.disabled = true; let done = 0;
+    const b = $('vo-recount'); b.disabled = true; let done = 0; b.textContent = '⏳ Refreshing… pulling the first brand (up to a minute each)';
     try {
       for (let i = 0; i < 200; i++) {
         const r = await voApi('recountCampaign', { id: c.id, limit: 1 });
-        done += (r.rechecked || []).length; b.textContent = '↻ Refreshing… ' + done + ' done, ' + r.remaining + ' left';
+        done += (r.rechecked || []).length; const last = (r.rechecked || [])[0];
+        b.textContent = '⏳ Refreshing… ' + done + ' done, ' + r.remaining + ' left' + (last ? ' (' + last.brand + (last.ads != null ? ': ' + last.ads + ' ads' : (last.error ? ': ' + last.error.slice(0, 40) : '')) + ')' : '');
         if (r.blocked) { alert('Apify refused: ' + ((r.rechecked.find((x) => x.error) || {}).error || 'limit reached') + '. Upgrade the Apify plan and try again.'); break; }
         if (!r.remaining || !(r.rechecked || []).length) break;
       }
