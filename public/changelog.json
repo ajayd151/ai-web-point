@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.4.1",
+    "date": "2026-09-06",
+    "notes": [
+      "Acceptance texts and emails carry a link that opens that brand's Ready to send card with the video box ready.",
+      "Daily report email every morning after 8am UK (brands found, requests, acceptances with times, videos sent, replies, what is waiting for you), and the same numbers on the Results tab.",
+      "Help and guide in the left menu under Video Outreach, with exact click paths, times of day and a step-by-step campaign setup."
+    ]
+  },
+  {
     "version": "1.4.0",
     "date": "2026-09-06",
     "notes": [

@@ -20,8 +20,12 @@ function voPane(name) {
 }
 async function voShow() {
   await voLoadCampaigns();
+  const m = String(location.hash || '').match(/^#vo-(ready|help)(?:-(\d+))?$/);
+  if (m) { VO.loaded = true; if (m[1] === 'help') return voOpenHelp(); VO.readyFocus = m[2] ? Number(m[2]) : null; return voOpenReady(); }
   if (!VO.loaded) { voPane('campaigns'); VO.loaded = true; }
 }
+// arriving on a #vo-... link (from the SMS or email) opens Video Outreach straight away
+if (/^#vo-/.test(location.hash) && typeof showView === 'function') setTimeout(() => showView('vo'), 400);
 document.querySelectorAll('.vo-tab').forEach((b) => b.addEventListener('click', () => {
   const t = b.dataset.vopane;
   if (t === 'prospects') { VO.filters.campaignId = ''; voOpenProspects(''); }
@@ -554,6 +558,7 @@ async function voOpenReady() {
     (tasks ? '<div class="vo-fit"><table class="cust-table vo-table"><thead><tr><th>Brand</th><th>Which</th><th>Channel</th><th>Due</th><th>Stage</th><th></th></tr></thead><tbody>' + tasks + '</tbody></table></div>' : '<p class="muted">No follow-ups due today.</p>');
   voOn('vo-ready-refresh', 'click', voOpenReady);
   voOn('vo-li-tick', 'click', async () => { try { const r = await voApi('linkedinTick'); const t = r.tick || {}; voStatus(t.enabled === false ? 'Provider not configured.' : 'Checked: ' + (t.accepted || 0) + ' accepted, ' + (t.replies || 0) + ' replies, ' + (t.requests || 0) + ' request(s) sent' + (t.skipped ? ' (' + t.skipped + ')' : '') + (t.error_send || t.error_accept || t.error_replies ? '. Error: ' + (t.error_send || t.error_accept || t.error_replies) : '')); voOpenReady(); } catch (e) { voStatus(e.message, 'err'); } });
+  if (VO.readyFocus) { const card = el.querySelector('.vo-card[data-id="' + VO.readyFocus + '"]'); if (card) { card.classList.add('vo-focus'); card.scrollIntoView({ block: 'center' }); const u = card.querySelector('.vo-ready-url'); if (u) u.focus(); voStatus('Paste the video link into the highlighted card and click Send on LinkedIn', 'note'); } VO.readyFocus = null; }
   el.querySelectorAll('.vo-card').forEach((card) => {
     const id = Number(card.dataset.id);
     card.querySelector('.vo-open').addEventListener('click', () => voOpenProspect(id));
@@ -576,11 +581,20 @@ async function voOpenResults(campaignId) {
   const rows = d.rows || []; const pct = (a, b) => (b ? Math.round(a / b * 1000) / 10 + '%' : '–');
   const agg = (key) => { const m = {}; rows.forEach((r) => { const k = r[key] || '(none)'; m[k] = m[k] || { total: 0, contacted: 0, replied: 0, calls: 0, pilots: 0, won: 0 }; ['total', 'contacted', 'replied', 'calls', 'pilots', 'won'].forEach((f) => { m[k][f] += Number(r[f]) || 0; }); }); return m; };
   const table = (title, m, order) => { const keys = Object.keys(m).sort((a, b) => (order.indexOf(a) < 0 ? 99 : order.indexOf(a)) - (order.indexOf(b) < 0 ? 99 : order.indexOf(b))); return '<h4>' + title + '</h4><div class="vo-fit"><table class="cust-table vo-table"><thead><tr><th>' + title.split(' by ')[1] + '</th><th>Prospects</th><th>Contacted</th><th>Replied</th><th>Reply rate</th><th>Calls</th><th>Call rate</th><th>Pilots</th><th>Pilot rate</th><th>Won</th></tr></thead><tbody>' + (keys.length ? keys.map((k) => { const x = m[k]; return '<tr><td><b>' + esc(k) + '</b></td><td class="num">' + x.total + '</td><td class="num">' + x.contacted + '</td><td class="num">' + x.replied + '</td><td class="num">' + pct(x.replied, x.contacted) + '</td><td class="num">' + x.calls + '</td><td class="num">' + pct(x.calls, x.contacted) + '</td><td class="num">' + x.pilots + '</td><td class="num">' + pct(x.pilots, x.contacted) + '</td><td class="num">' + x.won + '</td></tr>'; }).join('') : '<tr><td colspan="10" class="muted">No data yet. Rates fill in as stages are set.</td></tr>') + '</tbody></table></div>'; };
-  el.innerHTML = '<div class="vo-bar"><div><h3 style="margin:0">Results</h3><p class="muted view-sub" style="margin:2px 0 0">Reply, call and pilot rates by priority band and by message variant, so the weights and the A/B choice can be tuned from data. Rates are against contacted prospects.</p></div>' +
+  let rep = null; try { rep = (await voApi('report')).report; } catch (e) { rep = null; }
+  const stamp = (x) => x ? esc(voStamp(x)) : '';
+  const repHtml = rep ? '<div class="vo-card"><div class="vo-bar" style="margin:0 0 8px"><h4 style="margin:0">Daily report <span class="muted vo-small">(emailed every morning at 8am UK)</span></h4><button class="ghost sm" id="vo-report-send">Email it to me now</button></div>' +
+    '<div class="vo-tiles"><div class="vo-tile"><b>' + rep.day.found + '</b><span>brands found, 24h</span></div><div class="vo-tile"><b>' + rep.day.requests + '</b><span>requests sent, 24h</span></div><div class="vo-tile q"><b>' + rep.day.accepted + '</b><span>accepted, 24h</span></div><div class="vo-tile"><b>' + rep.day.videos + '</b><span>videos sent, 24h</span></div><div class="vo-tile c"><b>' + rep.day.replies + '</b><span>replies, 24h (' + rep.day.positive + ' positive)</span></div><div class="vo-tile d"><b>' + rep.waiting.length + '</b><span>waiting for a video</span></div></div>' +
+    (rep.waiting.length ? '<p><b>Accepted, video not yet sent:</b> ' + rep.waiting.map((p) => esc(p.brand) + ' (' + esc(p.dm_name || 'contact') + ', accepted ' + stamp(p.linkedin_connected_at) + ')').join('; ') + '</p>' : '') +
+    (rep.replied_open.length ? '<p><b>Replies to answer:</b> ' + rep.replied_open.map((p) => esc(p.brand) + ' (' + esc(p.reply_sentiment || 'reply') + ')').join('; ') + '</p>' : '') +
+    '<p class="vo-small">Follow-ups due today: ' + rep.followups_due + ' · LinkedIn automation ' + (rep.linkedin.paused ? '<span class="vo-no">paused</span>' : '<span class="vo-yes">running</span>') + ', requests today ' + rep.today_requests + ' of ' + rep.linkedin.daily_requests + ', this week ' + rep.week_requests + ' of ' + rep.linkedin.weekly_requests + '</p>' +
+    '<details class="vo-details"><summary>Events in the last 24 hours (' + rep.events.length + ')</summary>' + (rep.events.length ? '<table class="vo-mini"><tbody>' + rep.events.map((e) => '<tr><td class="vo-small muted">' + stamp(e.at) + '</td><td><b>' + esc(e.brand) + '</b> ' + esc(e.step) + (e.channel ? ' <span class="muted">' + esc(e.channel) + '</span>' : '') + (e.detail ? '<div class="vo-small">' + esc(String(e.detail).slice(0, 120)) + '</div>' : '') + '</td></tr>').join('') + '</tbody></table>' : '<p class="muted vo-small">Nothing yet.</p>') + '</details></div>' : '';
+  el.innerHTML = repHtml + '<div class="vo-bar"><div><h3 style="margin:0">Results</h3><p class="muted view-sub" style="margin:2px 0 0">Reply, call and pilot rates by priority band and by message variant, so the weights and the A/B choice can be tuned from data. Rates are against contacted prospects.</p></div>' +
     '<div>Campaign: <select id="vo-res-camp"><option value="">All</option>' + (d.campaigns || []).map((c) => '<option value="' + c.id + '"' + (String(c.id) === String(campaignId || '') ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') + '</select></div></div>' +
     table('Outcomes by priority band', agg('priority'), ['Must target', 'Strong', 'Possible', 'Later', 'Unlikely']) + table('Outcomes by variant', agg('variant'), ['A video sent', 'B permission', '(none)']) +
     '<p class="vo-help">Reading it: if Possible replies as often as Strong, the 65 boundary is too strict; if variant B out-replies A, lead with permission. Change weights in Settings, they re-score every prospect.</p>';
   voOn('vo-res-camp', 'change', () => voOpenResults($('vo-res-camp').value));
+  voOn('vo-report-send', 'click', async () => { try { const r = await voApi('sendReportNow'); voStatus(r.sent ? 'Daily report emailed' : 'Report built but the email was not accepted (check VO_NOTIFY_EMAIL and SendGrid)', r.sent ? 'ok' : 'err'); } catch (e) { voStatus(e.message, 'err'); } });
 }
 
 // ---- Settings (5.4) ----

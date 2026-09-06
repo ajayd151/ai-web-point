@@ -193,6 +193,8 @@ module.exports = async (req, res) => {
     if (action === 'scoringImpact') { db.validateScoring(body.scoring || {}); res.status(200).json({ impact: db.scoringImpact(body.scoring) }); return; }
     if (action === 'saveScoring') { const r = await db.saveScoring(body.scoring || {}, actor); const n = body.rescore ? await db.rescoreAll(owner) : 0; res.status(200).json(Object.assign(r, { rescored: n })); return; }
     if (action === 'resetScoring') { const cfg = await db.resetScoring(); const n = await db.rescoreAll(owner); res.status(200).json({ ok: true, config: cfg, rescored: n }); return; }
+    if (action === 'report') { res.status(200).json({ report: await db.reportData(owner) }); return; }
+    if (action === 'sendReportNow') { res.status(200).json(await J.dailyReport(owner, actor, base, true)); return; }
     if (action === 'results') { res.status(200).json({ rows: await db.results(owner, body.campaignId || null), campaigns: await db.listCampaigns(owner) }); return; }
     res.status(400).json({ error: 'Unknown action.' });
   } catch (e) {

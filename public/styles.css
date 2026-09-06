@@ -1649,6 +1649,8 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-actrow button { margin: 0; min-width: 84px; justify-content: center; }
 .vo-zebra tbody tr:nth-child(even) { background: #f8fafc; }
 .vo-table td.nowrap { white-space: nowrap; }
+.navbtn-sub { padding-left: 34px !important; font-size: 13px !important; opacity: .9; }
+.vo-card.vo-focus { border: 2px solid #0f766e; box-shadow: 0 0 0 4px #ccfbf1; }
 .vo-helpframe { width: 100%; height: calc(100vh - 220px); min-height: 600px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
 .vo-table .vo-acts button { margin-right: 4px; }
 .vo-prospects tr.vo-row { cursor: pointer; }

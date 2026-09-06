@@ -2,6 +2,11 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.4.1 (6 Sep 2026)
+- Acceptance texts and emails carry a link that opens that brand's Ready to send card.
+- Daily report email every morning after 8am UK, and the same numbers on the Results tab.
+- Help and guide in the left menu, with click paths, times of day and a step-by-step campaign setup.
+
 ## 1.4.0 (6 Sep 2026)
 - Connection requests go out at a random 10 to 30 minute gap, never the same gap twice in a row.
 

@@ -295,6 +295,7 @@ async function refreshAccess() {
   // Deep Dossier Leads lives as a left sub-menu inside this section, not a top tab.
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
   if ($('nav-vo')) $('nav-vo').classList.toggle('hidden', !acc.videoOutreach); // Video Outreach: owner + allow-list only
+  if ($('nav-vo-help')) $('nav-vo-help').classList.toggle('hidden', !acc.videoOutreach);
   if ($('app-version')) { $('app-version').textContent = acc.version || ''; $('app-version').onclick = showChangelog; } // subtle build stamp, bottom-left, click for history
   // team member: hide the controls they lack permission for + show a one-time professional-use notice
   applyMemberUI(acc);
@@ -2211,9 +2212,10 @@ let lastDashboard = null;
 function showView(name) {
   window.AIWP_VIEW = name; // remembered so the feedback form can note which page you were on
   ['search', 'messages', 'performance', 'hotleads', 'leads', 'websites', 'calls', 'enquiries', 'admin', 'deepdossier', 'vo'].forEach((v) => { const el = $('view-' + v); if (el) el.classList.toggle('hidden', v !== name); });
-  document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
+  document.querySelectorAll('.navbtn').forEach((b) => b.classList.toggle('active', b.dataset.view === name && !b.dataset.vosub));
   if (name === 'deepdossier') ddShowPane('search'); // always open on the search sub-tab
   if (name === 'vo' && typeof voShow === 'function') voShow(); // Video Outreach module (vo.js)
+  if (name === 'vo' && window.__voSub === 'help' && typeof voOpenHelp === 'function') { window.__voSub = null; setTimeout(voOpenHelp, 50); }
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'performance') loadDigest(); // the same morning summary the 8am email sends
   if (name === 'messages') { renderBlocked(); updateWaToday(); }
@@ -2230,7 +2232,7 @@ function ddShowPane(v) {
   if (v === 'leads') loadOurLeads();
 }
 document.querySelectorAll('.dd-navbtn').forEach(function (b) { b.addEventListener('click', function () { ddShowPane(b.dataset.ddview); }); });
-document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => { showView(b.dataset.view); closeSidenav(); }));
+document.querySelectorAll('.navbtn').forEach((b) => b.addEventListener('click', () => { if (b.dataset.vosub) window.__voSub = b.dataset.vosub; showView(b.dataset.view); closeSidenav(); }));
 // Left sidebar: hamburger opens it on mobile, backdrop or a nav choice closes it.
 function openSidenav() { const s = $('sidenav'), bd = $('sidenav-backdrop'); if (s) s.classList.add('open'); if (bd) bd.classList.add('show'); }
 function closeSidenav() { const s = $('sidenav'), bd = $('sidenav-backdrop'); if (s) s.classList.remove('open'); if (bd) bd.classList.remove('show'); }
