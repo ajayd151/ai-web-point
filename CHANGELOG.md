@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.4.2 (6 Sep 2026)
+- Film this, in order: a ranked shortlist of up to three products with reasons on the prospect page and the Ready to send card; the store is re-read at acceptance.
+
 ## 1.4.1 (6 Sep 2026)
 - Acceptance texts and emails carry a link that opens that brand's Ready to send card.
 - Daily report email every morning after 8am UK, and the same numbers on the Results tab.

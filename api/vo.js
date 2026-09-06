@@ -143,12 +143,8 @@ module.exports = async (req, res) => {
     }
     if (action === 'refreshProducts') { // re-fetch the Shopify feed and re-run the product rule for one prospect
       const p = await db.getProspect(owner, id); if (!p) { res.status(404).json({ error: 'Prospect not found.' }); return; }
-      const shop = await S.shopifyProducts(p.domain, {});
-      if (!shop.is_shopify) { res.status(400).json({ error: 'No Shopify products feed at ' + p.domain + (shop.status ? ' (HTTP ' + shop.status + ')' : '') }); return; }
-      const featured = await S.featuredProducts(p.domain, shop.products);
-      const pick = S.pickProduct(shop.products, (p.ad_analysis && p.ad_analysis.hero_product) || '', featured);
-      await db.updateProspect(owner, actor, id, { skus: shop.skus, suggested_product_url: pick.url, suggested_product_name: pick.name, product_photo_check: pick.check, why_this_product: pick.why });
-      await db.setProducts(id, shop.products, 'shopify');
+      const r = await J.refreshProducts(owner, actor, p);
+      if (!r.ok) { res.status(400).json({ error: r.error }); return; }
       res.status(200).json({ ok: true, prospect: await db.getProspect(owner, id) }); return;
     }
     if (action === 'runs') { res.status(200).json({ runs: await db.listRuns(owner, id) }); return; }
