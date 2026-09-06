@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.2.9",
+    "date": "2026-09-06",
+    "notes": [
+      "Refresh ad counts ends with a clear pop-up, and says so when everything was already counted."
+    ]
+  },
+  {
     "version": "1.2.8",
     "date": "2026-09-06",
     "notes": [

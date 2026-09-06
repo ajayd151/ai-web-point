@@ -262,7 +262,8 @@ async function voEditCampaign(id) {
         if (r.blocked) { alert('Apify refused: ' + ((r.rechecked.find((x) => x.error) || {}).error || 'limit reached') + '. Upgrade the Apify plan and try again.'); break; }
         if (!r.remaining || !(r.rechecked || []).length) break;
       }
-      voToast('Ad counts refreshed for ' + done + ' brand(s)');
+      alert(done ? 'Ad counts refreshed for ' + done + ' brand(s). Open Prospects to see the new scores.' : 'Every brand on this campaign was already counted in the last hour, nothing to do. Open Prospects to see the scores.');
+      await voLoadCampaigns(); voEditCampaign(c.id);
     } catch (e) { alert(e.message); } finally { b.disabled = false; b.textContent = '↻ Refresh ad counts'; }
   });
   voOn('vo-import-file', 'change', (e) => { const f = e.target.files && e.target.files[0]; if (f) { const rd = new FileReader(); rd.onload = () => voImport(c.id, String(rd.result || '')); rd.readAsText(f); } });
