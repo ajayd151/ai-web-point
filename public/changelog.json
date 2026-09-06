@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.2.8",
+    "date": "2026-09-06",
+    "notes": [
+      "Help bubbles on the campaign page sections: Run now, Ad counts (Refresh), Import prospects and Runs."
+    ]
+  },
+  {
     "version": "1.2.7",
     "date": "2026-09-06",
     "notes": [

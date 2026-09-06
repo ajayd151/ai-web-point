@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.2.8 (6 Sep 2026)
+- Help bubbles on the campaign page sections: Run now, Ad counts (Refresh), Import prospects and Runs.
+
 ## 1.2.7 (6 Sep 2026)
 - Refresh ad counts shows progress from the first click: the brand it is on and its new ad count.
 
