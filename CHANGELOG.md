@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.3.7 (6 Sep 2026)
+- Campaigns table reads as a funnel: Prospects, Requested, Connected, Videos sent, Positive replies, Other replies.
+
 ## 1.3.6 (6 Sep 2026)
 - Campaigns table tidied: one row of buttons, alternating shading, Requested, Connected, Positive replies and Other replies columns.
 - Help opens inside Video Outreach as its own tab, with the flow, where you step in, and FAQs.
