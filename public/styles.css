@@ -1632,6 +1632,8 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-tabs { display: flex; gap: 6px; }
 .vo-tab { appearance: none; border: 1px solid #e2e8f0; background: #fff; color: #475569; font-size: 13px; font-weight: 700; padding: 7px 13px; border-radius: 999px; cursor: pointer; }
 .vo-help-link { text-decoration: none; display: inline-flex; align-items: center; }
+.vo-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; padding: 0 6px; margin-left: 6px; border-radius: 999px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 800; line-height: 1; }
+.vo-tab.active .vo-badge { background: #fff; color: #dc2626; }
 .vo-tab.on, .vo-tab.active { background: #0f766e; border-color: #0f766e; color: #fff; }
 .vo-bar { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin: 10px 0 14px; }
 .vo-bar .btn, .vo-bar .ghost.btn { display: inline-block; text-decoration: none; }

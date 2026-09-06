@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.4.11",
+    "date": "2026-09-06",
+    "notes": [
+      "Red count on the Ready to send tab and on the Video Outreach menu button: accepted connections waiting for a video plus follow-ups due today. Refreshes every two minutes."
+    ]
+  },
+  {
     "version": "1.4.10",
     "date": "2026-09-06",
     "notes": [

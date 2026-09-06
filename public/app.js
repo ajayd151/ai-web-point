@@ -297,6 +297,7 @@ async function refreshAccess() {
   if ($('nav-vo')) $('nav-vo').classList.toggle('hidden', !acc.videoOutreach); // Video Outreach: owner + allow-list only
   if ($('nav-vo-help')) $('nav-vo-help').classList.toggle('hidden', !acc.videoOutreach);
   if ($('nav-vo-ask')) $('nav-vo-ask').classList.toggle('hidden', !acc.videoOutreach);
+  if (acc.videoOutreach && typeof voRefreshBadge === 'function' && !window.__voBadgeTimer) { voRefreshBadge(); window.__voBadgeTimer = setInterval(voRefreshBadge, 120000); }
   if ($('app-version')) { $('app-version').textContent = acc.version || ''; $('app-version').onclick = showChangelog; } // subtle build stamp, bottom-left, click for history
   // team member: hide the controls they lack permission for + show a one-time professional-use notice
   applyMemberUI(acc);

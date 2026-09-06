@@ -169,6 +169,15 @@ function voStatus(msg, kind) {
   el.classList.remove('hidden');
 }
 function voToast(msg) { voStatus(msg, 'ok'); }
+// Red count on the Ready to send tab and the left-menu button: accepted connections waiting for a video, plus follow-ups due today
+function voBadge(ready, due) {
+  const n = (Number(ready) || 0) + (Number(due) || 0);
+  const tab = document.querySelector('.vo-tab[data-vopane="ready"]');
+  if (tab) { let b = tab.querySelector('.vo-badge'); if (!b) { b = document.createElement('span'); b.className = 'vo-badge'; tab.appendChild(b); } b.textContent = n; b.title = (ready || 0) + ' waiting for a video, ' + (due || 0) + ' follow-ups due'; b.classList.toggle('hidden', !n); }
+  const nav = $('nav-vo');
+  if (nav) { let b = nav.querySelector('.vo-badge'); if (!b) { b = document.createElement('span'); b.className = 'vo-badge'; nav.appendChild(b); } b.textContent = n; b.classList.toggle('hidden', !n); }
+}
+async function voRefreshBadge() { try { const d = await voApi('readyCount'); voBadge(d.ready_count, d.followups_due); } catch (e) {} }
 function voBanner() {
   const el = $('vo-banner'); if (!el) return;
   const li = VO.linkedin || {};
@@ -179,7 +188,7 @@ function voOn(id, ev, fn) { const x = $(id); if (x) x.addEventListener(ev, fn); 
 
 // ---- Campaigns (5.1) ----
 async function voLoadCampaigns() {
-  try { const d = await voApi('campaigns'); VO.campaigns = d.campaigns || []; VO.enums = d.enums; VO.profile = d.profile; VO.placeholder = d.placeholder || VO.placeholder; VO.providers = d.providers || {}; VO.linkedin = d.linkedin || {}; } catch (e) { VO.campaigns = []; }
+  try { const d = await voApi('campaigns'); VO.campaigns = d.campaigns || []; VO.enums = d.enums; VO.profile = d.profile; VO.placeholder = d.placeholder || VO.placeholder; VO.providers = d.providers || {}; VO.linkedin = d.linkedin || {}; voBadge(d.ready_count, d.followups_due); } catch (e) { VO.campaigns = []; }
   voBanner();
   voRenderCampaigns();
 }
@@ -560,7 +569,7 @@ async function voOpenReady() {
   const el = $('vo-pane-ready'); voPane('ready'); el.innerHTML = '<p class="muted">Loading…</p>';
   let d, f;
   try { d = await voApi('readyToSend'); f = await voApi('dueFollowups'); } catch (e) { el.innerHTML = '<p class="vo-no">' + esc(e.message) + '</p>'; return; }
-  VO.providers = d.providers || VO.providers; VO.linkedin = d.linkedin || VO.linkedin; voBanner();
+  VO.providers = d.providers || VO.providers; VO.linkedin = d.linkedin || VO.linkedin; voBanner(); voBadge((d.prospects || []).length, (f.tasks || []).length);
   const P = VO.providers; const liOn = P.linkedin && P.linkedin !== 'off';
   const cards = (d.prospects || []).map((p) => '<div class="vo-card' + (p.source === 'demo' ? ' vo-demo' : '') + '" data-id="' + p.id + '">' + (p.source === 'demo' ? '<div class="vo-banner note" style="margin:0 0 8px">📘 <b>Example record.</b> This is what a real accepted connection looks like: the text arrived 20 minutes ago, the shortlist says what to film, you paste the video link below and click Send. Nothing can be sent from this example. <button class="ghost sm" id="vo-demo-remove">Remove example</button></div>' : '') + '<div class="vo-bar" style="margin:0 0 6px"><div><b>' + esc(p.brand) + '</b> ' + voPrio(p) + ' <span class="muted vo-small">' + esc(p.dm_name || '') + (p.dm_title ? ', ' + esc(p.dm_title) : '') + ' · ' + esc(p.campaign_name || '') + ' · connected ' + esc(voStamp(p.linkedin_connected_at)) + '</span></div><div>' + voLink(p.dm_linkedin, 'LinkedIn') + ' <button class="ghost sm vo-open">Open</button></div></div>' +
     voShortlist(p) +

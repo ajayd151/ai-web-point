@@ -36,7 +36,8 @@ module.exports = async (req, res) => {
 
   try {
     // ---- campaigns ----
-    if (action === 'campaigns') { res.status(200).json({ campaigns: await db.listCampaigns(owner), enums: db.ENUM, profile: await db.serviceProfile(null), placeholder: M.URL_PLACEHOLDER, providers: providers(), linkedin: await db.linkedinSettings() }); return; }
+    if (action === 'campaigns') { const ready = await db.readyToSend(owner); const due = await db.dueFollowups(owner); res.status(200).json({ campaigns: await db.listCampaigns(owner), enums: db.ENUM, profile: await db.serviceProfile(null), placeholder: M.URL_PLACEHOLDER, providers: providers(), linkedin: await db.linkedinSettings(), ready_count: ready.length, followups_due: due.length }); return; }
+    if (action === 'readyCount') { const ready = await db.readyToSend(owner); const due = await db.dueFollowups(owner); res.status(200).json({ ready_count: ready.length, followups_due: due.length }); return; }
     if (action === 'campaign') {
       const c = await db.getCampaign(owner, id); if (!c) { res.status(404).json({ error: 'Campaign not found.' }); return; }
       res.status(200).json({ campaign: c, runs: await db.listRuns(owner, id), profile: await db.serviceProfile(c), estimate: S.estimateRun(c), providers: providers(), presets: await db.listPresets(owner), templates: M.DEFAULT_TEMPLATES, running: (await db.runningRuns(owner)).filter((r) => r.campaign_id === c.id) }); return;
