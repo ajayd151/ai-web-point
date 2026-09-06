@@ -276,7 +276,7 @@ async function voEditCampaign(id) {
     row('Email sender', '<input type="text" data-sp="email_from" value="' + esc(sp.email_from || '') + '" placeholder="aj@shekipro.com (a SendGrid verified sender)" />', 'blank = the VO_EMAIL_FROM env setting') +
     row('Default variant', sel('default_variant', ['A video sent', 'B permission', 'Split test 50:50'], 'A video sent')) +
     sec('Message template set (per campaign)') +
-    row('Placeholders', '<span class="vo-small">{first} {service_name} {service_desc} {observation} {product} {video_url} {signoff} {sender_first} {signature} {offer_line} {pilot_line} {seasonal_event}. A blank line separates paragraphs. Blank box = the default template.</span>') +
+    row('Placeholders', '<span class="vo-small">{first} {service_name} {service_desc} {observation} {product} {video_url} {signoff} {sender_first} {signature} {proof} {closing_question} {offer_line} {pilot_line} {seasonal_event}. A blank line separates paragraphs. Blank box = the default template.</span>') +
     ['connection_note', 'message_a', 'message_b', 'followup_1', 'followup_2'].map((k) => row(k.replace('_', ' '), '<textarea data-tpl="' + k + '" rows="4">' + esc((c && c.template_set && c.template_set[k]) || '') + '</textarea><div class="vo-help">default: ' + esc(String(templates[k] || '').replace(/\n\n/g, ' / ')) + '</div>')).join('') +
     sec('Automation') +
     row('Auto follow-ups', '<input type="checkbox" data-auto="auto_followups"' + (auto.auto_followups ? ' checked' : '') + ' /> send Follow-up 1 (3 days) and Follow-up 2 (7 days) automatically on the channel Message 1 went out on', 'off = follow-ups wait as drafts in Ready to send') +

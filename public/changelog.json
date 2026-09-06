@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.0",
+    "date": "2026-09-06",
+    "notes": [
+      "Messages carry a proof line built from real numbers (new ads this month, ads live, static creative) so they read as researched, and Message A closes with a one-word-answer question that offers the next product on the shortlist."
+    ]
+  },
+  {
     "version": "1.4.11",
     "date": "2026-09-06",
     "notes": [

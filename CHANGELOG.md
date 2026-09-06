@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.0 (6 Sep 2026)
+- Messages carry a proof line from real numbers, and Message A closes with an easy-yes question offering the next product.
+
 ## 1.4.11 (6 Sep 2026)
 - Red count on the Ready to send tab and the Video Outreach menu button.
 
