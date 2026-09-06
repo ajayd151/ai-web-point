@@ -120,7 +120,13 @@ module.exports = async (req, res) => {
     if (action === 'updateProspect') { const p = await db.updateProspect(owner, actor, id, body.fields || {}); res.status(200).json({ ok: true, prospect: p }); return; }
     if (action === 'setVideoUrl') { const p = await db.setVideoUrl(owner, actor, id, body.url); res.status(200).json({ ok: true, prospect: p }); return; }
     if (action === 'setStage') { const p = await db.setStage(owner, actor, id, String(body.stage || ''), { note: body.note, variant_used: body.variant_used, channel: body.channel }); res.status(200).json({ ok: true, prospect: p }); return; }
-    if (action === 'setConnectionState') { const p = await db.setConnectionState(owner, actor, id, body.state || null, { note: body.note }); res.status(200).json({ ok: true, prospect: p }); return; }
+    if (action === 'setConnectionState') {
+      const before = await db.getProspect(owner, id);
+      const p = await db.setConnectionState(owner, actor, id, body.state || null, { note: body.note });
+      let sms = 0; if (body.state === 'Connected' && before && before.linkedin_connection_state !== 'Connected') { try { sms = (await J.newLeadAlerts(owner, p, base)).sms; } catch (e) {} } // marked by hand: same new-lead text
+      res.status(200).json({ ok: true, prospect: p, sms: sms }); return;
+    }
+    if (action === 'testAlerts') { res.status(200).json(Object.assign({ ok: true }, await J.testAlerts(owner, base))); return; }
     if (action === 'setOutcome') { const p = await db.setOutcome(owner, actor, id, body.outcome || null, body.note); res.status(200).json({ ok: true, prospect: p }); return; }
     if (action === 'recordReply') { // a reply you saw yourself (email or LinkedIn by hand): stored, classified, stage Replied
       const p0 = await db.getProspect(owner, id); if (!p0) { res.status(404).json({ error: 'Prospect not found.' }); return; }
@@ -180,7 +186,7 @@ module.exports = async (req, res) => {
       res.status(200).json({ scoring: await db.scoringConfig(), defaultScoring: require('../lib/vo-score').loadConfig(require('../lib/vo-score').DEFAULT_CONFIG_PATH), profile: await db.serviceProfile(null), exclusions: await db.globalExclusions(), linkedin: await db.linkedinSettings(), alerts: await db.getConfig('alerts', { mobiles: [], all_replies: false }), presets: await db.listPresets(owner), providers: providers(), templates: M.DEFAULT_TEMPLATES, limits: { hard_daily_requests: L.HARD_DAILY_REQUESTS } }); return;
     }
     if (action === 'saveProfile') { const ok = await db.setConfig('service_profile', Object.assign({}, M.DEFAULT_PROFILE, body.profile || {})); res.status(200).json({ ok: ok, profile: await db.serviceProfile(null) }); return; }
-    if (action === 'saveAlerts') { const mobiles = (body.mobiles || []).map((m) => String(m).replace(/[^+\d]/g, '')).filter((m) => m.length >= 10); await db.setConfig('alerts', { mobiles: mobiles, all_replies: !!body.all_replies }); res.status(200).json({ ok: true, alerts: await db.getConfig('alerts', {}) }); return; }
+    if (action === 'saveAlerts') { const mobiles = (body.mobiles || []).map((m) => String(m).trim()).filter((m) => /\d{9,}/.test(m.replace(/\s+/g, ''))); await db.setConfig('alerts', { mobiles: mobiles, all_replies: !!body.all_replies }); res.status(200).json({ ok: true, alerts: await db.getConfig('alerts', {}) }); return; }
     if (action === 'saveExclusions') { const list = (body.exclusions || []).map((x) => String(x).trim()).filter(Boolean); await db.setConfig('exclusions', list); res.status(200).json({ ok: true, exclusions: list }); return; }
     if (action === 'saveLinkedinSettings') { const s = await db.linkedinSettings(); const n = body.linkedin || {}; const lim = L.limits(n); await db.setConfig('linkedin', Object.assign({}, s, lim, { timezone: n.timezone || s.timezone || 'America/New_York' })); res.status(200).json({ ok: true, linkedin: await db.linkedinSettings() }); return; }
     if (action === 'scoringImpact') { db.validateScoring(body.scoring || {}); res.status(200).json({ impact: db.scoringImpact(body.scoring) }); return; }
