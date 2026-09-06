@@ -127,6 +127,7 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, prospect: p, sms: sms }); return;
     }
     if (action === 'testAlerts') { res.status(200).json(Object.assign({ ok: true }, await J.testAlerts(owner, base))); return; }
+    if (action === 'resetOutreach') { const p = await db.resetOutreach(owner, actor, id); res.status(200).json({ ok: true, prospect: p }); return; }
     if (action === 'setOutcome') { const p = await db.setOutcome(owner, actor, id, body.outcome || null, body.note); res.status(200).json({ ok: true, prospect: p }); return; }
     if (action === 'recordReply') { // a reply you saw yourself (email or LinkedIn by hand): stored, classified, stage Replied
       const p0 = await db.getProspect(owner, id); if (!p0) { res.status(404).json({ error: 'Prospect not found.' }); return; }
