@@ -1652,6 +1652,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .navbtn-sub { padding-left: 34px !important; font-size: 13px !important; opacity: .9; }
 .vo-shortlist { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
 .vo-shortlist ol { margin: 4px 0 0 18px; padding: 0; }
+.vo-card.vo-demo { border-style: dashed; border-color: #fde68a; background: #fffdf5; }
 .vo-card.vo-focus { border: 2px solid #0f766e; box-shadow: 0 0 0 4px #ccfbf1; }
 .vo-askrow { display: flex; gap: 8px; margin: 6px 0 10px; }
 .vo-askrow input { flex: 1; border: 1px solid #cbd5e1; border-radius: 8px; padding: 9px 12px; font: inherit; font-size: 14px; }

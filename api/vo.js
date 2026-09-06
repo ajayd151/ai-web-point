@@ -162,6 +162,8 @@ module.exports = async (req, res) => {
     if (action === 'skipFollowup') { await db.completeFollowup(Number(body.eventId)); res.status(200).json({ ok: true }); return; }
 
     // ---- LinkedIn automation (Phase 5) ----
+    if (action === 'demoReady') { const p = await db.createDemoReady(owner, actor); res.status(200).json({ ok: true, prospect: p }); return; }
+    if (action === 'removeDemo') { res.status(200).json({ ok: true, removed: await db.removeDemo(owner) }); return; }
     if (action === 'readyToSend') { res.status(200).json({ prospects: await db.readyToSend(owner), providers: providers(), linkedin: await db.linkedinSettings() }); return; }
     if (action === 'linkedinSend') { res.status(200).json(await J.linkedinSend(owner, actor, id, body.url, body.text)); return; }
     if (action === 'linkedinTick') { res.status(200).json({ ok: true, tick: await J.linkedinTick(owner, actor) }); return; }

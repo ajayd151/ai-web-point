@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.4.4",
+    "date": "2026-09-06",
+    "notes": [
+      "Show me an example on Ready to send: a made-up accepted connection with the shortlist, the draft and the URL box, so the screen can be understood before the first real one. Sending is off for it; one click removes it."
+    ]
+  },
+  {
     "version": "1.4.3",
     "date": "2026-09-06",
     "notes": [
