@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.2",
+    "date": "2026-09-06",
+    "notes": [
+      "Product names in messages and texts drop the store's spec parts (weights, per gummy, pack counts), so a title like Core - Creatine Monohydrate Gummies - 1.5g per Gummy reads Core Creatine Monohydrate Gummies."
+    ]
+  },
+  {
     "version": "1.5.1",
     "date": "2026-09-06",
     "notes": [
