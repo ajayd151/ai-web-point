@@ -252,7 +252,7 @@ async function voEditCampaign(id) {
     const b = $('vo-recount'); b.disabled = true; let done = 0;
     try {
       for (let i = 0; i < 200; i++) {
-        const r = await voApi('recountCampaign', { id: c.id, limit: 2 });
+        const r = await voApi('recountCampaign', { id: c.id, limit: 1 });
         done += (r.rechecked || []).length; b.textContent = '↻ Refreshing… ' + done + ' done, ' + r.remaining + ' left';
         if (r.blocked) { alert('Apify refused: ' + ((r.rechecked.find((x) => x.error) || {}).error || 'limit reached') + '. Upgrade the Apify plan and try again.'); break; }
         if (!r.remaining || !(r.rechecked || []).length) break;
