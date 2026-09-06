@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.4.10",
+    "date": "2026-09-06",
+    "notes": [
+      "A campaign that sets its own sender name signs with that name (the signature block is built from name and title unless you write your own)."
+    ]
+  },
+  {
     "version": "1.4.9",
     "date": "2026-09-06",
     "notes": [
