@@ -412,11 +412,12 @@ function voRenderProspects() {
     '<td>' + esc(p.outreach_stage || 'Not contacted') + (p.last_reply_at ? '<div class="vo-small">' + voReplyChip(p) + ' ' + esc(voStamp(p.last_reply_at)) + '</div>' : '') + '</td>' +
     '<td class="vo-small">' + (p.last_event ? esc(p.last_event) + '<div class="muted">' + esc(voStamp(p.last_event_at)) + '</div>' : '<span class="muted">–</span>') + '</td></tr>').join('');
   el.innerHTML = '<div class="vo-bar"><div><h3 style="margin:0">' + (camp ? esc(camp.name) + ' · prospects' : 'All prospects') + '</h3><p class="muted view-sub" style="margin:2px 0 0">Sorted by Priority Number, then score. ' + VO.prospects.length + ' shown' + (f.includeDisqualified ? '' : ', disqualified hidden') + '. Click a row to open it.</p></div>' +
-    '<div>' + (camp ? '<button class="ghost" id="vo-p-edit">Edit campaign</button> ' : '') + '<button class="ghost" id="vo-p-back">← Campaigns</button></div></div>' + filters +
+    '<div><button class="primary" id="vo-p-quick" title="Fill the four hand-checked signals for every brand in one table">✍️ Quick check</button> ' + (camp ? '<button class="ghost" id="vo-p-edit">Edit campaign</button> ' : '') + '<button class="ghost" id="vo-p-back">← Campaigns</button></div></div>' + filters +
     '<div class="vo-fit"><table class="cust-table vo-table vo-prospects"><thead><tr><th>Brand</th><th>Priority, number, score, tier</th><th>Links and connection</th><th>Creative style</th><th>Suggested product and photo check</th><th>Decision maker</th><th>Outreach stage</th><th>Last event</th></tr></thead><tbody>' +
     (rows || '<tr><td colspan="8" class="muted" style="padding:16px">Nobody here yet. Run the campaign, import the v12 tracker, or clear the filters.</td></tr>') + '</tbody></table></div>';
   voOn('vo-p-back', 'click', () => voPane('campaigns'));
   voOn('vo-p-edit', 'click', () => voEditCampaign(camp.id));
+  voOn('vo-p-quick', 'click', () => voRenderQuickCheck(camp));
   const rebind = (id, key) => { const x = $(id); if (x) x.addEventListener('change', () => { VO.filters[key] = x.type === 'checkbox' ? x.checked : x.value; voLoadProspects(); }); };
   rebind('vo-f-camp', 'campaignId'); rebind('vo-f-run', 'run'); rebind('vo-f-prio', 'priority'); rebind('vo-f-conn', 'connection'); rebind('vo-f-style', 'creativeStyle'); rebind('vo-f-stage', 'stage'); rebind('vo-f-disq', 'includeDisqualified');
   { const qEl = $('vo-f-q'); let t = null; if (qEl) qEl.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { VO.filters.q = qEl.value; voLoadProspects(); }, 350); }); }
@@ -647,4 +648,35 @@ async function voOpenSettings() {
 function voOpenHelp() {
   const el = $('vo-pane-help'); voPane('help');
   if (!el.querySelector('iframe')) el.innerHTML = '<iframe src="/help-video-outreach.html?ts=' + Date.now() + '" class="vo-helpframe" title="Video Outreach help"></iframe>';
+}
+
+// ---- Quick check: the four hand-checked signals for every brand in one table ----
+function voRenderQuickCheck(camp) {
+  const el = $('vo-pane-prospects'); if (!el) return;
+  const list = VO.prospects.filter((p) => p.tier !== 'Disqualified');
+  const yn = (p, k) => '<select data-q="' + k + '"><option value=""' + (p[k] == null ? ' selected' : '') + '>?</option><option value="Y"' + (p[k] === true ? ' selected' : '') + '>Y</option><option value="N"' + (p[k] === false ? ' selected' : '') + '>N</option></select>';
+  const rows = list.map((p) => '<tr data-id="' + p.id + '" data-score="' + (p.score_total == null ? '' : p.score_total) + '">' +
+    '<td><b>' + esc(p.brand) + '</b><div class="vo-small">' + voPrio(p) + ' <span class="muted">' + (p.score_total == null ? '' : p.score_total) + '</span></div></td>' +
+    '<td class="vo-small">' + (p.dm_name ? esc(p.dm_name) + '<div class="muted">' + esc(p.dm_title || '') + '</div>' : '<span class="vo-no">no contact</span>') + '<div>' + voLink(p.dm_linkedin, 'LinkedIn profile') + '</div></td>' +
+    '<td><select data-q="dm_active_90d"><option value=""' + (!p.dm_active_90d ? ' selected' : '') + '>?</option>' + ['Y', 'N', 'Not found'].map((o) => '<option' + (p.dm_active_90d === o ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></td>' +
+    '<td><select data-q="other_paid_channels">' + [0, 1, 2, 3].map((n) => '<option value="' + n + '"' + (Number(p.other_paid_channels || 0) === n ? ' selected' : '') + '>' + n + '</option>').join('') + '</select></td>' +
+    '<td>' + yn(p, 'pays_for_creative') + '</td>' +
+    '<td>' + yn(p, 'trigger_event') + ' <input type="text" data-q="trigger_note" value="' + esc(p.trigger_note || '') + '" placeholder="what happened" style="width:150px" /></td>' +
+    '<td class="vo-small qc-state muted">–</td></tr>').join('');
+  el.innerHTML = '<div class="vo-bar"><div><h3 style="margin:0">Quick check' + (camp ? ' · ' + esc(camp.name) : '') + '</h3><p class="muted view-sub" style="margin:2px 0 0">The four facts no data source can read. Open the LinkedIn profile, look at their activity, set the dropdowns, then Save. Only rows you changed are saved, and each is re-scored. Leave "?" where you do not know.</p></div>' +
+    '<div><button class="primary" id="vo-qc-save">Save changed rows</button> <button class="ghost" id="vo-qc-back">← Back to the list</button></div></div>' +
+    '<div class="vo-fit"><table class="cust-table vo-table vo-zebra"><thead><tr><th>Brand</th><th>Contact</th><th>DM active on LinkedIn (90 days)' + voHelp('DM active 90d') + '</th><th>Other paid channels' + voHelp('Other paid channels (count)') + '</th><th>Pays for creators' + voHelp('Pays for creative') + '</th><th>Trigger event' + voHelp('Trigger event') + '</th><th>Saved</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  el.querySelectorAll('[data-q]').forEach((inp) => inp.addEventListener('change', () => { inp.closest('tr').dataset.changed = '1'; inp.closest('tr').querySelector('.qc-state').textContent = 'changed'; }));
+  voOn('vo-qc-back', 'click', () => voLoadProspects());
+  voOn('vo-qc-save', 'click', async () => {
+    const trs = Array.from(el.querySelectorAll('tr[data-changed="1"]')); if (!trs.length) { voStatus('Nothing changed yet', 'note'); return; }
+    const b = $('vo-qc-save'); b.disabled = true; let n = 0; let moved = [];
+    for (const tr of trs) {
+      const fields = {}; tr.querySelectorAll('[data-q]').forEach((i) => { fields[i.dataset.q] = i.value === '' ? null : i.value; });
+      try { const r = await voApi('updateProspect', { id: Number(tr.dataset.id), fields: fields }); n++; const p = r.prospect; const was = tr.dataset.score; tr.querySelector('.qc-state').innerHTML = '<span class="vo-yes">✓ ' + (p.score_total == null ? '' : p.score_total) + '</span>'; tr.querySelector('td:first-child .vo-small').innerHTML = voPrio(p) + ' <span class="muted">' + p.score_total + '</span>'; tr.dataset.changed = ''; if (was !== '' && Number(was) !== p.score_total) moved.push(p.brand + ' ' + was + '→' + p.score_total); }
+      catch (e) { tr.querySelector('.qc-state').innerHTML = '<span class="vo-no">' + esc(e.message) + '</span>'; }
+    }
+    b.disabled = false;
+    voStatus('Saved and re-scored ' + n + ' brand(s)' + (moved.length ? '. Score changes: ' + moved.join(', ') : ''));
+  });
 }
