@@ -29,8 +29,8 @@ for (const { input } of rows) {
     for (const k of ['message_a', 'message_b']) {
       const paras = out[k].split('\n\n');
       assert.ok(paras.length >= 4, k + ' should be several paragraphs');
-      assert.ok(paras.every((p) => p.trim() && !p.includes('\n')), k + ' paragraphs must be separated by a blank line');
-      assert.ok(out[k].includes('Thanks,') && out[k].endsWith(M.DEFAULT_PROFILE.sender_first + ', ' + M.DEFAULT_PROFILE.sender_title), k + ' must end with the sign-off');
+      assert.ok(paras.slice(0, -1).every((p) => p.trim() && !p.includes('\n')), k + ' paragraphs must be separated by a blank line');
+      assert.ok(out[k].includes('Thanks,') && out[k].endsWith(M.DEFAULT_PROFILE.signature), k + ' must end with the signature block');
     }
     assert.ok(out.message_a.includes(M.URL_PLACEHOLDER), 'Message A carries the URL placeholder until a video is pasted');
     assert.ok(!out.message_b.includes(M.URL_PLACEHOLDER), 'Message B has no URL');
