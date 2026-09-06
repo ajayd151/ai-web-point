@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.4.0 (6 Sep 2026)
+- Connection requests go out at a random 10 to 30 minute gap, never the same gap twice in a row.
+
 ## 1.3.9 (6 Sep 2026)
 - Quick check on the Prospects list: the four hand-checked signals for every brand in one table, one Save re-scores the changed rows.
 

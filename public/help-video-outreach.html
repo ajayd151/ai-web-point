@@ -97,7 +97,7 @@
 <h3 id="week-flow">The flow, day by day</h3>
 <div class="flow">
   <div><b>Day 0, a run</b>Finds brands advertising on Meta for your keywords, scores them, finds the decision maker and writes the messages. You: nothing, or check the top brands.</div>
-  <div><b>Weekdays, 8am to 6pm US time</b>Sends ONE connection request every 10 minutes to priority 1 to 3 brands that have a LinkedIn contact, up to 20 a day. Highest score first. You: nothing.</div>
+  <div><b>Weekdays, 8am to 6pm US time</b>Sends ONE connection request at a time, a random 10 to 30 minutes apart (never the same gap twice), to the priority bands you allow, up to 20 a day. Highest score first. You: nothing.</div>
   <div><b>Someone accepts</b>Text to you and Aryan: "new ShekiPro connection". Email too. The brand moves to Ready to send with Message A drafted. <b>You: make the video.</b></div>
   <div><b>Ready to send</b><b>You: paste the video link, read the message, click Send.</b> Message A goes out through your LinkedIn. Follow-up drafts are scheduled.</div>
   <div><b>Day +3 and +7</b>Follow-up 1 and 2 appear as drafts under Due follow-ups. You: click Send now, or turn on auto follow-ups on the campaign and they go alone.</div>
@@ -121,7 +121,7 @@
 <table>
   <tr><th>Question</th><th>Answer</th></tr>
   <tr><td>Will it send anything today?</td><td>Only weekdays, 8am to 6pm US Eastern (1pm to 11pm UK). Weekends nothing goes out.</td></tr>
-  <tr><td>How many requests a day?</td><td>One every 10 minutes inside that window, up to the daily cap in Settings (20, hard limit 25) and 100 a week.</td></tr>
+  <tr><td>How many requests a day?</td><td>One at a time, a random 10 to 30 minutes apart inside that window, up to the daily cap in Settings (20, hard limit 25) and 100 a week.</td></tr>
   <tr><td>Which brands get a request?</td><td>Priority 1 to 3 (Must target, Strong, Possible) that have a LinkedIn contact, on campaigns with "Auto-send connection requests" ticked. Change the priority cut-off on the campaign or in Settings.</td></tr>
   <tr><td>Why has a good brand not been contacted?</td><td>No LinkedIn contact on it, or its score is below Possible. Open it, add the contact or fill the hand-checked signals.</td></tr>
   <tr><td>Does it ever send the video message on its own?</td><td>No. Message A only goes when you paste the link and click Send.</td></tr>
@@ -280,7 +280,7 @@
 <h3 id="outreach-auto">Automatic LinkedIn</h3>
 <p>Set <code>VO_LINKEDIN_PROVIDER</code> to <code>unipile</code> with its three keys (or <code>dryrun</code> to rehearse). Then, per campaign, tick <b>Auto-send connection requests</b> and choose up to which priority number. Every 10 minutes the worker then:</p>
 <ul>
-  <li>Sends <b>one</b> connection request per check, weekdays 8am to 6pm US Eastern, highest priority first, never above the daily cap (20, hard limit 25) or the weekly cap (100).</li>
+  <li>Sends <b>one</b> connection request at a time, a random 10 to 30 minutes apart, weekdays 8am to 6pm US Eastern, highest priority first, never above the daily cap (20, hard limit 25) or the weekly cap (100).</li>
   <li>Checks for acceptances.</li>
   <li>Marks a request Pending after 7 days and withdraws it after 21 days (the brand goes Dead unless you also used email or Instagram).</li>
   <li>Reads new LinkedIn messages from your prospects.</li>

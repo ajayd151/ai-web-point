@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.4.0",
+    "date": "2026-09-06",
+    "notes": [
+      "Connection requests go out at a random 10 to 30 minute gap, never the same gap twice in a row. Settings shows when the next one is due."
+    ]
+  },
+  {
     "version": "1.3.9",
     "date": "2026-09-06",
     "notes": [
