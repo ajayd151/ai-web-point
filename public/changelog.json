@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.11",
+    "date": "2026-09-07",
+    "notes": [
+      "Campaigns table headers have space between them and wrap to two lines where needed."
+    ]
+  },
+  {
     "version": "1.5.10",
     "date": "2026-09-07",
     "notes": [

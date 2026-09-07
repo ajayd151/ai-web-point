@@ -1651,7 +1651,9 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-actrow button { margin: 0; width: 96px; padding: 3px 6px; font-size: 12px; justify-content: center; }
 .vo-campaigns td.num { white-space: nowrap; }
 .vo-campaigns td.num .nowrap { white-space: nowrap; }
-.vo-campaigns th.num { max-width: 70px; }
+.vo-campaigns th.num, .vo-campaigns td.num { min-width: 84px; padding-left: 12px; padding-right: 12px; }
+.vo-campaigns th.num { white-space: normal; line-height: 1.25; }
+.vo-campaigns td:first-child { min-width: 220px; }
 .vo-fit:has(.vo-campaigns) { overflow-x: visible; }
 .vo-table td.vo-statuscell { white-space: nowrap; min-width: 140px; max-width: 200px; }
 .vo-table td.vo-statuscell .vo-small { white-space: normal; }
