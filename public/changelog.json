@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.8",
+    "date": "2026-09-07",
+    "notes": [
+      "Campaigns table: the status pill no longer wraps (a style clash with the status line was stretching it), the notes sit under it, and the action buttons are stacked in one narrow column so Status has room."
+    ]
+  },
+  {
     "version": "1.5.7",
     "date": "2026-09-07",
     "notes": [
@@ -386,4 +393,4 @@
       "Video Outreach Phase 1: scoring engine, v12 tracker import, campaigns and prospects screens, prospect detail with messages, connection and stage tracking. 107 tests."
     ]
   }
-]\n
+]
