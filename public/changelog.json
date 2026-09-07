@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.5",
+    "date": "2026-09-07",
+    "notes": [
+      "The queue tops itself up: when fewer brands than the daily cap are ready to request, the worker adds a few shopper keywords and starts one sourcing run a day on its own (campaign edit, Automation). Results and the daily report show how many brands are ready to request."
+    ]
+  },
+  {
     "version": "1.5.4",
     "date": "2026-09-07",
     "notes": [

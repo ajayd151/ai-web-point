@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.5 (7 Sep 2026)
+- Automatic queue top-up: under the daily cap, the worker adds shopper keywords and starts one sourcing run a day. Ready-to-request count on Results and in the daily report.
+
 ## 1.5.4 (7 Sep 2026)
 - The LinkedIn queue skips a brand whose link is a company page (reason on the prospect and in the daily report) and tries the next one, instead of stalling on it every tick. Editing the link clears the skip.
 
