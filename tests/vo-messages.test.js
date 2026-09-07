@@ -63,3 +63,15 @@ test('static brands get the "video would work harder" hook, video brands get the
   assert.ok(/still images/i.test(M.generate({ dm_name: 'Sam', category: 'collagen', creative_style: 'Static', active_meta_ads: 12, meta_page_id: '1', suggested_product_name: 'Collagen' }, M.DEFAULT_PROFILE, null).message_a), 'static brands get the still-images clause in Message A');
   assert.match(M.genericObservation({ category: 'Collagen', creative_style: 'Video-led' }), /video ads on Meta/);
 });
+
+test('soft connection note (B) mentions their product, gives nothing away, fits LinkedIn', () => {
+  const n = M.softNote({ dm_name: 'Dan Freed', brand: 'Create', suggested_product_name: 'Core - Creatine Monohydrate Gummies - 1.5g per Gummy' });
+  assert.ok(n.startsWith('Hey Dan, '), n);
+  assert.ok(/Creatine Monohydrate Gummies/.test(n) && !/1\.5g/.test(n), 'short product name');
+  assert.ok(/Meta/.test(n));
+  assert.ok(!/free|sample|video|ShekiPro|run /i.test(n), 'no offer and no pitch in the soft note');
+  assert.ok(!/https?:/i.test(n) && n.length <= 300);
+  assert.ok(!EM_DASH.test(n));
+  assert.ok(/the Create ads/.test(M.softNote({ dm_name: 'Sam', brand: 'Create' })), 'falls back to the brand name');
+  assert.equal(M.postCheck(n, { kind: 'note' }).ok, true);
+});

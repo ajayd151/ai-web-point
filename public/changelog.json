@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.12",
+    "date": "2026-09-07",
+    "notes": [
+      "Connection note 50:50 test: automatic requests alternate note A (says what we do, offers the sample) and note B (mentions their product ads on Meta, asks to connect, no offer). Which note went out is on the prospect's history, and Results plus the daily report show sent, accepted, replied and positive per note. Switch it off in Settings, LinkedIn caps."
+    ]
+  },
+  {
     "version": "1.5.11",
     "date": "2026-09-07",
     "notes": [
