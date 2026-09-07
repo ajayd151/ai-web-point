@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.4",
+    "date": "2026-09-07",
+    "notes": [
+      "The LinkedIn queue no longer stalls behind a brand whose link is a company page: that brand is marked skipped with the reason (on the prospect and in the daily report) and the next brand is tried. Editing the link puts it back in the queue."
+    ]
+  },
+  {
     "version": "1.5.3",
     "date": "2026-09-06",
     "notes": [

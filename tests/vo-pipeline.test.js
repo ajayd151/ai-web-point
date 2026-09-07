@@ -117,6 +117,8 @@ test('cost estimate is zero in dry run and breaks down by provider', () => {
 test('LinkedIn dry-run provider: invite, accept, message, reply, restriction, caps', async () => {
   process.env.VO_LINKEDIN_PROVIDER = 'dryrun';
   const P = L.provider(); P._reset();
+  await assert.rejects(P.lookup('linkedin.com/company/trycreate'), /not a personal LinkedIn profile/, 'a company page cannot be invited');
+  assert.equal(L.personProfile('http://www.linkedin.com/in/thomas-ortis-039b0641'), true);
   const me = await P.lookup('https://www.linkedin.com/in/dan-freed/');
   const inv = await P.sendInvitation(me.provider_id, 'Hey Dan');
   assert.equal(inv.ok, true);
