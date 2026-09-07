@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.14 (7 Sep 2026)
+- Campaigns table columns trimmed so the buttons sit inside the card.
+
 ## 1.5.13 (7 Sep 2026)
 - Note test arm C: no note. Three arms rotate evenly.
 

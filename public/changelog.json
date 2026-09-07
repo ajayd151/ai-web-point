@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.14",
+    "date": "2026-09-07",
+    "notes": [
+      "Campaigns table: number columns trimmed so the action buttons sit inside the card."
+    ]
+  },
+  {
     "version": "1.5.13",
     "date": "2026-09-07",
     "notes": [
