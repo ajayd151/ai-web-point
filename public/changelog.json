@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.13",
+    "date": "2026-09-07",
+    "notes": [
+      "Connection note test has a third arm, C: the request with no note at all. The three rotate evenly and Results shows each."
+    ]
+  },
+  {
     "version": "1.5.12",
     "date": "2026-09-07",
     "notes": [
