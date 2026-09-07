@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.7",
+    "date": "2026-09-07",
+    "notes": [
+      "Daily report tiles are clickable: waiting for a video and accepted open Ready to send, and each waiting brand name opens its own card; brands found, requests and replies open the prospects list."
+    ]
+  },
+  {
     "version": "1.5.6",
     "date": "2026-09-07",
     "notes": [
@@ -379,4 +386,4 @@
       "Video Outreach Phase 1: scoring engine, v12 tracker import, campaigns and prospects screens, prospect detail with messages, connection and stage tracking. 107 tests."
     ]
   }
-]
+]\n

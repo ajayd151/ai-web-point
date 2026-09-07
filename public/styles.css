@@ -1722,6 +1722,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-tile { border-radius: 10px; padding: 8px 10px; background: #f8fafc; border: 1px solid #e2e8f0; }
 .vo-tile b { display: block; font-size: 20px; }
 .vo-tile span { font-size: 12px; color: #64748b; }
+.vo-tile.vo-go { cursor: pointer; } .vo-tile.vo-go:hover { box-shadow: 0 0 0 2px #14b8a6 inset; }
 .vo-tile.q { background: #dcfce7; border-color: #86efac; } .vo-tile.d { background: #fee2e2; border-color: #fecaca; } .vo-tile.c { background: #fef3c7; border-color: #fde68a; }
 @keyframes voPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.96); } }
 @keyframes voSpin { to { transform: rotate(360deg); } }
