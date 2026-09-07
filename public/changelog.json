@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.6",
+    "date": "2026-09-07",
+    "notes": [
+      "Auto top-up keywords stay shopper intent: research terms (benefits, review, dosage, side effects, how to) are never added."
+    ]
+  },
+  {
     "version": "1.5.5",
     "date": "2026-09-07",
     "notes": [
