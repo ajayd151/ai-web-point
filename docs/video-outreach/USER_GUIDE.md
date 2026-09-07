@@ -1,6 +1,6 @@
 # Video Outreach, user guide
 
-SitePounce > Video Outreach finds ecommerce brands that advertise on Meta (Facebook and Instagram), scores them out of 100, picks the product a sample video should be made for, writes the LinkedIn and email messages, and tracks the outreach. You make the video outside SitePounce and paste the link in. Version 1.2.6, 6 September 2026. The same guide with a menu is in the app: the Help tab inside Video Outreach.
+SitePounce > Video Outreach finds ecommerce brands that advertise on Meta (Facebook and Instagram), scores them out of 100, picks the product a sample video should be made for, writes the LinkedIn and email messages, and tracks the outreach. You make the video outside SitePounce and paste the link in. Version 1.5.3, 6 September 2026. The same guide with a menu, click paths, times of day and FAQs is inside the app: left menu, Video Outreach, Help and guide. Ask AI (left menu) answers questions from this guide and your live campaigns.
 
 ## 1. The whole loop in one picture
 
@@ -9,9 +9,13 @@ SitePounce > Video Outreach finds ecommerce brands that advertise on Meta (Faceb
 3. **Prospects**: a list sorted by Priority Number (1 = Must target). Open one to see why it scored what it did, the product to film, and the messages.
 4. **Connect**: send the LinkedIn connection request (by hand with Copy, or automatically once a LinkedIn provider is connected).
 5. **Accepted**: the brand appears on **Ready to send** with the draft of Message A.
-6. **Send**: you paste the video link, check the words, click Send (LinkedIn or email). Nothing is ever sent without that click.
+6. **Send**: the text you receive carries a link straight to the brand's card on Ready to send. Paste the video link, check the words, click Send on LinkedIn. Nothing is ever sent without that click. The card shows a large photo of the product to film and a ranked shortlist of three with reasons.
 7. **Follow-ups**: drafts appear 3 and 7 days later; you send them, or switch on auto follow-ups per campaign.
-8. **Reply**: the stage moves to Replied, follow-ups are cancelled, you get an email. From there you set Call booked, Pilot, Client and the Outcome.
+8. **Reply**: read as Positive, Negative, Question or Neutral. Positive and Question text you and Aryan; every reply emails you; the stage moves to Replied and follow-ups are cancelled. From there you set Call booked, Pilot, Client and the Outcome.
+
+## 1b. Alerts and reporting
+
+Settings, Reply alerts by SMS: one line per person, first name then mobile. Two texts exist: "Aryan, new ShekiPro connection: Dan at Create accepted on LinkedIn. Create an AI video for Core Creatine Gummies, then paste the link and send here: [link]" and "Ajay, Positive reply for ShekiPro from Dan at Create via LinkedIn: wants the sample. Next: ...". A daily report email goes to the notify address after 8am UK (brands found, requests, acceptances with times, videos sent, replies, what is waiting for you); the Results tab shows the same numbers. A red count on the Ready to send tab and on the Video Outreach menu button shows what is waiting for you.
 
 ## 2. Creating a campaign
 
@@ -55,7 +59,7 @@ Stop rules: target reached, raw cap reached, cost cap reached. Runs are safe to 
 
 A live run reads everything it can from the ads, the store and Apollo: active ads, video share, new ads, products and photos, headcount, the decision maker with title and LinkedIn link, hiring, and a launch push. Four signals in the score still need a human look, exactly as in the tracker: whether the decision maker is active on LinkedIn (8 points), other paid channels such as Google or TikTok (up to 5), whether they already pay creators (5), and any trigger event the run could not see (6). Without them most brands land at 40 to 55, so a fresh run will show mostly Later and Possible.
 
-Working method: open the top brands by score, spend a minute on each, fill those four fields in the editable list, click Save and recalculate. The best ones move into Strong and Must target and the messages stay as they are. Apollo's plan masks surnames in search, so each chosen contact is enriched once (1 credit) to get the full name and LinkedIn link.
+Working method: on the Prospects list click Quick check. One table, every brand on a row, a LinkedIn link per contact, four dropdowns, one Save button that re-scores every row you changed. The best ones move into Strong and Must target and the messages stay as they are. Apollo's plan masks surnames in search, so each chosen contact is enriched once (1 credit) to get the full name and LinkedIn link.
 
 ## 4. Reading the prospects list
 
@@ -88,7 +92,7 @@ Set `VO_LINKEDIN_PROVIDER` in Vercel to `unipile` with its three keys (or `dryru
 
 What SitePounce then does on its own, every 10 minutes:
 
-- Sends **one** connection request per check, weekdays 8am to 6pm US Eastern, never more than the daily cap (20, hard limit 25) or weekly cap (100). Requests go to the highest priority first.
+- Sends **one** connection request at a time, a random 10 to 30 minutes apart (never the same gap twice), weekdays 8am to 6pm US Eastern, never more than the daily cap (20, hard limit 25) or weekly cap (100). Requests go to the highest priority first, across all campaigns as one pool.
 - Checks for acceptances. Accepted = Connected, stage Accepted, draft refreshed, brand on Ready to send.
 - Marks a request Pending after 7 days, withdraws it after 21 days.
 - Reads new LinkedIn messages from your prospects. A reply sets Replied, cancels follow-ups and emails you the text.
@@ -99,6 +103,23 @@ What it never does: send Message A, send a follow-up unless auto follow-ups is o
 ## 8. Results and tuning
 
 **Results** shows reply, call and pilot rates by priority band and by message variant. If Possible replies as often as Strong, lower the Strong threshold in Settings. If B out-replies A, lead with permission. Weight changes are previewed against the 74 tracker brands before saving and re-score every prospect.
+
+## 8b. The messages
+
+Every message is built from the brand's own data and your profile, for example:
+
+> Hey Dan
+>
+> I run ShekiPro.com. Came across your Creatine Monohydrate Gummies ads on Meta, 8 new ones this month, so I made you a free sample for Core Creatine Monohydrate Gummies: [link]
+>
+> If it is any good, want me to do one for Sour Green Apple Core Creatine Monohydrate Gummies next?
+>
+> Thanks,
+>
+> Aj
+> Co-founder, ShekiPro.com
+
+The ad number appears only when it came from a full count of that brand's page. The signature block and the offer lines are in Settings (Default service profile) and can be overridden per campaign; Rebuild all messages applies a change to every prospect.
 
 ## 9. Settings
 
