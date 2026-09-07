@@ -1648,8 +1648,12 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-table td.num, .vo-table th.num { text-align: right; }
 .vo-table .vo-acts { white-space: normal; width: 1%; }
 .vo-actrow { display: flex; flex-direction: column; gap: 4px; }
-.vo-actrow button { margin: 0; width: 100px; padding: 4px 8px; font-size: 12px; justify-content: center; }
-.vo-table td.vo-statuscell { white-space: nowrap; min-width: 150px; }
+.vo-actrow button { margin: 0; width: 96px; padding: 3px 6px; font-size: 12px; justify-content: center; }
+.vo-campaigns td.num { white-space: nowrap; }
+.vo-campaigns td.num .nowrap { white-space: nowrap; }
+.vo-campaigns th.num { max-width: 70px; }
+.vo-fit:has(.vo-campaigns) { overflow-x: visible; }
+.vo-table td.vo-statuscell { white-space: nowrap; min-width: 140px; max-width: 200px; }
 .vo-table td.vo-statuscell .vo-small { white-space: normal; }
 .vo-zebra tbody tr:nth-child(even) { background: #f8fafc; }
 .vo-table td.nowrap { white-space: nowrap; }

@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.10",
+    "date": "2026-09-07",
+    "notes": [
+      "Campaigns table fits the page without a left-right scroll: country and schedule sit under the campaign name, the waiting-for-video note is one short line, and the action column is narrower."
+    ]
+  },
+  {
     "version": "1.5.9",
     "date": "2026-09-07",
     "notes": [
