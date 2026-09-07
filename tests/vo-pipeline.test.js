@@ -146,3 +146,21 @@ test('template sets: two service profiles produce differently worded messages (P
   assert.ok(b.message_b.includes('Clipworks') && b.message_b.endsWith('Cheers,\n\nSam'));
   assert.equal(M.postCheck(b.message_b, { kind: 'message_b', profile: { sender_first: 'Sam', signoff: 'Cheers' } }).ok, true);
 });
+
+test('score first, spend second: the enrichment ceiling parks weak brands and keeps strong ones', () => {
+  const cfg = require('../lib/vo-score').defaultConfig();
+  const floor = R.enrichFloor({ automation: { max_priority: 4 } }, cfg);
+  assert.equal(floor.name, 'Later'); assert.equal(floor.threshold, 45);
+  const weak = R.enrichmentCeiling({ active_meta_ads: 4, video_ads: 0, new_ads_30d: 1, skus: 2, creative_gap: 0, video_sourcing: 'Unknown' }, cfg);
+  assert.ok(weak.score_total < floor.threshold, 'a brand with 4 static ads cannot reach Later whatever Apollo adds (' + weak.score_total + ')');
+  const strong = R.enrichmentCeiling({ active_meta_ads: 35, video_ads: 20, new_ads_30d: 8, skus: 12, creative_gap: 4, video_sourcing: 'UGC creators' }, cfg);
+  assert.ok(strong.score_total >= floor.threshold, 'a video-led advertiser keeps its lookup');
+  // the ceiling is a true upper bound: no enrichment outcome scores higher than it
+  const base = { active_meta_ads: 12, video_ads: 3, new_ads_30d: 2, skus: 5, creative_gap: 4, video_sourcing: 'AI tools' };
+  const ceiling = R.enrichmentCeiling(base, cfg).score_total;
+  for (const emp of [null, 1, 5, 20, 80, 150]) for (const sp of [null, true]) for (const tr of [null, true]) {
+    const t = require('../lib/vo-score').score(Object.assign({}, base, { employees: emp, shopify_plus: sp, trigger_event: tr, growth_signals: 2, second_contact_has_email: true, gatekeeper: false }), cfg).score_total;
+    assert.ok(t <= ceiling, 'enrichment outcome ' + t + ' must not beat the ceiling ' + ceiling);
+  }
+  assert.equal(R.enrichFloor({ automation: { max_priority: 5 } }, cfg).number, 5, 'cut-off 5 means never skip');
+});
