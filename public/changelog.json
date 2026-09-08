@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.15",
+    "date": "2026-09-08",
+    "notes": [
+      "Top-up runs search fresh keywords only (the originals kept returning the same brands), widen to neighbouring product categories once a run yields under five, and can run up to three times a day two hours apart while the queue is short.",
+      "Ready to send: the pasted video link drops into the message as you type, the example record is clearly marked as made up, and a Messages sent list shows every video and follow-up that went out with its reply."
+    ]
+  },
+  {
     "version": "1.5.14",
     "date": "2026-09-07",
     "notes": [

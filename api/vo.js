@@ -154,6 +154,7 @@ module.exports = async (req, res) => {
 
     // ---- email (Phase 2) ----
     if (action === 'sendEmail') { const r = await J.sendEmail(owner, actor, id, body.kind, base); res.status(200).json(Object.assign(r, { prospect: await db.getProspect(owner, id) })); return; }
+    if (action === 'sentMessages') { res.status(200).json({ rows: await db.sentMessages(owner, 50) }); return; }
     if (action === 'dueFollowups') { res.status(200).json({ tasks: await db.dueFollowups(owner) }); return; }
     if (action === 'sendFollowup') {
       const tasks = await db.dueFollowups(owner); const t = tasks.find((x) => Number(x.event_id) === Number(body.eventId));
