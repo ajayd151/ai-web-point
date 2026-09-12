@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.21",
+    "date": "2026-09-12",
+    "notes": [
+      "The example record on Ready to send is now Klevaro, a real UK store, with its real products and photos, so demos look credible."
+    ]
+  },
+  {
     "version": "1.5.20",
     "date": "2026-09-12",
     "notes": [
