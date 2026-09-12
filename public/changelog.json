@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.24",
+    "date": "2026-09-12",
+    "notes": [
+      "Activity gate: before a connection request goes out, the worker checks the person posted or commented on LinkedIn in the last 90 days. Active people earn 8 points and go first; inactive ones are held back with a note (set DM active 90d to Y to send anyway).",
+      "Every alert text is logged and Settings shows the last text sent, per person, with any failure."
+    ]
+  },
+  {
     "version": "1.5.23",
     "date": "2026-09-12",
     "notes": [

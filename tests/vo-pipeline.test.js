@@ -185,3 +185,14 @@ test('WooCommerce Store API products map to the shared product shape and get a s
   const pick = S.pickProduct(list, 'Face Cream', [], { source: 'woo', keywords: ['face serum'] });
   assert.match(pick.name, /Face Cream/); assert.equal(pick.check, 'Unverified'); assert.match(pick.why, /WooCommerce/); assert.equal(pick.candidates.length, 1, 'the gift card is merch and never a candidate');
 });
+
+test('activity gate: 90 day rule and the dry provider', async () => {
+  const now = new Date('2026-09-12T12:00:00Z').getTime();
+  assert.equal(L.activeSince('2026-08-01T00:00:00Z', now), true);
+  assert.equal(L.activeSince('2026-05-01T00:00:00Z', now), false);
+  assert.equal(L.activeSince(null, now), false);
+  process.env.VO_LINKEDIN_PROVIDER = 'dryrun';
+  const P = L.provider(); P._reset();
+  const a = await P.activity('dry-someone');
+  assert.equal(a.kind, 'post'); assert.equal(L.activeSince(a.last_at), true);
+});
