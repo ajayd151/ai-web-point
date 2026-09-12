@@ -1758,6 +1758,9 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-lead-strip b { color: #fff; }
 .vo-lead-strip.demo { background: #64748b; }
 .vo-noproduct { border-color: #fde68a; background: #fffbeb; }
+.vo-ready-modes { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.vo-ready-modes label { display: inline-flex; align-items: center; gap: 4px; margin: 0; font-weight: 400; }
+.vo-ready-modes input[type=radio] { margin: 0; width: auto; }
 .vo-card textarea { width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 11px; font: inherit; font-size: 13.5px; line-height: 1.45; }
 .vo-weights input[type=text] { max-width: 420px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
 .vo-q { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #e2e8f0; color: #475569; font-size: 10px; font-weight: 800; cursor: help; position: relative; vertical-align: 1px; margin-left: 2px; }

@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.17",
+    "date": "2026-09-12",
+    "notes": [
+      "Product picking reads WooCommerce stores too (Shopify first, then WooCommerce, then the ads), and store readers identify as a normal browser so fewer stores refuse them. Ready to send cards show a Website link, a product set by hand shows as the product to film, and the attachment or link choice sits on one line."
+    ]
+  },
+  {
     "version": "1.5.16",
     "date": "2026-09-12",
     "notes": [

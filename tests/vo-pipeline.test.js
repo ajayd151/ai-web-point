@@ -175,3 +175,13 @@ test('a store that blocks readers still gets a product shortlist from its ads', 
   assert.equal(pick.name, 'Face Cream'); assert.equal(pick.check, 'Unverified'); assert.equal(pick.candidates.length, 2);
   assert.match(pick.candidates[0].why, /linked from 2 of their ads/);
 });
+
+test('WooCommerce Store API products map to the shared product shape and get a shortlist', () => {
+  const S = require('../lib/vo-services');
+  const woo = [{ slug: 'particle-face-cream', name: 'Particle&amp;nbsp;Face Cream', permalink: 'https:\\/\\/www.particleformen.com\\/product\\/particle-face-cream\\/', prices: { price: '5900', currency_minor_unit: 2 }, categories: [{ name: 'Skincare' }], tags: [], review_count: 12, images: [{ src: 'https://cdn.example/a.jpg', alt: '' }, { src: 'https://cdn.example/b.jpg', alt: '' }] }, { slug: 'gift-card', name: 'Gift Card', permalink: 'https://www.particleformen.com/product/gift-card/', prices: { price: '2500', currency_minor_unit: 2 }, images: [] }];
+  const list = S.mapWooProducts(woo, 'particleformen.com');
+  assert.match(list[0].title, /Face Cream$/, 'title decoded');
+  assert.equal(list[0].price, 59); assert.equal(list[0].url, 'https://www.particleformen.com/product/particle-face-cream/'); assert.deepEqual(list[0].tags, ['Skincare']);
+  const pick = S.pickProduct(list, 'Face Cream', [], { source: 'woo', keywords: ['face serum'] });
+  assert.match(pick.name, /Face Cream/); assert.equal(pick.check, 'Unverified'); assert.match(pick.why, /WooCommerce/); assert.equal(pick.candidates.length, 1, 'the gift card is merch and never a candidate');
+});
