@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.16 (12 Sep 2026)
+- Video as a LinkedIn attachment (default) or a link; size checked on paste, 20 MB limit; setting plus per-card override.
+- Ready to send: green lead strip per card; products from the ads' links when a store blocks readers; hand entry when nothing is found.
+
 ## 1.5.15 (8 Sep 2026)
 - Top-up runs use fresh keywords only, widen to neighbouring categories when yield is low, up to three a day.
 - Ready to send: link drops into the message as you type; example record marked as made up; Messages sent list.

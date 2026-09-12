@@ -75,3 +75,16 @@ test('soft connection note (B) mentions their product, gives nothing away, fits 
   assert.ok(/the Create ads/.test(M.softNote({ dm_name: 'Sam', brand: 'Create' })), 'falls back to the brand name');
   assert.equal(M.postCheck(n, { kind: 'note' }).ok, true);
 });
+
+test('attachment wording: the link sentence becomes "attached below" and back again', () => {
+  const { input } = rows[0];
+  const out = M.generate(input, M.DEFAULT_PROFILE, null);
+  const att = M.forAttachment(out.message_a);
+  assert.ok(att.includes(', it is attached below') && !att.includes(M.URL_PLACEHOLDER), att);
+  assert.equal(M.postCheck(att, { kind: 'message_a', attachment: true }).ok, true);
+  assert.equal(M.postCheck(out.message_a, { kind: 'message_a', attachment: true }).ok, false, 'placeholder left in is a failure for attachment sends');
+  const back = M.forLink(att, 'https://example.com/v/abc');
+  assert.ok(back.includes(': https://example.com/v/abc') && !back.includes('attached below'));
+  const withUrl = M.generate(input, M.DEFAULT_PROFILE, 'https://example.com/v/abc').message_a;
+  assert.ok(M.forAttachment(withUrl).includes(', it is attached below'), 'a pasted link is replaced too');
+});

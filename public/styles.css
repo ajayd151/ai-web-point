@@ -1753,6 +1753,11 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-kv td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; }
 .vo-ok { color: #065f46; font-weight: 700; } .vo-no { color: #b91c1c; font-weight: 700; }
 .vo-card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; background: #fff; }
+.vo-card.vo-lead { padding-top: 0; margin-bottom: 28px; border: 2px solid #cbd5e1; overflow: hidden; }
+.vo-lead-strip { margin: 0 -14px 10px; padding: 9px 14px; background: #059669; color: #fff; font-size: 14px; letter-spacing: 0.01em; }
+.vo-lead-strip b { color: #fff; }
+.vo-lead-strip.demo { background: #64748b; }
+.vo-noproduct { border-color: #fde68a; background: #fffbeb; }
 .vo-card textarea { width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 11px; font: inherit; font-size: 13.5px; line-height: 1.45; }
 .vo-weights input[type=text] { max-width: 420px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
 .vo-q { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #e2e8f0; color: #475569; font-size: 10px; font-weight: 800; cursor: help; position: relative; vertical-align: 1px; margin-left: 2px; }

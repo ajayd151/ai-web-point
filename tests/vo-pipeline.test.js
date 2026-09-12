@@ -164,3 +164,14 @@ test('score first, spend second: the enrichment ceiling parks weak brands and ke
   }
   assert.equal(R.enrichFloor({ automation: { max_priority: 5 } }, cfg).number, 5, 'cut-off 5 means never skip');
 });
+
+test('a store that blocks readers still gets a product shortlist from its ads', () => {
+  const S = require('../lib/vo-services');
+  const samples = [{ link_url: 'https://www.particleformen.com/products/face-cream?utm=1' }, { link_url: 'https://particleformen.com/products/face-cream' }, { link_url: 'https://particleformen.com/collections/all/products/eye-serum-15ml' }, { link_url: 'https://other.example/products/nope' }, { link_url: 'https://particleformen.com/pages/about' }];
+  const list = S.productsFromAds(samples, 'particleformen.com');
+  assert.deepEqual(list.map((p) => p.handle), ['face-cream', 'eye-serum-15ml']);
+  assert.equal(list[0].title, 'Face Cream'); assert.equal(list[0].url, 'https://particleformen.com/products/face-cream'); assert.equal(list[0].ad_count, 2);
+  const pick = S.pickProduct(list, 'Face Cream', [], { source: 'ads', keywords: ['face serum'] });
+  assert.equal(pick.name, 'Face Cream'); assert.equal(pick.check, 'Unverified'); assert.equal(pick.candidates.length, 2);
+  assert.match(pick.candidates[0].why, /linked from 2 of their ads/);
+});

@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.16",
+    "date": "2026-09-12",
+    "notes": [
+      "The sample video can go out as an attachment that plays inside the LinkedIn message (now the default) or as a link. Paste the ScrollyVid link as before: the card finds the file behind it, checks the size straight away (must be under 20 MB) and only then lets you send. Settings, LinkedIn caps holds the default; each card can override it.",
+      "Ready to send: every lead has a green strip (New lead, brand, person, accepted when) so cards are clearly separate; when a store blocks readers the product comes from the ads' landing links, and a card with no product lets you type one by hand or look again."
+    ]
+  },
+  {
     "version": "1.5.15",
     "date": "2026-09-08",
     "notes": [
