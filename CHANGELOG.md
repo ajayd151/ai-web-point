@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.22 (12 Sep 2026)
+- Test connection reports pending invitations and recent connections; example events excluded from caps.
+
 ## 1.5.21 (12 Sep 2026)
 - Example record uses Klevaro's real products and photos.
 
