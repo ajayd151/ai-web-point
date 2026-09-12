@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.23",
+    "date": "2026-09-12",
+    "notes": [
+      "Acceptance detection reads the whole connections list (paged, not just the first page) and also asks LinkedIn about each open request directly, 30 every 10 minutes: a 1st degree profile counts as accepted, an ignored or withdrawn invitation closes the request."
+    ]
+  },
+  {
     "version": "1.5.22",
     "date": "2026-09-12",
     "notes": [
