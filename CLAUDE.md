@@ -35,7 +35,7 @@ Enums and the two state machines are pinned in `lib/vo-db.js` exactly as spec Ap
 - `lib/vo-linkedin.js`: provider interface, `dry` and `unipile`, `limits` (hard cap 25 a day), `inSendWindow`.
 - `lib/vo-email.js`: SendGrid send with the open pixel (`api/vo-track.js`), `notifyOwner`.
 - `lib/vo-score.js`, `lib/vo-messages.js` (templates, `proofLine`/`countsTrusted`, `shortProduct`, signature block, C5 `postCheck`), `lib/vo-import.js`.
-- `api/vo.js`: one endpoint, `body.action` switch (campaigns, runs, prospects, email, LinkedIn, alerts, report, Ask AI, FAQ, demo, settings, scoring, results). `api/vo-worker.js` cron; `api/vo-track.js` pixel.
+- `api/vo.js`: one endpoint, `body.action` switch (campaigns, runs, prospects, email, LinkedIn, alerts, report, Ask AI, FAQ, demo, settings, scoring, results). `api/vo-worker.js` cron; `api/vo-track.js` pixel; `api/vo-photo.js` product photo upload (browser-resized JPEG, Vercel Blob, `vo_prospects.product_photo_url`).
 - `public/vo.js` + `view-vo` in `public/index.html`: Campaigns (funnel table), Campaign edit, Prospects (+ Quick check), Prospect detail, Ready to send (badge, deep link `#vo-ready-<id>`), Results (+ daily report block), Settings, Ask AI, Help (iframe). One inline status line (`voStatus`), no alerts or toasts.
 - Gate: `canVideoOutreach(email, acct)` in `lib/access.js`, exposed by `api/me.js`.
 

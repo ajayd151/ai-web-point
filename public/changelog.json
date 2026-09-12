@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.19",
+    "date": "2026-09-12",
+    "notes": [
+      "When a website blocks access the card says so plainly, and you can type the product or upload a photo of it (resized in the browser, kept on the prospect, shown on the card). WooCommerce reads wait longer for slow stores."
+    ]
+  },
+  {
     "version": "1.5.18",
     "date": "2026-09-12",
     "notes": [
