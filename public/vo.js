@@ -18,11 +18,25 @@ function voPane(name) {
   document.querySelectorAll('.vo-tab').forEach((b) => b.classList.toggle('active', b.dataset.vopane === tab));
   try { window.scrollTo({ top: 0 }); } catch (e) {}
 }
+// Team members see only the tabs their permission covers (the server enforces the same rule on every action).
+function voApplyLevel() {
+  const L = window.__voLevel || { all: true, ready: true, settings: true };
+  document.querySelectorAll('.vo-tab').forEach((b) => {
+    const t = b.dataset.vopane; let show = true;
+    if (['campaigns', 'prospects', 'results'].includes(t)) show = !!L.all;
+    if (t === 'ready') show = !!L.ready;
+    if (t === 'settings') show = !!L.settings;
+    b.classList.toggle('hidden', !show);
+  });
+}
 async function voShow() {
+  voApplyLevel();
+  const L = window.__voLevel || { all: true, ready: true, settings: true };
+  if (!L.all && VO.pane && ['campaigns', 'edit', 'prospects', 'results'].includes(VO.pane)) VO.loaded = false;
   await voLoadCampaigns();
   const m = String(location.hash || '').match(/^#vo-(ready|help|ask)(?:-(\d+))?$/);
   if (m) { VO.loaded = true; if (m[1] === 'help') return voOpenHelp(); if (m[1] === 'ask') return voOpenAsk(); VO.readyFocus = m[2] ? Number(m[2]) : null; return voOpenReady(); }
-  if (!VO.loaded) { voPane('campaigns'); VO.loaded = true; }
+  if (!VO.loaded) { if (L.all) voPane('campaigns'); else if (L.ready) voOpenReady(); else if (L.settings) voOpenSettings(); VO.loaded = true; }
 }
 // arriving on a #vo-... link (from the SMS or email) opens Video Outreach straight away
 if (/^#vo-/.test(location.hash) && typeof showView === 'function') setTimeout(() => showView('vo'), 400);

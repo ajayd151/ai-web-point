@@ -6,7 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const { verify, parseCookie } = require('../lib/auth');
-const { account, canVideoOutreach, videoOutreachPlans } = require('../lib/access');
+const { account, canVideoOutreach, voLevel, videoOutreachPlans } = require('../lib/access');
 const { accountEmailOf, emailOf } = require('../lib/tenant');
 const db = require('../lib/vo-db');
 const S = require('../lib/vo-services');
@@ -26,6 +26,13 @@ module.exports = async (req, res) => {
   if (!canVideoOutreach(acct.email, acct)) { res.status(404).json({ error: 'Not found.' }); return; }
   const owner = accountEmailOf(req) || acct.email;
   const actor = emailOf(req) || acct.email;
+  // Team members reach only what the owner ticked: Ready to send actions, the whole module, or Settings.
+  const lvl = voLevel(acct);
+  const SETTINGS_ACTIONS = ['saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
+  const READY_ACTIONS = ['readyToSend', 'readyCount', 'dueFollowups', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config'];
+  const actionName = String((req.body && req.body.action) || (typeof req.body === 'string' ? (JSON.parse(req.body || '{}').action || '') : ''));
+  if (SETTINGS_ACTIONS.includes(actionName) && !lvl.settings) { res.status(403).json({ error: 'Not allowed: Video Outreach settings are for the owner, or a member with the Settings permission.' }); return; }
+  if (!lvl.all && !SETTINGS_ACTIONS.includes(actionName) && !READY_ACTIONS.includes(actionName)) { res.status(403).json({ error: 'Not allowed: your permission covers Ready to send only.' }); return; }
   const base = process.env.APP_BASE_URL || 'https://www.sitepounce.com';
 
   let body = req.body;

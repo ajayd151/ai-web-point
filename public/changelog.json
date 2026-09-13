@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.25",
+    "date": "2026-09-13",
+    "notes": [
+      "Team permissions for Video Outreach: Admin, Team now has three tickboxes per member, Ready to send only (for whoever makes the videos), the whole module, and the Settings tab. Off unless ticked. A member sees only the tabs they were given and the server refuses everything else."
+    ]
+  },
+  {
     "version": "1.5.24",
     "date": "2026-09-12",
     "notes": [

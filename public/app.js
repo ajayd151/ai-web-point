@@ -294,7 +294,9 @@ async function refreshAccess() {
   // 🔎 DeepDossier: private MVP, only the allow-listed account (server decides via /api/me).
   // Deep Dossier Leads lives as a left sub-menu inside this section, not a top tab.
   if ($('nav-deepdossier')) $('nav-deepdossier').classList.toggle('hidden', !acc.deepdossier);
-  if ($('nav-vo')) $('nav-vo').classList.toggle('hidden', !acc.videoOutreach); // Video Outreach: owner + allow-list only
+  window.__voLevel = acc.vo || { all: !!acc.videoOutreach, ready: !!acc.videoOutreach, settings: !!acc.videoOutreach };
+  if (typeof voApplyLevel === 'function') voApplyLevel();
+  if ($('nav-vo')) $('nav-vo').classList.toggle('hidden', !acc.videoOutreach); // Video Outreach: owner, allow-list, or a team member with a Video Outreach permission
   if ($('nav-vo-help')) $('nav-vo-help').classList.toggle('hidden', !acc.videoOutreach);
   if ($('nav-vo-ask')) $('nav-vo-ask').classList.toggle('hidden', !acc.videoOutreach);
   if (acc.videoOutreach && typeof voRefreshBadge === 'function' && !window.__voBadgeTimer) { voRefreshBadge(); window.__voBadgeTimer = setInterval(voRefreshBadge, 120000); }
@@ -4643,6 +4645,12 @@ const TEAM_ACTION_PERMS = [
   ['export', 'Export to CSV'], ['sms', 'Send SMS'], ['emails', 'Send emails'], ['block', 'Block contacts'],
 ];
 const TEAM_PERMS = TEAM_VIEW_PERMS.concat(TEAM_ACTION_PERMS);
+// Video Outreach is a separate module: nothing here is granted unless ticked (the server treats missing as off).
+const TEAM_MODULE_PERMS = [
+  ['voReady', 'Ready to send: see accepted leads, paste the video, send, follow-ups (for whoever makes the videos)'],
+  ['videoOutreach', 'Whole module: campaigns, prospects, runs, results, Ask AI (includes Ready to send)'],
+  ['voSettings', 'Settings tab: keys, caps, scoring weights, alerts, exclusions'],
+];
 const TEAM_LIMITS = [
   ['searchMax', 'Max results per search (each time)'],
   ['callListMax', 'Max call-list records (total)'],
@@ -4667,10 +4675,10 @@ function limitSummary(limits) {
   if (l.exportPerDay) bits.push('export ' + l.exportPerDay + '/day');
   return bits.length ? (' · caps: ' + bits.join(', ')) : '';
 }
-function permBoxes(list, perms) {
+function permBoxes(list, perms, offByDefault) {
   const p = perms || {};
   return list.map(([k, label]) =>
-    '<label class="team-perm"><input type="checkbox" data-perm="' + k + '"' + (p[k] === false ? '' : ' checked') + ' /> ' + esc(label) + '</label>'
+    '<label class="team-perm"><input type="checkbox" data-perm="' + k + '"' + ((offByDefault ? p[k] === true : p[k] !== false) ? ' checked' : '') + ' /> ' + esc(label) + '</label>'
   ).join('');
 }
 // The full two-section permission editor (used by the add form + each member's editor).
@@ -4678,7 +4686,9 @@ function permSectionsHTML(perms) {
   return '<div class="team-perms-sub">Which tabs can they see?</div>' +
     '<div class="team-perms-grid">' + permBoxes(TEAM_VIEW_PERMS, perms) + '</div>' +
     '<div class="team-perms-sub">What can they do?</div>' +
-    '<div class="team-perms-grid">' + permBoxes(TEAM_ACTION_PERMS, perms) + '</div>';
+    '<div class="team-perms-grid">' + permBoxes(TEAM_ACTION_PERMS, perms) + '</div>' +
+    '<div class="team-perms-sub">Video Outreach <span class="muted">(off unless ticked)</span></div>' +
+    '<div class="team-perms-grid">' + permBoxes(TEAM_MODULE_PERMS, perms, true) + '</div>';
 }
 function readPerms(container) {
   const out = {};
@@ -4711,9 +4721,10 @@ function permSummary(perms) {
   const p = perms || {};
   const views = TEAM_VIEW_PERMS.filter(([k]) => p[k] !== false).length;
   const actions = TEAM_ACTION_PERMS.filter(([k]) => p[k] !== false).length;
-  if (views + actions === TEAM_PERMS.length) return 'Full access';
-  if (views + actions === 0) return 'No access yet';
-  return 'Sees ' + views + '/' + TEAM_VIEW_PERMS.length + ' tabs · can do ' + actions + '/' + TEAM_ACTION_PERMS.length;
+  const vo = p.videoOutreach ? ' · Video Outreach' : (p.voReady ? ' · Ready to send' : ''); const vs = p.voSettings ? ' + settings' : '';
+  if (views + actions === TEAM_PERMS.length) return 'Full access' + vo + vs;
+  if (views + actions === 0) return (vo ? 'Video Outreach only' + (p.videoOutreach ? '' : ' (Ready to send)') + vs : 'No access yet');
+  return 'Sees ' + views + '/' + TEAM_VIEW_PERMS.length + ' tabs · can do ' + actions + '/' + TEAM_ACTION_PERMS.length + vo + vs;
 }
 function renderTeam(members) {
   const list = $('team-list'); if (!list) return;

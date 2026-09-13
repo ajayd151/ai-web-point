@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.25 (13 Sep 2026)
+- Video Outreach team permissions: Ready to send only, whole module, Settings; off unless ticked; tabs and API gated.
+
 ## 1.5.24 (12 Sep 2026)
 - Activity gate on the request queue (posts or comments in 90 days); alert texts logged and shown in Settings.
 

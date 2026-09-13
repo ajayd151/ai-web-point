@@ -5,7 +5,7 @@
 //   POST {action:'add', email}   -> add (or re-activate) a member
 //   POST {action:'suspend'|'unsuspend'|'remove', email}
 const { verify, parseCookie } = require('../lib/auth');
-const { account, isComped, PERM_KEYS, cleanLimits } = require('../lib/access');
+const { account, isComped, PERM_KEYS, MODULE_PERM_KEYS, cleanLimits } = require('../lib/access');
 const { listTeamMembers, addTeamMember, setTeamSuspended, setTeamPermissions, removeTeamMember, getUserByEmail } = require('../lib/db');
 const { sendTeamInviteEmail, sendTeamAddedAdminEmail } = require('../lib/email');
 const { createClerkUser } = require('../lib/clerkadmin');
@@ -25,6 +25,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function cleanPerms(p) {
   const out = {}; const src = p || {};
   PERM_KEYS.forEach((k) => { out[k] = src[k] !== false; }); // default allow unless explicitly false
+  MODULE_PERM_KEYS.forEach((k) => { out[k] = src[k] === true; }); // modules: off unless ticked
   return out;
 }
 
