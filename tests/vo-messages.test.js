@@ -80,19 +80,19 @@ test('attachment wording: the link sentence becomes "attached below" and back ag
   const { input } = rows[0];
   const out = M.generate(input, M.DEFAULT_PROFILE, null);
   const att = M.forAttachment(out.message_a);
-  assert.ok(att.includes(', it is attached below') && !att.includes(M.URL_PLACEHOLDER), att);
+  assert.ok(att.includes(', attached below.') && !att.includes(M.URL_PLACEHOLDER), att);
   assert.equal(M.postCheck(att, { kind: 'message_a', attachment: true }).ok, true);
   assert.equal(M.postCheck(out.message_a, { kind: 'message_a', attachment: true }).ok, false, 'placeholder left in is a failure for attachment sends');
   const back = M.forLink(att, 'https://example.com/v/abc');
   assert.ok(back.includes(': https://example.com/v/abc') && !back.includes('attached below'));
   const withUrl = M.generate(input, M.DEFAULT_PROFILE, 'https://example.com/v/abc').message_a;
-  assert.ok(M.forAttachment(withUrl).includes(', it is attached below'), 'a pasted link is replaced too');
+  assert.ok(M.forAttachment(withUrl).includes(', attached below.'), 'a pasted link is replaced too');
 });
 
 test('Message A asks for a chat about a daily or weekly supply, never "do one for X next"', () => {
   const { input } = rows[0];
   const out = M.generate(input, M.DEFAULT_PROFILE, null);
-  assert.ok(out.message_a.includes('every day, or every week if you prefer'), out.message_a);
+  assert.ok(out.message_a.includes('daily or weekly'), out.message_a);
   assert.ok(out.message_a.includes('quick chat'), out.message_a);
   assert.ok(!/do one for .* next\?/.test(out.message_a));
   assert.ok(out.message_a.includes('free sample video for'), out.message_a);

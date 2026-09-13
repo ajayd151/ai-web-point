@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.28 (13 Sep 2026)
+- Shorter Message A; example record last on Ready to send.
+
 ## 1.5.27 (13 Sep 2026)
 - Leading region codes stripped from product names.
 
