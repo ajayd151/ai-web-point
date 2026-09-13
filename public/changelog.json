@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.33",
+    "date": "2026-09-13",
+    "notes": [
+      "Video compression measures the clip inside the encoder instead of waiting on the browser's video player, which could hang in a background tab."
+    ]
+  },
+  {
     "version": "1.5.32",
     "date": "2026-09-13",
     "notes": [

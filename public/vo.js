@@ -169,21 +169,31 @@ var VO_FFMPEG = null;
 // would not start from a CDN, and the core cannot locate its wasm by path from a blob worker, so it gets the bytes).
 // The core is the single-thread UMD build, so no special headers are needed.
 var VO_FF_WORKER_SRC = [
+  "self.logs = [];",
   "self.onmessage = async (e) => {",
   "  const m = e.data;",
   "  try {",
   "    if (m.cmd === 'load') {",
   "      importScripts(m.coreURL);",
   "      self.core = await self.createFFmpegCore({ wasmBinary: m.wasmBinary });",
+  "      self.core.setLogger((l) => { if (self.logs.length < 400) self.logs.push(String(l && l.message || '')); });",
   "      self.core.setProgress((p) => self.postMessage({ type: 'progress', progress: p.progress }));",
   "      self.postMessage({ type: 'loaded' }); return;",
   "    }",
   "    if (m.cmd === 'run') {",
   "      self.core.FS.writeFile('in', m.input);",
-  "      const ret = self.core.exec(...m.args);",
+  "      self.logs = []; self.core.exec('-i', 'in');",
+  "      const d = (self.logs.join('\\n').match(/Duration:\\s*(\\d+):(\\d+):([\\d.]+)/) || []);",
+  "      const dur = d.length ? Number(d[1]) * 3600 + Number(d[2]) * 60 + Number(d[3]) : 0;",
+  "      if (!dur) { self.postMessage({ type: 'error', message: 'Could not read the video length, so it cannot be compressed' }); return; }",
+  "      const audioK = 96; const totalK = Math.floor((m.targetBytes * 8 / dur / 1000) * 0.88); const videoK = totalK - audioK;",
+  "      if (videoK < 300) { self.postMessage({ type: 'error', message: 'This video is too long to fit under the limit at a watchable quality. Trim it first.' }); return; }",
+  "      self.postMessage({ type: 'info', seconds: Math.round(dur), videoK: videoK });",
+  "      const args = ['-i', 'in', '-vf', \"scale='min(1920,iw)':'-2'\", '-c:v', 'libx264', '-preset', 'veryfast', '-b:v', videoK + 'k', '-maxrate', Math.round(videoK * 1.1) + 'k', '-bufsize', (videoK * 2) + 'k', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-c:a', 'aac', '-b:a', audioK + 'k', '-y', 'out.mp4'];",
+  "      self.logs = []; const ret = self.core.exec(...args);",
   "      let out = null; try { out = self.core.FS.readFile('out.mp4'); } catch (x) {}",
   "      try { self.core.FS.unlink('in'); } catch (x) {} try { self.core.FS.unlink('out.mp4'); } catch (x) {}",
-  "      if (!out || !out.length) { self.postMessage({ type: 'error', message: 'ffmpeg exited with code ' + ret }); return; }",
+  "      if (!out || !out.length) { self.postMessage({ type: 'error', message: 'The encoder failed (code ' + ret + '): ' + self.logs.slice(-3).join(' ').slice(0, 200) }); return; }",
   "      self.postMessage({ type: 'done', data: out }, [out.buffer]); return;",
   "    }",
   "  } catch (err) { self.postMessage({ type: 'error', message: String(err && (err.message || err)) }); }",
@@ -205,22 +215,17 @@ async function voFfmpeg(say) {
   });
   VO_FFMPEG = w; return w;
 }
-async function voVideoDuration(file) {
-  return new Promise((resolve) => { const v = document.createElement('video'); v.preload = 'metadata'; const u = URL.createObjectURL(file); v.onloadedmetadata = () => { URL.revokeObjectURL(u); resolve(v.duration || 0); }; v.onerror = () => { URL.revokeObjectURL(u); resolve(0); }; v.src = u; });
-}
-// Returns a File under targetBytes, or throws. Bitrate = 88% of the budget split video/audio, height capped at 1080.
+// Returns a File under targetBytes, or throws. The worker reads the length, picks a bitrate (88% of the budget,
+// 96k audio) and re-encodes to H.264 with the height capped at 1080.
 async function voCompressVideo(file, targetBytes, say) {
   const w = await voFfmpeg(say);
-  const dur = await voVideoDuration(file); if (!dur) throw new Error('Could not read the video length, so it cannot be compressed');
-  const audioK = 96; const totalK = Math.floor((targetBytes * 8 / dur / 1000) * 0.88); const videoK = totalK - audioK;
-  if (videoK < 300) throw new Error('This video is too long to fit under ' + VO_VIDEO_MAX_MB + ' MB at a watchable quality. Trim it first.');
-  const args = ['-i', 'in', '-vf', "scale='min(1920,iw)':'-2'", '-c:v', 'libx264', '-preset', 'veryfast', '-b:v', videoK + 'k', '-maxrate', Math.round(videoK * 1.1) + 'k', '-bufsize', (videoK * 2) + 'k', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-c:a', 'aac', '-b:a', audioK + 'k', '-y', 'out.mp4'];
+  say('Reading the video…');
   const input = new Uint8Array(await file.arrayBuffer());
   const data = await new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('Compression took too long (over 10 minutes). Trim the video and try again.')), 600000);
-    w.onmessage = (ev) => { const d = ev.data; if (d.type === 'progress') say('Compressing… ' + Math.min(99, Math.round((d.progress || 0) * 100)) + '%'); else if (d.type === 'done') { clearTimeout(t); resolve(d.data); } else if (d.type === 'error') { clearTimeout(t); reject(new Error(d.message)); } };
+    w.onmessage = (ev) => { const d = ev.data; if (d.type === 'progress') say('Compressing… ' + Math.min(99, Math.round((d.progress || 0) * 100)) + '%'); else if (d.type === 'info') say('Compressing ' + d.seconds + ' seconds of video…'); else if (d.type === 'done') { clearTimeout(t); resolve(d.data); } else if (d.type === 'error') { clearTimeout(t); reject(new Error(d.message)); } };
     w.onerror = (er) => { clearTimeout(t); reject(new Error(er.message || 'Compression failed')); };
-    w.postMessage({ cmd: 'run', input: input, args: args }, [input.buffer]);
+    w.postMessage({ cmd: 'run', input: input, targetBytes: targetBytes }, [input.buffer]);
   });
   const out = new File([data], (file.name || 'video').replace(/\.[^.]+$/, '') + '-compressed.mp4', { type: 'video/mp4' });
   if (out.size > targetBytes) throw new Error('Compressed to ' + (out.size / 1048576).toFixed(1) + ' MB, still over ' + VO_VIDEO_MAX_MB + ' MB. Trim the video and try again.');
