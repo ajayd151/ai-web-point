@@ -101,7 +101,7 @@ var VO_HELP = {
   'Auto-send connection requests': 'Lets the worker send LinkedIn connection requests on its own, within the caps in Settings, for the top priorities only.',
   'Parked': 'Scored below the campaign minimum, kept for later. Brands whose Meta signals are too weak to ever reach the priority cut-off are parked without the paid company lookup, so they cost a fraction of a penny.',
   'DM active 90d': 'Did this person post or comment on LinkedIn in the last 90 days? The worker checks it through the LinkedIn connector before any request goes out: Y earns 8 points and goes to the front of the queue, N is held back (people who never open LinkedIn never accept). Set it to Y by hand to send anyway.',
-  'Send the video as': 'Attachment (default): the video file is pulled from the link you paste (a ScrollyVid watch link or a direct .mp4), checked for size, and sent inside the LinkedIn message so it plays in the thread with nothing to click. Link: the message carries the link instead. Videos must be under 20 MB to attach; the card checks this the moment you paste. Each card can override the choice.',
+  'Send the video as': 'Attachment (default): the video file is pulled from the link you paste (a ScrollyVid watch link or a direct .mp4) or uploaded from your computer, checked for size, and sent inside the LinkedIn message so it plays in the thread with nothing to click. Link: the message carries the link instead. Videos must be under 20 MB to attach; an uploaded file over that is compressed in your browser first (H.264, sound kept, about a minute for a 30 second clip). Each card can override the choice.',
   'Product photo': 'A photo of the product for whoever makes the video. Upload one when the website blocked us, or when the store photo is poor. It is resized in your browser and kept on the prospect.',
   'Messages sent': 'Every video message and follow-up that went out, from LinkedIn or email, by hand or automatically, with the stage the brand is at now and its reply if one came. Open takes you to the brand and its full history.',
   'Connection note test': 'Every automatic request rotates three arms evenly. A is the prospect\'s connection note: says what we do and offers the free sample. B is a soft note that only mentions their product ads on Meta and asks to connect, giving nothing away. C sends the request with no note at all. The Results tab and the daily report show acceptance and replies per arm. Judge after 60 to 80 of each.',
@@ -159,6 +159,58 @@ function voHelp(label) { const t = VO_HELP[String(label).replace(/<[^>]+>/g, '')
 var VO_SENT_CLASS = { Positive: 'sp', Negative: 'sn', Question: 'sq', Neutral: 'su' };
 function voReplyChip(p) { return p.reply_sentiment ? '<span class="vo-reply ' + (VO_SENT_CLASS[p.reply_sentiment] || 'su') + '">' + esc(p.reply_sentiment) + ' reply</span>' : (p.last_reply_at ? '<span class="vo-reply su">Replied</span>' : ''); }
 // first real photo of a product in the stored store feed, by product URL (or the pick when no URL given)
+// ---- Video upload from the computer ----
+// Vercel takes at most 4.5 MB per request, so the file goes up in 2.5 MB chunks and the server joins them.
+// Over the limit (20 MB): the file is re-encoded in the browser first with ffmpeg.wasm (loaded once from jsdelivr,
+// about 32 MB, cached by the browser), H.264 at a bitrate that lands under the limit, sound kept.
+var VO_VIDEO_MAX_MB = 20;
+var VO_FFMPEG = null;
+async function voFfmpeg(say) {
+  if (VO_FFMPEG) return VO_FFMPEG;
+  const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/';
+  const core = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/';
+  const blobUrl = async (url, type) => { const r = await fetch(url); if (!r.ok) throw new Error('Could not load the video compressor (' + r.status + ')'); return URL.createObjectURL(new Blob([await r.arrayBuffer()], { type: type })); };
+  if (!window.FFmpegWASM) { say('Loading the video compressor…'); await new Promise((res, rej) => { const s = document.createElement('script'); s.src = base + 'ffmpeg.js'; s.onload = res; s.onerror = () => rej(new Error('Could not load the video compressor')); document.head.appendChild(s); }); }
+  say('Loading the video compressor (32 MB, once per browser)…');
+  const ff = new window.FFmpegWASM.FFmpeg();
+  await ff.load({ coreURL: await blobUrl(core + 'ffmpeg-core.js', 'text/javascript'), wasmURL: await blobUrl(core + 'ffmpeg-core.wasm', 'application/wasm'), classWorkerURL: await blobUrl(base + '814.ffmpeg.js', 'text/javascript') });
+  VO_FFMPEG = ff; return ff;
+}
+async function voVideoDuration(file) {
+  return new Promise((resolve) => { const v = document.createElement('video'); v.preload = 'metadata'; const u = URL.createObjectURL(file); v.onloadedmetadata = () => { URL.revokeObjectURL(u); resolve(v.duration || 0); }; v.onerror = () => { URL.revokeObjectURL(u); resolve(0); }; v.src = u; });
+}
+// Returns a File under targetBytes, or throws. Bitrate = 88% of the budget split video/audio, height capped at 1080.
+async function voCompressVideo(file, targetBytes, say) {
+  const ff = await voFfmpeg(say);
+  const dur = await voVideoDuration(file); if (!dur) throw new Error('Could not read the video length, so it cannot be compressed');
+  const audioK = 96; const totalK = Math.floor((targetBytes * 8 / dur / 1000) * 0.88); const videoK = Math.max(300, totalK - audioK);
+  if (videoK < 300) throw new Error('This video is too long to fit under ' + VO_VIDEO_MAX_MB + ' MB at a watchable quality. Trim it first.');
+  ff.on('progress', ({ progress }) => say('Compressing… ' + Math.min(99, Math.round((progress || 0) * 100)) + '%'));
+  await ff.writeFile('in', new Uint8Array(await file.arrayBuffer()));
+  await ff.exec(['-i', 'in', '-vf', "scale='min(1920,iw)':'-2'", '-c:v', 'libx264', '-preset', 'veryfast', '-b:v', videoK + 'k', '-maxrate', Math.round(videoK * 1.1) + 'k', '-bufsize', (videoK * 2) + 'k', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-c:a', 'aac', '-b:a', audioK + 'k', 'out.mp4']);
+  const data = await ff.readFile('out.mp4');
+  try { await ff.deleteFile('in'); await ff.deleteFile('out.mp4'); } catch (e) {}
+  const out = new File([data.buffer ? data : new Uint8Array(data)], (file.name || 'video').replace(/\.[^.]+$/, '') + '-compressed.mp4', { type: 'video/mp4' });
+  if (out.size > targetBytes) throw new Error('Compressed to ' + (out.size / 1048576).toFixed(1) + ' MB, still over ' + VO_VIDEO_MAX_MB + ' MB. Trim the video and try again.');
+  return out;
+}
+async function voUploadVideo(id, file, say) {
+  const max = VO_VIDEO_MAX_MB * 1048576; const originalMb = Math.round(file.size / 1048576 * 10) / 10; let compressed = false;
+  if (!/^video\//.test(file.type) && !/\.(mp4|mov|m4v|webm)$/i.test(file.name)) throw new Error('Choose a video file (mp4, mov or webm)');
+  if (file.size > max) { say('Video is ' + originalMb + ' MB, over ' + VO_VIDEO_MAX_MB + ' MB, compressing it in your browser first…'); file = await voCompressVideo(file, Math.floor(max * 0.95), say); compressed = true; }
+  const chunk = 2.5 * 1048576; const total = Math.ceil(file.size / chunk); const uploadId = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); const urls = [];
+  for (let i = 0; i < total; i++) {
+    say('Uploading ' + (i + 1) + ' of ' + total + '…');
+    const part = file.slice(i * chunk, Math.min(file.size, (i + 1) * chunk));
+    const b64 = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(String(fr.result).split(',')[1]); fr.onerror = () => rej(new Error('Could not read the file')); fr.readAsDataURL(part); });
+    const r = await fetch('/api/vo-upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'chunk', id: id, upload_id: uploadId, index: i, data: b64 }) }).then((x) => x.json());
+    if (r.error) throw new Error(r.error); urls.push(r.url);
+  }
+  say('Joining the file…');
+  const done = await fetch('/api/vo-upload', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ step: 'finish', id: id, upload_id: uploadId, chunk_urls: urls, type: file.type, compressed: compressed, original_bytes: Math.round(originalMb * 1048576) }) }).then((x) => x.json());
+  if (done.error) throw new Error(done.error);
+  return Object.assign(done, { compressed: compressed, original_mb: originalMb });
+}
 // Resize an image in the browser (longest side max px, JPEG) so an upload stays small. Returns a data URL.
 function voShrinkImage(file, max) {
   return new Promise((resolve, reject) => {
@@ -608,7 +660,7 @@ async function voOpenReady() {
   const P = VO.providers; const liOn = P.linkedin && P.linkedin !== 'off';
   const cards = (d.prospects || []).map((p) => '<div class="vo-card vo-lead' + (p.source === 'demo' ? ' vo-demo' : '') + '" data-id="' + p.id + '">' + '<div class="vo-lead-strip' + (p.source === 'demo' ? ' demo' : '') + '">' + (p.source === 'demo' ? '📘 Example lead' : '🟢 New lead') + ' · <b>' + esc(p.brand) + '</b> · ' + esc(p.dm_name || 'contact') + (p.dm_title ? ', ' + esc(p.dm_title) : '') + ' · accepted ' + esc(voStamp(p.linkedin_connected_at)) + '</div>' + (p.source === 'demo' ? '<div class="vo-banner note" style="margin:0 0 8px">📘 <b>Example record.</b> Klevaro is a real UK store used for the demo; Jamie Example and the numbers are made up, so you can see the layout before real acceptances arrive. Real cards look the same without this box. <button class="primary sm" id="vo-demo-remove">Remove the example</button></div>' : '') + '<div class="vo-bar" style="margin:0 0 6px"><div>' + voPrio(p) + ' <span class="muted vo-small">' + esc(p.campaign_name || '') + (p.linkedin_note_variant ? ' · note ' + esc(p.linkedin_note_variant === 'soft' ? 'B soft' : (p.linkedin_note_variant === 'blank' ? 'C none' : 'A offer')) : '') + '</span></div><div>' + voLink(p.website || p.domain, 'Website') + ' · ' + voLink(p.dm_linkedin, 'LinkedIn') + ' <button class="ghost sm vo-open">Open</button></div></div>' +
     (voShortlist(p) || (p.source === 'demo' ? '' : '<div class="vo-shortlist' + (p.suggested_product_name ? '' : ' vo-noproduct') + '">' + (p.product_photo_url ? '<img class="vo-hero" src="' + esc(p.product_photo_url) + '" alt="" style="float:right;max-width:160px;max-height:160px;margin:0 0 8px 12px" />' : '') + (p.suggested_product_name ? '<b>Film this:</b> ' + voLink(p.suggested_product_url, p.suggested_product_name) + ' <span class="muted vo-small">' + esc(p.why_this_product || '') + '</span>' : '<b>No product picked yet.</b> <span class="vo-no">' + esc(p.why_this_product || 'Their website could not be read.') + '</span>') + '<div class="vo-small" style="margin-top:6px">' + (p.suggested_product_name ? 'Change it: ' : '') + 'Product to film: <input type="text" class="vo-prod-name" placeholder="e.g. Particle Face Cream" style="width:220px" /> Link: <input type="url" class="vo-prod-url" placeholder="https://…" style="width:260px" /> <button class="ghost sm vo-prod-save">Save and rebuild the message</button> <button class="ghost sm vo-prod-retry" title="Read their store and ads again">↻ Look again</button> <label class="ghost btn sm vo-file" title="A photo of the product for the video maker, from their site or your own screenshot">📷 Upload a photo of the product<input type="file" class="vo-prod-photo" accept="image/*" hidden /></label></div><div class="vo-small vo-prod-photo-status muted"></div></div>')) +
-    '<div class="vo-small">Video URL: <input type="url" class="vo-ready-url" value="' + esc(p.video_url || '') + '" placeholder="https://…" style="width:60%;max-width:420px" /> <span class="muted">paste the ScrollyVid link (or a direct .mp4) here once</span></div>' +
+    '<div class="vo-small">Video URL: <input type="url" class="vo-ready-url" value="' + esc(p.video_url || '') + '" placeholder="https://…" style="width:60%;max-width:420px" /> <span class="muted">paste the ScrollyVid link (or a direct .mp4) here once</span> <label class="ghost btn sm vo-file" title="Upload a video from your computer. Anything over 20 MB is compressed in your browser first.">📤 Upload a video file<input type="file" class="vo-ready-file" accept="video/*" hidden /></label></div><div class="vo-small vo-ready-upstatus muted"></div>' +
     '<div class="vo-small vo-ready-modes" style="margin:4px 0">Send the video as: <label><input type="radio" name="vo-mode-' + p.id + '" class="vo-ready-mode" value="attachment"' + ((VO.linkedin && VO.linkedin.video_delivery === 'link') ? '' : ' checked') + ' /> attachment (plays inside the message)</label> &nbsp; <label><input type="radio" name="vo-mode-' + p.id + '" class="vo-ready-mode" value="link"' + ((VO.linkedin && VO.linkedin.video_delivery === 'link') ? ' checked' : '') + ' /> link</label>' + voHelp('Send the video as') + ' <span class="vo-ready-check muted"></span></div>' +
     '<textarea class="vo-ready-text" rows="7">' + esc(p.message_a || '') + '</textarea>' +
     '<div style="margin-top:6px">' + (liOn ? '<button class="primary sm vo-ready-send"' + (P.linkedin_configured && p.source !== 'demo' ? '' : ' disabled title="' + (p.source === 'demo' ? 'example record, sending is off' : 'provider keys missing') + '"') + '>🚀 Send on LinkedIn</button> <span class="vo-small muted">sends the message from your LinkedIn and schedules the follow-ups</span> <details class="vo-byhand"><summary class="vo-small">send by hand instead</summary>' : '') +
@@ -640,6 +692,16 @@ async function voOpenReady() {
     const wording = () => { const u = urlBox.value.trim(); let t = textBox.value; if (mode() === 'attachment') t = t.replace(/:\s*(\[insert URL here\]|https:\/\/\S+)/, ', attached below.'); else { t = t.replace(/, (?:it is )?attached below\.?/, ': ' + (u || '[insert URL here]')); if (t.includes('[insert URL here]') && u) t = t.split('[insert URL here]').join(u); else if (lastUrl && u !== lastUrl && t.includes(lastUrl)) t = t.split(lastUrl).join(u || '[insert URL here]'); } textBox.value = t; lastUrl = u; };
     const check = async () => { const u = urlBox.value.trim(); card.dataset.videoOk = ''; if (mode() !== 'attachment') { checkBox.textContent = ''; return; } if (!/^https:\/\//i.test(u)) { checkBox.textContent = ''; return; } checkBox.textContent = 'checking the video file…'; checkBox.className = 'vo-ready-check muted'; try { const v = await voApi('checkVideo', { url: u }); if (v.ok) { checkBox.textContent = '✓ ' + v.mb + ' MB, will attach'; checkBox.className = 'vo-ready-check vo-yes'; card.dataset.videoOk = '1'; } else { checkBox.textContent = '✗ ' + v.error; checkBox.className = 'vo-ready-check vo-no'; } } catch (e) { checkBox.textContent = '✗ ' + e.message; checkBox.className = 'vo-ready-check vo-no'; } };
     urlBox.addEventListener('input', () => { wording(); clearTimeout(checkTimer); checkTimer = setTimeout(check, 600); });
+    const fileBox = card.querySelector('.vo-ready-file'), upStatus = card.querySelector('.vo-ready-upstatus');
+    if (fileBox) fileBox.addEventListener('change', async () => {
+      const f = fileBox.files && fileBox.files[0]; if (!f) return; fileBox.value = '';
+      const say = (t, cls) => { upStatus.textContent = t; upStatus.className = 'vo-small vo-ready-upstatus ' + (cls || 'muted'); };
+      try {
+        const r = await voUploadVideo(id, f, say);
+        urlBox.value = r.url; const att = card.querySelector('.vo-ready-mode[value=attachment]'); if (att) att.checked = true;
+        wording(); say('✓ Uploaded, ' + r.mb + ' MB' + (r.compressed ? ' (compressed from ' + r.original_mb + ' MB)' : ''), 'vo-yes'); check();
+      } catch (e) { say('✗ ' + e.message, 'vo-no'); }
+    });
     card.querySelectorAll('.vo-ready-mode').forEach((r) => r.addEventListener('change', () => { wording(); check(); }));
     wording(); if (urlBox.value.trim()) check();
     card.querySelector('.vo-ready-mark').addEventListener('click', async () => { try { const url = card.querySelector('.vo-ready-url').value.trim(); if (url) await voApi('setVideoUrl', { id: id, url: url }); await voApi('updateProspect', { id: id, fields: { message_a: card.querySelector('.vo-ready-text').value } }); await voApi('setStage', { id: id, stage: 'Msg 1', variant_used: 'A video sent', channel: 'LinkedIn' }); voToast('Marked as sent'); voOpenReady(); } catch (e) { voStatus(e.message, 'err'); } });

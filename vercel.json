@@ -43,6 +43,10 @@
     "api/sms-suggest.js": {
       "maxDuration": 30
     },
+    "api/vo-upload.js": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
     "api/vo.js": {
       "maxDuration": 60,
       "includeFiles": "{docs/video-outreach/**,public/help-video-outreach.html}"

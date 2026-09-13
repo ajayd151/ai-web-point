@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.29",
+    "date": "2026-09-13",
+    "notes": [
+      "Ready to send: Upload a video file from your computer (mp4, mov or webm). Anything over 20 MB is compressed in your browser first, H.264 with sound kept, to land under the limit, then it uploads in chunks and attaches like a pasted link."
+    ]
+  },
+  {
     "version": "1.5.28",
     "date": "2026-09-13",
     "notes": [
