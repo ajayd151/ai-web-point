@@ -100,6 +100,6 @@ test('Message A asks for a chat about a daily or weekly supply, never "do one fo
 
 test('store tags are stripped from product names', () => {
   assert.equal(M.shortProduct('[Amazon #1] Biodance Collagen Gel Mask'), 'Biodance Collagen Gel Mask');
-  assert.equal(M.shortProduct('EU Collagen Mask New Detail Page'), 'EU Collagen Mask');
+  assert.equal(M.shortProduct('EU Collagen Mask New Detail Page (ES)'), 'Collagen Mask');
   assert.equal(M.shortProduct('NEW! Official Best Seller Retinol Serum (30ml)'), 'Retinol Serum');
 });

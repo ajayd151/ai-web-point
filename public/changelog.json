@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.27",
+    "date": "2026-09-13",
+    "notes": [
+      "Product names also drop a leading store region code (EU, US, UK)."
+    ]
+  },
+  {
     "version": "1.5.26",
     "date": "2026-09-13",
     "notes": [

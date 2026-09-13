@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.27 (13 Sep 2026)
+- Leading region codes stripped from product names.
+
 ## 1.5.26 (13 Sep 2026)
 - Message A closes with the daily or weekly supply and a chat; store tags stripped from product names; rebuild skips sent prospects.
 
