@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.30",
+    "date": "2026-09-13",
+    "notes": [
+      "Video compression loads the right build of the compressor (it failed to start in 1.5.29)."
+    ]
+  },
+  {
     "version": "1.5.29",
     "date": "2026-09-13",
     "notes": [

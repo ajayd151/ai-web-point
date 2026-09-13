@@ -168,7 +168,7 @@ var VO_FFMPEG = null;
 async function voFfmpeg(say) {
   if (VO_FFMPEG) return VO_FFMPEG;
   const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/';
-  const core = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/';
+  const core = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/'; // ffmpeg 0.12 runs a module worker, which can only import the ESM core
   const blobUrl = async (url, type) => { const r = await fetch(url); if (!r.ok) throw new Error('Could not load the video compressor (' + r.status + ')'); return URL.createObjectURL(new Blob([await r.arrayBuffer()], { type: type })); };
   if (!window.FFmpegWASM) { say('Loading the video compressor…'); await new Promise((res, rej) => { const s = document.createElement('script'); s.src = base + 'ffmpeg.js'; s.onload = res; s.onerror = () => rej(new Error('Could not load the video compressor')); document.head.appendChild(s); }); }
   say('Loading the video compressor (32 MB, once per browser)…');
