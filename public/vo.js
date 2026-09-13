@@ -166,14 +166,15 @@ function voReplyChip(p) { return p.reply_sentiment ? '<span class="vo-reply ' + 
 var VO_VIDEO_MAX_MB = 20;
 var VO_FFMPEG = null;
 // A small classic worker of our own drives the ffmpeg core directly (the @ffmpeg/ffmpeg wrapper's module worker
-// would not start from a CDN). The core is the single-thread UMD build, so no special headers are needed.
+// would not start from a CDN, and the core cannot locate its wasm by path from a blob worker, so it gets the bytes).
+// The core is the single-thread UMD build, so no special headers are needed.
 var VO_FF_WORKER_SRC = [
   "self.onmessage = async (e) => {",
   "  const m = e.data;",
   "  try {",
   "    if (m.cmd === 'load') {",
   "      importScripts(m.coreURL);",
-  "      self.core = await self.createFFmpegCore({ mainScriptUrlOrBlob: m.coreURL + '#' + btoa(JSON.stringify({ wasmURL: m.wasmURL })) });",
+  "      self.core = await self.createFFmpegCore({ wasmBinary: m.wasmBinary });",
   "      self.core.setProgress((p) => self.postMessage({ type: 'progress', progress: p.progress }));",
   "      self.postMessage({ type: 'loaded' }); return;",
   "    }",
@@ -194,13 +195,13 @@ async function voFfmpeg(say) {
   const blobUrl = async (url, type) => { const r = await fetch(url); if (!r.ok) throw new Error('Could not load the video compressor (' + r.status + ')'); return URL.createObjectURL(new Blob([await r.arrayBuffer()], { type: type })); };
   say('Loading the video compressor (32 MB, once per browser)…');
   const coreURL = await blobUrl(core + 'ffmpeg-core.js', 'text/javascript');
-  const wasmURL = await blobUrl(core + 'ffmpeg-core.wasm', 'application/wasm');
+  const wr = await fetch(core + 'ffmpeg-core.wasm'); if (!wr.ok) throw new Error('Could not load the video compressor (' + wr.status + ')'); const wasmBinary = await wr.arrayBuffer(); // handed to the core as bytes: a blob worker cannot resolve the wasm by path
   const w = new Worker(URL.createObjectURL(new Blob([VO_FF_WORKER_SRC], { type: 'text/javascript' })));
   await new Promise((resolve, reject) => {
     const t = setTimeout(() => reject(new Error('The video compressor took too long to start')), 120000);
     w.onmessage = (ev) => { if (ev.data.type === 'loaded') { clearTimeout(t); resolve(); } else if (ev.data.type === 'error') { clearTimeout(t); reject(new Error(ev.data.message)); } };
     w.onerror = (er) => { clearTimeout(t); reject(new Error('Compressor failed to start: ' + (er.message || 'worker error'))); };
-    w.postMessage({ cmd: 'load', coreURL: coreURL, wasmURL: wasmURL });
+    w.postMessage({ cmd: 'load', coreURL: coreURL, wasmBinary: wasmBinary }, [wasmBinary]);
   });
   VO_FFMPEG = w; return w;
 }

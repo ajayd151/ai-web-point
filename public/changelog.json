@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.32",
+    "date": "2026-09-13",
+    "notes": [
+      "Video compression starts reliably: the encoder receives its engine bytes directly instead of fetching them by path."
+    ]
+  },
+  {
     "version": "1.5.31",
     "date": "2026-09-13",
     "notes": [
