@@ -165,32 +165,63 @@ function voReplyChip(p) { return p.reply_sentiment ? '<span class="vo-reply ' + 
 // about 32 MB, cached by the browser), H.264 at a bitrate that lands under the limit, sound kept.
 var VO_VIDEO_MAX_MB = 20;
 var VO_FFMPEG = null;
+// A small classic worker of our own drives the ffmpeg core directly (the @ffmpeg/ffmpeg wrapper's module worker
+// would not start from a CDN). The core is the single-thread UMD build, so no special headers are needed.
+var VO_FF_WORKER_SRC = [
+  "self.onmessage = async (e) => {",
+  "  const m = e.data;",
+  "  try {",
+  "    if (m.cmd === 'load') {",
+  "      importScripts(m.coreURL);",
+  "      self.core = await self.createFFmpegCore({ mainScriptUrlOrBlob: m.coreURL + '#' + btoa(JSON.stringify({ wasmURL: m.wasmURL })) });",
+  "      self.core.setProgress((p) => self.postMessage({ type: 'progress', progress: p.progress }));",
+  "      self.postMessage({ type: 'loaded' }); return;",
+  "    }",
+  "    if (m.cmd === 'run') {",
+  "      self.core.FS.writeFile('in', m.input);",
+  "      const ret = self.core.exec(...m.args);",
+  "      let out = null; try { out = self.core.FS.readFile('out.mp4'); } catch (x) {}",
+  "      try { self.core.FS.unlink('in'); } catch (x) {} try { self.core.FS.unlink('out.mp4'); } catch (x) {}",
+  "      if (!out || !out.length) { self.postMessage({ type: 'error', message: 'ffmpeg exited with code ' + ret }); return; }",
+  "      self.postMessage({ type: 'done', data: out }, [out.buffer]); return;",
+  "    }",
+  "  } catch (err) { self.postMessage({ type: 'error', message: String(err && (err.message || err)) }); }",
+  "};",
+].join('\n');
 async function voFfmpeg(say) {
   if (VO_FFMPEG) return VO_FFMPEG;
-  const base = 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/umd/';
-  const core = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/esm/'; // ffmpeg 0.12 runs a module worker, which can only import the ESM core
+  const core = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/';
   const blobUrl = async (url, type) => { const r = await fetch(url); if (!r.ok) throw new Error('Could not load the video compressor (' + r.status + ')'); return URL.createObjectURL(new Blob([await r.arrayBuffer()], { type: type })); };
-  if (!window.FFmpegWASM) { say('Loading the video compressor…'); await new Promise((res, rej) => { const s = document.createElement('script'); s.src = base + 'ffmpeg.js'; s.onload = res; s.onerror = () => rej(new Error('Could not load the video compressor')); document.head.appendChild(s); }); }
   say('Loading the video compressor (32 MB, once per browser)…');
-  const ff = new window.FFmpegWASM.FFmpeg();
-  await ff.load({ coreURL: await blobUrl(core + 'ffmpeg-core.js', 'text/javascript'), wasmURL: await blobUrl(core + 'ffmpeg-core.wasm', 'application/wasm'), classWorkerURL: await blobUrl(base + '814.ffmpeg.js', 'text/javascript') });
-  VO_FFMPEG = ff; return ff;
+  const coreURL = await blobUrl(core + 'ffmpeg-core.js', 'text/javascript');
+  const wasmURL = await blobUrl(core + 'ffmpeg-core.wasm', 'application/wasm');
+  const w = new Worker(URL.createObjectURL(new Blob([VO_FF_WORKER_SRC], { type: 'text/javascript' })));
+  await new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('The video compressor took too long to start')), 120000);
+    w.onmessage = (ev) => { if (ev.data.type === 'loaded') { clearTimeout(t); resolve(); } else if (ev.data.type === 'error') { clearTimeout(t); reject(new Error(ev.data.message)); } };
+    w.onerror = (er) => { clearTimeout(t); reject(new Error('Compressor failed to start: ' + (er.message || 'worker error'))); };
+    w.postMessage({ cmd: 'load', coreURL: coreURL, wasmURL: wasmURL });
+  });
+  VO_FFMPEG = w; return w;
 }
 async function voVideoDuration(file) {
   return new Promise((resolve) => { const v = document.createElement('video'); v.preload = 'metadata'; const u = URL.createObjectURL(file); v.onloadedmetadata = () => { URL.revokeObjectURL(u); resolve(v.duration || 0); }; v.onerror = () => { URL.revokeObjectURL(u); resolve(0); }; v.src = u; });
 }
 // Returns a File under targetBytes, or throws. Bitrate = 88% of the budget split video/audio, height capped at 1080.
 async function voCompressVideo(file, targetBytes, say) {
-  const ff = await voFfmpeg(say);
+  const w = await voFfmpeg(say);
   const dur = await voVideoDuration(file); if (!dur) throw new Error('Could not read the video length, so it cannot be compressed');
-  const audioK = 96; const totalK = Math.floor((targetBytes * 8 / dur / 1000) * 0.88); const videoK = Math.max(300, totalK - audioK);
+  const audioK = 96; const totalK = Math.floor((targetBytes * 8 / dur / 1000) * 0.88); const videoK = totalK - audioK;
   if (videoK < 300) throw new Error('This video is too long to fit under ' + VO_VIDEO_MAX_MB + ' MB at a watchable quality. Trim it first.');
-  ff.on('progress', ({ progress }) => say('Compressing… ' + Math.min(99, Math.round((progress || 0) * 100)) + '%'));
-  await ff.writeFile('in', new Uint8Array(await file.arrayBuffer()));
-  await ff.exec(['-i', 'in', '-vf', "scale='min(1920,iw)':'-2'", '-c:v', 'libx264', '-preset', 'veryfast', '-b:v', videoK + 'k', '-maxrate', Math.round(videoK * 1.1) + 'k', '-bufsize', (videoK * 2) + 'k', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-c:a', 'aac', '-b:a', audioK + 'k', 'out.mp4']);
-  const data = await ff.readFile('out.mp4');
-  try { await ff.deleteFile('in'); await ff.deleteFile('out.mp4'); } catch (e) {}
-  const out = new File([data.buffer ? data : new Uint8Array(data)], (file.name || 'video').replace(/\.[^.]+$/, '') + '-compressed.mp4', { type: 'video/mp4' });
+  const args = ['-i', 'in', '-vf', "scale='min(1920,iw)':'-2'", '-c:v', 'libx264', '-preset', 'veryfast', '-b:v', videoK + 'k', '-maxrate', Math.round(videoK * 1.1) + 'k', '-bufsize', (videoK * 2) + 'k', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-c:a', 'aac', '-b:a', audioK + 'k', '-y', 'out.mp4'];
+  const input = new Uint8Array(await file.arrayBuffer());
+  const data = await new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('Compression took too long (over 10 minutes). Trim the video and try again.')), 600000);
+    w.onmessage = (ev) => { const d = ev.data; if (d.type === 'progress') say('Compressing… ' + Math.min(99, Math.round((d.progress || 0) * 100)) + '%'); else if (d.type === 'done') { clearTimeout(t); resolve(d.data); } else if (d.type === 'error') { clearTimeout(t); reject(new Error(d.message)); } };
+    w.onerror = (er) => { clearTimeout(t); reject(new Error(er.message || 'Compression failed')); };
+    w.postMessage({ cmd: 'run', input: input, args: args }, [input.buffer]);
+  });
+  const out = new File([data], (file.name || 'video').replace(/\.[^.]+$/, '') + '-compressed.mp4', { type: 'video/mp4' });
   if (out.size > targetBytes) throw new Error('Compressed to ' + (out.size / 1048576).toFixed(1) + ' MB, still over ' + VO_VIDEO_MAX_MB + ' MB. Trim the video and try again.');
   return out;
 }

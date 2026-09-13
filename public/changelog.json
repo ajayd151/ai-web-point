@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.31",
+    "date": "2026-09-13",
+    "notes": [
+      "Video compression runs the encoder in SitePounce's own worker, so it starts reliably from the CDN."
+    ]
+  },
+  {
     "version": "1.5.30",
     "date": "2026-09-13",
     "notes": [
