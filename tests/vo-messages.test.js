@@ -88,3 +88,18 @@ test('attachment wording: the link sentence becomes "attached below" and back ag
   const withUrl = M.generate(input, M.DEFAULT_PROFILE, 'https://example.com/v/abc').message_a;
   assert.ok(M.forAttachment(withUrl).includes(', it is attached below'), 'a pasted link is replaced too');
 });
+
+test('Message A asks for a chat about a daily or weekly supply, never "do one for X next"', () => {
+  const { input } = rows[0];
+  const out = M.generate(input, M.DEFAULT_PROFILE, null);
+  assert.ok(out.message_a.includes('every day, or every week if you prefer'), out.message_a);
+  assert.ok(out.message_a.includes('quick chat'), out.message_a);
+  assert.ok(!/do one for .* next\?/.test(out.message_a));
+  assert.ok(out.message_a.includes('free sample video for'), out.message_a);
+});
+
+test('store tags are stripped from product names', () => {
+  assert.equal(M.shortProduct('[Amazon #1] Biodance Collagen Gel Mask'), 'Biodance Collagen Gel Mask');
+  assert.equal(M.shortProduct('EU Collagen Mask New Detail Page'), 'EU Collagen Mask');
+  assert.equal(M.shortProduct('NEW! Official Best Seller Retinol Serum (30ml)'), 'Retinol Serum');
+});

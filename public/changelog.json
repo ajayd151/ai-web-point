@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.26",
+    "date": "2026-09-13",
+    "notes": [
+      "Message A now closes by offering more videos every day or every week and asking for a day and time to chat, instead of offering one more product. Product names drop store tags such as [Amazon #1], New Detail Page, Official and Best Seller. Rebuild all messages leaves anyone already sent Message A untouched."
+    ]
+  },
+  {
     "version": "1.5.25",
     "date": "2026-09-13",
     "notes": [
