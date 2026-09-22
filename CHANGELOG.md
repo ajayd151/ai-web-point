@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.35 (22 Sep 2026)
+- Top-ups: one a day per campaign, only under 12 ready.
+
 ## 1.5.34 (21 Sep 2026)
 - Watchdog texts on pause, failed sourcing run, and a quiet weekday.
 
