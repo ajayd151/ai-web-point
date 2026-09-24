@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.45",
+    "date": "2026-09-24",
+    "notes": [
+      "LinkedIn person search, second version: the brand goes in quotes with founder, CEO or marketing (LinkedIn's title filter returned nothing), and when a result's headline does not name the brand its current job on the profile is checked. Brands the first version marked as nobody found are searched again once."
+    ]
+  },
+  {
     "version": "1.5.44",
     "date": "2026-09-24",
     "notes": [

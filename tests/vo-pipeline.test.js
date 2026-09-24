@@ -211,3 +211,11 @@ test('LinkedIn search fallback: cleans the brand and picks a founder who works t
   assert.equal(L.pickFromSearch([items[2]], 'Omni Creatine', 'omnicreatine.com'), null, 'a founder elsewhere is not a match');
   assert.equal(L.pickFromSearch([{ name: 'X', headline: 'Head of Growth, omnicreatine.com', url: 'https://linkedin.com/in/x' }], 'Omni', 'omnicreatine.com').name, 'X', 'the domain counts as the brand');
 });
+
+test('LinkedIn search fallback: a current job at the brand counts even when the headline does not name it', () => {
+  assert.equal(L.companyMatches('Omni Creatine', 'Omni Creatine', 'omnicreatine.com'), true);
+  assert.equal(L.companyMatches('OMNI Creatine LLC', 'Omni Creatine', 'omnicreatine.com'), true);
+  assert.equal(L.companyMatches('omnicreatine', 'Omni', 'omnicreatine.com'), true, 'domain form');
+  assert.equal(L.companyMatches('Omnicom Group', 'Omni Creatine', 'omnicreatine.com'), false, 'a different company that starts the same is not a match');
+  assert.equal(L.companyMatches('Tune', 'Omni Creatine', 'omnicreatine.com'), false);
+});
