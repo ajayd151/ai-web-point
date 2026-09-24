@@ -103,6 +103,7 @@ var VO_HELP = {
   'DM active 90d': 'Did this person post or comment on LinkedIn in the last 90 days? The worker checks it through the LinkedIn connector before any request goes out: Y earns 8 points and goes to the front of the queue, N is held back (people who never open LinkedIn never accept). Set it to Y by hand to send anyway.',
   'Send the video as': 'Attachment (default): the video file is pulled from the link you paste (a ScrollyVid watch link or a direct .mp4) or uploaded from your computer, checked for size, and sent inside the LinkedIn message so it plays in the thread with nothing to click. Link: the message carries the link instead. Videos must be under 20 MB to attach; an uploaded file over that is compressed in your browser first (H.264, sound kept, about a minute for a 30 second clip). Each card can override the choice.',
   'Product photo': 'A photo of the product for whoever makes the video. Upload one when the website blocked us, or when the store photo is poor. It is resized in your browser and kept on the prospect.',
+  'Funnel': 'Every stage from the ads we scanned to calls booked, with the number and the percentage of the stage before it. Copy gives the same lines as plain text to paste into WhatsApp or an email.',
   'Automation health': 'What the worker did on its last run, every 10 minutes: whether it sent a request and if not, why (outside the sending hours, cap reached, queue empty, or an error). If the last run is more than 25 minutes old the worker itself has stopped.',
   'Daily activity': 'One column per day, last 14 days. Bars: brands found, requests sent, accepted, videos sent, replies. Weekends are shaded; nothing is sent on weekends.',
   'Messages sent': 'Every video message and follow-up that went out, from LinkedIn or email, by hand or automatically, with the stage the brand is at now and its reply if one came. Open takes you to the brand and its full history.',
@@ -780,7 +781,27 @@ async function voOpenResults(campaignId) {
       return '<div class="vo-dcol' + (['Sa', 'Su'].includes(wd) ? ' wk' : '') + '"><div class="vo-dbars">' + bar(r.found, 'f', max) + bar(r.requests, 'r', max) + bar(r.accepted, 'a', Math.max(1, Math.min(max, 10))) + bar(r.videos, 'v', Math.max(1, Math.min(max, 10))) + bar(r.replies, 'p', Math.max(1, Math.min(max, 10))) + '</div><div class="vo-dnum">' + r.requests + '/' + r.accepted + '</div><div class="vo-dlab">' + wd + ' ' + dd + '</div></div>';
     }).join('') + '</div><div class="vo-small muted"><span class="vo-dkey f"></span> brands found <span class="vo-dkey r"></span> requests sent <span class="vo-dkey a"></span> accepted <span class="vo-dkey v"></span> videos sent <span class="vo-dkey p"></span> replies. Numbers under each day: requests / accepted.</div></div>';
   })() : '';
-  const repHtml = rep ? healthHtml + dailyHtml + '<div class="vo-card"><div class="vo-bar" style="margin:0 0 8px"><h4 style="margin:0">Daily report <span class="muted vo-small">(emailed every morning at 8am UK)</span></h4><button class="ghost sm" id="vo-report-send">Email it to me now</button></div>' +
+  const funnelHtml = rep && rep.funnel ? (function () {
+    const f = rep.funnel; const pc = (a, b) => (b ? Math.round(a / b * 100) + '%' : '0%');
+    const rows = [
+      ['Brands scanned from Meta (Facebook and Instagram) ads', f.brands, ''],
+      ['Shortlisted as worth going for', f.shortlisted, pc(f.shortlisted, f.brands) + ' of scanned'],
+      ['Decision maker found on LinkedIn', f.with_linkedin, pc(f.with_linkedin, f.shortlisted) + ' of shortlisted'],
+      ['Active on LinkedIn in the last 90 days', f.active, pc(f.active, f.with_linkedin) + ' of those found'],
+      ['Connection requests sent', f.requested, pc(f.requested, f.with_linkedin) + ' of those found'],
+      ['Connection requests accepted', f.accepted, pc(f.accepted, f.requested) + ' of sent'],
+      ['Sample videos sent', f.videos, pc(f.videos, f.accepted) + ' of accepted'],
+      ['Replies', f.replied, pc(f.replied, f.videos) + ' of videos sent'],
+      ['Positive replies', f.positive, pc(f.positive, f.videos) + ' of videos sent'],
+      ['Calls booked or further', f.calls, pc(f.calls, f.videos) + ' of videos sent'],
+    ];
+    const since = f.since ? new Date(f.since).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+    const text = 'ShekiPro outreach, ' + since + ' to ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) + '\n' + rows.map((r) => r[0] + ': ' + r[1] + (r[2] ? ' (' + r[2] + ')' : '')).join('\n');
+    window.__voFunnelText = text;
+    return '<div class="vo-card"><div class="vo-bar" style="margin:0 0 6px"><h4 style="margin:0">Funnel since ' + esc(since) + voHelp('Funnel') + '</h4><button class="ghost sm" id="vo-funnel-copy" title="Copy as plain text for WhatsApp or email">📋 Copy</button></div><div class="vo-fit"><table class="cust-table vo-table"><tbody>' +
+      rows.map((r) => '<tr><td>' + esc(r[0]) + '</td><td class="num"><b>' + r[1] + '</b></td><td class="muted">' + esc(r[2]) + '</td></tr>').join('') + '</tbody></table></div></div>';
+  })() : '';
+  const repHtml = rep ? healthHtml + funnelHtml + dailyHtml + '<div class="vo-card"><div class="vo-bar" style="margin:0 0 8px"><h4 style="margin:0">Daily report <span class="muted vo-small">(emailed every morning at 8am UK)</span></h4><button class="ghost sm" id="vo-report-send">Email it to me now</button></div>' +
     '<div class="vo-tiles"><div class="vo-tile vo-go" data-go="prospects" title="Open the prospects list"><b>' + rep.day.found + '</b><span>brands found, 24h</span></div><div class="vo-tile vo-go" data-go="prospects" title="Open the prospects list"><b>' + rep.day.requests + '</b><span>requests sent, 24h</span></div><div class="vo-tile q vo-go" data-go="ready" title="Open Ready to send"><b>' + rep.day.accepted + '</b><span>accepted, 24h</span></div><div class="vo-tile"><b>' + rep.day.videos + '</b><span>videos sent, 24h</span></div><div class="vo-tile c vo-go" data-go="prospects" title="Open the prospects list"><b>' + rep.day.replies + '</b><span>replies, 24h (' + rep.day.positive + ' positive)</span></div><div class="vo-tile d vo-go" data-go="ready" title="Open Ready to send"><b>' + rep.waiting.length + '</b><span>waiting for a video, click to send</span></div></div>' +
     (rep.waiting.length ? '<p><b>Accepted, video not yet sent:</b> ' + rep.waiting.map((p) => '<a href="#vo-ready-' + Number(p.id) + '" class="vo-go" data-go="ready" data-id="' + Number(p.id) + '" title="Open this brand\'s card on Ready to send">' + esc(p.brand) + '</a> (' + esc(p.dm_name || 'contact') + ', accepted ' + stamp(p.linkedin_connected_at) + ')').join('; ') + '</p>' : '') +
     (rep.replied_open.length ? '<p><b>Replies to answer:</b> ' + rep.replied_open.map((p) => esc(p.brand) + ' (' + esc(p.reply_sentiment || 'reply') + ')').join('; ') + '</p>' : '') +
@@ -793,6 +814,7 @@ async function voOpenResults(campaignId) {
     table('Outcomes by priority band', agg('priority'), ['Must target', 'Strong', 'Possible', 'Later', 'Unlikely']) + table('Outcomes by variant', agg('variant'), ['A video sent', 'B permission', '(none)']) +
     '<p class="vo-help">Reading it: if Possible replies as often as Strong, the 65 boundary is too strict; if variant B out-replies A, lead with permission. Change weights in Settings, they re-score every prospect.</p>';
   el.querySelectorAll('.vo-go').forEach((t) => t.addEventListener('click', (e) => { e.preventDefault(); if (t.dataset.go === 'ready') { VO.readyFocus = t.dataset.id ? Number(t.dataset.id) : null; voOpenReady(); } else voOpenProspects(); }));
+  voOn('vo-funnel-copy', 'click', (e) => voCopy(e.target, window.__voFunnelText || ''));
   voOn('vo-res-camp', 'change', () => voOpenResults($('vo-res-camp').value));
   voOn('vo-report-send', 'click', async () => { try { const r = await voApi('sendReportNow'); voStatus(r.sent ? 'Daily report emailed' : 'Report built but the email was not accepted (check VO_NOTIFY_EMAIL and SendGrid)', r.sent ? 'ok' : 'err'); } catch (e) { voStatus(e.message, 'err'); } });
 }

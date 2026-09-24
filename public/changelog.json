@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.38",
+    "date": "2026-09-24",
+    "notes": [
+      "Analytics has a Funnel table: brands scanned, shortlisted, found on LinkedIn, active, requests sent, accepted, videos sent, replies, positive, calls, each with its percentage, and a Copy button for WhatsApp."
+    ]
+  },
+  {
     "version": "1.5.37",
     "date": "2026-09-24",
     "notes": [
