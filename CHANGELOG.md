@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.44 (24 Sep 2026)
+- Person search retry without the title filter; debug of the raw answer.
+
 ## 1.5.43 (24 Sep 2026)
 - LinkedIn person search fallback (personFinder, 1 a tick; Find on LinkedIn button).
 
