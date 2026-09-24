@@ -103,3 +103,13 @@ test('store tags are stripped from product names', () => {
   assert.equal(M.shortProduct('EU Collagen Mask New Detail Page (ES)'), 'Collagen Mask');
   assert.equal(M.shortProduct('NEW! Official Best Seller Retinol Serum (30ml)'), 'Retinol Serum');
 });
+
+test('Follow-up 3 has a seasonal reason, offers a second sample, name only in the greeting', () => {
+  assert.equal(M.seasonalHook(new Date('2026-10-20T12:00:00Z')), 'With Black Friday coming');
+  assert.equal(M.seasonalHook(new Date('2026-12-05T12:00:00Z')), 'With Christmas orders peaking');
+  assert.equal(M.seasonalHook(new Date('2027-01-10T12:00:00Z')), 'With the new year push starting');
+  const g = M.generate({ dm_name: 'Nicholai Belgica', brand: 'Ikigai Cases', suggested_product_name: 'Pill Case', observation: 'your ads on Meta', product_candidates: [{ name: 'Pill Case' }, { name: 'Travel Case' }] }, M.DEFAULT_PROFILE, 'https://x.example/v', null);
+  assert.ok(g.followup_3.startsWith('Hey Nicholai\n\n'), g.followup_3);
+  assert.ok(/second sample for Travel Case, free as before\./.test(g.followup_3), g.followup_3);
+  assert.equal((g.followup_3.match(/Nicholai/g) || []).length, 1);
+});
