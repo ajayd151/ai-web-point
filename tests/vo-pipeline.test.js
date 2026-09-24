@@ -219,3 +219,11 @@ test('LinkedIn search fallback: a current job at the brand counts even when the 
   assert.equal(L.companyMatches('Omnicom Group', 'Omni Creatine', 'omnicreatine.com'), false, 'a different company that starts the same is not a match');
   assert.equal(L.companyMatches('Tune', 'Omni Creatine', 'omnicreatine.com'), false);
 });
+
+test('creative buyers count as contacts, editors do not', () => {
+  assert.equal(L.PERSON_TITLE_RE.test('Creative Strategist'), true);
+  assert.equal(L.PERSON_TITLE_RE.test('Brand Manager'), true);
+  assert.equal(L.NOT_BUYER_RE.test('Video Editor'), true);
+  const pick = L.pickFromSearch([{ name: 'Ed', headline: 'Video Editor at Omni Creatine', url: 'https://linkedin.com/in/ed' }, { name: 'Cara', headline: 'Creative Strategist at Omni Creatine', url: 'https://linkedin.com/in/cara' }], 'Omni Creatine', 'omnicreatine.com');
+  assert.equal(pick.name, 'Cara');
+});
