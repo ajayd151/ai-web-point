@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.46",
+    "date": "2026-09-24",
+    "notes": [
+      "Two people per brand: when the contact has not posted or commented on LinkedIn in 90 days, the worker looks for another founder or marketing lead at the same brand (Apollo's second contact first) and switches the request to them once they pass the activity check. The first contact is kept on the record."
+    ]
+  },
+  {
     "version": "1.5.45",
     "date": "2026-09-24",
     "notes": [
