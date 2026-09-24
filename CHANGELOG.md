@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.49 (24 Sep 2026)
+- Person search trace on a miss.
+
 ## 1.5.48 (24 Sep 2026)
 - Follow-ups at day 4 and 12; Follow-up 3 (seasonal second sample) 30 days after Follow-up 2.
 

@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.49",
+    "date": "2026-09-24",
+    "notes": [
+      "Find on LinkedIn reports what each search and profile check returned, so a miss can be explained."
+    ]
+  },
+  {
     "version": "1.5.48",
     "date": "2026-09-24",
     "notes": [
