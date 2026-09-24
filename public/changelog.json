@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.40",
+    "date": "2026-09-24",
+    "notes": [
+      "Funnel has a date range: last 30 days by default, pick any from and to dates, or All time, so earlier periods can be compared."
+    ]
+  },
+  {
     "version": "1.5.39",
     "date": "2026-09-24",
     "notes": [

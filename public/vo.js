@@ -103,7 +103,7 @@ var VO_HELP = {
   'DM active 90d': 'Did this person post or comment on LinkedIn in the last 90 days? The worker checks it through the LinkedIn connector before any request goes out: Y earns 8 points and goes to the front of the queue, N is held back (people who never open LinkedIn never accept). Set it to Y by hand to send anyway.',
   'Send the video as': 'Attachment (default): the video file is pulled from the link you paste (a ScrollyVid watch link or a direct .mp4) or uploaded from your computer, checked for size, and sent inside the LinkedIn message so it plays in the thread with nothing to click. Link: the message carries the link instead. Videos must be under 20 MB to attach; an uploaded file over that is compressed in your browser first (H.264, sound kept, about a minute for a 30 second clip). Each card can override the choice.',
   'Product photo': 'A photo of the product for whoever makes the video. Upload one when the website blocked us, or when the store photo is poor. It is resized in your browser and kept on the prospect.',
-  'Funnel': 'Every stage from the ads we scanned to calls booked, with the number, the percentage of the stage before it, and the percentage of everything scanned (so you can see the drop from 100% down to calls). Copy gives the same lines as plain text to paste into WhatsApp or an email.',
+  'Funnel': 'Every stage from the ads we scanned to calls booked, for the dates you pick (last 30 days by default), with the number, the percentage of the stage before it, and the percentage of everything scanned. Each stage counts what happened inside the dates. Copy gives the same lines as plain text to paste into WhatsApp or an email.',
   'Automation health': 'What the worker did on its last run, every 10 minutes: whether it sent a request and if not, why (outside the sending hours, cap reached, queue empty, or an error). If the last run is more than 25 minutes old the worker itself has stopped.',
   'Daily activity': 'One column per day, last 14 days. Bars: brands found, requests sent, accepted, videos sent, replies. Weekends are shaded; nothing is sent on weekends.',
   'Messages sent': 'Every video message and follow-up that went out, from LinkedIn or email, by hand or automatically, with the stage the brand is at now and its reply if one came. Open takes you to the brand and its full history.',
@@ -756,6 +756,29 @@ async function voOpenReady() {
   });
 }
 
+// The funnel table for a date range: number, share of the stage before, share of everything scanned in the range.
+async function voRenderFunnel(from, to) {
+  const body = $('vo-funnel-body'); if (!body) return;
+  let f; try { f = (await voApi('funnel', { from: from, to: to })).funnel; } catch (e) { body.innerHTML = '<p class="vo-no">' + esc(e.message) + '</p>'; return; }
+  const pc = (a, b) => (b ? Math.round(a / b * 100) + '%' : '0%'); const ov = (a) => (f.brands ? (a / f.brands * 100 < 1 && a > 0 ? (Math.round(a / f.brands * 1000) / 10) : Math.round(a / f.brands * 100)) + '%' : '0%');
+  const rows = [
+    ['Brands scanned from Meta (Facebook and Instagram) ads', f.brands, ''],
+    ['Shortlisted as worth going for', f.shortlisted, pc(f.shortlisted, f.brands) + ' of scanned'],
+    ['Decision maker found on LinkedIn', f.with_linkedin, pc(f.with_linkedin, f.shortlisted) + ' of shortlisted'],
+    ['Active on LinkedIn in the last 90 days', f.active, pc(f.active, f.with_linkedin) + ' of those found'],
+    ['Connection requests sent', f.requested, pc(f.requested, f.with_linkedin) + ' of those found'],
+    ['Connection requests accepted', f.accepted, pc(f.accepted, f.requested) + ' of sent'],
+    ['Sample videos sent', f.videos, pc(f.videos, f.accepted) + ' of accepted'],
+    ['Replies', f.replied, pc(f.replied, f.videos) + ' of videos sent'],
+    ['Positive replies', f.positive, pc(f.positive, f.videos) + ' of videos sent'],
+    ['Calls booked or further', f.calls, pc(f.calls, f.videos) + ' of videos sent'],
+  ];
+  const nice = (s) => new Date(s + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  window.__voFunnelText = 'ShekiPro outreach, ' + nice(f.from) + ' to ' + nice(f.to) + '\n' + rows.map((r, i) => r[0] + ': ' + r[1] + (r[2] ? ' (' + r[2] + (i ? ', ' + ov(r[1]) + ' of all scanned' : '') + ')' : '')).join('\n');
+  body.innerHTML = '<div class="vo-fit"><table class="cust-table vo-table"><thead><tr><th>Stage</th><th class="num">Number</th><th>Of the stage before</th><th class="num">Of all scanned</th></tr></thead><tbody>' +
+    rows.map((r, i) => '<tr><td>' + esc(r[0]) + '</td><td class="num"><b>' + r[1] + '</b></td><td class="muted">' + esc(r[2]) + '</td><td class="num">' + (i ? '<b>' + ov(r[1]) + '</b>' : '100%') + '</td></tr>').join('') + '</tbody></table></div>' +
+    '<div class="vo-small muted">' + nice(f.from) + ' to ' + nice(f.to) + '. Each stage counts what happened in these dates (found, requested, accepted, sent), so a period can show more acceptances than requests when they came from requests sent earlier.</div>';
+}
 // ---- Results (5.5) ----
 async function voOpenResults(campaignId) {
   const el = $('vo-pane-results'); voPane('results'); el.innerHTML = '<p class="muted">Loading…</p>';
@@ -781,7 +804,8 @@ async function voOpenResults(campaignId) {
       return '<div class="vo-dcol' + (['Sa', 'Su'].includes(wd) ? ' wk' : '') + '"><div class="vo-dbars">' + bar(r.found, 'f', max) + bar(r.requests, 'r', max) + bar(r.accepted, 'a', Math.max(1, Math.min(max, 10))) + bar(r.videos, 'v', Math.max(1, Math.min(max, 10))) + bar(r.replies, 'p', Math.max(1, Math.min(max, 10))) + '</div><div class="vo-dnum">' + r.requests + '/' + r.accepted + '</div><div class="vo-dlab">' + wd + ' ' + dd + '</div></div>';
     }).join('') + '</div><div class="vo-small muted"><span class="vo-dkey f"></span> brands found <span class="vo-dkey r"></span> requests sent <span class="vo-dkey a"></span> accepted <span class="vo-dkey v"></span> videos sent <span class="vo-dkey p"></span> replies. Numbers under each day: requests / accepted.</div></div>';
   })() : '';
-  const funnelHtml = rep && rep.funnel ? (function () {
+  const funnelHtml = rep ? '<div class="vo-card" id="vo-funnel-card"><div class="vo-bar" style="margin:0 0 6px"><h4 style="margin:0">Funnel' + voHelp('Funnel') + '</h4><div class="vo-small">From <input type="date" id="vo-fn-from" /> to <input type="date" id="vo-fn-to" /> <button class="ghost sm" id="vo-fn-30">Last 30 days</button> <button class="ghost sm" id="vo-fn-all">All time</button> <button class="ghost sm" id="vo-funnel-copy" title="Copy as plain text for WhatsApp or email">📋 Copy</button></div></div><div id="vo-funnel-body"><p class="muted">Loading…</p></div></div>' : '';
+  const funnelUnused = rep && rep.funnel ? (function () {
     const f = rep.funnel; const pc = (a, b) => (b ? Math.round(a / b * 100) + '%' : '0%'); const ov = (a) => (f.brands ? (a / f.brands * 100 < 1 && a > 0 ? (Math.round(a / f.brands * 1000) / 10) : Math.round(a / f.brands * 100)) + '%' : '0%');
     const rows = [
       ['Brands scanned from Meta (Facebook and Instagram) ads', f.brands, ''],
@@ -815,6 +839,15 @@ async function voOpenResults(campaignId) {
     '<p class="vo-help">Reading it: if Possible replies as often as Strong, the 65 boundary is too strict; if variant B out-replies A, lead with permission. Change weights in Settings, they re-score every prospect.</p>';
   el.querySelectorAll('.vo-go').forEach((t) => t.addEventListener('click', (e) => { e.preventDefault(); if (t.dataset.go === 'ready') { VO.readyFocus = t.dataset.id ? Number(t.dataset.id) : null; voOpenReady(); } else voOpenProspects(); }));
   voOn('vo-funnel-copy', 'click', (e) => voCopy(e.target, window.__voFunnelText || ''));
+  if ($('vo-fn-from')) {
+    const iso = (d) => d.toISOString().slice(0, 10);
+    const setRange = (from, to) => { $('vo-fn-from').value = from; $('vo-fn-to').value = to; voRenderFunnel(from, to); };
+    voOn('vo-fn-30', 'click', () => setRange(iso(new Date(Date.now() - 29 * 86400000)), iso(new Date())));
+    voOn('vo-fn-all', 'click', () => setRange('2026-09-01', iso(new Date())));
+    voOn('vo-fn-from', 'change', () => voRenderFunnel($('vo-fn-from').value, $('vo-fn-to').value));
+    voOn('vo-fn-to', 'change', () => voRenderFunnel($('vo-fn-from').value, $('vo-fn-to').value));
+    setRange(iso(new Date(Date.now() - 29 * 86400000)), iso(new Date()));
+  }
   voOn('vo-res-camp', 'change', () => voOpenResults($('vo-res-camp').value));
   voOn('vo-report-send', 'click', async () => { try { const r = await voApi('sendReportNow'); voStatus(r.sent ? 'Daily report emailed' : 'Report built but the email was not accepted (check VO_NOTIFY_EMAIL and SendGrid)', r.sent ? 'ok' : 'err'); } catch (e) { voStatus(e.message, 'err'); } });
 }

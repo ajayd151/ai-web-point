@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
   // Team members reach only what the owner ticked: Ready to send actions, the whole module, or Settings.
   const lvl = voLevel(acct);
   const SETTINGS_ACTIONS = ['saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
-  const READY_ACTIONS = ['readyToSend', 'readyCount', 'dueFollowups', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config'];
+  const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config'];
   const actionName = String((req.body && req.body.action) || (typeof req.body === 'string' ? (JSON.parse(req.body || '{}').action || '') : ''));
   if (SETTINGS_ACTIONS.includes(actionName) && !lvl.settings) { res.status(403).json({ error: 'Not allowed: Video Outreach settings are for the owner, or a member with the Settings permission.' }); return; }
   if (!lvl.all && !SETTINGS_ACTIONS.includes(actionName) && !READY_ACTIONS.includes(actionName)) { res.status(403).json({ error: 'Not allowed: your permission covers Ready to send only.' }); return; }
@@ -217,6 +217,7 @@ module.exports = async (req, res) => {
     if (action === 'faqRemove') { res.status(200).json({ ok: true, faq: await db.removeFaq(Number(body.index)) }); return; }
     if (action === 'faqExtra') { res.status(200).json({ faq: await db.faqExtra() }); return; }
     if (action === 'markQuestion') { await db.markQuestion(owner, id, { helpful: body.helpful }); res.status(200).json({ ok: true }); return; }
+    if (action === 'funnel') { res.status(200).json({ funnel: await db.funnelData(owner, body.from || null, body.to || null) }); return; }
     if (action === 'report') { res.status(200).json({ report: await db.reportData(owner) }); return; }
     if (action === 'sendReportNow') { res.status(200).json(await J.dailyReport(owner, actor, base, true)); return; }
     if (action === 'results') { res.status(200).json({ rows: await db.results(owner, body.campaignId || null), campaigns: await db.listCampaigns(owner) }); return; }
