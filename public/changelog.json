@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.51",
+    "date": "2026-09-24",
+    "notes": [
+      "Find on LinkedIn runs one brand every 20 minutes instead of every 10, to stay well inside LinkedIn's search limits."
+    ]
+  },
+  {
     "version": "1.5.50",
     "date": "2026-09-24",
     "notes": [
