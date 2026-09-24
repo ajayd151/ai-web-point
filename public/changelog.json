@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.42",
+    "date": "2026-09-24",
+    "notes": [
+      "Automatic follow-ups switched on for both campaigns. Safety rules first: one follow-up per person per run (overdue ones no longer stack), Follow-up 2 at least 4 days after Follow-up 1, LinkedIn follow-ups only in US business hours and under the daily message cap.",
+      "Follow-ups open with Hey and the first name instead of bolting the name onto a sentence, and the offer line no longer says for supplement brands."
+    ]
+  },
+  {
     "version": "1.5.41",
     "date": "2026-09-24",
     "notes": [
