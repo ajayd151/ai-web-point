@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.39",
+    "date": "2026-09-24",
+    "notes": [
+      "Funnel table gains an Of all scanned column, so every stage reads as a percentage of the brands scanned."
+    ]
+  },
+  {
     "version": "1.5.38",
     "date": "2026-09-24",
     "notes": [
