@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.52 (24 Sep 2026)
+- Follow-up 3 seasonal hook from a US occasion calendar at send time: big shopping moments 14 to 75 days ahead first, smaller sale weekends 14 to 45 days, else neutral.
+
 ## 1.5.51 (24 Sep 2026)
 - personFinder every other tick.
 

@@ -105,9 +105,15 @@ test('store tags are stripped from product names', () => {
 });
 
 test('Follow-up 3 has a seasonal reason, offers a second sample, name only in the greeting', () => {
-  assert.equal(M.seasonalHook(new Date('2026-10-20T12:00:00Z')), 'With Black Friday coming');
-  assert.equal(M.seasonalHook(new Date('2026-12-05T12:00:00Z')), 'With Christmas orders peaking');
-  assert.equal(M.seasonalHook(new Date('2027-01-10T12:00:00Z')), 'With the new year push starting');
+  assert.equal(M.seasonalHook(new Date('2026-10-20T12:00:00Z')), 'With Thanksgiving and Black Friday coming up', 'Thanksgiving 26 Nov 2026 is 37 days out');
+  assert.equal(M.seasonalHook(new Date('2026-11-20T12:00:00Z')), 'With Christmas coming up', 'Thanksgiving is 6 days out, too close, so the next one');
+  assert.equal(M.seasonalHook(new Date('2026-11-27T12:00:00Z')).includes('Black Friday'), false, 'never after Black Friday');
+  assert.equal(M.seasonalHook(new Date('2027-01-10T12:00:00Z')), "With Valentine's Day coming up");
+  assert.equal(M.seasonalHook(new Date('2027-04-20T12:00:00Z')), "With Mother's Day coming up", 'Mother\'s Day 9 May 2027');
+  assert.equal(M.upcomingOccasion(new Date('2026-11-26T12:00:00Z')).name, 'Christmas');
+  assert.equal(M.seasonalHook(new Date('2027-08-10T12:00:00Z')), 'With Labor Day coming up', 'a smaller sale weekend when no big one is close');
+  assert.equal(M.seasonalHook(new Date('2026-12-15T12:00:00Z')), 'With the new year coming up', 'Christmas is 10 days out, too close');
+  assert.equal(M.seasonalHook(new Date('2026-09-24T12:00:00Z')), 'With Thanksgiving and Black Friday coming up', 'late September is Black Friday planning, not Halloween');
   const g = M.generate({ dm_name: 'Nicholai Belgica', brand: 'Ikigai Cases', suggested_product_name: 'Pill Case', observation: 'your ads on Meta', product_candidates: [{ name: 'Pill Case' }, { name: 'Travel Case' }] }, M.DEFAULT_PROFILE, 'https://x.example/v', null);
   assert.ok(g.followup_3.startsWith('Hey Nicholai\n\n'), g.followup_3);
   assert.ok(/second sample for Travel Case, free as before\./.test(g.followup_3), g.followup_3);

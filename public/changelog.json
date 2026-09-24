@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.52",
+    "date": "2026-09-24",
+    "notes": [
+      "Follow-up 3 names a real US occasion from a calendar (Thanksgiving and Black Friday, Christmas, new year, Valentine's Day, Mother's Day, Memorial Day, Father's Day, 4th of July, Labor Day, Halloween), worked out at the moment of sending. The big shopping moments come first, and only one 14 to 75 days ahead is ever named, so it can never mention an occasion that has passed; otherwise it says Ahead of your next campaign."
+    ]
+  },
+  {
     "version": "1.5.51",
     "date": "2026-09-24",
     "notes": [
