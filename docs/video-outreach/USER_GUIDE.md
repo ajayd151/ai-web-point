@@ -15,7 +15,7 @@ SitePounce > Video Outreach finds ecommerce brands that advertise on Meta (Faceb
 
 ## 1b. Alerts and reporting
 
-Settings, Reply alerts by SMS: one line per person, first name then mobile. Two texts exist: "Aryan, new ShekiPro connection: Dan at Create accepted on LinkedIn. Create an AI video for Core Creatine Gummies, then paste the link and send here: [link]" and "Ajay, Positive reply for ShekiPro from Dan at Create via LinkedIn: wants the sample. Next: ...". A daily report email goes to the notify address after 8am UK (brands found, requests, acceptances with times, videos sent, replies, what is waiting for you); the Results tab shows the same numbers. A red count on the Ready to send tab and on the Video Outreach menu button shows what is waiting for you.
+Settings, Reply alerts by SMS: one line per person, first name then mobile. Two texts exist: "Aryan, new ShekiPro connection: Dan at Create accepted on LinkedIn. Create an AI video for Core Creatine Gummies, then paste the link and send here: [link]" and "Ajay, Positive reply for ShekiPro from Dan at Create via LinkedIn: wants the sample. Next: ...". A daily report email goes to the notify address after 8am UK (brands found, requests, acceptances with times, videos sent, replies, what is waiting for you); the Analytics tab shows the same numbers. A red count on the Ready to send tab and on the Video Outreach menu button shows what is waiting for you.
 
 ## 2. Creating a campaign
 
@@ -100,9 +100,9 @@ What SitePounce then does on its own, every 10 minutes:
 
 What it never does: send Message A, send a follow-up unless auto follow-ups is on, or answer a reply.
 
-## 8. Results and tuning
+## 8. Analytics and tuning
 
-**Results** shows reply, call and pilot rates by priority band and by message variant. If Possible replies as often as Strong, lower the Strong threshold in Settings. If B out-replies A, lead with permission. Weight changes are previewed against the 74 tracker brands before saving and re-score every prospect.
+**Analytics** shows automation health, a 14-day daily activity graph (brands found, requests, accepted, videos, replies) and reply, call and pilot rates by priority band and by message variant. If Possible replies as often as Strong, lower the Strong threshold in Settings. If B out-replies A, lead with permission. Weight changes are previewed against the 74 tracker brands before saving and re-score every prospect.
 
 ## 8b. The messages
 
