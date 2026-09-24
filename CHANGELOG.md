@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.37 (24 Sep 2026)
+- Daily graph day labels.
+
 ## 1.5.36 (24 Sep 2026)
 - Send step runs first and alone in the worker; last_tick diagnostics; Results renamed Analytics with health block and 14-day daily bars.
 

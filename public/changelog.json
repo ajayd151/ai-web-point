@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.37",
+    "date": "2026-09-24",
+    "notes": [
+      "Daily activity graph day labels fixed."
+    ]
+  },
+  {
     "version": "1.5.36",
     "date": "2026-09-24",
     "notes": [
