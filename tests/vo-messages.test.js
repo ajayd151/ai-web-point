@@ -119,3 +119,18 @@ test('Follow-up 3 has a seasonal reason, offers a second sample, name only in th
   assert.ok(/second sample for Travel Case, free as before\./.test(g.followup_3), g.followup_3);
   assert.equal((g.followup_3.match(/Nicholai/g) || []).length, 1);
 });
+
+test('Follow-up 3 season follows the brand country, never a holiday that country does not have', () => {
+  const at = (d) => new Date(d + 'T12:00:00Z');
+  assert.equal(M.seasonalHook(at('2026-09-24'), 'UK'), 'With Black Friday coming up', 'no Thanksgiving in the UK');
+  assert.equal(M.seasonalHook(at('2026-09-24'), 'GB'), 'With Black Friday coming up', 'GB is the UK');
+  assert.equal(M.seasonalHook(at('2026-09-24'), 'US'), 'With Thanksgiving and Black Friday coming up');
+  assert.equal(M.easter(2027).toISOString().slice(0, 10), '2027-03-28');
+  assert.equal(M.seasonalHook(at('2027-02-10'), 'UK'), "With Mother's Day coming up", 'UK Mothering Sunday is 7 Mar 2027, three weeks before Easter');
+  assert.equal(M.seasonalHook(at('2027-02-10'), 'US'), 'Ahead of your next campaign', 'US Mother\'s Day is May, too far');
+  assert.equal(M.seasonalHook(at('2027-08-10'), 'AU'), "With Father's Day coming up", 'Australian Father\'s Day is the first Sunday of September');
+  assert.equal(M.seasonalHook(at('2027-06-10'), 'UK'), 'Ahead of your next campaign', 'no 4th of July in the UK');
+  assert.equal(M.seasonalHook(at('2027-06-10'), 'DE'), 'Ahead of your next campaign', 'unknown calendars only get shared dates');
+  const p = { dm_name: 'Sam Lee', brand: 'X', country: 'UK' };
+  assert.ok(!/Thanksgiving/.test(M.generate(p, null, 'https://example.com/v.mp4').followup_3), 'a UK brand never hears about Thanksgiving');
+});

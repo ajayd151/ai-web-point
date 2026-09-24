@@ -2,6 +2,11 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.53 (24 Sep 2026)
+- Follow-up 3 season follows the brand's country: US gets Thanksgiving, 4th of July, Labor Day; UK and Ireland get Black Friday and Mothering Sunday (three weeks before Easter); Canada, Australia and New Zealand have their own dates; anywhere else only shared dates (Valentine's, Black Friday, Christmas, new year).
+- Every contacted brand gets its missing follow-ups booked automatically (worker tick), a skipped one is never put back.
+- Ready to send: Scheduled follow-ups list with the due date and the message as it reads today, Open and Skip.
+
 ## 1.5.52 (24 Sep 2026)
 - Follow-up 3 seasonal hook from a US occasion calendar at send time: big shopping moments 14 to 75 days ahead first, smaller sale weekends 14 to 45 days, else neutral.
 

@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.5.53",
+    "date": "2026-09-24",
+    "notes": [
+      "Follow-up 3 now uses the brand's own country calendar, worked out on the day it sends. US brands hear about Thanksgiving, the 4th of July and Labor Day; UK and Irish brands get Black Friday and Mother's Day (Mothering Sunday, three weeks before Easter) and never Thanksgiving; Canada, Australia and New Zealand have their own dates; anywhere else only dates every market shares.",
+      "Every contacted brand now gets its missing follow-ups booked automatically. A follow-up you skip is never put back.",
+      "Ready to send has a Scheduled follow-ups list: brand, which follow-up, due date and the message as it reads today, with Open and Skip."
+    ]
+  },
+  {
     "version": "1.5.52",
     "date": "2026-09-24",
     "notes": [
@@ -124,7 +133,7 @@
     "version": "1.5.35",
     "date": "2026-09-22",
     "notes": [
-      "Automatic top-ups are one run a day per campaign (was up to three) and only when fewer than 12 brands are ready to request, to keep sourcing cost near \u00a35 a day."
+      "Automatic top-ups are one run a day per campaign (was up to three) and only when fewer than 12 brands are ready to request, to keep sourcing cost near £5 a day."
     ]
   },
   {
@@ -566,7 +575,7 @@
     "version": "1.2.5",
     "date": "2026-09-06",
     "notes": [
-      "Help page with a menu and sub-sections (the \ud83d\udcd6 Help tab in Video Outreach): how it all works, how to use it, what is automatic, costs, troubleshooting and the version history."
+      "Help page with a menu and sub-sections (the 📖 Help tab in Video Outreach): how it all works, how to use it, what is automatic, costs, troubleshooting and the version history."
     ]
   },
   {

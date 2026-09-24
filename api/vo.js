@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
   // Team members reach only what the owner ticked: Ready to send actions, the whole module, or Settings.
   const lvl = voLevel(acct);
   const SETTINGS_ACTIONS = ['saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
-  const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config'];
+  const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config'];
   const actionName = String((req.body && req.body.action) || (typeof req.body === 'string' ? (JSON.parse(req.body || '{}').action || '') : ''));
   if (SETTINGS_ACTIONS.includes(actionName) && !lvl.settings) { res.status(403).json({ error: 'Not allowed: Video Outreach settings are for the owner, or a member with the Settings permission.' }); return; }
   if (!lvl.all && !SETTINGS_ACTIONS.includes(actionName) && !READY_ACTIONS.includes(actionName)) { res.status(403).json({ error: 'Not allowed: your permission covers Ready to send only.' }); return; }
@@ -162,6 +162,18 @@ module.exports = async (req, res) => {
     // ---- email (Phase 2) ----
     if (action === 'sendEmail') { const r = await J.sendEmail(owner, actor, id, body.kind, base); res.status(200).json(Object.assign(r, { prospect: await db.getProspect(owner, id) })); return; }
     if (action === 'sentMessages') { res.status(200).json({ rows: await db.sentMessages(owner, 50) }); return; }
+    if (action === 'upcomingFollowups') {
+      let planned = []; try { planned = await J.planFollowups(owner, actor); } catch (e) {}
+      const rows = await db.upcomingFollowups(owner); const cache = {};
+      for (const t of rows) {
+        try {
+          const p = await db.getProspect(owner, t.id); const c = cache[p.campaign_id] || (cache[p.campaign_id] = await db.getCampaign(owner, p.campaign_id));
+          const which = /3/.test(t.next_action) ? 'followup_3' : (/2/.test(t.next_action) ? 'followup_2' : 'followup_1');
+          t.preview = M.generate(p, await db.serviceProfile(c), p.video_url || null, c && c.template_set)[which];
+        } catch (e) { t.preview = ''; }
+      }
+      res.status(200).json({ tasks: rows, planned: planned }); return;
+    }
     if (action === 'dueFollowups') { res.status(200).json({ tasks: await db.dueFollowups(owner) }); return; }
     if (action === 'sendFollowup') {
       const tasks = await db.dueFollowups(owner); const t = tasks.find((x) => Number(x.event_id) === Number(body.eventId));
