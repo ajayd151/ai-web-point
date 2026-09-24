@@ -217,6 +217,7 @@ module.exports = async (req, res) => {
     if (action === 'faqRemove') { res.status(200).json({ ok: true, faq: await db.removeFaq(Number(body.index)) }); return; }
     if (action === 'faqExtra') { res.status(200).json({ faq: await db.faqExtra() }); return; }
     if (action === 'markQuestion') { await db.markQuestion(owner, id, { helpful: body.helpful }); res.status(200).json({ ok: true }); return; }
+    if (action === 'findPerson') { const p = await db.getProspect(owner, id); if (!p) { res.status(404).json({ error: 'Prospect not found' }); return; } res.status(200).json(await J.findPersonOnLinkedIn(owner, actor, p)); return; }
     if (action === 'funnel') { res.status(200).json({ funnel: await db.funnelData(owner, body.from || null, body.to || null) }); return; }
     if (action === 'report') { res.status(200).json({ report: await db.reportData(owner) }); return; }
     if (action === 'sendReportNow') { res.status(200).json(await J.dailyReport(owner, actor, base, true)); return; }

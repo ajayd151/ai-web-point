@@ -196,3 +196,18 @@ test('activity gate: 90 day rule and the dry provider', async () => {
   const a = await P.activity('dry-someone');
   assert.equal(a.kind, 'post'); assert.equal(L.activeSince(a.last_at), true);
 });
+
+test('LinkedIn search fallback: cleans the brand and picks a founder who works there', () => {
+  assert.equal(L.cleanBrand('Biodance (뷰티셀렉션)'), 'Biodance');
+  assert.equal(L.cleanBrand('Omni Creatine Inc.'), 'Omni Creatine');
+  const items = [
+    { name: 'Sam Lee', headline: 'Marketing Manager at Omni Creatine', url: 'https://www.linkedin.com/in/samlee', provider_id: 'a' },
+    { name: 'Jo Park', headline: 'Co-Founder & CEO at Omni Creatine | Creatine gummies', url: 'https://www.linkedin.com/in/jopark', provider_id: 'b' },
+    { name: 'Al Roe', headline: 'Founder at Another Brand', url: 'https://www.linkedin.com/in/alroe', provider_id: 'c' },
+    { name: 'Company Page', headline: 'Omni Creatine founder', url: 'https://www.linkedin.com/company/omni', provider_id: 'd' },
+  ];
+  const pick = L.pickFromSearch(items, 'Omni Creatine', 'omnicreatine.com');
+  assert.equal(pick.name, 'Jo Park', 'founder beats marketing, other brands and company pages are ignored');
+  assert.equal(L.pickFromSearch([items[2]], 'Omni Creatine', 'omnicreatine.com'), null, 'a founder elsewhere is not a match');
+  assert.equal(L.pickFromSearch([{ name: 'X', headline: 'Head of Growth, omnicreatine.com', url: 'https://linkedin.com/in/x' }], 'Omni', 'omnicreatine.com').name, 'X', 'the domain counts as the brand');
+});

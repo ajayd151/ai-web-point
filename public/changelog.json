@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.43",
+    "date": "2026-09-24",
+    "notes": [
+      "Second way to find the person: when Apollo finds nobody at a shortlisted brand, the worker searches LinkedIn itself for a founder or marketing lead who works there, one brand every 10 minutes. A Find on LinkedIn button on the prospect page does the same on demand. Automation health shows how many it searched and found."
+    ]
+  },
+  {
     "version": "1.5.42",
     "date": "2026-09-24",
     "notes": [
