@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.41",
+    "date": "2026-09-24",
+    "notes": [
+      "The funnel never shows blank: a date range with nothing in it falls back to the last 90 days, then all time, and says so."
+    ]
+  },
+  {
     "version": "1.5.40",
     "date": "2026-09-24",
     "notes": [

@@ -759,7 +759,13 @@ async function voOpenReady() {
 // The funnel table for a date range: number, share of the stage before, share of everything scanned in the range.
 async function voRenderFunnel(from, to) {
   const body = $('vo-funnel-body'); if (!body) return;
-  let f; try { f = (await voApi('funnel', { from: from, to: to })).funnel; } catch (e) { body.innerHTML = '<p class="vo-no">' + esc(e.message) + '</p>'; return; }
+  let f, note = ''; try { f = (await voApi('funnel', { from: from, to: to })).funnel; } catch (e) { body.innerHTML = '<p class="vo-no">' + esc(e.message) + '</p>'; return; }
+  if (!f.brands && !f.requested && !f.accepted) {
+    const iso = (d) => d.toISOString().slice(0, 10);
+    try { const g = (await voApi('funnel', { from: iso(new Date(Date.now() - 89 * 86400000)), to: iso(new Date()) })).funnel; if (g.brands || g.requested) { f = g; note = 'Nothing happened in the dates you picked, so this shows the last 90 days instead. '; } } catch (e) {}
+    if (!note) { try { const g = (await voApi('funnel', { from: '2026-09-01', to: iso(new Date()) })).funnel; f = g; note = 'Nothing happened in the dates you picked, so this shows all time instead. '; } catch (e) {} }
+    if (note && $('vo-fn-from')) { $('vo-fn-from').value = f.from; $('vo-fn-to').value = f.to; }
+  }
   const pc = (a, b) => (b ? Math.round(a / b * 100) + '%' : '0%'); const ov = (a) => (f.brands ? (a / f.brands * 100 < 1 && a > 0 ? (Math.round(a / f.brands * 1000) / 10) : Math.round(a / f.brands * 100)) + '%' : '0%');
   const rows = [
     ['Brands scanned from Meta (Facebook and Instagram) ads', f.brands, ''],
@@ -777,7 +783,7 @@ async function voRenderFunnel(from, to) {
   window.__voFunnelText = 'ShekiPro outreach, ' + nice(f.from) + ' to ' + nice(f.to) + '\n' + rows.map((r, i) => r[0] + ': ' + r[1] + (r[2] ? ' (' + r[2] + (i ? ', ' + ov(r[1]) + ' of all scanned' : '') + ')' : '')).join('\n');
   body.innerHTML = '<div class="vo-fit"><table class="cust-table vo-table"><thead><tr><th>Stage</th><th class="num">Number</th><th>Of the stage before</th><th class="num">Of all scanned</th></tr></thead><tbody>' +
     rows.map((r, i) => '<tr><td>' + esc(r[0]) + '</td><td class="num"><b>' + r[1] + '</b></td><td class="muted">' + esc(r[2]) + '</td><td class="num">' + (i ? '<b>' + ov(r[1]) + '</b>' : '100%') + '</td></tr>').join('') + '</tbody></table></div>' +
-    '<div class="vo-small muted">' + nice(f.from) + ' to ' + nice(f.to) + '. Each stage counts what happened in these dates (found, requested, accepted, sent), so a period can show more acceptances than requests when they came from requests sent earlier.</div>';
+    '<div class="vo-small muted">' + (note ? '<span class="vo-no">' + esc(note) + '</span>' : '') + nice(f.from) + ' to ' + nice(f.to) + '. Each stage counts what happened in these dates (found, requested, accepted, sent), so a period can show more acceptances than requests when they came from requests sent earlier.</div>';
 }
 // ---- Results (5.5) ----
 async function voOpenResults(campaignId) {
