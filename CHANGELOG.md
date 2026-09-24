@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.47 (24 Sep 2026)
+- Warm-up like test (warm/cold arms, 20 h wait, 25 likes a day cap, stats on Analytics).
+
 ## 1.5.46 (24 Sep 2026)
 - Switch to a second, active contact when the first is inactive (switchInactivePerson; prev_dm_* kept).
 

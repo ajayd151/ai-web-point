@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.47",
+    "date": "2026-09-24",
+    "notes": [
+      "Warm-up like test: half the people ready for a request get a like on their newest LinkedIn post first and the request a day later, the other half get it straight away. At most 25 likes a day. Analytics shows the acceptance of both halves; the switch is in Settings, LinkedIn caps."
+    ]
+  },
+  {
     "version": "1.5.46",
     "date": "2026-09-24",
     "notes": [
