@@ -1,6 +1,6 @@
 # SitePounce, notes for Claude Code
 
-SitePounce finds local businesses without a website, builds an AI mockup or full site, and runs SMS / email / call outreach. Vanilla JS SPA (`public/`), one file per endpoint (`api/`), shared code in `lib/`, Neon Postgres via `@vercel/postgres` plus Vercel Blob for JSON documents, deployed on Vercel (Node 20). No framework, no build step. App files are served with `no-cache` (vercel.json headers), so a normal refresh picks up a deploy.
+SitePounce finds local businesses without a website, builds an AI mockup or full site, and runs SMS / email / call outreach. Vanilla JS SPA (`public/`), one file per endpoint (`api/`), shared code in `lib/`, Neon Postgres via `@vercel/postgres` plus Vercel Blob for JSON documents, deployed on Vercel (Node 24; Vercel retired Node 20 on 1 Oct 2026 and refused every deploy until engines was raised). No framework, no build step. App files are served with `no-cache` (vercel.json headers), so a normal refresh picks up a deploy.
 
 House rules: no em dashes anywhere (code, copy, templates, commits); outreach is signed by one persona, "Sophie", for the local-business SMS module; secrets live only in Vercel env vars, never in code or Blob; never fire-and-forget after `res.json()` on Vercel; Blob JSON has no transactions. Env vars only reach a NEW deployment.
 
