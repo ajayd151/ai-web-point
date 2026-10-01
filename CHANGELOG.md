@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.54 (1 Oct 2026)
+- Wording: the video link box, help bubble, help page and error messages say video link instead of naming the video tool.
+
 ## 1.5.53 (24 Sep 2026)
 - Follow-up 3 season follows the brand's country: US gets Thanksgiving, 4th of July, Labor Day; UK and Ireland get Black Friday and Mothering Sunday (three weeks before Easter); Canada, Australia and New Zealand have their own dates; anywhere else only shared dates (Valentine's, Black Friday, Christmas, new year).
 - Every contacted brand gets its missing follow-ups booked automatically (worker tick), a skipped one is never put back.
