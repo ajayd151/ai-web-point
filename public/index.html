@@ -255,7 +255,7 @@
   <!-- Persistent reminder for team members that their activity is logged -->
   <div id="member-logged" class="member-logged hidden" title="Your searches and activity are recorded for your admin">🔒 Activity logged</div>
 
-  <!-- Floating "Give feedback" button (bottom-left, shown only when signed in) -->
+  <!-- Floating "Give feedback" button (bottom-right above the cost pill, shown only when signed in; bounces now and then) -->
   <button id="fb-btn" class="fb-btn hidden" type="button" aria-label="Give feedback">💬 Feedback</button>
   <div id="fb-modal" class="modal hidden">
     <div class="modal-card fb-card">
@@ -281,7 +281,8 @@
       <label class="block"><span>Your message</span>
         <textarea id="fb-message" rows="4" placeholder="What is on your mind?"></textarea>
       </label>
-      <p class="muted fb-fine">We will also note which page you are on, to help us find it.</p>
+      <div id="fb-shot-wrap" class="fb-shot-wrap hidden"><label class="fb-shot-tick"><input type="checkbox" id="fb-shot-on" checked /> Include a picture of the screen you were on</label><img id="fb-shot-img" alt="Your screen" /></div>
+      <p class="muted fb-fine">We also note the page, the app version and any error your browser just hit, so we can fix it without asking you again.</p>
       <button id="fb-send" class="primary" type="button">Send feedback</button>
       <p id="fb-msg" class="login-msg hidden"></p>
     </div>
@@ -1001,6 +1002,7 @@
             <button class="vo-tab active" data-vopane="campaigns" type="button">🗂️ Campaigns</button>
             <button class="vo-tab" data-vopane="prospects" type="button">📋 All prospects</button>
             <button class="vo-tab" data-vopane="ready" type="button">🚀 Ready to send</button>
+            <button class="vo-tab" data-vopane="sent" type="button" title="Every video and follow-up sent, and the follow-ups booked next">📤 Sent</button>
             <button class="vo-tab" data-vopane="results" type="button">📈 Analytics</button>
             <button class="vo-tab" data-vopane="settings" type="button">⚙️ Settings</button>
             <button class="vo-tab" data-vopane="ask" type="button" title="Ask anything about Video Outreach">🤖 Ask AI</button>
@@ -1014,6 +1016,7 @@
         <div id="vo-pane-prospects" class="vo-pane hidden"></div>
         <div id="vo-pane-detail" class="vo-pane hidden"></div>
         <div id="vo-pane-ready" class="vo-pane hidden"></div>
+        <div id="vo-pane-sent" class="vo-pane hidden"></div>
         <div id="vo-pane-results" class="vo-pane hidden"></div>
         <div id="vo-pane-settings" class="vo-pane hidden"></div>
         <div id="vo-pane-help" class="vo-pane hidden"></div>

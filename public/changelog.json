@@ -1,5 +1,15 @@
 [
   {
+    "version": "1.5.55",
+    "date": "2026-10-03",
+    "notes": [
+      "Ready to send: stores that redirect by country (like Myzone) are now read, so a product is picked. A brand with no online shop says what their site sells and has a Not a fit button, and brands without a real shop no longer get through.",
+      "Video Outreach has a new Sent tab with every video and follow-up sent and the follow-ups booked next. Ready to send shows the last one sent at the top.",
+      "The Feedback button is now bottom-right (the menu used to hide it) and gives a small bounce now and then. Each note includes a picture of your screen, the version and any error you just hit.",
+      "The version number now shows clearly at the bottom of the menu. Click it to see what changed."
+    ]
+  },
+  {
     "version": "1.5.54",
     "date": "2026-10-01",
     "notes": [

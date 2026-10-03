@@ -63,7 +63,17 @@ module.exports = async (req, res) => {
   const url = String(body.url || '').slice(0, 500);
   const ua = String(req.headers['user-agent'] || '').slice(0, 500);
 
-  const record = { email: acct.email, plan: acct.plan, status: acct.status, type, importance, message, page, url, ua };
+  // the screenshot taken when Feedback was pressed (a browser-made JPEG, ticked by default), stored in our Blob store
+  let screenshot_url = null;
+  const shot = String(body.screenshot || '');
+  const m = shot.match(/^data:image\/(jpeg|png);base64,(.+)$/);
+  if (m && m[2].length < 4 * 1024 * 1024) {
+    try { const { put } = require('@vercel/blob'); const b = await put('feedback/' + Date.now() + '-shot.' + (m[1] === 'png' ? 'png' : 'jpg'), Buffer.from(m[2], 'base64'), { access: 'public', contentType: 'image/' + m[1], addRandomSuffix: true }); screenshot_url = b.url; } catch (e) { /* a lost screenshot never loses the note */ }
+  }
+  const version = require('../lib/version').buildStamp();
+  let context = null;
+  try { const c = body.context && typeof body.context === 'object' ? body.context : {}; const txt = JSON.stringify(c); context = txt.length > 8000 ? { truncated: true, raw: txt.slice(0, 8000) } : c; } catch (e) {}
+  const record = { email: acct.email, plan: acct.plan, status: acct.status, type, importance, message, page, url, ua, screenshot_url, version, context };
   const ok = await recordFeedback(record);
   if (!ok) { res.status(500).json({ error: 'Could not save just now, please try again.' }); return; }
   // Notify the owner by email. MUST await (Vercel freezes the function after the response,

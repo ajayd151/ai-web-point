@@ -300,7 +300,8 @@ async function refreshAccess() {
   if ($('nav-vo-help')) $('nav-vo-help').classList.toggle('hidden', !acc.videoOutreach);
   if ($('nav-vo-ask')) $('nav-vo-ask').classList.toggle('hidden', !acc.videoOutreach);
   if (acc.videoOutreach && typeof voRefreshBadge === 'function' && !window.__voBadgeTimer) { voRefreshBadge(); window.__voBadgeTimer = setInterval(voRefreshBadge, 120000); }
-  if ($('app-version')) { $('app-version').textContent = acc.version || ''; $('app-version').onclick = showChangelog; } // subtle build stamp, bottom-left, click for history
+  window.__appVersion = acc.version || '';
+  if ($('app-version')) { const v = String(acc.version || ''); $('app-version').textContent = v ? 'Version ' + v.replace(/^v/, '').split(' ')[0] : ''; $('app-version').title = 'Live build ' + v + '. Click to see what changed.'; $('app-version').onclick = showChangelog; } // build stamp, bottom-left, click for history
   // team member: hide the controls they lack permission for + show a one-time professional-use notice
   applyMemberUI(acc);
   if (paid) {
@@ -490,12 +491,45 @@ function fbMsg(text, kind) {
   const el = $('fb-msg'); if (!el) return;
   el.textContent = text || ''; el.className = 'login-msg ' + (kind || ''); el.classList.toggle('hidden', !text);
 }
-function openFeedback() {
+// what the browser saw just before Feedback was pressed: script errors and failed calls (kept small)
+const FB_SEEN = { errors: [], failed: [] };
+window.addEventListener('error', (e) => { FB_SEEN.errors.push({ at: new Date().toISOString(), msg: String(e.message || '').slice(0, 200), src: String(e.filename || '').split('/').pop() + ':' + (e.lineno || '') }); FB_SEEN.errors = FB_SEEN.errors.slice(-6); });
+window.addEventListener('unhandledrejection', (e) => { FB_SEEN.errors.push({ at: new Date().toISOString(), msg: String((e.reason && e.reason.message) || e.reason || '').slice(0, 200) }); FB_SEEN.errors = FB_SEEN.errors.slice(-6); });
+(function () {
+  const orig = window.fetch; if (!orig) return;
+  window.fetch = function (input, init) {
+    const url = String((input && input.url) || input || ''); let action = '';
+    try { if (init && typeof init.body === 'string' && init.body.length < 20000) action = (JSON.parse(init.body) || {}).action || ''; } catch (e) {}
+    return orig.apply(this, arguments).then((r) => { if (r && r.status >= 400 && !/\/api\/feedback/.test(url)) { FB_SEEN.failed.push({ at: new Date().toISOString(), url: url.replace(location.origin, '').slice(0, 120), action: action, status: r.status }); FB_SEEN.failed = FB_SEEN.failed.slice(-6); } return r; },
+      (err) => { FB_SEEN.failed.push({ at: new Date().toISOString(), url: url.replace(location.origin, '').slice(0, 120), action: action, status: 'network' }); FB_SEEN.failed = FB_SEEN.failed.slice(-6); throw err; });
+  };
+})();
+let fbShot = null;
+function fbLoadShotLib() {
+  if (window.html2canvas) return Promise.resolve(window.html2canvas);
+  return new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'; sc.onload = () => ok(window.html2canvas); sc.onerror = no; document.head.appendChild(sc); });
+}
+async function fbTakeShot() {
+  // the screen as it is right now, before the form opens over it; small JPEG so it uploads in one go
+  try {
+    const h2c = await fbLoadShotLib();
+    const canvas = await Promise.race([h2c(document.body, { useCORS: true, logging: false, scale: Math.min(1, 1400 / Math.max(1, window.innerWidth)), x: window.scrollX, y: window.scrollY, width: window.innerWidth, height: window.innerHeight, ignoreElements: (el) => el.id === 'fb-btn' || el.id === 'fb-modal' }), new Promise((r) => setTimeout(() => r(null), 6000))]);
+    return canvas ? canvas.toDataURL('image/jpeg', 0.72) : null;
+  } catch (e) { return null; }
+}
+async function openFeedback() {
   if (!$('fb-modal')) return;
   fbMsg(''); $('fb-message').value = '';
+  const b = $('fb-btn'); if (b) { b.disabled = true; b.textContent = '📸 One moment…'; }
+  fbShot = await fbTakeShot();
+  if (b) { b.disabled = false; b.textContent = '💬 Feedback'; }
+  const w = $('fb-shot-wrap'); if (w) { w.classList.toggle('hidden', !fbShot); w.classList.remove('off'); if (fbShot) $('fb-shot-img').src = fbShot; $('fb-shot-on').checked = true; }
   $('fb-modal').classList.remove('hidden');
   setTimeout(() => { try { $('fb-message').focus(); } catch (e) {} }, 60);
 }
+{ const t = $('fb-shot-on'); if (t) t.addEventListener('change', () => { const w = $('fb-shot-wrap'); if (w) w.classList.toggle('off', !t.checked); }); }
+// a small bounce 4 seconds after load, then every 5 minutes, so the button is noticed
+setTimeout(function fbNudge() { const b = $('fb-btn'); if (b && !b.classList.contains('hidden')) { b.classList.remove('bounce'); void b.offsetWidth; b.classList.add('bounce'); } setTimeout(fbNudge, 5 * 60 * 1000); }, 4000);
 function closeFeedback() { if ($('fb-modal')) $('fb-modal').classList.add('hidden'); }
 async function sendFeedback() {
   const message = ($('fb-message').value || '').trim();
@@ -507,6 +541,8 @@ async function sendFeedback() {
       body: JSON.stringify({
         type: $('fb-type').value, importance: $('fb-importance').value, message,
         page: window.AIWP_VIEW || 'search', url: location.href,
+        screenshot: (fbShot && $('fb-shot-on') && $('fb-shot-on').checked) ? fbShot : null,
+        context: { version: window.__appVersion || '', view: window.AIWP_VIEW || '', hash: location.hash, screen: window.innerWidth + 'x' + window.innerHeight, tz: (Intl.DateTimeFormat().resolvedOptions() || {}).timeZone || '', errors: FB_SEEN.errors, failed: FB_SEEN.failed, status_line: ($('vo-status') && !$('vo-status').classList.contains('hidden')) ? $('vo-status').textContent.slice(0, 200) : '' },
       }),
     });
     const d = await r.json().catch(() => ({}));
@@ -4851,7 +4887,9 @@ function renderFeedbackAdmin(items) {
         '<span class="fbadm-when">' + esc(fmtDate(f.created)) + '</span>' +
       '</div>' +
       '<div class="fbadm-msg">' + esc(f.message || '') + '</div>' +
-      '<div class="fbadm-meta">' + esc(f.email || '(unknown)') + ' · ' + esc(f.plan || '') + ' · page: ' + esc(f.page || '') + '</div>' +
+      '<div class="fbadm-meta">' + esc(f.email || '(unknown)') + ' · ' + esc(f.plan || '') + ' · page: ' + esc(f.page || '') + (f.version ? ' · ' + esc(f.version) : '') + '</div>' +
+      (f.screenshot_url ? '<a href="' + esc(f.screenshot_url) + '" target="_blank" rel="noopener"><img class="fbadm-shot" src="' + esc(f.screenshot_url) + '" alt="Their screen" /></a>' : '') +
+      (f.context && ((f.context.errors || []).length || (f.context.failed || []).length || f.context.status_line) ? '<details class="fbadm-ctx"><summary>What their browser saw</summary><pre>' + esc(JSON.stringify({ errors: f.context.errors, failed_calls: f.context.failed, status_line: f.context.status_line, screen: f.context.screen }, null, 1)) + '</pre></details>' : '') +
       '<div class="fbadm-actions">' +
         (st !== 'done' ? '<button class="linkbtn" data-fbact="done">✓ Mark done</button>' : '') +
         (f.email && f.email !== '(unknown)' ? '<button class="linkbtn" data-fbact="done-notify" title="Mark done and email them it is complete">✅ Done &amp; notify</button>' : '') +
@@ -4906,6 +4944,11 @@ function copyFeedbackReport(id, btn) {
     (f.url ? 'URL: ' + f.url : ''),
     'When: ' + fmtDate(f.created),
     (f.ua ? 'Browser: ' + f.ua : ''),
+    (f.version ? 'Version: ' + f.version : ''),
+    (f.screenshot_url ? 'Screenshot: ' + f.screenshot_url : ''),
+    (f.context && (f.context.errors || []).length ? 'Script errors: ' + JSON.stringify(f.context.errors) : ''),
+    (f.context && (f.context.failed || []).length ? 'Failed calls: ' + JSON.stringify(f.context.failed) : ''),
+    (f.context && f.context.status_line ? 'Status line on screen: ' + f.context.status_line : ''),
     '',
     'Message:',
     f.message || '',
