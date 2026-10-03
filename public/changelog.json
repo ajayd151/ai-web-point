@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.56",
+    "date": "2026-10-03",
+    "notes": [
+      "Feedback opens straight away. The picture of your screen fills in while you type, instead of making you wait."
+    ]
+  },
+  {
     "version": "1.5.55",
     "date": "2026-10-03",
     "notes": [

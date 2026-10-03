@@ -513,20 +513,23 @@ async function fbTakeShot() {
   // the screen as it is right now, before the form opens over it; small JPEG so it uploads in one go
   try {
     const h2c = await fbLoadShotLib();
-    const canvas = await Promise.race([h2c(document.body, { useCORS: true, logging: false, scale: Math.min(1, 1400 / Math.max(1, window.innerWidth)), x: window.scrollX, y: window.scrollY, width: window.innerWidth, height: window.innerHeight, ignoreElements: (el) => el.id === 'fb-btn' || el.id === 'fb-modal' }), new Promise((r) => setTimeout(() => r(null), 6000))]);
+    const canvas = await Promise.race([h2c(document.body, { useCORS: true, logging: false, scale: Math.min(1, 1400 / Math.max(1, window.innerWidth)), x: window.scrollX, y: window.scrollY, width: window.innerWidth, height: window.innerHeight, ignoreElements: (el) => el.id === 'fb-btn' || el.id === 'fb-modal' }), new Promise((r) => setTimeout(() => r(null), 15000))]);
     return canvas ? canvas.toDataURL('image/jpeg', 0.72) : null;
   } catch (e) { return null; }
 }
-async function openFeedback() {
+let fbShotJob = null;
+function openFeedback() {
   if (!$('fb-modal')) return;
-  fbMsg(''); $('fb-message').value = '';
-  const b = $('fb-btn'); if (b) { b.disabled = true; b.textContent = '📸 One moment…'; }
-  fbShot = await fbTakeShot();
-  if (b) { b.disabled = false; b.textContent = '💬 Feedback'; }
-  const w = $('fb-shot-wrap'); if (w) { w.classList.toggle('hidden', !fbShot); w.classList.remove('off'); if (fbShot) $('fb-shot-img').src = fbShot; $('fb-shot-on').checked = true; }
+  fbMsg(''); $('fb-message').value = ''; fbShot = null;
+  // the form opens at once; the picture of the screen (taken without the form in it) fills in while they type
+  const w = $('fb-shot-wrap'), img = $('fb-shot-img');
+  if (w) { w.classList.remove('hidden', 'off'); $('fb-shot-on').checked = true; img.removeAttribute('src'); img.alt = 'Taking a picture of your screen…'; w.classList.add('loading'); }
+  fbShotJob = fbTakeShot().then((d) => { fbShot = d; if (w) { w.classList.remove('loading'); if (d) img.src = d; else w.classList.add('hidden'); } return d; });
   $('fb-modal').classList.remove('hidden');
   setTimeout(() => { try { $('fb-message').focus(); } catch (e) {} }, 60);
 }
+// load the picture library quietly after sign-in, so the first Feedback is quick
+setTimeout(() => { if ($('fb-btn') && !$('fb-btn').classList.contains('hidden')) fbLoadShotLib().catch(() => {}); }, 8000);
 { const t = $('fb-shot-on'); if (t) t.addEventListener('change', () => { const w = $('fb-shot-wrap'); if (w) w.classList.toggle('off', !t.checked); }); }
 // a small bounce 4 seconds after load, then every 5 minutes, so the button is noticed
 setTimeout(function fbNudge() { const b = $('fb-btn'); if (b && !b.classList.contains('hidden')) { b.classList.remove('bounce'); void b.offsetWidth; b.classList.add('bounce'); } setTimeout(fbNudge, 5 * 60 * 1000); }, 4000);
@@ -535,6 +538,7 @@ async function sendFeedback() {
   const message = ($('fb-message').value || '').trim();
   if (!message) { fbMsg('Please add a message.', 'err'); return; }
   $('fb-send').disabled = true; fbMsg('Sending...', '');
+  if (fbShotJob && !fbShot && $('fb-shot-on') && $('fb-shot-on').checked) { fbMsg('Adding the picture of your screen...', ''); try { await fbShotJob; } catch (e) {} fbMsg('Sending...', ''); }
   try {
     const r = await fetch('/api/feedback', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.56 (3 Oct 2026)
+- Feedback opens at once; the screen picture fills in while you type (it took about 6 s on a busy page), and the library preloads after sign-in.
+
 ## 1.5.55 (3 Oct 2026)
 - Products: Shopify stores that redirect by country (buy.myzone.org) are read through /collections/all and the country prefix; a card with no shop says what the site describes itself as, with a Not a fit button; the shop check needs a real cart page (nomadcruise.com, a cruise, passed the old one).
 - Video Outreach has a Sent tab (messages sent + scheduled follow-ups); Ready to send shows the last one sent at the top.
