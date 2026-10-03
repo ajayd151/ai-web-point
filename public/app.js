@@ -509,11 +509,19 @@ function fbLoadShotLib() {
   if (window.html2canvas) return Promise.resolve(window.html2canvas);
   return new Promise((ok, no) => { const sc = document.createElement('script'); sc.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'; sc.onload = () => ok(window.html2canvas); sc.onerror = no; document.head.appendChild(sc); });
 }
+// skip hidden screens and anything off-screen: the app holds about 300,000 hidden elements, and copying them all froze
+// the page for 6 to 13 seconds; skipping them takes it to about 1 second (3 Oct 2026)
+function fbSkip(el) {
+  if (el.id === 'fb-btn' || el.id === 'fb-modal') return true;
+  const t = el.tagName; if (t === 'SCRIPT' || t === 'STYLE' || t === 'LINK' || t === 'HEAD' || t === 'META' || t === 'TITLE') return false;
+  if (el.hidden || (el.classList && el.classList.contains('hidden'))) return true;
+  try { const r = el.getBoundingClientRect(); if (!r.width && !r.height) return el.children.length > 0 && getComputedStyle(el).display === 'none'; return r.bottom < -50 || r.top > window.innerHeight + 50; } catch (e) { return false; }
+}
 async function fbTakeShot() {
   // the screen as it is right now, before the form opens over it; small JPEG so it uploads in one go
   try {
     const h2c = await fbLoadShotLib();
-    const canvas = await Promise.race([h2c(document.body, { useCORS: true, logging: false, scale: Math.min(1, 1400 / Math.max(1, window.innerWidth)), x: window.scrollX, y: window.scrollY, width: window.innerWidth, height: window.innerHeight, ignoreElements: (el) => el.id === 'fb-btn' || el.id === 'fb-modal' }), new Promise((r) => setTimeout(() => r(null), 15000))]);
+    const canvas = await Promise.race([h2c(document.body, { useCORS: true, logging: false, scale: Math.min(1, 1400 / Math.max(1, window.innerWidth)), x: window.scrollX, y: window.scrollY, width: window.innerWidth, height: window.innerHeight, ignoreElements: fbSkip }), new Promise((r) => setTimeout(() => r(null), 15000))]);
     return canvas ? canvas.toDataURL('image/jpeg', 0.72) : null;
   } catch (e) { return null; }
 }
@@ -524,7 +532,7 @@ function openFeedback() {
   // the form opens at once; the picture of the screen (taken without the form in it) fills in while they type
   const w = $('fb-shot-wrap'), img = $('fb-shot-img');
   if (w) { w.classList.remove('hidden', 'off'); $('fb-shot-on').checked = true; img.removeAttribute('src'); img.alt = 'Taking a picture of your screen…'; w.classList.add('loading'); }
-  fbShotJob = fbTakeShot().then((d) => { fbShot = d; if (w) { w.classList.remove('loading'); if (d) img.src = d; else w.classList.add('hidden'); } return d; });
+  fbShotJob = new Promise((r) => setTimeout(r, 120)).then(fbTakeShot).then((d) => { fbShot = d; if (w) { w.classList.remove('loading'); if (d) img.src = d; else w.classList.add('hidden'); } return d; });
   $('fb-modal').classList.remove('hidden');
   setTimeout(() => { try { $('fb-message').focus(); } catch (e) {} }, 60);
 }

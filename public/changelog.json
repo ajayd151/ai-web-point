@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.57",
+    "date": "2026-10-03",
+    "notes": [
+      "The picture of your screen in Feedback now takes about a second and no longer freezes the page."
+    ]
+  },
+  {
     "version": "1.5.56",
     "date": "2026-10-03",
     "notes": [
