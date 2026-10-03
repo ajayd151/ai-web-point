@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.60 (3 Oct 2026)
+- Product picker skips extras: products the store hides (hidden, no-direct-access tags), welcome kits and add-ons (product_type), refills, upgrades, free gifts, scoops, replacements, clearance and discontinued lines, and anything priced at zero; multi-packs rank below the single product. IM8 Health now gets Daily Ultimate Essentials Pro instead of Double refills upgrade.
+
 ## 1.5.59 (3 Oct 2026)
 - Message A says "a free sample video of it" when their ads already named the product, so the name is never repeated in one sentence.
 

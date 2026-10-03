@@ -227,3 +227,17 @@ test('creative buyers count as contacts, editors do not', () => {
   const pick = L.pickFromSearch([{ name: 'Ed', headline: 'Video Editor at Omni Creatine', url: 'https://linkedin.com/in/ed' }, { name: 'Cara', headline: 'Creative Strategist at Omni Creatine', url: 'https://linkedin.com/in/cara' }], 'Omni Creatine', 'omnicreatine.com');
   assert.equal(pick.name, 'Cara');
 });
+
+test('the product picker never films an extra: refills, upgrades, free gifts, hidden or clearance items', () => {
+  const S = require('../lib/vo-services');
+  const img = (n) => Array.from({ length: n }, (_, i) => ({ src: 'https://x/p' + i + '.jpg', alt: '' }));
+  const list = [
+    { handle: 'double-refills-upgrade', title: 'Double refills upgrade', tags: ['30-refill', 'hidden', 'no-direct-access'], price: 146, images: img(4) },
+    { handle: 'welcome', title: 'IM8 Welcome Kit (Stainless Steel Gold Scoop)', product_type: 'welcome_kit', tags: [], price: 6, images: img(4) },
+    { handle: 'gift', title: 'Exclusive Access to Superpower', tags: [], price: 0, images: img(4) },
+    { handle: 'old', title: 'CLEARANCE Lifestyle Beater (Discontinued color)', tags: [], price: 20, images: img(4) },
+    { handle: 'essentials-pro', title: 'Daily Ultimate Essentials Pro: All-in-One Supplement', tags: ['jar', 'shoppable'], price: 235, images: img(18) },
+  ].map((p) => Object.assign({ url: 'https://im8health.com/products/' + p.handle }, p));
+  assert.equal(S.pickProduct(list, '', [], { source: 'shopify' }).name, 'Daily Ultimate Essentials Pro: All-in-One Supplement');
+  assert.equal(S.notForFilming({ title: 'Sun Protection SPF 50', tags: [], price: 30 }), false, 'a real SPF product is kept');
+});
