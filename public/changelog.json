@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.58",
+    "date": "2026-10-03",
+    "notes": [
+      "The video message is rewritten to sound personal and short: it thanks them for connecting, names their ads, says your team made the sample, offers more daily or weekly and asks for a day and time. It is signed Aj only, with no title, because every message goes out from Ajay's LinkedIn whoever presses Send.",
+      "Robotic phrases about their ads (for example 'showcasing ... effectively') are removed."
+    ]
+  },
+  {
     "version": "1.5.57",
     "date": "2026-10-03",
     "notes": [

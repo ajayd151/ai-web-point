@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.58 (3 Oct 2026)
+- Message A and B rewritten to read like a person typed them: "Thanks for connecting. I saw your X ads on Meta (N new ones this month), so my team made you a free sample video for the Y, attached below." then the daily or weekly offer and a day and time, signed "Aj" only. The title block is gone: every message goes out from Ajay's LinkedIn whoever presses Send (Aryan sent EHPlabs signed "Co-founder"), and LinkedIn already shows the sender.
+- The AI summary tail on observations ("showcasing ... effectively") is dropped.
+
 ## 1.5.57 (3 Oct 2026)
 - Feedback screenshot skips hidden screens and off-screen elements (about 300,000 hidden elements made it freeze the page 6 to 13 s; now about 1 s), and starts after the form has painted.
 

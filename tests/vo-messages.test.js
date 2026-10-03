@@ -30,7 +30,7 @@ for (const { input } of rows) {
       const paras = out[k].split('\n\n');
       assert.ok(paras.length >= 4, k + ' should be several paragraphs');
       assert.ok(paras.slice(0, -1).every((p) => p.trim() && !p.includes('\n')), k + ' paragraphs must be separated by a blank line');
-      assert.ok(out[k].includes('Thanks,') && out[k].endsWith(M.DEFAULT_PROFILE.sender_first + '\n' + M.DEFAULT_PROFILE.sender_title), k + ' must end with the signature block');
+      assert.ok(out[k].endsWith('\n\n' + M.DEFAULT_PROFILE.sender_first) && !/Co-founder|Founder/.test(out[k]), k + ' is signed with the first name only, no title (it goes out from Ajay\'s own LinkedIn)');
     }
     assert.ok(out.message_a.includes(M.URL_PLACEHOLDER), 'Message A carries the URL placeholder until a video is pasted');
     assert.ok(!out.message_b.includes(M.URL_PLACEHOLDER), 'Message B has no URL');
@@ -133,4 +133,14 @@ test('Follow-up 3 season follows the brand country, never a holiday that country
   assert.equal(M.seasonalHook(at('2027-06-10'), 'DE'), 'Ahead of your next campaign', 'unknown calendars only get shared dates');
   const p = { dm_name: 'Sam Lee', brand: 'X', country: 'UK' };
   assert.ok(!/Thanksgiving/.test(M.generate(p, null, 'https://example.com/v.mp4').followup_3), 'a UK brand never hears about Thanksgiving');
+});
+
+test('Message A reads like a person typed it: thanks for connecting, plain observation, proof in brackets, first name only', () => {
+  const p = { dm_name: 'Izhar Basha', observation: 'your OxyShred ads on Meta, showcasing energy and recovery benefits effectively', new_ads_30d: 22, meta_page_id: '1', suggested_product_name: 'OxyShred Creatine Fizz Stix' };
+  const a = M.forAttachment(M.generate(p, null, null).message_a);
+  assert.ok(a.startsWith('Hey Izhar\n\nThanks for connecting. I saw your OxyShred ads on Meta (22 new ones this month), so my team made you a free sample video for the OxyShred Creatine Fizz Stix, attached below.'), a);
+  assert.ok(!/showcasing|effectively/.test(a), 'no AI summary tail');
+  assert.ok(a.endsWith('\n\nAj'));
+  assert.ok(a.split(/\s+/).length < 75, 'short');
+  assert.equal((a.match(/Izhar/g) || []).length, 1, 'name once, in the greeting');
 });

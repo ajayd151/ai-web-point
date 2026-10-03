@@ -110,16 +110,13 @@ Every message is built from the brand's own data and your profile, for example:
 
 > Hey Dan
 >
-> I run ShekiPro.com. Came across your Creatine Monohydrate Gummies ads on Meta, 8 new ones this month, so I made you a free sample for Core Creatine Monohydrate Gummies: [link]
+> Thanks for connecting. I saw your Creatine Monohydrate Gummies ads on Meta (8 new ones this month), so my team made you a free sample video for the Core Creatine Monohydrate Gummies, attached below.
 >
-> If it is any good, want me to do one for Sour Green Apple Core Creatine Monohydrate Gummies next?
->
-> Thanks,
+> If you like it, we can make these for you daily or weekly at ShekiPro.com. Worth a quick chat? Send me a day and time and I'll set it up.
 >
 > Aj
-> Co-founder, ShekiPro.com
 
-The ad number appears only when it came from a full count of that brand's page. The signature block and the offer lines are in Settings (Default service profile) and can be overridden per campaign; Rebuild all messages applies a change to every prospect.
+The ad number appears only when it came from a full count of that brand's page. Every message goes out from Ajay's own LinkedIn, whoever presses Send, so it is signed with his first name only (LinkedIn already shows who sent it). The sender first name and the offer lines are in Settings (Default service profile) and can be overridden per campaign; Rebuild all messages applies a change to every prospect.
 
 ## 9. Settings
 
