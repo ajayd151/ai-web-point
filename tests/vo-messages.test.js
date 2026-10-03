@@ -151,3 +151,9 @@ test('the product is never named twice in one sentence', () => {
   assert.equal((a.match(/Kivora Signature Lipstick/g) || []).length, 1, a);
   assert.ok(a.includes('so my team made you a free sample video of it, attached below.'), a);
 });
+
+test('a store subtitle after a colon is dropped from the product name', () => {
+  assert.equal(M.shortProduct('Daily Ultimate Essentials Pro: All-in-One Supplement'), 'Daily Ultimate Essentials Pro');
+  assert.equal(M.shortProduct('Vitamin C: Serum'), 'Vitamin C');
+  assert.equal(M.shortProduct('Glow: Night Cream'), 'Glow Night Cream', 'a one-word brand before the colon keeps the rest');
+});

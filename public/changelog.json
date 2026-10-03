@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.61",
+    "date": "2026-10-03",
+    "notes": [
+      "Long product names are shortened in the message (for example 'Daily Ultimate Essentials Pro' instead of the full store title with a subtitle)."
+    ]
+  },
+  {
     "version": "1.5.60",
     "date": "2026-10-03",
     "notes": [
