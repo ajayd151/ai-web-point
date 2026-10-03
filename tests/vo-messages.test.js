@@ -144,3 +144,10 @@ test('Message A reads like a person typed it: thanks for connecting, plain obser
   assert.ok(a.split(/\s+/).length < 75, 'short');
   assert.equal((a.match(/Izhar/g) || []).length, 1, 'name once, in the greeting');
 });
+
+test('the product is never named twice in one sentence', () => {
+  const p = { dm_name: 'Aleena Khan', observation: 'your Kivora Signature Lipstick ads on Meta', new_ads_30d: 26, meta_page_id: '1', suggested_product_name: 'Kivora Signature Lipstick' };
+  const a = M.forAttachment(M.generate(p, null, null).message_a);
+  assert.equal((a.match(/Kivora Signature Lipstick/g) || []).length, 1, a);
+  assert.ok(a.includes('so my team made you a free sample video of it, attached below.'), a);
+});

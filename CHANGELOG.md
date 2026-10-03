@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.59 (3 Oct 2026)
+- Message A says "a free sample video of it" when their ads already named the product, so the name is never repeated in one sentence.
+
 ## 1.5.58 (3 Oct 2026)
 - Message A and B rewritten to read like a person typed them: "Thanks for connecting. I saw your X ads on Meta (N new ones this month), so my team made you a free sample video for the Y, attached below." then the daily or weekly offer and a day and time, signed "Aj" only. The title block is gone: every message goes out from Ajay's LinkedIn whoever presses Send (Aryan sent EHPlabs signed "Co-founder"), and LinkedIn already shows the sender.
 - The AI summary tail on observations ("showcasing ... effectively") is dropped.
