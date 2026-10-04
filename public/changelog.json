@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.63",
+    "date": "2026-10-04",
+    "notes": [
+      "A lead's own page (click Open) also lists its uploaded videos, so you can delete a spare one after the message has gone. The video that was sent is kept, because the follow-ups link to it."
+    ]
+  },
+  {
     "version": "1.5.62",
     "date": "2026-10-04",
     "notes": [

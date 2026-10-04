@@ -43,8 +43,10 @@ module.exports = async (req, res) => {
         await db.addEvent(owner, actor, p, { step: 'note', detail: 'Chose a different uploaded video for the message' });
         res.status(200).json({ ok: true, url: url }); return;
       }
-      await del(url);
       const wasCurrent = p.video_url === url;
+      // once Message A has gone, its video stays: Follow-up 1 links back to it
+      if (wasCurrent && !['Not contacted', 'Request sent', 'Accepted'].includes(p.outreach_stage || 'Not contacted')) { res.status(400).json({ error: 'This video was sent with Message A and the follow-ups link to it, so it is kept.' }); return; }
+      await del(url);
       if (wasCurrent) await db.setVideoUrl(owner, actor, pid, '');
       await db.addEvent(owner, actor, p, { step: 'note', detail: 'Deleted an uploaded video' + (wasCurrent ? ' (it was the one on the message, so the card has no video now)' : '') });
       res.status(200).json({ ok: true, cleared: wasCurrent }); return;

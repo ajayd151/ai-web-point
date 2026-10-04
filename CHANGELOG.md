@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.63 (4 Oct 2026)
+- The lead's own page (Open) lists its uploaded videos too, so a lead that has already been sent (and left Ready to send) can be tidied. The video sent with Message A cannot be deleted, server and screen, because Follow-up 1 links to it.
+
 ## 1.5.62 (4 Oct 2026)
 - Ready to send cards list every uploaded video for that lead (player, size, time), mark the one on the message, and offer Use this one and a Delete cross. api/vo-upload.js steps list, use, delete (only blobs under vo/videos/<card id>- of this account's cards).
 
