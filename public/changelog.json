@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.64",
+    "date": "2026-10-04",
+    "notes": [
+      "The video message can no longer be sent twice to the same person. Once it has gone, the Send button disappears from the lead's page and the follow-ups take over."
+    ]
+  },
+  {
     "version": "1.5.63",
     "date": "2026-10-04",
     "notes": [

@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.64 (4 Oct 2026)
+- Message A can never be sent twice: the lead page hides Send Message A once it has gone, and linkedinSend refuses any stage past Accepted.
+
 ## 1.5.63 (4 Oct 2026)
 - The lead's own page (Open) lists its uploaded videos too, so a lead that has already been sent (and left Ready to send) can be tidied. The video sent with Message A cannot be deleted, server and screen, because Follow-up 1 links to it.
 
