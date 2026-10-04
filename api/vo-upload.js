@@ -2,7 +2,7 @@
 // Vercel caps a request body at 4.5 MB, so the browser sends the file in 2.5 MB chunks (base64), each stored as its
 // own blob, then "finish" joins them into one .mp4 in Vercel Blob and puts its URL on the prospect. The browser has
 // already compressed anything over the limit (VO_VIDEO_MAX_MB, default 20), and "finish" enforces the limit again.
-const { put, del } = require('@vercel/blob');
+const { put, del, list } = require('@vercel/blob');
 const { verify, parseCookie } = require('../lib/auth');
 const { account, canVideoOutreach } = require('../lib/access');
 const { accountEmailOf, emailOf } = require('../lib/tenant');
@@ -22,6 +22,33 @@ module.exports = async (req, res) => {
   const actor = emailOf(req) || acct.email;
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
+    // the uploaded videos for one or more cards, so a wrong or duplicate upload can be seen, chosen or deleted (4 Oct 2026)
+    if (body.step === 'list') {
+      const ids = (Array.isArray(body.ids) ? body.ids : []).map(Number).filter(Boolean).slice(0, 60);
+      const out = {};
+      for (const pid of ids) {
+        const p = await db.getProspect(owner, pid); if (!p) continue; // only this account's cards
+        let blobs = []; try { blobs = (await list({ prefix: 'vo/videos/' + pid + '-', limit: 50 })).blobs || []; } catch (e) {}
+        out[pid] = blobs.sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt)).map((b) => ({ url: b.url, mb: V.mb(b.size), at: b.uploadedAt, name: String(b.pathname || '').split('/').pop(), current: p.video_url === b.url }));
+      }
+      res.status(200).json({ ok: true, videos: out }); return;
+    }
+    if (body.step === 'use' || body.step === 'delete') {
+      const pid = Number(body.id); const url = String(body.url || '');
+      const p = await db.getProspect(owner, pid); if (!p) { res.status(404).json({ error: 'Prospect not found' }); return; }
+      let path = ''; try { path = new URL(url).pathname.replace(/^\//, ''); } catch (e) {}
+      if (!path.startsWith('vo/videos/' + pid + '-') || !/\.blob\.vercel-storage\.com$/.test(new URL(url).hostname)) { res.status(400).json({ error: 'That video does not belong to this card' }); return; }
+      if (body.step === 'use') {
+        await db.setVideoUrl(owner, actor, pid, url);
+        await db.addEvent(owner, actor, p, { step: 'note', detail: 'Chose a different uploaded video for the message' });
+        res.status(200).json({ ok: true, url: url }); return;
+      }
+      await del(url);
+      const wasCurrent = p.video_url === url;
+      if (wasCurrent) await db.setVideoUrl(owner, actor, pid, '');
+      await db.addEvent(owner, actor, p, { step: 'note', detail: 'Deleted an uploaded video' + (wasCurrent ? ' (it was the one on the message, so the card has no video now)' : '') });
+      res.status(200).json({ ok: true, cleared: wasCurrent }); return;
+    }
     const id = Number(body.id); const uploadId = safeId(body.upload_id);
     if (!id || !uploadId) { res.status(400).json({ error: 'Missing prospect id or upload id' }); return; }
     const p = await db.getProspect(owner, id); if (!p) { res.status(404).json({ error: 'Prospect not found' }); return; }

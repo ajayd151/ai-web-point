@@ -1921,3 +1921,11 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .fbadm-shot { display: block; max-width: 360px; width: 100%; margin: 8px 0; border: 1px solid #e3e8ef; border-radius: 8px; }
 .fbadm-ctx { margin: 4px 0 8px; font-size: 12.5px; }
 .fbadm-ctx pre { white-space: pre-wrap; background: #f7f9fb; border: 1px solid #e7eaf0; border-radius: 6px; padding: 8px; max-height: 220px; overflow: auto; }
+
+/* Ready to send: uploaded videos on a card (4 Oct 2026) */
+.vo-vids { margin: 2px 0 6px; }
+.vo-vid { display: flex; gap: 12px; align-items: center; padding: 8px; margin: 4px 0; border: 1px solid #e3e8ef; border-radius: 10px; background: #fff; max-width: 560px; }
+.vo-vid.current { border-color: var(--brand); background: #effaf8; }
+.vo-vid video { width: 160px; height: 90px; object-fit: cover; border-radius: 6px; background: #111; flex: none; }
+.vo-vid-meta { font-size: 13px; }
+@media (max-width: 560px) { .vo-vid { flex-direction: column; align-items: flex-start; } .vo-vid video { width: 100%; height: auto; } }

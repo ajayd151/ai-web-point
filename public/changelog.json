@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.62",
+    "date": "2026-10-04",
+    "notes": [
+      "Each Ready to send card now shows the videos uploaded for that lead, with a small player. The one marked On the message is the one that gets sent: click Use this one to switch, or the Delete cross to remove a wrong or duplicate upload."
+    ]
+  },
+  {
     "version": "1.5.61",
     "date": "2026-10-03",
     "notes": [

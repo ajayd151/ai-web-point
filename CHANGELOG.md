@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.62 (4 Oct 2026)
+- Ready to send cards list every uploaded video for that lead (player, size, time), mark the one on the message, and offer Use this one and a Delete cross. api/vo-upload.js steps list, use, delete (only blobs under vo/videos/<card id>- of this account's cards).
+
 ## 1.5.61 (3 Oct 2026)
 - Product names in messages drop a store subtitle after a colon ("Daily Ultimate Essentials Pro: All-in-One Supplement" reads "Daily Ultimate Essentials Pro"), so the message never shows two colons.
 
