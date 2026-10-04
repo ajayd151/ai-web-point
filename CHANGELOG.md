@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.65 (4 Oct 2026)
+- Ready to send: a cross next to the Video URL box takes the video off the message (OK deletes an uploaded file, Cancel keeps it). The video on the message is always listed under Uploaded videos even if the list call fails, and a failed list now says why on the status line instead of showing nothing.
+
 ## 1.5.64 (4 Oct 2026)
 - Message A can never be sent twice: the lead page hides Send Message A once it has gone, and linkedinSend refuses any stage past Accepted.
 

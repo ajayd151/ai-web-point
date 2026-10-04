@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.65",
+    "date": "2026-10-04",
+    "notes": [
+      "Each Ready to send card has a cross next to the Video URL box to take the video off the message or delete it. The uploaded video always shows under the box with its Delete button, and if something stops the list loading, the card now says why."
+    ]
+  },
+  {
     "version": "1.5.64",
     "date": "2026-10-04",
     "notes": [
