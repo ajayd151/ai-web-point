@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.68",
+    "date": "2026-10-05",
+    "notes": [
+      "Product names in the message are tidied to sound human, not like a web page title: SEO tails, codes, sizes and counts are removed and capitals are softened. For example 'EKKOLYTE - Electrolytes and Minerals' becomes Ekkolyte.",
+      "The Product in the video box shows the same tidied name the message uses."
+    ]
+  },
+  {
     "version": "1.5.67",
     "date": "2026-10-05",
     "notes": [

@@ -165,3 +165,24 @@ test('no false "so" when the video is of a different product than the ads', () =
   const wip = M.forAttachment(M.generate(Object.assign({ observation: 'your caffeine pouch ads on Meta', suggested_product_name: 'Watermelon - 15 Energy Pouches' }, base), null, null).message_a);
   assert.ok(/ads on Meta \(17 new ones this month\), so my team made you a free sample video for the Watermelon/.test(wip), wip);
 });
+
+test('product names are tidied to what a person would say, not an SEO page title', () => {
+  const cases = {
+    'EKKOLYTE - Electrolytes and Minerals': 'Ekkolyte',
+    'EKKO Endure Intra Workout - HigherUp Wellness Signature': 'Ekko Endure Intra Workout',
+    'Watermelon - 15 Energy Pouches': 'Watermelon Energy Pouches',
+    'Creatine Capsules | Naked Creatine - 75 Servings': 'Creatine Capsules',
+    'Hot N Cold Bundle - Pink': 'Hot N Cold Bundle',
+    'Organic Ashwagandha Gummies for Stress Relief, Sleep Support & Mood Boost - 60 Count Vegan Supplement': 'Organic Ashwagandha Gummies',
+    'Vitamin C Serum, Brightening Anti-Aging Face Serum for Dark Spots': 'Vitamin C Serum',
+    'OMNI Creatine Gummy \u200e': 'Omni Creatine Gummy',
+    'REVENGE STRINGER': 'Revenge Stringer',
+    'The Treatment Scalp Serum 6 Pack': 'The Treatment Scalp Serum',
+    'Glow Serum SKU-12345': 'Glow Serum',
+    'Myzone Switch 2.0 Heart Rate Monitor': 'Myzone Switch 2.0 Heart Rate Monitor',
+    'Kivora Signature Lipstick': 'Kivora Signature Lipstick',
+    'Particle Anti-Gray Spray': 'Particle Anti-Gray Spray',
+    'SPF 50 Mineral Sunscreen': 'SPF 50 Mineral Sunscreen',
+  };
+  for (const [inp, out] of Object.entries(cases)) assert.equal(M.shortProduct(inp), out, inp);
+});

@@ -185,7 +185,7 @@ module.exports = async (req, res) => {
     // ---- LinkedIn automation (Phase 5) ----
     if (action === 'demoReady') { const p = await db.createDemoReady(owner, actor); res.status(200).json({ ok: true, prospect: p }); return; }
     if (action === 'removeDemo') { res.status(200).json({ ok: true, removed: await db.removeDemo(owner) }); return; }
-    if (action === 'readyToSend') { res.status(200).json({ prospects: await db.readyToSend(owner), providers: providers(), linkedin: await db.linkedinSettings() }); return; }
+    if (action === 'readyToSend') { const rows = (await db.readyToSend(owner)).map((p) => Object.assign(p, { product_label: p.suggested_product_name ? M.shortProduct(p.suggested_product_name) : '' })); res.status(200).json({ prospects: rows, providers: providers(), linkedin: await db.linkedinSettings() }); return; }
     if (action === 'linkedinSend') { res.status(200).json(await J.linkedinSend(owner, actor, id, body.url, body.text, { mode: body.mode })); return; }
     if (action === 'checkVideo') { res.status(200).json(await require('../lib/vo-video').resolveVideo(body.url)); return; }
     if (action === 'linkedinTick') { res.status(200).json({ ok: true, tick: await J.linkedinTick(owner, actor) }); return; }

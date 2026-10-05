@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.68 (5 Oct 2026)
+- Product names are tidied to what a person would say, not an SEO page title: the tail after a dash, bar, colon or comma, "for/with ..." clauses, codes (SKU-12345, AB1234), counts, sizes and pack words go, SHOUTING CAPS become normal words (SPF, CBD stay), six words at most. Examples: "EKKOLYTE - Electrolytes and Minerals" reads Ekkolyte; "Organic Ashwagandha Gummies for Stress Relief, Sleep Support - 60 Count" reads Organic Ashwagandha Gummies.
+- The Product in the video box shows the tidied name, so it matches the message word for word.
+
 ## 1.5.67 (5 Oct 2026)
 - Product picker reads the whole Shopify catalogue (250 a page, 2 pages; was the first 50) and fetches up to 3 products their ads link to that the feed left out; EKKO's advertised Ekkolyte was product 51+ of 191, so a stringer was picked. The advertised product (hero, or linked from 2+ ads) now always wins, whatever its photo count; products linked from ads rank next.
 - Ready to send: an Update message button beside Product in the video (click-away still works). Hand-edited text keeps its edits: only the changed wording is swapped in.
