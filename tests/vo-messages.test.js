@@ -157,3 +157,11 @@ test('a store subtitle after a colon is dropped from the product name', () => {
   assert.equal(M.shortProduct('Vitamin C: Serum'), 'Vitamin C');
   assert.equal(M.shortProduct('Glow: Night Cream'), 'Glow Night Cream', 'a one-word brand before the colon keeps the rest');
 });
+
+test('no false "so" when the video is of a different product than the ads', () => {
+  const base = { dm_name: 'Oli Smith', new_ads_30d: 17, meta_page_id: '1' };
+  const ekko = M.forAttachment(M.generate(Object.assign({ observation: 'your Ekkolyte ads on Meta', suggested_product_name: 'Revenge Stringer' }, base), null, null).message_a);
+  assert.ok(ekko.includes('I saw your Ekkolyte ads on Meta (17 new ones this month). My team made you a free sample video for the Revenge Stringer, attached below.'), ekko);
+  const wip = M.forAttachment(M.generate(Object.assign({ observation: 'your caffeine pouch ads on Meta', suggested_product_name: 'Watermelon - 15 Energy Pouches' }, base), null, null).message_a);
+  assert.ok(/ads on Meta \(17 new ones this month\), so my team made you a free sample video for the Watermelon/.test(wip), wip);
+});

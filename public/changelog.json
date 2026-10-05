@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.66",
+    "date": "2026-10-05",
+    "notes": [
+      "Each Ready to send card has a Product in the video box. SitePounce fills in its pick; type the product you actually filmed and click away, and the message updates with that name.",
+      "When the video is of a different product than the one in their ads, the message no longer says 'so': it reads as two plain sentences."
+    ]
+  },
+  {
     "version": "1.5.65",
     "date": "2026-10-04",
     "notes": [

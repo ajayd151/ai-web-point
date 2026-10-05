@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.66 (5 Oct 2026)
+- Ready to send: a Product in the video box on every card with a product, prefilled with the pick; editing it saves on blur and rebuilds Message A with that name (left alone if the text was edited by hand); Send and Mark sent wait for the save.
+- Message A drops the false "so" when the video's product is not what their ads were about (EKKO: Ekkolyte ads, Revenge Stringer video): "I saw your Ekkolyte ads on Meta (17 new ones this month). My team made you a free sample video for the Revenge Stringer, attached below."
+
 ## 1.5.65 (4 Oct 2026)
 - Ready to send: a cross next to the Video URL box takes the video off the message (OK deletes an uploaded file, Cancel keeps it). The video on the message is always listed under Uploaded videos even if the list call fails, and a failed list now says why on the status line instead of showing nothing.
 
