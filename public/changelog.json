@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.67",
+    "date": "2026-10-05",
+    "notes": [
+      "SitePounce now reads a brand's whole online shop, not just the first 50 products, and the product their ads are pushing is always the one suggested to film. For EKKO that is Ekkolyte, the electrolyte powder in their ads.",
+      "An Update message button sits next to Product in the video. Clicking away still updates it too, and if you edited the message yourself your edits are kept and only the product wording changes."
+    ]
+  },
+  {
     "version": "1.5.66",
     "date": "2026-10-05",
     "notes": [

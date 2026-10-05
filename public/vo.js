@@ -731,7 +731,7 @@ async function voOpenReady() {
     (voShortlist(p) || (p.source === 'demo' ? '' : '<div class="vo-shortlist' + (p.suggested_product_name ? '' : ' vo-noproduct') + '">' + (p.product_photo_url ? '<img class="vo-hero" src="' + esc(p.product_photo_url) + '" alt="" style="float:right;max-width:160px;max-height:160px;margin:0 0 8px 12px" />' : '') + (p.suggested_product_name ? '<b>Film this:</b> ' + voLink(p.suggested_product_url, p.suggested_product_name) + ' <span class="muted vo-small">' + esc(p.why_this_product || '') + '</span>' : '<b>No product picked yet.</b> <span class="vo-no">' + esc(p.why_this_product || 'Their website could not be read.') + '</span>' + ' <button class="ghost sm vo-notfit" title="They have nothing to film. Moves them to Dead and off this list.">✗ Not a fit</button>') + '<div class="vo-small" style="margin-top:6px">' + (p.suggested_product_name ? 'Change it: ' : '') + 'Product to film: <input type="text" class="vo-prod-name" placeholder="e.g. Particle Face Cream" style="width:220px" /> Link: <input type="url" class="vo-prod-url" placeholder="https://…" style="width:260px" /> <button class="ghost sm vo-prod-save">Save and rebuild the message</button> <button class="ghost sm vo-prod-retry" title="Read their store and ads again">↻ Look again</button> <label class="ghost btn sm vo-file" title="A photo of the product for the video maker, from their site or your own screenshot">📷 Upload a photo of the product<input type="file" class="vo-prod-photo" accept="image/*" hidden /></label></div><div class="vo-small vo-prod-photo-status muted"></div></div>')) +
     '<div class="vo-small">Video URL: <input type="url" class="vo-ready-url" value="' + esc(p.video_url || '') + '" placeholder="https://…" style="width:60%;max-width:420px" /> <button class="ghost sm vo-url-clear" title="Take this video off the message">✕</button> <span class="muted">paste the video link (or a direct .mp4) here once</span> <label class="ghost btn sm vo-file" title="Upload a video from your computer. Anything over 20 MB is compressed in your browser first.">📤 Upload a video file<input type="file" class="vo-ready-file" accept="video/*" hidden /></label></div><div class="vo-small vo-ready-upstatus muted"></div><div class="vo-vids"></div>' +
     '<div class="vo-small vo-ready-modes" style="margin:4px 0">Send the video as: <label><input type="radio" name="vo-mode-' + p.id + '" class="vo-ready-mode" value="attachment"' + ((VO.linkedin && VO.linkedin.video_delivery === 'link') ? '' : ' checked') + ' /> attachment (plays inside the message)</label> &nbsp; <label><input type="radio" name="vo-mode-' + p.id + '" class="vo-ready-mode" value="link"' + ((VO.linkedin && VO.linkedin.video_delivery === 'link') ? ' checked' : '') + ' /> link</label>' + voHelp('Send the video as') + ' <span class="vo-ready-check muted"></span></div>' +
-    (p.suggested_product_name ? '<div class="vo-small vo-prodline">Product in the video: <input type="text" class="vo-film-name" value="' + esc(p.suggested_product_name) + '" placeholder="the product you filmed" /> <span class="muted">the message names this product and updates when you click away</span>' + voHelp('Product in the video') + '</div>' : '') +
+    (p.suggested_product_name ? '<div class="vo-small vo-prodline">Product in the video: <input type="text" class="vo-film-name" value="' + esc(p.suggested_product_name) + '" placeholder="the product you filmed" /> <button class="ghost sm vo-film-update" title="Rebuild the message with this product name">↻ Update message</button> <span class="muted">or just click away, it updates either way</span>' + voHelp('Product in the video') + '</div>' : '') +
     '<textarea class="vo-ready-text" rows="7">' + esc(p.message_a || '') + '</textarea>' +
     '<div style="margin-top:6px">' + (liOn ? '<button class="primary sm vo-ready-send"' + (P.linkedin_configured && p.source !== 'demo' ? '' : ' disabled title="' + (p.source === 'demo' ? 'example record, sending is off' : 'provider keys missing') + '"') + '>🚀 Send on LinkedIn</button> <span class="vo-small muted">sends the message from your LinkedIn and schedules the follow-ups</span> <details class="vo-byhand"><summary class="vo-small">send by hand instead</summary>' : '') +
     '<button class="ghost sm vo-ready-copy" title="Copy the message to paste into LinkedIn yourself">📋 Copy</button> <button class="ghost sm vo-ready-mark" title="Tell SitePounce you sent it by hand, so the stage moves and follow-ups are scheduled">✓ Mark Msg 1 sent</button>' + (liOn ? '</details>' : '') + '</div></div>').join('');
@@ -803,21 +803,38 @@ async function voOpenReady() {
     // the product the video shows: typed here, saved on blur, and the message rebuilt unless it was edited by hand
     card.__msgAuto = textBox.value;
     const filmName = card.querySelector('.vo-film-name');
-    if (filmName) filmName.addEventListener('change', () => {
+    // update with the typed product: on click-away AND on the Update message button, whatever happens the message follows the name.
+    // Hand-edited text keeps the edits: only the part that changed (the product name, or "so" becoming two sentences) is swapped in.
+    const rebuildFor = (fresh) => { const keep = textBox.value; textBox.value = fresh; lastUrl = ''; wording(); const out = textBox.value; textBox.value = keep; return out; };
+    const updateProduct = (fromButton) => {
       card.__pendingProduct = (async () => {
-        const name = filmName.value.trim(); if (!name) return;
+        const name = filmName.value.trim(); if (!name) { voStatus('Type the product name first.', 'err'); return; }
         const pr = (d.prospects || []).find((x) => Number(x.id) === id) || {};
         const match = (Array.isArray(pr.product_candidates) ? pr.product_candidates : []).find((c) => String(c.name || '').toLowerCase() === name.toLowerCase());
-        const keepUrl = String(pr.suggested_product_name || '').toLowerCase() === name.toLowerCase() ? (pr.suggested_product_url || '') : (match ? match.url : '');
+        const same = String(pr.suggested_product_name || '').toLowerCase() === name.toLowerCase();
+        const keepUrl = same ? (pr.suggested_product_url || '') : (match ? match.url : '');
         try {
-          const r = await voApi('updateProspect', { id: id, fields: { suggested_product_name: name, suggested_product_url: keepUrl, why_this_product: match ? 'picked from the shortlist on the card' : 'typed on the card' } });
+          const r = await voApi('updateProspect', { id: id, fields: { suggested_product_name: name, suggested_product_url: keepUrl, why_this_product: same ? (pr.why_this_product || 'picked by SitePounce') : (match ? 'picked from the shortlist on the card' : 'typed on the card') } });
           pr.suggested_product_name = name; pr.suggested_product_url = keepUrl;
-          const fresh = r && r.prospect && r.prospect.message_a;
-          if (fresh && textBox.value === card.__msgAuto) { textBox.value = fresh; lastUrl = ''; wording(); card.__msgAuto = textBox.value; voStatus('Message updated for ' + name); }
-          else if (fresh) voStatus('Product saved as ' + name + '. You edited the message by hand, so it was left as it is: change the product name in the text if needed.', 'note');
+          const fresh = r && r.prospect && r.prospect.message_a; if (!fresh) return;
+          const next = rebuildFor(fresh);
+          if (textBox.value === card.__msgAuto) { textBox.value = next; voStatus('Message updated for ' + name); }
+          else {
+            // find what changed between the old automatic text and the new one, and swap just that inside the edited text
+            const oldT = card.__msgAuto || ''; let i = 0; while (i < oldT.length && i < next.length && oldT[i] === next[i]) i++;
+            let j = 0; while (j < oldT.length - i && j < next.length - i && oldT[oldT.length - 1 - j] === next[next.length - 1 - j]) j++;
+            const from = oldT.slice(i, oldT.length - j), to = next.slice(i, next.length - j);
+            if (from && textBox.value.includes(from)) { textBox.value = textBox.value.split(from).join(to); voStatus('Message updated for ' + name + ', your own edits kept'); }
+            else if (!from) voStatus('Message already names ' + name);
+            else { textBox.value = next; voStatus('Message rebuilt for ' + name + '. Your hand edits did not contain the old product wording, so the standard message was put back.', 'note'); }
+          }
+          card.__msgAuto = next;
         } catch (e) { voStatus(e.message, 'err'); }
       })();
-    });
+      return card.__pendingProduct;
+    };
+    if (filmName) filmName.addEventListener('change', () => updateProduct(false));
+    const filmBtn = card.querySelector('.vo-film-update'); if (filmBtn) filmBtn.addEventListener('click', () => updateProduct(true));
     card.querySelector('.vo-ready-mark').addEventListener('click', async () => { if (card.__pendingProduct) { try { await card.__pendingProduct; } catch (e) {} } try { const url = card.querySelector('.vo-ready-url').value.trim(); if (url) await voApi('setVideoUrl', { id: id, url: url }); await voApi('updateProspect', { id: id, fields: { message_a: card.querySelector('.vo-ready-text').value } }); await voApi('setStage', { id: id, stage: 'Msg 1', variant_used: 'A video sent', channel: 'LinkedIn' }); voToast('Marked as sent'); voOpenReady(); } catch (e) { voStatus(e.message, 'err'); } });
     const s = card.querySelector('.vo-ready-send'); if (s) s.addEventListener('click', async () => { if (card.__pendingProduct) { try { await card.__pendingProduct; } catch (e) {} } const url = card.querySelector('.vo-ready-url').value.trim(); if (!/^https:\/\//i.test(url)) { voStatus('Paste an https:// video URL first.', 'err'); return; } const m = mode(); if (m === 'attachment' && card.dataset.videoOk !== '1') { voStatus('The video file has not passed the check yet (' + (checkBox.textContent || 'not checked') + '). Fix it, or choose link.', 'err'); return; } if (!confirm('Send Message A on LinkedIn now' + (m === 'attachment' ? ' with the video attached' : ' with the link') + '?')) return; s.disabled = true; s.textContent = m === 'attachment' ? 'Uploading and sending…' : 'Sending…'; try { const r = await voApi('linkedinSend', { id: id, url: url, text: card.querySelector('.vo-ready-text').value, mode: m }); voStatus((r.attached ? 'Sent with the video attached (' + r.mb + ' MB)' : 'Sent with the link') + '. It is listed under the Sent tab, with its follow-ups booked.'); voOpenReady(); } catch (e) { s.disabled = false; s.textContent = '🚀 Send on LinkedIn'; voStatus(e.message, 'err'); } });
   });

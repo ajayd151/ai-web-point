@@ -37,7 +37,7 @@ test('groupAds: counts, style bands and the paid-creative pattern', () => {
   assert.equal(g.find((x) => x.page_name === 'Static Co').creative_style, 'Static');
 });
 
-test('pickProduct: needs 3 real photos, prefers the hero, falls back to weak pass then FAIL', () => {
+test('pickProduct: the advertised product always wins (Ajay, 5 Oct 2026); otherwise 3 real photos, weak pass, then FAIL', () => {
   const img = (n, alt) => Array.from({ length: n }, (_, i) => ({ src: 'https://x/cdn/' + (alt ? 'facts' : 'shot') + i + '.jpg', alt: alt || 'Product shot' }));
   const products = [
     { handle: 'facts-heavy', title: 'Creatine Gummies', url: 'u1', images: img(1).concat(img(4, 'Supplement facts panel')) },
@@ -45,7 +45,8 @@ test('pickProduct: needs 3 real photos, prefers the hero, falls back to weak pas
     { handle: 'two', title: 'Omega 3', url: 'u3', images: img(2) },
   ];
   const hero = S.pickProduct(products, 'Creatine Gummies', []);
-  assert.equal(hero.url, 'u2', 'hero fails the photo rule, so the next candidate wins'); assert.equal(hero.check, 'Pass (5)');
+  assert.equal(hero.url, 'u1', 'the product their ads push is filmed even with 1 clean photo'); assert.equal(hero.check, 'Weak pass (1)');
+  assert.equal(S.pickProduct(products, '', []).url, 'u2', 'with no advertised product the photo rule decides');
   assert.equal(S.pickProduct([products[2]], '', []).check, 'Weak pass (2)');
   assert.match(S.pickProduct([products[0]], '', []).check, /^FAIL \(1\)/);
   assert.equal(S.realPhotoCount(products[0]), 1);
@@ -240,4 +241,14 @@ test('the product picker never films an extra: refills, upgrades, free gifts, hi
   ].map((p) => Object.assign({ url: 'https://im8health.com/products/' + p.handle }, p));
   assert.equal(S.pickProduct(list, '', [], { source: 'shopify' }).name, 'Daily Ultimate Essentials Pro: All-in-One Supplement');
   assert.equal(S.notForFilming({ title: 'Sun Protection SPF 50', tags: [], price: 30 }), false, 'a real SPF product is kept');
+});
+
+test('a product their ads link to is ranked first even when the feed did not name it as the hero', () => {
+  const img = (n) => Array.from({ length: n }, (_, i) => ({ src: 'https://x/p' + i + '.jpg', alt: '' }));
+  const list = [
+    { handle: 'revenge-stringer', title: 'Revenge Stringer', url: 'a', images: img(6) },
+    { handle: 'ekkolyte-hydration-powder-copy', title: 'EKKOLYTE - Electrolytes and Minerals', url: 'b', images: img(8), ad_count: 2 },
+  ];
+  assert.equal(S.pickProduct(list, 'Ekkolyte', [], { source: 'shopify' }).url, 'b');
+  assert.equal(S.pickProduct(list, '', [], { source: 'shopify' }).url, 'b', 'linked from 2 ads');
 });
