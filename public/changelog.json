@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.81",
+    "date": "2026-10-07",
+    "notes": [
+      "Reports is now in the left menu under Video Outreach, next to Ask AI and Help and guide."
+    ]
+  },
+  {
     "version": "1.5.80",
     "date": "2026-10-07",
     "notes": [

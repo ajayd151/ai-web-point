@@ -34,8 +34,8 @@ async function voShow() {
   const L = window.__voLevel || { all: true, ready: true, settings: true };
   if (!L.all && VO.pane && ['campaigns', 'edit', 'prospects', 'results'].includes(VO.pane)) VO.loaded = false;
   await voLoadCampaigns();
-  const m = String(location.hash || '').match(/^#vo-(ready|sent|help|ask|settings)(?:-(\d+))?$/);
-  if (m) { VO.loaded = true; if (m[1] === 'help') return voOpenHelp(); if (m[1] === 'ask') return voOpenAsk(); if (m[1] === 'sent') return voOpenSent(); if (m[1] === 'settings') return voOpenSettings(); VO.readyFocus = m[2] ? Number(m[2]) : null; return voOpenReady(); }
+  const m = String(location.hash || '').match(/^#vo-(ready|sent|help|ask|settings|reports)(?:-(\d+))?$/);
+  if (m) { VO.loaded = true; if (m[1] === 'help') return voOpenHelp(); if (m[1] === 'ask') return voOpenAsk(); if (m[1] === 'sent') return voOpenSent(); if (m[1] === 'settings') return voOpenSettings(); if (m[1] === 'reports') return voOpenReports(); VO.readyFocus = m[2] ? Number(m[2]) : null; return voOpenReady(); }
   if (!VO.loaded) { if (L.all) voPane('campaigns'); else if (L.ready) voOpenReady(); else if (L.settings) voOpenSettings(); VO.loaded = true; }
 }
 // arriving on a #vo-... link (from the SMS or email) opens Video Outreach straight away

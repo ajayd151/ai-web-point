@@ -299,6 +299,7 @@ async function refreshAccess() {
   if ($('nav-vo')) $('nav-vo').classList.toggle('hidden', !acc.videoOutreach); // Video Outreach: owner, allow-list, or a team member with a Video Outreach permission
   if ($('nav-vo-help')) $('nav-vo-help').classList.toggle('hidden', !acc.videoOutreach);
   if ($('nav-vo-ask')) $('nav-vo-ask').classList.toggle('hidden', !acc.videoOutreach);
+  if ($('nav-vo-reports')) $('nav-vo-reports').classList.toggle('hidden', !acc.videoOutreach || (acc.vo && acc.vo.all === false)); // the daily report table (team members with Ready to send only do not see it)
   if (acc.videoOutreach && typeof voRefreshBadge === 'function' && !window.__voBadgeTimer) { voRefreshBadge(); window.__voBadgeTimer = setInterval(voRefreshBadge, 120000); }
   window.__appVersion = acc.version || '';
   if ($('app-version')) { const v = String(acc.version || ''); $('app-version').textContent = v ? 'Version ' + v.replace(/^v/, '').split(' ')[0] : ''; $('app-version').title = 'Live build ' + v + '. Click to see what changed.'; $('app-version').onclick = showChangelog; } // build stamp, bottom-left, click for history
@@ -2269,6 +2270,7 @@ function showView(name) {
   if (name === 'vo' && typeof voShow === 'function') voShow(); // Video Outreach module (vo.js)
   if (name === 'vo' && window.__voSub === 'help' && typeof voOpenHelp === 'function') { window.__voSub = null; setTimeout(voOpenHelp, 50); }
   if (name === 'vo' && window.__voSub === 'ask' && typeof voOpenAsk === 'function') { window.__voSub = null; setTimeout(voOpenAsk, 50); }
+  if (name === 'vo' && window.__voSub === 'reports' && typeof voOpenReports === 'function') { window.__voSub = null; setTimeout(voOpenReports, 50); }
   if (name === 'performance' && !lastDashboard) loadDashboard(currentDashDays); // lazy-load on first open only
   if (name === 'performance') loadDigest(); // the same morning summary the 8am email sends
   if (name === 'messages') { renderBlocked(); updateWaToday(); }
