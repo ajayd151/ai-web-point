@@ -6,7 +6,7 @@ The live version shows bottom-left in the app sidebar and is clickable there. `p
 - Video on its way: about an hour after someone accepts (in the send window, last 3 days only), an automatic short message from the inviting account says the sample video is coming in a day or two. Message A then skips its own thank you. Settings, LinkedIn: Video on its way message (on by default). Shown on the Sent tab.
 - 48 hour video deadline: Ready to send cards show 'video due in X h' or a red 'video overdue by X days'; the Reports tile and the 9am text count and list the overdue ones first.
 - Someone who replies before getting their video stays on Ready to send with the reply shown (unless they said no); sending the video to them books no 'in case it got buried' follow-ups.
-- Help: the day-by-day flow updated (follow-ups are day 4, 12 and about 30, automatic).
+- Help: the loop diagram and the day-by-day flow show the real sequence (request with the offer note, accepted, video on its way, video within 48 h, follow-ups day 4, 12 and about 42, reply), plus a new 'What the prospect receives, in order' strip; Message B explained as email only.
 
 ## 1.5.87 (7 Oct 2026)
 - Reply reading fix: since v1.3.1 the reply classifier sent the literal code text instead of the prospect's reply, so every Positive, Negative or Neutral reading was a guess. The prompt now carries the real reply (tests/vo-reply.test.js guards it) and reclassifyReplies re-reads every stored reply.

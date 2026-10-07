@@ -62,6 +62,13 @@
   .vloop .tg { font-size: 9.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
   .vloop .tg.you { background: #fef3c7; color: #92600a; }
   .vloop .tg.au { background: #ecfdf5; color: var(--teal); }
+  .vseq { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 6px 0 10px; }
+  .vseq div { border: 1px solid #d5ece8; background: #f3fbf9; border-radius: 12px; padding: 10px 12px; display: grid; grid-template-columns: 26px 1fr; column-gap: 8px; align-items: start; }
+  .vseq div.you { border-color: #f5d9a6; background: #fffaf0; }
+  .vseq span { grid-row: span 2; width: 24px; height: 24px; border-radius: 50%; background: var(--teal); color: #fff; font-weight: 800; font-size: 12px; display: grid; place-items: center; }
+  .vseq div.you span { background: #d97706; }
+  .vseq b { font-size: 14px; } .vseq i { font-style: normal; font-size: 12.5px; color: #64748b; }
+  @media (max-width: 700px) { .vseq { grid-template-columns: 1fr 1fr; } }
   .vloop .ti { display: flex; gap: 5px; margin-left: auto; }
   .vloop .tl { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 11px; }
   .vloop .fb { background: #1877f2; } .vloop .ig { background: linear-gradient(45deg,#f58529,#dd2a7b 55%,#8134af); }
@@ -74,7 +81,7 @@
 <div class="wrap">
 <nav id="nav">
   <h1>🎬 Video Outreach<small>How it works and how to use it</small></h1>
-  <div class="grp open"><a href="#overview">Overview <span class="chev">▶</span></a><div class="sub"><a href="#overview-loop">The whole loop</a><a href="#overview-never">What it never does</a></div></div>
+  <div class="grp open"><a href="#overview">Overview <span class="chev">▶</span></a><div class="sub"><a href="#overview-loop">The whole loop</a><a href="#overview-seq">Messages, in order</a><a href="#overview-never">What it never does</a></div></div>
   <div class="grp"><a href="#week">What happens, and when you step in <span class="chev">▶</span></a><div class="sub"><a href="#week-flow">The flow, day by day</a><a href="#week-you">Where you come in</a><a href="#week-not">If they do not connect</a></div></div>
   <div class="grp"><a href="#paths">Click paths and times <span class="chev">▶</span></a><div class="sub"><a href="#paths-list">Exact paths for every task</a><a href="#paths-times">Times of day</a><a href="#paths-campaign">Setting up a campaign, step by step</a></div></div>
   <div class="grp"><a href="#faq">FAQs <span class="chev">▶</span></a><div class="sub"><a href="#faq-list">Common questions</a><a href="#faq-extra">Your saved questions</a></div></div>
@@ -100,18 +107,31 @@
   <div class="st"><div class="nd">2</div><div class="cc"><div class="h"><b>Find brands</b><span class="tg au">Automatic</span><span class="ti"><span class="tl fb">f</span><span class="tl ig">&#9673;</span></span></div><p>Pulls brands advertising on Meta (Facebook and Instagram) for your keywords, and counts their recent ads.</p></div></div>
   <div class="st"><div class="nd">3</div><div class="cc"><div class="h"><b>Analyse &amp; draft</b><span class="tg au">Automatic</span></div><p>Scores each brand out of 100, reads their website and store, picks the product to film and drafts the messages. The run takes 3 to 10 minutes.</p></div></div>
   <div class="st"><div class="nd">4</div><div class="cc"><div class="h"><b>Prospects</b><span class="tg au">Automatic</span></div><p>A list sorted by Priority Number. Open one to see why, what to film and the messages.</p></div></div>
-  <div class="st"><div class="nd">5</div><div class="cc"><div class="h"><b>Connect</b><span class="tg au">Automatic</span><span class="ti"><span class="tl li">in</span></span></div><p>Sends the LinkedIn request, one at a time on weekdays, or by hand with Copy.</p></div></div>
-  <div class="st"><div class="nd">6</div><div class="cc"><div class="h"><b>Accepted</b><span class="tg au">Text + email</span></div><p>The brand moves to Ready to send with Message A drafted. You get a text and an email.</p></div></div>
-  <div class="st you"><div class="nd">7</div><div class="cc"><div class="h"><b>Make the video</b><span class="tg you">You</span><span class="ti"><span class="tl sv">&#9654;</span></span></div><p>Film the AI video for the product shown on the card.</p></div></div>
-  <div class="st you"><div class="nd">8</div><div class="cc"><div class="h"><b>Send Message A</b><span class="tg you">You</span><span class="ti"><span class="tl li">in</span></span></div><p>Paste the video link, read the words, click Send. The only send that needs you.</p></div></div>
-  <div class="st"><div class="nd">9</div><div class="cc"><div class="h"><b>Follow-ups &amp; reply</b><span class="tg au">Automatic or you</span></div><p>Drafts at day 4, 12 and +30. A reply cancels them and emails you. Then Call booked, Pilot, Client.</p></div></div>
+  <div class="st"><div class="nd">5</div><div class="cc"><div class="h"><b>Connection request</b><span class="tg au">Automatic</span><span class="ti"><span class="tl li">in</span></span></div><p>Weekdays in US business hours, one at a time, 10 to 30 minutes apart, up to 20 a day per LinkedIn account. It carries a short note offering a free sample video (the note that won the test). No link, no video yet.</p></div></div>
+  <div class="st"><div class="nd">6</div><div class="cc"><div class="h"><b>Accepted</b><span class="tg au">Text + email</span></div><p>Usually within 1 to 7 days. The brand moves to Ready to send with Message A drafted, and you and Aryan get a text and an email.</p></div></div>
+  <div class="st"><div class="nd">7</div><div class="cc"><div class="h"><b>Video on its way</b><span class="tg au">Automatic</span><span class="ti"><span class="tl li">in</span></span></div><p>About an hour later: "Thanks for connecting. My team is making you a short sample video for ..., I'll send it over in the next day or two." If they answer, the reply shows on their card.</p></div></div>
+  <div class="st you"><div class="nd">8</div><div class="cc"><div class="h"><b>Make the video</b><span class="tg you">You, within 48 h</span><span class="ti"><span class="tl sv">&#9654;</span></span></div><p>Film the AI video for the product shown on the card. The card counts down and turns red when it is late.</p></div></div>
+  <div class="st you"><div class="nd">9</div><div class="cc"><div class="h"><b>Send Message A</b><span class="tg you">You</span><span class="ti"><span class="tl li">in</span></span></div><p>Upload or paste the video, read the words, click Send. The video goes attached. The only send that needs you.</p></div></div>
+  <div class="st"><div class="nd">10</div><div class="cc"><div class="h"><b>Follow-ups 1, 2 and 3</b><span class="tg au">Automatic</span></div><p>Day 4 and day 12 after the video, then Follow-up 3 a month after Follow-up 2, around day 42 (it mentions an upcoming date in their country, like Thanksgiving in the US). Any reply stops them.</p></div></div>
+  <div class="st you"><div class="nd">11</div><div class="cc"><div class="h"><b>They reply</b><span class="tg you">You answer</span></div><p>Read as Positive, Question, Neutral or Negative and texted to you. You answer on LinkedIn, then set Call booked, Pilot, Client.</p></div></div>
 </div>
+
+<h3 id="overview-seq">What the prospect receives, in order</h3>
+<div class="vseq">
+  <div><span>1</span><b>Connection request</b><i>with the free video offer note</i></div>
+  <div><span>2</span><b>Video on its way</b><i>an hour after they accept</i></div>
+  <div class="you"><span>3</span><b>Message A, the video</b><i>you send it, within 48 h</i></div>
+  <div><span>4</span><b>Follow-up 1</b><i>day 4</i></div>
+  <div><span>5</span><b>Follow-up 2</b><i>day 12</i></div>
+  <div><span>6</span><b>Follow-up 3</b><i>around day 42, a seasonal date</i></div>
+</div>
+<p class="muted">Days count from Message A. A reply at any point stops everything after it. No acceptance in 21 days: the request is withdrawn and the brand is never asked again. Message B (the "want me to make you one?" version on the prospect page) is not part of this sequence; it is only for email if you choose it.</div>
 
 <h3 id="overview-never">What it never does</h3>
 <ul>
   <li>It never sends Message A (the one with the video) on its own. You paste the link and click Send.</li>
   <li>It never answers a reply. It records it, cancels follow-ups and emails you.</li>
-  <li>It never sends follow-ups unless you switch on auto follow-ups for that campaign.</li>
+  <li>The only messages it sends on its own are the connection request, "video on its way" and the follow-ups (follow-ups only when auto follow-ups is on for the campaign; it is on for both live campaigns).</li>
   <li>It never contacts a brand twice. A brand belongs to one campaign, and dedupe runs on every pull.</li>
 </ul>
 
@@ -124,7 +144,7 @@
   <div><b>Someone accepts</b>Text to you and Aryan: "new ShekiPro connection". Email too. The brand moves to Ready to send with Message A drafted. <b>You: make the video. It is due within 48 hours</b>; the card counts down and turns red when it is late, and the 9am text lists late ones first.</div>
   <div><b>About an hour after they accept</b>An automatic "video on its way" message goes from the LinkedIn account that invited them: thanks for connecting, my team is making you a short sample video, I will send it over in the next day or two. If they answer, their reply shows on the card and the card stays on Ready to send. Switch it off in Settings, LinkedIn. You: nothing.</div>
   <div><b>Ready to send</b><b>You: paste the video link, read the message, click Send.</b> Message A goes out through the same LinkedIn account (it skips the thank you if "video on its way" already said it). Follow-ups are booked.</div>
-  <div><b>Day +4, +12, then about +30</b>Follow-ups 1, 2 and 3 go automatically in the send window (Follow-up 3 mentions an upcoming date in their country). See them on the Sent tab.</div>
+  <div><b>Day +4, +12, then about +42</b>Follow-ups 1, 2 and 3 go automatically in the send window (Follow-up 3, a month after Follow-up 2, mentions an upcoming date in their country). See them on the Sent tab.</div>
   <div><b>They reply</b>Read as Positive, Negative, Question or Neutral. Positive and Question text you both. Follow-ups cancel. <b>You: answer them on LinkedIn, set Call booked, Pilot, Client.</b></div>
   <div><b>No answer after 7 days</b>Request marked Pending. Still nothing at 21 days: request withdrawn, brand marked Dead. You: nothing.</div>
   <div><b>Every 30 days</b>Ad counts refreshed and scores updated so stale brands drift down. You: nothing.</div>
