@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.75",
+    "date": "2026-10-07",
+    "notes": [
+      "The Help flowchart now shows the run as two steps: 'Find brands' (pulls brands from Meta) and 'Analyse & draft' (scores them, reads the website and store, picks the product and writes the messages)."
+    ]
+  },
+  {
     "version": "1.5.74",
     "date": "2026-10-07",
     "notes": [

@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.75 (7 Oct 2026)
+- Help flowchart: split "Run" into two real steps, "Find brands" (pulls from Meta) and "Analyse & draft" (scores, reads the site, picks the product, writes the messages).
+
 ## 1.5.74 (7 Oct 2026)
 - Ready to send cards tidied: clear "Your video" and "The message" sections, more breathing room, a louder Send on LinkedIn button.
 - Help and guide "The whole loop" is now a simple flowchart (numbered steps, teal = runs on its own, amber = you step in, with Meta / Instagram / LinkedIn / ScrollyVid tiles on the right steps). The fuller branching chart will come behind a "Show full chart" option later.
