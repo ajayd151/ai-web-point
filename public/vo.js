@@ -13,7 +13,7 @@ async function voApi(action, payload) {
 }
 function voPane(name) {
   VO.pane = name;
-  ['campaigns', 'edit', 'prospects', 'detail', 'ready', 'sent', 'results', 'settings', 'help', 'ask'].forEach((p) => { const el = $('vo-pane-' + p); if (el) el.classList.toggle('hidden', p !== name); });
+  ['campaigns', 'edit', 'prospects', 'detail', 'ready', 'sent', 'results', 'reports', 'settings', 'help', 'ask'].forEach((p) => { const el = $('vo-pane-' + p); if (el) el.classList.toggle('hidden', p !== name); });
   const tab = name === 'edit' ? 'campaigns' : (name === 'detail' ? 'prospects' : name);
   document.querySelectorAll('.vo-tab').forEach((b) => b.classList.toggle('active', b.dataset.vopane === tab));
   try { window.scrollTo({ top: 0 }); } catch (e) {}
@@ -23,7 +23,7 @@ function voApplyLevel() {
   const L = window.__voLevel || { all: true, ready: true, settings: true };
   document.querySelectorAll('.vo-tab').forEach((b) => {
     const t = b.dataset.vopane; let show = true;
-    if (['campaigns', 'prospects', 'results'].includes(t)) show = !!L.all;
+    if (['campaigns', 'prospects', 'results', 'reports'].includes(t)) show = !!L.all;
     if (t === 'ready' || t === 'sent') show = !!L.ready;
     if (t === 'settings') show = !!L.settings;
     b.classList.toggle('hidden', !show);
@@ -46,6 +46,7 @@ document.querySelectorAll('.vo-tab').forEach((b) => b.addEventListener('click', 
   else if (t === 'ready') voOpenReady();
   else if (t === 'sent') voOpenSent();
   else if (t === 'results') voOpenResults();
+  else if (t === 'reports') voOpenReports();
   else if (t === 'settings') voOpenSettings();
   else if (t === 'help') voOpenHelp();
   else if (t === 'ask') voOpenAsk();
@@ -102,6 +103,7 @@ var VO_HELP = {
   'Auto-send connection requests': 'Lets the worker send LinkedIn connection requests on its own, within the caps in Settings, for the top priorities only.',
   'Parked': 'Scored below the campaign minimum, kept for later. Brands whose Meta signals are too weak to ever reach the priority cut-off are parked without the paid company lookup, so they cost a fraction of a penny.',
   'DM active 90d': 'Did this person post or comment on LinkedIn in the last 90 days? The worker checks it through the LinkedIn connector before any request goes out: Y earns 8 points and goes to the front of the queue, N is held back (people who never open LinkedIn never accept). Set it to Y by hand to send anyway.',
+  'Daily report table': 'Left block: what happened on each UK day (brands found, connection requests sent, acceptances, videos sent, follow-ups, replies, positive replies, requests withdrawn after 21 days). Right block: what has become of the requests sent THAT day since then (accepted so far, still awaiting an answer, withdrawn) and the acceptance rate, so you can compare days fairly. Click a day for the brand names. Nothing is deleted, so Show more goes back to the first day of outreach.',
   'Marked not relevant': 'Every lead you took off Ready to send with Not relevant, grouped by the reason you picked. When one reason keeps coming up, that is a sign the search or the scoring should change (for example a keyword that pulls in the wrong kind of business).',
   'Product in the video': 'SitePounce fills in the product it picked. If the video shows a different product, type its name (for example Revenge Stringer) and click anywhere else: the message is rebuilt with that name. If you already edited the message by hand it is left alone, so change the name in the text yourself. Send always waits for this to finish.',
   'Send the video as': 'Attachment (default): the video file is pulled from the link you paste (a video page link or a direct .mp4) or uploaded from your computer, checked for size, and sent inside the LinkedIn message so it plays in the thread with nothing to click. Link: the message carries the link instead. Videos must be under 20 MB to attach; an uploaded file over that is compressed in your browser first (H.264, sound kept, about a minute for a 30 second clip). Each card can override the choice.',
@@ -703,6 +705,52 @@ function voRenderDetail(d) {
   el.querySelectorAll('.vo-sim').forEach((b) => b.addEventListener('click', async () => { try { await voApi('simulate', { id: p.id, what: b.dataset.what }); voToast('Simulated ' + b.dataset.what); await refresh(); } catch (e) { voStatus(e.message, 'err'); } }));
 }
 
+// ---- Reports: one row per UK day, newest first, last 31 days with Show more for older history ----
+const VO_REP = { days: [], first: null };
+function voRepIso(d) { return d.toISOString().slice(0, 10); }
+async function voOpenReports() {
+  const el = $('vo-pane-reports'); voPane('reports'); el.innerHTML = '<p class="muted">Loading…</p>';
+  VO_REP.days = [];
+  try { const d = await voApi('dailyLedger', {}); VO_REP.days = d.days || []; VO_REP.first = d.first; } catch (e) { el.innerHTML = '<p class="vo-no">' + esc(e.message) + '</p>'; return; }
+  voRenderReports();
+}
+async function voReportsMore() {
+  const oldest = VO_REP.days.length ? VO_REP.days[VO_REP.days.length - 1].day : voRepIso(new Date());
+  const to = voRepIso(new Date(new Date(oldest + 'T12:00:00Z').getTime() - 86400000));
+  const from = voRepIso(new Date(new Date(to + 'T12:00:00Z').getTime() - 30 * 86400000));
+  const btn = $('vo-rep-more'); if (btn) { btn.disabled = true; btn.textContent = 'Loading…'; }
+  try { const d = await voApi('dailyLedger', { from: from, to: to }); VO_REP.days = VO_REP.days.concat(d.days || []); VO_REP.first = d.first || VO_REP.first; } catch (e) { voStatus(e.message, 'err'); }
+  voRenderReports();
+}
+function voRenderReports() {
+  const el = $('vo-pane-reports'); const days = VO_REP.days;
+  const sum = (k) => days.reduce((a, d) => a + (Number(d[k]) || 0), 0);
+  const pct = (a, b) => (b ? Math.round(100 * a / b) + '%' : '-');
+  const n = (v) => (v ? '<b>' + v + '</b>' : '<span class="muted">0</span>');
+  const wk = (day) => { const g = new Date(day + 'T12:00:00Z').getUTCDay(); return g === 0 || g === 6; };
+  const label = (day) => new Date(day + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: '2-digit' });
+  const oldest = days.length ? days[days.length - 1].day : null;
+  const more = VO_REP.first && oldest && oldest > VO_REP.first;
+  const row = (d, i) => '<tr class="vo-rep-row' + (wk(d.day) ? ' vo-rep-wk' : '') + '" data-i="' + i + '"><td class="nowrap"><span class="vo-rep-caret">▸</span> ' + esc(label(d.day)) + '</td><td>' + n(d.found) + '</td><td>' + n(d.requests) + '</td><td>' + n(d.accepted) + '</td><td>' + n(d.videos) + '</td><td>' + n(d.followups) + '</td><td>' + n(d.replies) + '</td><td>' + n(d.positive) + '</td><td>' + n(d.withdrawn) + '</td>' +
+    '<td class="vo-rep-c">' + (d.c_sent ? n(d.c_accepted) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c">' + (d.c_sent ? n(d.c_awaiting) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c">' + (d.c_sent ? n(d.c_withdrawn) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c">' + (d.c_sent ? pct(d.c_accepted, d.c_sent) : '<span class="muted">-</span>') + '</td></tr>' +
+    '<tr class="vo-rep-detail hidden" data-for="' + i + '"><td colspan="13">' + (['requests', 'accepted', 'videos', 'followups', 'replies'].map((k) => d.brands && d.brands[k] ? '<div><b>' + ({ requests: 'Requests sent to', accepted: 'Accepted', videos: 'Videos sent to', followups: 'Follow-ups sent to', replies: 'Replies from' })[k] + ':</b> ' + esc(d.brands[k]) + '</div>' : '').join('') || '<span class="muted">Nothing happened this day.</span>') + '</td></tr>';
+  el.innerHTML = '<div class="vo-bar"><div><h3 style="margin:0">Reports' + voHelp('Daily report table') + '</h3><p class="muted view-sub" style="margin:2px 0 0">Day by day, newest first (UK dates). Click a day to see the brand names. Weekends are shaded.</p></div><div><button class="ghost sm" id="vo-rep-csv">⬇ Download CSV</button> <button class="ghost sm" id="vo-rep-refresh">Refresh</button></div></div>' +
+    '<div class="vo-fit"><table class="cust-table vo-table vo-rep"><thead>' +
+    '<tr class="vo-rep-group"><th></th><th colspan="8">What happened that day</th><th colspan="4" class="vo-rep-c">That day\'s requests, now</th></tr>' +
+    '<tr><th>Day</th><th>Brands found</th><th>Requests sent</th><th>Accepted</th><th>Videos sent</th><th>Follow-ups</th><th>Replies</th><th>Positive</th><th>Withdrawn</th><th class="vo-rep-c">Accepted so far</th><th class="vo-rep-c">Still awaiting</th><th class="vo-rep-c">Withdrawn</th><th class="vo-rep-c">Acceptance rate</th></tr>' +
+    '<tr class="vo-rep-total"><td><b>Total, ' + days.length + ' days</b></td><td>' + sum('found') + '</td><td>' + sum('requests') + '</td><td>' + sum('accepted') + '</td><td>' + sum('videos') + '</td><td>' + sum('followups') + '</td><td>' + sum('replies') + '</td><td>' + sum('positive') + '</td><td>' + sum('withdrawn') + '</td><td class="vo-rep-c">' + sum('c_accepted') + '</td><td class="vo-rep-c">' + sum('c_awaiting') + '</td><td class="vo-rep-c">' + sum('c_withdrawn') + '</td><td class="vo-rep-c">' + pct(sum('c_accepted'), sum('c_sent')) + '</td></tr>' +
+    '</thead><tbody>' + days.map(row).join('') + '</tbody></table></div>' +
+    '<div style="margin-top:10px">' + (more ? '<button class="ghost sm" id="vo-rep-more">Show the 31 days before ' + esc(label(oldest)) + '</button>' : '<span class="muted vo-small">' + (VO_REP.first ? 'That is everything: outreach started on ' + esc(label(VO_REP.first)) + '.' : '') + '</span>') + '</div>';
+  el.querySelectorAll('.vo-rep-row').forEach((tr) => tr.addEventListener('click', () => { const det = el.querySelector('.vo-rep-detail[data-for="' + tr.dataset.i + '"]'); if (det) { det.classList.toggle('hidden'); tr.classList.toggle('open'); } }));
+  voOn('vo-rep-more', 'click', voReportsMore);
+  voOn('vo-rep-refresh', 'click', voOpenReports);
+  voOn('vo-rep-csv', 'click', () => {
+    const head = ['Day', 'Brands found', 'Requests sent', 'Accepted', 'Videos sent', 'Follow-ups', 'Replies', 'Positive', 'Withdrawn', 'That day: accepted so far', 'That day: still awaiting', 'That day: withdrawn', 'That day: acceptance rate', 'Requests sent to', 'Accepted', 'Videos sent to', 'Replies from'];
+    const q = (v) => { v = String(v == null ? '' : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    const lines = [head.join(',')].concat(days.map((d) => [d.day, d.found, d.requests, d.accepted, d.videos, d.followups, d.replies, d.positive, d.withdrawn, d.c_accepted, d.c_awaiting, d.c_withdrawn, d.c_sent ? pct(d.c_accepted, d.c_sent) : '', d.brands.requests, d.brands.accepted, d.brands.videos, d.brands.replies].map(q).join(',')));
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/csv' })); a.download = 'video-outreach-daily-' + (oldest || '') + '-to-' + (days[0] ? days[0].day : '') + '.csv'; document.body.appendChild(a); a.click(); a.remove();
+  });
+}
 // ---- Sent: every video and follow-up that went out, then the follow-ups booked next ----
 async function voOpenSent() {
   const el = $('vo-pane-sent'); voPane('sent'); el.innerHTML = '<p class="muted">Loading…</p>';

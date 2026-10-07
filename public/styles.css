@@ -1958,3 +1958,16 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .dd-filtered { margin-top: 12px; font-size: 13px; }
 .dd-filtered summary { cursor: pointer; font-weight: 600; }
 .dd-filtered-body { margin-top: 8px; max-height: 320px; overflow: auto; }
+
+/* Video Outreach: Reports tab (7 Oct 2026) */
+.vo-rep td, .vo-rep th { text-align: center; padding: 6px 7px; font-size: 13px; }
+.vo-rep td:first-child, .vo-rep th:first-child { text-align: left; }
+.vo-rep-group th { background: #f3f6fa; font-size: 12px; color: #4a5568; }
+.vo-rep-c { background: #f7fbfa; }
+.vo-rep-total td { background: #eef8f7; font-weight: 700; }
+.vo-rep-row { cursor: pointer; }
+.vo-rep-row:hover td { background: #fffbea; }
+.vo-rep-wk td { background: #fafafa; color: #7a8594; }
+.vo-rep-caret { display: inline-block; transition: transform .15s; color: #9aa5b1; }
+.vo-rep-row.open .vo-rep-caret { transform: rotate(90deg); }
+.vo-rep-detail td { text-align: left !important; font-size: 12.5px; background: #fcfcfd; line-height: 1.6; }

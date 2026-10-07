@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.78",
+    "date": "2026-10-07",
+    "notes": [
+      "New Reports tab in Video Outreach: a day-by-day table of connection requests, acceptances, videos sent, follow-ups and replies, plus what became of each day's requests. Last 31 days by default, Show more for older days, click a day to see the brands, and download as CSV."
+    ]
+  },
+  {
     "version": "1.5.77",
     "date": "2026-10-07",
     "notes": [

@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.78 (7 Oct 2026)
+- Video Outreach Reports tab: one row per UK day, newest first, last 31 days with Show more back to the first day of outreach. What happened (found, requests, accepted, videos, follow-ups, replies, positive, withdrawn) and what became of that day's requests (accepted so far, awaiting, withdrawn, rate); click a day for the brand names; totals row; CSV download. `db.dailyLedger`, action dailyLedger.
+
 ## 1.5.77 (7 Oct 2026)
 - Connection requests stalled from 1 to 7 Oct: requests withdrawn after 21 days put the person back in the queue, LinkedIn refused the repeat ("Should delay new invitation to this recipient") and the send step stopped at that refusal every tick. Now nobody is invited twice (the queue skips anyone with a Connection Applied or withdrawn event) and a refusal about one person parks them with the reason and the next one is tried; only account-wide errors stop the round.
 

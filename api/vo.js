@@ -202,6 +202,12 @@ module.exports = async (req, res) => {
     }
     if (action === 'notRelevant') { res.status(200).json(await db.markNotRelevant(owner, actor, id, String(body.reason || ''), body.note)); return; }
     if (action === 'notRelevantStats') { res.status(200).json({ reasons: db.NOT_RELEVANT_REASONS, rows: await db.notRelevantStats(owner) }); return; }
+    if (action === 'dailyLedger') {
+      const iso = (d) => d.toISOString().slice(0, 10);
+      const to = /^\d{4}-\d{2}-\d{2}$/.test(String(body.to || '')) ? body.to : iso(new Date());
+      const from = /^\d{4}-\d{2}-\d{2}$/.test(String(body.from || '')) ? body.from : iso(new Date(new Date(to + 'T12:00:00Z').getTime() - 30 * 86400000));
+      res.status(200).json(await db.dailyLedger(owner, from, to)); return;
+    }
     if (action === 'readyToSend') { const rows = (await db.readyToSend(owner)).map((p) => Object.assign(p, { product_label: p.suggested_product_name ? M.shortProduct(p.suggested_product_name) : '' })); res.status(200).json({ prospects: rows, providers: providers(), linkedin: await db.linkedinSettings() }); return; }
     if (action === 'linkedinSend') { res.status(200).json(await J.linkedinSend(owner, actor, id, body.url, body.text, { mode: body.mode })); return; }
     if (action === 'checkVideo') { res.status(200).json(await require('../lib/vo-video').resolveVideo(body.url)); return; }
