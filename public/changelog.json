@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.70",
+    "date": "2026-10-07",
+    "notes": [
+      "The LinkedIn activity check now looks at comments as well as posts, so someone who comments often but rarely posts counts as active."
+    ]
+  },
+  {
     "version": "1.5.69",
     "date": "2026-10-07",
     "notes": [

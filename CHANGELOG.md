@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.70 (7 Oct 2026)
+- LinkedIn activity reads posts AND comments and keeps the newest (comments were only read when someone had never posted), for the Video Outreach activity gate and activityCheck.
+
 ## 1.5.69 (7 Oct 2026)
 - New owner-alert text endpoint (`/api/alert-sms`) so Ajay's other sites can text his alert mobile through the SitePounce Twilio number. Locked by a shared secret, recipients fixed server side, 320 characters max. First user: Automation Growth Lab's free-setup requests.
 
