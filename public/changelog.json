@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.76",
+    "date": "2026-10-07",
+    "notes": [
+      "Ready to send: each lead now has a 'Get contact details' button. Press it to look up the decision maker's verified email and phone from Apollo (founder or CEO first, then a marketing lead), saved onto the card. It only runs when you press it, so it spends credits on purpose. Mobiles can take a few minutes to come back from Apollo."
+    ]
+  },
+  {
     "version": "1.5.75",
     "date": "2026-10-07",
     "notes": [

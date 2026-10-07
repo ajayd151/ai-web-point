@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.76 (7 Oct 2026)
+- Ready to send: a "Get contact details" button on each lead. On press it looks up the decision maker's verified email and phone from Apollo (founder/CEO first, then a marketing lead) and saves them onto the card. It only runs when you press it, so credits are spent on purpose. Mobiles can take a few minutes to arrive from Apollo.
+
 ## 1.5.75 (7 Oct 2026)
 - Help flowchart: split "Run" into two real steps, "Find brands" (pulls from Meta) and "Analyse & draft" (scores, reads the site, picks the product, writes the messages).
 

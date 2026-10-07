@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
   // Team members reach only what the owner ticked: Ready to send actions, the whole module, or Settings.
   const lvl = voLevel(acct);
   const SETTINGS_ACTIONS = ['activityCheck', 'saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
-  const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'notRelevant', 'notRelevantStats', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config'];
+  const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'notRelevant', 'notRelevantStats', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config', 'getContact'];
   const actionName = String((req.body && req.body.action) || (typeof req.body === 'string' ? (JSON.parse(req.body || '{}').action || '') : ''));
   if (SETTINGS_ACTIONS.includes(actionName) && !lvl.settings) { res.status(403).json({ error: 'Not allowed: Video Outreach settings are for the owner, or a member with the Settings permission.' }); return; }
   if (!lvl.all && !SETTINGS_ACTIONS.includes(actionName) && !READY_ACTIONS.includes(actionName)) { res.status(403).json({ error: 'Not allowed: your permission covers Ready to send only.' }); return; }
@@ -247,6 +247,23 @@ module.exports = async (req, res) => {
     if (action === 'faqExtra') { res.status(200).json({ faq: await db.faqExtra() }); return; }
     if (action === 'markQuestion') { await db.markQuestion(owner, id, { helpful: body.helpful }); res.status(200).json({ ok: true }); return; }
     if (action === 'findPerson') { const p = await db.getProspect(owner, id); if (!p) { res.status(404).json({ error: 'Prospect not found' }); return; } res.status(200).json(await J.findPersonOnLinkedIn(owner, actor, p)); return; }
+    if (action === 'getContact') {
+      // On demand (one button press): reveal the decision maker's verified email + phone from Apollo for one
+      // brand. Only runs when pressed, so credits are spent on purpose. Saves what it finds onto the prospect.
+      const p = await db.getProspect(owner, id); if (!p) { res.status(404).json({ error: 'Prospect not found' }); return; }
+      const domain = S.domainOf(p.website || p.domain || '');
+      if (!domain) { res.status(200).json({ ok: false, error: 'No website for this brand, so there is nothing to look up.' }); return; }
+      const c = await S.apolloBestContact(domain);
+      const fields = {};
+      if (c.name) fields.dm_name = c.name;
+      if (c.title) fields.dm_title = c.title;
+      if (c.linkedin) fields.dm_linkedin = c.linkedin;
+      if (c.email) fields.dm_email = c.email;
+      if (c.phone) fields.dm_phone = c.phone;
+      const prospect = Object.keys(fields).length ? await db.updateProspect(owner, actor, id, fields) : p;
+      res.status(200).json({ ok: true, contact: c, prospect });
+      return;
+    }
     if (action === 'funnel') { res.status(200).json({ funnel: await db.funnelData(owner, body.from || null, body.to || null) }); return; }
     if (action === 'report') { res.status(200).json({ report: await db.reportData(owner) }); return; }
     if (action === 'sendReportNow') { res.status(200).json(await J.dailyReport(owner, actor, base, true)); return; }
