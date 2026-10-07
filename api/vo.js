@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
   const actor = emailOf(req) || acct.email;
   // Team members reach only what the owner ticked: Ready to send actions, the whole module, or Settings.
   const lvl = voLevel(acct);
-  const SETTINGS_ACTIONS = ['saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
+  const SETTINGS_ACTIONS = ['activityCheck', 'saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
   const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config'];
   const actionName = String((req.body && req.body.action) || (typeof req.body === 'string' ? (JSON.parse(req.body || '{}').action || '') : ''));
   if (SETTINGS_ACTIONS.includes(actionName) && !lvl.settings) { res.status(403).json({ error: 'Not allowed: Video Outreach settings are for the owner, or a member with the Settings permission.' }); return; }
@@ -185,6 +185,21 @@ module.exports = async (req, res) => {
     // ---- LinkedIn automation (Phase 5) ----
     if (action === 'demoReady') { const p = await db.createDemoReady(owner, actor); res.status(200).json({ ok: true, prospect: p }); return; }
     if (action === 'removeDemo') { res.status(200).json({ ok: true, removed: await db.removeDemo(owner) }); return; }
+    // Proof of concept for a client brief (7 Oct 2026): how recently is each of these LinkedIn profiles active?
+    // Owner only (Settings level), max 15 links a call, one profile view and up to two list calls each.
+    if (action === 'activityCheck') {
+      const P = L.provider(); if (!P || !P.configured()) { res.status(400).json({ error: 'LinkedIn provider not configured' }); return; }
+      const urls = (Array.isArray(body.urls) ? body.urls : []).map(String).filter((u) => L.personProfile(u)).slice(0, 15);
+      const out = [];
+      for (const u of urls) {
+        try {
+          const who = await P.lookup(u); const act = await P.activity(who.provider_id);
+          const days = act.last_at ? Math.floor((Date.now() - new Date(act.last_at)) / 86400000) : null;
+          out.push({ url: u, name: who.name, headline: who.headline, connections: who.connections, followers: who.followers, last_at: act.last_at, kind: act.kind, days_since: days, active_90d: L.activeSince(act.last_at) });
+        } catch (e) { out.push({ url: u, error: String(e.message || e).slice(0, 160) }); }
+      }
+      res.status(200).json({ ok: true, people: out }); return;
+    }
     if (action === 'readyToSend') { const rows = (await db.readyToSend(owner)).map((p) => Object.assign(p, { product_label: p.suggested_product_name ? M.shortProduct(p.suggested_product_name) : '' })); res.status(200).json({ prospects: rows, providers: providers(), linkedin: await db.linkedinSettings() }); return; }
     if (action === 'linkedinSend') { res.status(200).json(await J.linkedinSend(owner, actor, id, body.url, body.text, { mode: body.mode })); return; }
     if (action === 'checkVideo') { res.status(200).json(await require('../lib/vo-video').resolveVideo(body.url)); return; }

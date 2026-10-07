@@ -3,6 +3,13 @@
     "version": "1.5.69",
     "date": "2026-10-07",
     "notes": [
+      "Behind the scenes: SitePounce can now check how recently any LinkedIn profile has posted or commented. It is used for a client proof of concept; a screen for it in Deep Dossier comes later."
+    ]
+  },
+  {
+    "version": "1.5.69",
+    "date": "2026-10-07",
+    "notes": [
       "Behind the scenes: Automation Growth Lab can now text Ajay's alert mobile through the SitePounce number, for example when someone asks for the free setup. Nothing in the SitePounce app changes."
     ]
   },
