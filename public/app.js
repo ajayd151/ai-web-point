@@ -2427,7 +2427,7 @@ async function ddRun() {
     }
     status.textContent = (ddRows.length + ' record(s)') + (m.linkedinMode ? ' from ' + m.linkedinChecked + ' LinkedIn profiles checked' : '') + (m.poolTotal ? ' · pool of ' + Number(m.poolTotal).toLocaleString('en-GB') + ' matching people' : '') + (m.cached ? ' · cached (no charge)' : (m.costGbp != null ? ' · est. £' + m.costGbp.toFixed(2) : '')) + (m.msTotal ? ' · ' + (m.msTotal / 1000).toFixed(1) + 's' : '') + (m.apolloError ? ' · Apollo said: ' + m.apolloError : '');
     if (!ddRows.length && !m.mock) status.textContent += ' · Nothing matched: try broader keywords, a bigger size band or fewer job titles.';
-    if (m.phoneRun && m.phoneRun.runId && !m.cached) ddPollPhones(m.phoneRun.runId, 0);
+    if (m.phoneRun && m.phoneRun.runId) ddPollPhones(m.phoneRun.runId, 0); // a cached re-run reads the phones Apollo already delivered for that run
   } catch (e) {
     status.textContent = 'Network error, please retry.';
   } finally {
