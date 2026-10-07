@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.85",
+    "date": "2026-10-07",
+    "notes": [
+      "Replies are read more strictly: a simple thank you, or someone selling us their own services, no longer counts as a positive reply.",
+      "Article and quiz pages from a brand's ads are no longer picked as the product to film."
+    ]
+  },
+  {
     "version": "1.5.84",
     "date": "2026-10-07",
     "notes": [

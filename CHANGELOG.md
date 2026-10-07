@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.85 (7 Oct 2026)
+- Reply reading: Positive only for real interest in our videos; a bare thank you is Neutral and a reply pitching their own services is Neutral. Settings action reclassifyReplies re-reads every stored reply.
+- Article, quiz and listicle pages linked from ads ("10 Reasons This Protocol Is...") are never picked as the product.
+
 ## 1.5.84 (7 Oct 2026)
 - Reports: every number (and the totals row) opens All prospects showing exactly those leads, with a Messages column (request note, video message, last follow-up, their reply) and Back to Reports; dailyLedger returns the prospect ids per cell, listProspects takes ids. A help bubble on every column heading explains it.
 

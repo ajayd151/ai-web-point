@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
   const actor = emailOf(req) || acct.email;
   // Team members reach only what the owner ticked: Ready to send actions, the whole module, or Settings.
   const lvl = voLevel(acct);
-  const SETTINGS_ACTIONS = ['senders', 'senderLink', 'senderAdd', 'senderSave', 'activityCheck', 'saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
+  const SETTINGS_ACTIONS = ['reclassifyReplies', 'senders', 'senderLink', 'senderAdd', 'senderSave', 'activityCheck', 'saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
   const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'notRelevant', 'notRelevantStats', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config', 'getContact'];
   const actionName = String((req.body && req.body.action) || (typeof req.body === 'string' ? (JSON.parse(req.body || '{}').action || '') : ''));
   if (SETTINGS_ACTIONS.includes(actionName) && !lvl.settings) { res.status(403).json({ error: 'Not allowed: Video Outreach settings are for the owner, or a member with the Settings permission.' }); return; }
@@ -258,6 +258,16 @@ module.exports = async (req, res) => {
         daily_requests: lim(body.daily_requests, 20), weekly_requests: Math.max(0, Math.min(Number(body.weekly_requests) || 100, 150)) }));
       await db.setConfig('linkedin', Object.assign({}, s, { senders: list }));
       res.status(200).json({ ok: true }); return;
+    }
+    // re-read every stored reply with the current rules (7 Oct 2026: a "thanks" and a PR agency pitch had been counted Positive)
+    if (action === 'reclassifyReplies') {
+      const rows = (await db.listProspects(owner, { includeDisqualified: true })).filter((p) => p.last_reply_text);
+      const changed = [];
+      for (const p of rows) {
+        const cls = await S.classifyReply(p.last_reply_text, { brand: p.brand });
+        if (cls.sentiment && cls.sentiment !== p.reply_sentiment) { await db.updateReplyReading(p.id, cls.sentiment, cls.summary); changed.push({ brand: p.brand, from: p.reply_sentiment, to: cls.sentiment, summary: cls.summary }); }
+      }
+      res.status(200).json({ ok: true, checked: rows.length, changed: changed }); return;
     }
     if (action === 'readyToSend') { const rows = (await db.readyToSend(owner)).map((p) => Object.assign(p, { product_label: p.suggested_product_name ? M.shortProduct(p.suggested_product_name) : '' })); res.status(200).json({ prospects: rows, providers: providers(), linkedin: await db.linkedinSettings() }); return; }
     if (action === 'linkedinSend') { res.status(200).json(await J.linkedinSend(owner, actor, id, body.url, body.text, { mode: body.mode })); return; }
