@@ -1924,11 +1924,12 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 
 /* Ready to send: uploaded videos on a card (4 Oct 2026) */
 .vo-vids { margin: 2px 0 6px; }
-.vo-vid { display: flex; gap: 12px; align-items: center; padding: 8px; margin: 4px 0; border: 1px solid #e3e8ef; border-radius: 10px; background: #fff; max-width: 560px; }
+.vo-vid { display: flex; gap: 14px; align-items: flex-start; padding: 10px; margin: 6px 0; border: 1px solid #e3e8ef; border-radius: 12px; background: #fff; max-width: 600px; }
 .vo-vid.current { border-color: var(--brand); background: #effaf8; }
-.vo-vid video { width: 160px; height: 90px; object-fit: cover; border-radius: 6px; background: #111; flex: none; }
+/* Show the WHOLE video, never a cropped slice: keep its own shape (portrait videos stay upright). */
+.vo-vid video { width: 160px; height: auto; max-height: 300px; object-fit: contain; border-radius: 8px; background: #0d1512; flex: none; }
 .vo-vid-meta { font-size: 13px; }
-@media (max-width: 560px) { .vo-vid { flex-direction: column; align-items: flex-start; } .vo-vid video { width: 100%; height: auto; } }
+@media (max-width: 560px) { .vo-vid { flex-direction: column; align-items: flex-start; } .vo-vid video { width: 100%; max-width: 230px; margin: 0 auto; height: auto; } }
 .vo-prodline { margin: 6px 0; }
 .vo-prodline input { width: 320px; max-width: 70%; font-weight: 600; }
 .vo-nr-panel { margin: 0 0 8px; padding: 10px 12px; border: 1px solid #f1c9c9; background: #fff6f6; border-radius: 10px; font-size: 13.5px; }

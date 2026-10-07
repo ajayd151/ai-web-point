@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.73",
+    "date": "2026-10-07",
+    "notes": [
+      "Ready to send: your uploaded videos now show the whole video upright and larger, instead of a cropped slice. Portrait videos were being chopped into a small landscape box."
+    ]
+  },
+  {
     "version": "1.5.72",
     "date": "2026-10-07",
     "notes": [
