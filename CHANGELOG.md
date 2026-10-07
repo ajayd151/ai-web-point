@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.82 (7 Oct 2026)
+- Reports table fits the page without sideways scrolling: shorter headings (Requests, Videos, Accepted, Waiting, Rate), tighter cells, day labels without the year.
+
 ## 1.5.81 (7 Oct 2026)
 - Left menu: 📅 Reports under Video Outreach (above Ask AI) opens the daily report table straight away; #vo-reports deep link.
 

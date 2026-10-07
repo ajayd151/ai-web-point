@@ -729,7 +729,7 @@ function voRenderReports() {
   const pct = (a, b) => (b ? Math.round(100 * a / b) + '%' : '-');
   const n = (v) => (v ? '<b>' + v + '</b>' : '<span class="muted">0</span>');
   const wk = (day) => { const g = new Date(day + 'T12:00:00Z').getUTCDay(); return g === 0 || g === 6; };
-  const label = (day) => new Date(day + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: '2-digit' });
+  const label = (day) => new Date(day + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   const oldest = days.length ? days[days.length - 1].day : null;
   const more = VO_REP.first && oldest && oldest > VO_REP.first;
   const row = (d, i) => '<tr class="vo-rep-row' + (wk(d.day) ? ' vo-rep-wk' : '') + '" data-i="' + i + '"><td class="nowrap"><span class="vo-rep-caret">▸</span> ' + esc(label(d.day)) + '</td><td>' + n(d.found) + '</td><td>' + n(d.requests) + '</td><td>' + n(d.accepted) + '</td><td>' + n(d.videos) + '</td><td>' + n(d.followups) + '</td><td>' + n(d.replies) + '</td><td>' + n(d.positive) + '</td><td>' + n(d.withdrawn) + '</td>' +
@@ -738,7 +738,7 @@ function voRenderReports() {
   el.innerHTML = '<div class="vo-bar"><div><h3 style="margin:0">Reports' + voHelp('Daily report table') + '</h3><p class="muted view-sub" style="margin:2px 0 0">Day by day, newest first (UK dates). Click a day to see the brand names. Weekends are shaded.</p></div><div><button class="ghost sm" id="vo-rep-csv">⬇ Download CSV</button> <button class="ghost sm" id="vo-rep-refresh">Refresh</button></div></div>' +
     '<div class="vo-fit"><table class="cust-table vo-table vo-rep"><thead>' +
     '<tr class="vo-rep-group"><th></th><th colspan="8">What happened that day</th><th colspan="4" class="vo-rep-c">That day\'s requests, now</th></tr>' +
-    '<tr><th>Day</th><th>Brands found</th><th>Requests sent</th><th>Accepted</th><th>Videos sent</th><th>Follow-ups</th><th>Replies</th><th>Positive</th><th>Withdrawn</th><th class="vo-rep-c">Accepted so far</th><th class="vo-rep-c">Still awaiting</th><th class="vo-rep-c">Withdrawn</th><th class="vo-rep-c">Acceptance rate</th></tr>' +
+    '<tr><th>Day</th><th>Brands found</th><th>Requests</th><th>Accepted</th><th>Videos</th><th>Follow-ups</th><th>Replies</th><th>Positive</th><th>Withdrawn</th><th class="vo-rep-c">Accepted</th><th class="vo-rep-c">Waiting</th><th class="vo-rep-c">Withdrawn</th><th class="vo-rep-c">Rate</th></tr>' +
     '<tr class="vo-rep-total"><td><b>Total, ' + days.length + ' days</b></td><td>' + sum('found') + '</td><td>' + sum('requests') + '</td><td>' + sum('accepted') + '</td><td>' + sum('videos') + '</td><td>' + sum('followups') + '</td><td>' + sum('replies') + '</td><td>' + sum('positive') + '</td><td>' + sum('withdrawn') + '</td><td class="vo-rep-c">' + sum('c_accepted') + '</td><td class="vo-rep-c">' + sum('c_awaiting') + '</td><td class="vo-rep-c">' + sum('c_withdrawn') + '</td><td class="vo-rep-c">' + pct(sum('c_accepted'), sum('c_sent')) + '</td></tr>' +
     '</thead><tbody>' + days.map(row).join('') + '</tbody></table></div>' +
     '<div style="margin-top:10px">' + (more ? '<button class="ghost sm" id="vo-rep-more">Show the 31 days before ' + esc(label(oldest)) + '</button>' : '<span class="muted vo-small">' + (VO_REP.first ? 'That is everything: outreach started on ' + esc(label(VO_REP.first)) + '.' : '') + '</span>') + '</div>';

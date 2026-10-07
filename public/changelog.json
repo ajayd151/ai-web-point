@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.82",
+    "date": "2026-10-07",
+    "notes": [
+      "The Reports table now fits on screen without scrolling sideways."
+    ]
+  },
+  {
     "version": "1.5.81",
     "date": "2026-10-07",
     "notes": [
