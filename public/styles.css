@@ -1975,3 +1975,19 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-rep-row.open .vo-rep-caret { transform: rotate(90deg); }
 .vo-rep-detail td { text-align: left !important; font-size: 12.5px; background: #fcfcfd; line-height: 1.6; }
 .vo-sender-chip { background: #fff4e0; color: #8a5a00; border-radius: 999px; padding: 1px 8px; font-weight: 700; }
+
+/* Reports traffic lights + Today scorecard (7 Oct 2026) */
+.vo-rep td.vo-good, .vo-rep td.vo-good b { color: #0f7a3d; font-weight: 800; }
+.vo-rep td.vo-good { background: #e8f7ee !important; }
+.vo-rep td.vo-bad, .vo-rep td.vo-bad b, .vo-rep td.vo-bad .muted { color: #c0262d; font-weight: 800; }
+.vo-rep td.vo-bad { background: #fdecec !important; }
+.vo-scores { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 10px 0 12px; }
+.vo-score { border: 1px solid #e3e8ef; border-radius: 12px; padding: 10px 12px; background: #fff; }
+.vo-score.good { border-color: #9fdcb7; background: #effaf3; }
+.vo-score.bad { border-color: #f1b2b2; background: #fff3f3; }
+.vo-score-n { font-size: 24px; font-weight: 800; color: #15233B; }
+.vo-score.good .vo-score-n { color: #0f7a3d; } .vo-score.bad .vo-score-n { color: #c0262d; }
+.vo-score-n span { font-size: 14px; color: #8a94a3; font-weight: 600; margin-left: 2px; }
+.vo-score-l { font-size: 12.5px; font-weight: 700; margin-top: 2px; }
+.vo-score-h { font-size: 11.5px; color: #8a94a3; }
+@media (max-width: 700px) { .vo-scores { grid-template-columns: repeat(2, 1fr); } }

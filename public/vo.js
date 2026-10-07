@@ -104,7 +104,7 @@ var VO_HELP = {
   'Parked': 'Scored below the campaign minimum, kept for later. Brands whose Meta signals are too weak to ever reach the priority cut-off are parked without the paid company lookup, so they cost a fraction of a penny.',
   'DM active 90d': 'Did this person post or comment on LinkedIn in the last 90 days? The worker checks it through the LinkedIn connector before any request goes out: Y earns 8 points and goes to the front of the queue, N is held back (people who never open LinkedIn never accept). Set it to Y by hand to send anyway.',
   'LinkedIn senders': 'Every LinkedIn account that sends connection requests. They share one queue (never the same person twice), each with their own daily and weekly cap and a random 10 to 30 minute gap. Whoever sent the request also sends the video message and the follow-ups to that person, signed with their own first name. Use Connect another LinkedIn to add someone: they get a Unipile sign-in link and their password never comes to SitePounce. Untick On to pause a sender; their existing contacts still get follow-ups from their account.',
-  'Daily report table': 'Left block: what happened on each UK day (brands found, connection requests sent, acceptances, videos sent, follow-ups, replies, positive replies, requests withdrawn after 21 days). Right block: what has become of the requests sent THAT day since then (accepted so far, still awaiting an answer, withdrawn) and the acceptance rate, so you can compare days fairly. Click a day for the brand names. Nothing is deleted, so Show more goes back to the first day of outreach.',
+  'Daily report table': 'Bold green = on target, bold red = a problem to act on (weekdays only; weekends stay neutral). Targets: requests 90% of every sender\'s daily cap (red under half), acceptances 20% of that, brands found one day of sending (red at none), videos red when people are waiting and none went out. Left block: what happened on each UK day (brands found, connection requests sent, acceptances, videos sent, follow-ups, replies, positive replies, requests withdrawn after 21 days). Right block: what has become of the requests sent THAT day since then (accepted so far, still awaiting an answer, withdrawn) and the acceptance rate, so you can compare days fairly. Click a day for the brand names. Nothing is deleted, so Show more goes back to the first day of outreach.',
   'Marked not relevant': 'Every lead you took off Ready to send with Not relevant, grouped by the reason you picked. When one reason keeps coming up, that is a sign the search or the scoring should change (for example a keyword that pulls in the wrong kind of business).',
   'Product in the video': 'SitePounce fills in the product it picked. If the video shows a different product, type its name (for example Revenge Stringer) and click anywhere else: the message is rebuilt with that name. If you already edited the message by hand it is left alone, so change the name in the text yourself. Send always waits for this to finish.',
   'Send the video as': 'Attachment (default): the video file is pulled from the link you paste (a video page link or a direct .mp4) or uploaded from your computer, checked for size, and sent inside the LinkedIn message so it plays in the thread with nothing to click. Link: the message carries the link instead. Videos must be under 20 MB to attach; an uploaded file over that is compressed in your browser first (H.264, sound kept, about a minute for a 30 second clip). Each card can override the choice.',
@@ -707,12 +707,12 @@ function voRenderDetail(d) {
 }
 
 // ---- Reports: one row per UK day, newest first, last 31 days with Show more for older history ----
-const VO_REP = { days: [], first: null };
+const VO_REP = { days: [], first: null, targets: null, waiting: 0 };
 function voRepIso(d) { return d.toISOString().slice(0, 10); }
 async function voOpenReports() {
   const el = $('vo-pane-reports'); voPane('reports'); el.innerHTML = '<p class="muted">Loading…</p>';
   VO_REP.days = [];
-  try { const d = await voApi('dailyLedger', {}); VO_REP.days = d.days || []; VO_REP.first = d.first; } catch (e) { el.innerHTML = '<p class="vo-no">' + esc(e.message) + '</p>'; return; }
+  try { const d = await voApi('dailyLedger', {}); VO_REP.days = d.days || []; VO_REP.first = d.first; VO_REP.targets = d.targets || null; VO_REP.waiting = d.waiting || 0; } catch (e) { el.innerHTML = '<p class="vo-no">' + esc(e.message) + '</p>'; return; }
   voRenderReports();
 }
 async function voReportsMore() {
@@ -732,10 +732,35 @@ function voRenderReports() {
   const label = (day) => new Date(day + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
   const oldest = days.length ? days[days.length - 1].day : null;
   const more = VO_REP.first && oldest && oldest > VO_REP.first;
-  const row = (d, i) => '<tr class="vo-rep-row' + (wk(d.day) ? ' vo-rep-wk' : '') + '" data-i="' + i + '"><td class="nowrap"><span class="vo-rep-caret">▸</span> ' + esc(label(d.day)) + '</td><td>' + n(d.found) + '</td><td>' + n(d.requests) + '</td><td>' + n(d.accepted) + '</td><td>' + n(d.videos) + '</td><td>' + n(d.followups) + '</td><td>' + n(d.replies) + '</td><td>' + n(d.positive) + '</td><td>' + n(d.withdrawn) + '</td>' +
-    '<td class="vo-rep-c">' + (d.c_sent ? n(d.c_accepted) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c">' + (d.c_sent ? n(d.c_awaiting) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c">' + (d.c_sent ? n(d.c_withdrawn) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c">' + (d.c_sent ? pct(d.c_accepted, d.c_sent) : '<span class="muted">-</span>') + '</td></tr>' +
+  // traffic lights against the daily targets (weekdays only; weekends stay neutral): bold red = a problem, bold green = on target
+  const T = VO_REP.targets || { requests: 20, accepted: 4, found: 20, rate: 20 };
+  const back = {}; { let b = 0; days.slice().reverse().forEach((d) => { b = Math.max(0, b + d.accepted - d.videos); back[d.day] = b; }); }
+  const cell = (v, cls) => '<td class="' + (cls || '') + '">' + n(v) + '</td>';
+  const tone = (d, k) => {
+    if (wk(d.day)) return '';
+    const v = Number(d[k]) || 0;
+    if (k === 'requests') return v >= Math.round(T.requests * 0.9) ? 'vo-good' : (v < T.requests / 2 ? 'vo-bad' : '');
+    if (k === 'found') return v >= T.found ? 'vo-good' : (v === 0 ? 'vo-bad' : '');
+    if (k === 'accepted') return v >= T.accepted ? 'vo-good' : (v === 0 ? 'vo-bad' : '');
+    if (k === 'videos') return v > 0 ? 'vo-good' : (back[d.day] > 0 ? 'vo-bad' : '');
+    if (k === 'positive') return v > 0 ? 'vo-good' : '';
+    return '';
+  };
+  const rateTone = (d) => (d.c_sent >= 5 ? (100 * d.c_accepted / d.c_sent >= T.rate ? 'vo-good' : (100 * d.c_accepted / d.c_sent < 10 ? 'vo-bad' : '')) : '');
+  const row = (d, i) => '<tr class="vo-rep-row' + (wk(d.day) ? ' vo-rep-wk' : '') + '" data-i="' + i + '"><td class="nowrap"><span class="vo-rep-caret">▸</span> ' + esc(label(d.day)) + '</td>' + cell(d.found, tone(d, 'found')) + cell(d.requests, tone(d, 'requests')) + cell(d.accepted, tone(d, 'accepted')) + cell(d.videos, tone(d, 'videos')) + cell(d.followups) + cell(d.replies) + cell(d.positive, tone(d, 'positive')) + cell(d.withdrawn) +
+    '<td class="vo-rep-c">' + (d.c_sent ? n(d.c_accepted) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c">' + (d.c_sent ? n(d.c_awaiting) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c">' + (d.c_sent ? n(d.c_withdrawn) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c ' + rateTone(d) + '">' + (d.c_sent ? pct(d.c_accepted, d.c_sent) : '<span class="muted">-</span>') + '</td></tr>' +
     '<tr class="vo-rep-detail hidden" data-for="' + i + '"><td colspan="13">' + (['requests', 'accepted', 'videos', 'followups', 'replies'].map((k) => d.brands && d.brands[k] ? '<div><b>' + ({ requests: 'Requests sent to', accepted: 'Accepted', videos: 'Videos sent to', followups: 'Follow-ups sent to', replies: 'Replies from' })[k] + ':</b> ' + esc(d.brands[k]) + '</div>' : '').join('') || '<span class="muted">Nothing happened this day.</span>') + '</td></tr>';
   el.innerHTML = '<div class="vo-bar"><div><h3 style="margin:0">Reports' + voHelp('Daily report table') + '</h3><p class="muted view-sub" style="margin:2px 0 0">Day by day, newest first (UK dates). Click a day to see the brand names. Weekends are shaded.</p></div><div><button class="ghost sm" id="vo-rep-csv">⬇ Download CSV</button> <button class="ghost sm" id="vo-rep-refresh">Refresh</button></div></div>' +
+    (function () {
+      const td = days[0] || {}; const isWk = td.day && wk(td.day);
+      const tile = (label2, val, target, good, bad, hint) => '<div class="vo-score ' + (good ? 'good' : (bad ? 'bad' : '')) + '"><div class="vo-score-n">' + esc(val) + (target != null ? '<span>/' + esc(target) + '</span>' : '') + '</div><div class="vo-score-l">' + esc(label2) + '</div>' + (hint ? '<div class="vo-score-h">' + esc(hint) + '</div>' : '') + '</div>';
+      return '<div class="vo-scores">' +
+        tile('Requests today', td.requests || 0, T.requests, (td.requests || 0) >= Math.round(T.requests * 0.9), !isWk && (td.requests || 0) < T.requests / 2, T.senders > 1 ? T.senders + ' senders' : '1 sender') +
+        tile('Accepted today', td.accepted || 0, T.accepted, (td.accepted || 0) >= T.accepted, false, 'people accept over 1 to 7 days') +
+        tile('Waiting for a video', VO_REP.waiting, null, VO_REP.waiting === 0, VO_REP.waiting > 0, VO_REP.waiting ? 'the step only you can do' : 'all clear') +
+        tile('Brands found today', td.found || 0, T.found, (td.found || 0) >= T.found, false, 'top-ups keep 2 days queued') +
+        '</div>';
+    })() +
     '<div class="vo-fit"><table class="cust-table vo-table vo-rep"><thead>' +
     '<tr class="vo-rep-group"><th></th><th colspan="8">What happened that day</th><th colspan="4" class="vo-rep-c">That day\'s requests, now</th></tr>' +
     '<tr><th>Day</th><th>Brands found</th><th>Requests</th><th>Accepted</th><th>Videos</th><th>Follow-ups</th><th>Replies</th><th>Positive</th><th>Withdrawn</th><th class="vo-rep-c">Accepted</th><th class="vo-rep-c">Waiting</th><th class="vo-rep-c">Withdrawn</th><th class="vo-rep-c">Rate</th></tr>' +

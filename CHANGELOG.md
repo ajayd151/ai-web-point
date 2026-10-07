@@ -2,6 +2,11 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.83 (7 Oct 2026)
+- Reports: bold green / bold red traffic lights on weekdays against daily targets (requests 90% of every active sender's cap, red under half; acceptances 20% of that; brands found one day of sending, red at none; videos red when people are waiting and none went out; positive replies green; rate green at 20%+, red under 10%), and a Today scorecard (requests, accepted, waiting for a video, brands found).
+- Top-ups keep two days of sending queued (2 x the active senders' daily caps, 12 to 80), up to 2 runs a day per campaign 4 hours apart (was: under 12 queued, 1 a day, 6 hours apart). While sends were stalled the queue never drained, so no brands were found from 23 Sep.
+- Weekday 9am UK text to the alert mobiles listing the connections waiting for a video and how old the oldest is.
+
 ## 1.5.82 (7 Oct 2026)
 - Reports table fits the page without sideways scrolling: shorter headings (Requests, Videos, Accepted, Waiting, Rate), tighter cells, day labels without the year.
 

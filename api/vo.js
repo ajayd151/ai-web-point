@@ -206,7 +206,12 @@ module.exports = async (req, res) => {
       const iso = (d) => d.toISOString().slice(0, 10);
       const to = /^\d{4}-\d{2}-\d{2}$/.test(String(body.to || '')) ? body.to : iso(new Date());
       const from = /^\d{4}-\d{2}-\d{2}$/.test(String(body.from || '')) ? body.from : iso(new Date(new Date(to + 'T12:00:00Z').getTime() - 30 * 86400000));
-      res.status(200).json(await db.dailyLedger(owner, from, to)); return;
+      const led = await db.dailyLedger(owner, from, to);
+      // daily targets for the colours: requests = every active sender's cap; acceptances at the 20% the offer note earns; a day of brands per day of sending
+      const snds = (await J.senders()).filter((x) => x.active !== false); const capacity = snds.reduce((a, x) => a + (Number(x.daily_requests) || 20), 0);
+      led.targets = { requests: capacity, accepted: Math.max(1, Math.round(capacity * 0.2)), found: capacity, rate: 20, senders: snds.length };
+      led.waiting = (await db.readyToSend(owner)).filter((p) => p.source !== 'demo').length;
+      res.status(200).json(led); return;
     }
     // ---- LinkedIn senders (7 Oct 2026) ----
     if (action === 'senders') {

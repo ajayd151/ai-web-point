@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.5.83",
+    "date": "2026-10-07",
+    "notes": [
+      "Reports now colour each weekday green when on target and red when something needs fixing, with a Today scorecard at the top.",
+      "New brands are found sooner: the system keeps two days of sending queued and can search twice a day.",
+      "Every weekday at 9am you get a text listing the connections waiting for a video."
+    ]
+  },
+  {
     "version": "1.5.82",
     "date": "2026-10-07",
     "notes": [
