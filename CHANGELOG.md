@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.74 (7 Oct 2026)
+- Connection requests stalled from 1 to 7 Oct: requests withdrawn after 21 days put the person back in the queue, LinkedIn refused the repeat ("Should delay new invitation to this recipient") and the send step stopped at that refusal every tick. Now nobody is invited twice (the queue skips anyone with a Connection Applied or withdrawn event) and a refusal about one person parks them with the reason and the next one is tried; only account-wide errors stop the round.
+
 ## 1.5.76 (7 Oct 2026)
 - Ready to send: a "Get contact details" button on each lead. On press it looks up the decision maker's verified email and phone from Apollo (founder/CEO first, then a marketing lead) and saves them onto the card. It only runs when you press it, so credits are spent on purpose. Mobiles can take a few minutes to arrive from Apollo.
 
