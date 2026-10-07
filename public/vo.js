@@ -54,8 +54,10 @@ document.querySelectorAll('.vo-tab').forEach((b) => b.addEventListener('click', 
 }));
 
 // ---- helpers ----
-var VO_NOIMG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='90'><rect width='100%' height='100%' fill='%23eef2f7'/><text x='50%' y='54%' font-size='11' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif'>no image</text></svg>";
+var VO_NOIMG = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='90'><rect width='100%' height='100%' fill='%23eef2f7'/><text x='50%' y='54%' font-size='11' text-anchor='middle' fill='%2394a3b8' font-family='sans-serif'>photo unavailable</text></svg>";
 var VO_IMG_FALLBACK = ' onerror="this.onerror=null;this.src=VO_NOIMG"';
+// Meta's ad picture links expire after a few days; say so plainly instead of a grey "no image" box (7 Oct 2026)
+var VO_ADIMG_FALLBACK = ' onerror="this.onerror=null;this.outerHTML=\'<div class=&quot;vo-ad-expired&quot;>Preview expired<br><span>Meta picture links last a few days</span></div>\'"';
 
 // ---- Help bubbles: a "?" next to each field, hover or tap for a plain-English explanation ----
 var VO_HELP = {
@@ -631,7 +633,7 @@ function voSignalRows(group, labels) {
 function voAdCards(p) {
   const ads = Array.isArray(p.ad_samples) ? p.ad_samples : [];
   if (!ads.length) return '<p class="muted vo-small">No ad samples on this prospect' + (p.source === 'import' ? ' (imported from the tracker). Samples arrive when a sourcing run finds the brand in the Meta Ad Library.' : '.') + '</p>';
-  return '<div class="vo-ads">' + ads.slice(0, 10).map((a) => '<div class="vo-ad">' + (a.thumbnail ? '<img src="' + esc(a.thumbnail) + '" alt="" loading="lazy"' + VO_IMG_FALLBACK + ' />' : '') + '<span class="tag">' + (a.is_video ? '▶ video' : 'image') + '</span>' + (a.start_date ? '<span class="muted">' + esc(a.start_date) + '</span>' : '') + '<div>' + esc(String(a.copy || '').slice(0, 140)) + '</div>' + (a.link_url ? '<div>' + voLink(a.link_url, 'ad link') + '</div>' : '') + '</div>').join('') + '</div>';
+  return '<div class="vo-ads">' + ads.slice(0, 10).map((a) => '<div class="vo-ad">' + (a.thumbnail ? '<img src="' + esc(a.thumbnail) + '" alt="" loading="lazy"' + VO_ADIMG_FALLBACK + ' />' : '<div class="vo-ad-expired">No preview saved</div>') + '<span class="tag">' + (a.is_video ? '▶ video' : 'image') + '</span>' + (a.start_date ? '<span class="muted">' + esc(a.start_date) + '</span>' : '') + '<div>' + esc(String(a.copy || '').slice(0, 140)) + '</div>' + '<div>' + (/^\d{6,}$/.test(String(a.ad_id || '')) ? voLink('https://www.facebook.com/ads/library/?id=' + a.ad_id, 'See this ad on Meta') + (a.link_url ? ' · ' : '') : '') + (a.link_url ? voLink(a.link_url, 'where it links') : '') + '</div></div>').join('') + '</div>';
 }
 function voGallery(p) {
   const prods = Array.isArray(p.products) ? p.products : [];

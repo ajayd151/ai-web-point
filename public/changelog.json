@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.86",
+    "date": "2026-10-07",
+    "notes": [
+      "The grey 'no image' boxes on prospects were Meta ad pictures whose links had expired (Meta only keeps them a few days). They now say 'Preview expired' and each ad has a 'See this ad on Meta' link that always works."
+    ]
+  },
+  {
     "version": "1.5.85",
     "date": "2026-10-07",
     "notes": [

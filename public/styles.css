@@ -1996,3 +1996,5 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-msgs { min-width: 280px; max-width: 420px; line-height: 1.45; }
 .vo-msgs > div { margin-bottom: 4px; }
 .vo-msg-reply { background: #f2fbf6; border-left: 3px solid #2fb36d; padding: 3px 6px; border-radius: 4px; }
+.vo-ad-expired { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 90px; background: #f3f5f8; border-radius: 6px; color: #64748b; font-size: 12px; font-weight: 700; padding: 6px; }
+.vo-ad-expired span { font-weight: 400; font-size: 11px; }

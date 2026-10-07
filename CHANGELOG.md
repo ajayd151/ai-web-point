@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.86 (7 Oct 2026)
+- Sample ads: an expired Meta picture link shows 'Preview expired' instead of a grey 'no image' box, and every ad has 'See this ad on Meta' (facebook.com/ads/library/?id=<ad_id>), which does not expire. Broken product photos read 'photo unavailable'.
+
 ## 1.5.85 (7 Oct 2026)
 - Reply reading: Positive only for real interest in our videos; a bare thank you is Neutral and a reply pitching their own services is Neutral. Settings action reclassifyReplies re-reads every stored reply.
 - Article, quiz and listicle pages linked from ads ("10 Reasons This Protocol Is...") are never picked as the product.
