@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.71 (7 Oct 2026)
+- Ready to send: a Not relevant button on every card (and on no-product cards in place of Not a fit) opens an inline reason picker; the lead goes to Dead (no messages, follow-ups cancelled) and the reason is kept in vo_prospects.not_relevant_reason. Analytics shows Marked not relevant, reasons counted with the brands.
+
 ## 1.5.70 (7 Oct 2026)
 - LinkedIn activity reads posts AND comments and keeps the newest (comments were only read when someone had never posted), for the Video Outreach activity gate and activityCheck.
 

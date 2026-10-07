@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
   // Team members reach only what the owner ticked: Ready to send actions, the whole module, or Settings.
   const lvl = voLevel(acct);
   const SETTINGS_ACTIONS = ['activityCheck', 'saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
-  const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config'];
+  const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'notRelevant', 'notRelevantStats', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config'];
   const actionName = String((req.body && req.body.action) || (typeof req.body === 'string' ? (JSON.parse(req.body || '{}').action || '') : ''));
   if (SETTINGS_ACTIONS.includes(actionName) && !lvl.settings) { res.status(403).json({ error: 'Not allowed: Video Outreach settings are for the owner, or a member with the Settings permission.' }); return; }
   if (!lvl.all && !SETTINGS_ACTIONS.includes(actionName) && !READY_ACTIONS.includes(actionName)) { res.status(403).json({ error: 'Not allowed: your permission covers Ready to send only.' }); return; }
@@ -200,6 +200,8 @@ module.exports = async (req, res) => {
       }
       res.status(200).json({ ok: true, people: out }); return;
     }
+    if (action === 'notRelevant') { res.status(200).json(await db.markNotRelevant(owner, actor, id, String(body.reason || ''), body.note)); return; }
+    if (action === 'notRelevantStats') { res.status(200).json({ reasons: db.NOT_RELEVANT_REASONS, rows: await db.notRelevantStats(owner) }); return; }
     if (action === 'readyToSend') { const rows = (await db.readyToSend(owner)).map((p) => Object.assign(p, { product_label: p.suggested_product_name ? M.shortProduct(p.suggested_product_name) : '' })); res.status(200).json({ prospects: rows, providers: providers(), linkedin: await db.linkedinSettings() }); return; }
     if (action === 'linkedinSend') { res.status(200).json(await J.linkedinSend(owner, actor, id, body.url, body.text, { mode: body.mode })); return; }
     if (action === 'checkVideo') { res.status(200).json(await require('../lib/vo-video').resolveVideo(body.url)); return; }

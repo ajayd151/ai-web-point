@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.71",
+    "date": "2026-10-07",
+    "notes": [
+      "Every Ready to send card has a Not relevant button. Pick the reason, add a note if you like, and the lead leaves the list and gets no messages.",
+      "Analytics has a Marked not relevant table counting the reasons, so we can see what the search keeps getting wrong."
+    ]
+  },
+  {
     "version": "1.5.70",
     "date": "2026-10-07",
     "notes": [
