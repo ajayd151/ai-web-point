@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.87 (7 Oct 2026)
+- Reply reading fix: since v1.3.1 the reply classifier sent the literal code text instead of the prospect's reply, so every Positive, Negative or Neutral reading was a guess. The prompt now carries the real reply (tests/vo-reply.test.js guards it) and reclassifyReplies re-reads every stored reply.
+
 ## 1.5.86 (7 Oct 2026)
 - Sample ads: an expired Meta picture link shows 'Preview expired' instead of a grey 'no image' box, and every ad has 'See this ad on Meta' (facebook.com/ads/library/?id=<ad_id>), which does not expire. Broken product photos read 'photo unavailable'.
 
