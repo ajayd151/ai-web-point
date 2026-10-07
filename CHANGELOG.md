@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.80 (7 Oct 2026)
+- Several LinkedIn senders. Settings, LinkedIn senders lists the main account (UNIPILE_ACCOUNT_ID) and any added ones (vo_config.linkedin.senders) with live status, sent today and this week, caps, sign-off name and an On switch. Connect another LinkedIn makes a Unipile hosted sign-in link (POST /api/v1/hosted/accounts/link); api/vo-sender-hook.js adds the account when Unipile reports CREATION_SUCCESS (signed per key). Senders share one queue split so no person gets two requests, each with own caps and gap, run in parallel inside the tick and saved in one write. vo_prospects.linkedin_sender + sender_first: acceptance, status checks, replies, Message A and follow-ups use the account that sent the request, and the messages are signed with that sender's first name. L.provider(accountId).
+
 ## 1.5.79 (7 Oct 2026)
 - Contact guards: a headline naming the brand through a board seat, investment, advisory role or a former job no longer counts as the decision maker, and anyone with more than 25,000 LinkedIn followers is parked with the reason before a request goes out (a fake 'Starbucks' Meta ad page led to a request to Marissa Mayer on 7 Oct; it was withdrawn automatically 7 minutes later).
 

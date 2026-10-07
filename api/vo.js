@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
   const actor = emailOf(req) || acct.email;
   // Team members reach only what the owner ticked: Ready to send actions, the whole module, or Settings.
   const lvl = voLevel(acct);
-  const SETTINGS_ACTIONS = ['activityCheck', 'saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
+  const SETTINGS_ACTIONS = ['senders', 'senderLink', 'senderAdd', 'senderSave', 'activityCheck', 'saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
   const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'notRelevant', 'notRelevantStats', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config', 'getContact'];
   const actionName = String((req.body && req.body.action) || (typeof req.body === 'string' ? (JSON.parse(req.body || '{}').action || '') : ''));
   if (SETTINGS_ACTIONS.includes(actionName) && !lvl.settings) { res.status(403).json({ error: 'Not allowed: Video Outreach settings are for the owner, or a member with the Settings permission.' }); return; }
@@ -207,6 +207,52 @@ module.exports = async (req, res) => {
       const to = /^\d{4}-\d{2}-\d{2}$/.test(String(body.to || '')) ? body.to : iso(new Date());
       const from = /^\d{4}-\d{2}-\d{2}$/.test(String(body.from || '')) ? body.from : iso(new Date(new Date(to + 'T12:00:00Z').getTime() - 30 * 86400000));
       res.status(200).json(await db.dailyLedger(owner, from, to)); return;
+    }
+    // ---- LinkedIn senders (7 Oct 2026) ----
+    if (action === 'senders') {
+      const list = await J.senders(); const out = [];
+      const sod = new Date(); sod.setUTCHours(0, 0, 0, 0); const sow = new Date(sod); sow.setUTCDate(sow.getUTCDate() - ((sow.getUTCDay() + 6) % 7));
+      for (const x of list) {
+        let info = null; try { info = await L.accountInfo(x.account_id); } catch (e) { info = { status: 'error: ' + String(e.message || e).slice(0, 80) }; }
+        out.push({ account_id: x.account_id, name: x.name, first: x.first, primary: !!x.primary, active: x.active !== false, daily_requests: x.daily_requests, weekly_requests: x.weekly_requests,
+          today: await db.countSenderSince(owner, x.account_id, x.primary, ['Request sent'], sod.toISOString()), week: await db.countSenderSince(owner, x.account_id, x.primary, ['Request sent'], sow.toISOString()),
+          linkedin_name: info && info.name, status: info && info.status, next: x.next_request_at || null });
+      }
+      const s = await db.linkedinSettings();
+      res.status(200).json({ senders: out, pending: (s.senders_pending || []).filter((p) => new Date(p.expires) > new Date()).map((p) => ({ name: p.name, first: p.first, url: p.url, expires: p.expires })) }); return;
+    }
+    if (action === 'senderLink') {
+      const name = String(body.name || '').trim().slice(0, 60), first = String(body.first || '').trim().slice(0, 30);
+      if (!name || !first) { res.status(400).json({ error: 'Type their full name and the first name their messages are signed with.' }); return; }
+      const key = 'sp' + require('crypto').randomBytes(8).toString('hex');
+      const tok = require('crypto').createHmac('sha256', String(process.env.APP_PASSWORD || 'sitepounce')).update('sender:' + key).digest('hex').slice(0, 32);
+      const base = 'https://' + String(req.headers['x-forwarded-host'] || req.headers.host || 'www.sitepounce.com').split(',')[0].trim();
+      const link = await L.hostedLink(key, base + '/api/vo-sender-hook?k=' + key + '&t=' + tok, base + '/#vo-settings');
+      const s = await db.linkedinSettings();
+      const pending = (s.senders_pending || []).filter((p) => new Date(p.expires) > new Date()).concat([{ key: key, name: name, first: first, url: link.url, expires: link.expiresOn, by: actor }]);
+      await db.setConfig('linkedin', Object.assign({}, s, { senders_pending: pending }));
+      res.status(200).json({ ok: true, url: link.url, expires: link.expiresOn }); return;
+    }
+    if (action === 'senderAdd') {
+      const acct = String(body.account_id || '').trim(); const name = String(body.name || '').trim().slice(0, 60); const first = String(body.first || '').trim().slice(0, 30);
+      if (!acct || !first) { res.status(400).json({ error: 'Paste the Unipile account ID and the sign-off first name.' }); return; }
+      let info; try { info = await L.accountInfo(acct); } catch (e) { res.status(400).json({ error: 'Unipile does not know that account ID: ' + e.message }); return; }
+      const s = await db.linkedinSettings(); const list = (s.senders || []).filter((x) => x.account_id !== acct);
+      list.push({ account_id: acct, name: name || info.name || first, first: first, active: true, added_at: new Date().toISOString(), added_by: actor });
+      await db.setConfig('linkedin', Object.assign({}, s, { senders: list }));
+      res.status(200).json({ ok: true, linkedin_name: info.name }); return;
+    }
+    if (action === 'senderSave') {
+      const acct = String(body.account_id || ''); const s = await db.linkedinSettings(); const lim = (n, d) => Math.max(0, Math.min(Number(n) || d, 25));
+      if (body.primary) {
+        await db.setConfig('linkedin', Object.assign({}, s, { primary_name: String(body.name || s.primary_name || '').slice(0, 60) || undefined }));
+        res.status(200).json({ ok: true }); return;
+      }
+      const list = (s.senders || []).map((x) => x.account_id !== acct ? x : Object.assign({}, x, {
+        name: String(body.name || x.name).slice(0, 60), first: String(body.first || x.first).slice(0, 30), active: body.active !== false,
+        daily_requests: lim(body.daily_requests, 20), weekly_requests: Math.max(0, Math.min(Number(body.weekly_requests) || 100, 150)) }));
+      await db.setConfig('linkedin', Object.assign({}, s, { senders: list }));
+      res.status(200).json({ ok: true }); return;
     }
     if (action === 'readyToSend') { const rows = (await db.readyToSend(owner)).map((p) => Object.assign(p, { product_label: p.suggested_product_name ? M.shortProduct(p.suggested_product_name) : '' })); res.status(200).json({ prospects: rows, providers: providers(), linkedin: await db.linkedinSettings() }); return; }
     if (action === 'linkedinSend') { res.status(200).json(await J.linkedinSend(owner, actor, id, body.url, body.text, { mode: body.mode })); return; }

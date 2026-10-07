@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.80",
+    "date": "2026-10-07",
+    "notes": [
+      "Second LinkedIn sender: Settings, LinkedIn senders has a Connect another LinkedIn button that creates a secure Unipile sign-in link to send to the person. Once they sign in, their LinkedIn sends its own connection requests from the same queue (never the same person twice), with its own daily cap, and the video message and follow-ups to their contacts go from their account, signed with their name."
+    ]
+  },
+  {
     "version": "1.5.79",
     "date": "2026-10-07",
     "notes": [
