@@ -2300,22 +2300,37 @@ function goHome() { showView('search'); window.scrollTo({ top: 0, behavior: 'smo
 // ---- 🔎 DeepDossier (private MVP) ----
 var ddRows = [];       // last result set (for CSV + sorting)
 var ddSort = { key: 'confidence', dir: -1 };
-var DD_COLS = ['match', 'name', 'title', 'company', 'mobile', 'directDial', 'landline', 'email', 'emailVerified', 'altEmail', 'linkedin', 'buyingSignal', 'confidence', 'location', 'sources'];
-var DD_HEADERS = ['Search Match', 'Name', 'Job Title', 'Company', 'Mobile', 'Direct Dial', 'Landline', 'Work Email', 'Email Verified?', 'Alt Email', 'LinkedIn URL', 'Buying Signal', 'Confidence Score', 'Location', 'Data Sources'];
+var DD_COLS = ['match', 'name', 'title', 'company', 'mobile', 'directDial', 'landline', 'email', 'emailVerified', 'altEmail', 'linkedin', 'linkedinActivity', 'connections', 'dnc', 'buyingSignal', 'confidence', 'location', 'sources'];
+var DD_HEADERS = ['Search Match', 'Name', 'Job Title', 'Company', 'Mobile', 'Direct Dial', 'Office Phone', 'Work Email', 'Email Verified?', 'Alt Email', 'LinkedIn URL', 'Last LinkedIn Activity', 'LinkedIn Connections', 'Do Not Call', 'Buying Signal', 'Confidence Score', 'Location', 'Data Sources'];
 var DD_BAND_RANK = { green: 0, amber: 1, red: 2 };
 
 function ddEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
+// UK numbers as people write them: 07879 448160, 020 8567 5379, 0117 932 3444
+function ddPhone(v) {
+  var d = String(v || '').replace(/[^0-9+]/g, ''); if (!d) return '';
+  if (d.indexOf('+44') === 0) d = '0' + d.slice(3); else if (d.indexOf('44') === 0 && d.length === 12) d = '0' + d.slice(2);
+  if (!/^0\d{9,10}$/.test(d)) return String(v);
+  if (/^07/.test(d)) return d.slice(0, 5) + ' ' + d.slice(5);
+  if (/^02/.test(d)) return d.slice(0, 3) + ' ' + d.slice(3, 7) + ' ' + d.slice(7);
+  if (/^0(8|11\d|1\d1)/.test(d)) return d.slice(0, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7);
+  return d.slice(0, 5) + ' ' + d.slice(5);
+}
+function ddActivity(r) {
+  if (r.linkedinDays == null && !r.linkedinLastAt) return '';
+  var when = r.linkedinLastAt ? new Date(r.linkedinLastAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'never';
+  return when + (r.linkedinKind ? ' (' + r.linkedinKind + ')' : '') + (r.linkedinDays != null ? ', ' + r.linkedinDays + ' days ago' : '');
+}
 function ddRenderRows() {
   var tb = $('dd-tbody');
   if (!tb) return;
   var sorted = ddRows.slice().sort(function (a, b) {
     var k = ddSort.key, av = a[k], bv = b[k];
     if (k === 'match') { av = a.match ? DD_BAND_RANK[a.match.band] : 1; bv = b.match ? DD_BAND_RANK[b.match.band] : 1; return (av - bv) * ddSort.dir; }
-    if (k === 'confidence') { av = Number(av) || 0; bv = Number(bv) || 0; return (av - bv) * ddSort.dir; }
+    if (k === 'confidence' || k === 'linkedinDays' || k === 'connections') { av = Number(av) || 0; bv = Number(bv) || 0; return (av - bv) * ddSort.dir; }
     return String(av || '').localeCompare(String(bv || '')) * ddSort.dir;
   });
-  var tel = function (v) { return v ? '<a href="tel:' + ddEsc(String(v).replace(/\s/g, '')) + '">' + ddEsc(v) + '</a>' : '<span class="muted">-</span>'; };
+  var tel = function (v, pending) { return v ? '<a href="tel:' + ddEsc(String(v).replace(/\s/g, '')) + '">' + ddEsc(ddPhone(v)) + '</a>' : (pending ? '<span class="muted dd-pending">finding…</span>' : '<span class="muted">-</span>'); };
   var mail = function (v) { return v ? '<a href="mailto:' + ddEsc(v) + '">' + ddEsc(v) + '</a>' : '<span class="muted">-</span>'; };
   tb.innerHTML = sorted.map(function (r) {
     var li = r.linkedin ? '<a href="' + ddEsc(r.linkedin) + '" target="_blank" rel="noopener">profile ↗</a>' : '<span class="muted">-</span>';
@@ -2326,13 +2341,15 @@ function ddRenderRows() {
       '<td>' + ddEsc(r.name) + '</td>' +
       '<td>' + ddEsc(r.title) + '</td>' +
       '<td>' + ddEsc(r.company) + '</td>' +
-      '<td class="dd-tel">' + tel(r.mobile) + '</td>' +
-      '<td class="dd-tel">' + tel(r.directDial) + '</td>' +
+      '<td class="dd-tel">' + tel(r.mobile, r._phonesPending) + (r.dnc ? '<div class="dd-dnc" title="This number is on the UK do-not-call register (TPS): email first or use the office line">⚠ do not call</div>' : '') + (r.otherPhones && r.otherPhones.length ? '<div class="muted dd-small">also ' + r.otherPhones.map(function (x) { return tel(x); }).join(', ') + '</div>' : '') + '</td>' +
+      '<td class="dd-tel">' + tel(r.directDial, r._phonesPending) + '</td>' +
       '<td class="dd-tel">' + tel(r.landline) + '</td>' +
       '<td>' + mail(r.email) + '</td>' +
       '<td class="' + vClass + '" title="' + ddEsc(r.emailCheck || '') + '">' + ddEsc(r.emailVerified) + (r.emailCheck ? '<span class="dd-vcheck">' + ddEsc(r.emailCheck.indexOf('Hunter') === 0 ? 'MX/SMTP' : 'Apollo') + '</span>' : '') + '</td>' +
       '<td>' + mail(r.altEmail) + '</td>' +
       '<td>' + li + '</td>' +
+      '<td class="dd-small">' + (ddActivity(r) ? ddEsc(ddActivity(r)) : '<span class="muted">-</span>') + '</td>' +
+      '<td>' + (r.connections != null ? ddEsc(r.connections) : '<span class="muted">-</span>') + '</td>' +
       '<td class="dd-signal">' + (r.buyingSignal ? ddEsc(r.buyingSignal) : '<span class="muted">-</span>') + '</td>' +
       '<td><span class="dd-conf">' + ddEsc(r.confidence) + '</span></td>' +
       '<td>' + ddEsc(r.location) + '</td>' +
@@ -2364,19 +2381,25 @@ async function ddRun() {
     sizeBand: $('dd-size').value,
     titles: ($('dd-titles').value || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean),
     seniority: ddSeniority(),
-    max: Math.max(1, Math.min(10, Number($('dd-max').value) || 5)),
+    max: Math.max(1, Math.min(($('dd-linkedin') && $('dd-linkedin').value) ? 10 : 25, Number($('dd-max').value) || 5)),
     deep: $('dd-deep') ? $('dd-deep').checked : true,
+    linkedin: $('dd-linkedin') ? $('dd-linkedin').value : '',
+    onePerCompany: $('dd-onepercompany') ? $('dd-onepercompany').checked : true,
+    phones: $('dd-phones') ? $('dd-phones').checked : true,
   };
   window.ddCriteria = payload; // remembered so the PDF sheets can show the search brief
   if (!payload.keywords && !payload.titles.length && !payload.company && !payload.name) { status.textContent = 'Enter keywords, a company, a name, or at least one job title.'; return; }
-  btn.disabled = true; btn.textContent = 'Running…'; status.textContent = 'Enriching (up to ~45s)…';
+  btn.disabled = true; btn.textContent = 'Running…'; status.textContent = payload.linkedin ? 'Finding people and checking each LinkedIn profile (up to 2 minutes)…' : 'Finding and enriching (up to a minute)…'; ddStopPhones();
   try {
     var res = await fetch('/api/deepdossier/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
     if (res.status === 404) { status.textContent = 'Not available on this account.'; return; }
     var d = await res.json().catch(function () { return {}; });
     if (!res.ok) { status.textContent = d.error || ('Error (HTTP ' + res.status + ').'); return; }
     ddRows = d.rows || [];
-    ddSort = { key: 'confidence', dir: -1 };
+    var mm = d.meta || {};
+    if (mm.phoneRun && mm.phoneRun.runId) ddRows.forEach(function (r) { if (r.apolloId && !r.mobile) r._phonesPending = true; });
+    ddSort = { key: mm.linkedinMode && mm.linkedinMode !== 'active' ? 'linkedinDays' : 'confidence', dir: -1 };
+    ddShowFiltered(mm);
     ddRenderRows();
     $('dd-results-panel').classList.toggle('hidden', !ddRows.length);
     $('dd-export').classList.toggle('hidden', !ddRows.length);
@@ -2402,12 +2425,54 @@ async function ddRun() {
         '</div>';
       banner.innerHTML += card;
     }
-    status.textContent = (ddRows.length + ' record(s)') + (m.cached ? ' · cached (no charge)' : (m.costGbp != null ? ' · est. £' + m.costGbp.toFixed(2) : '')) + (m.msTotal ? ' · ' + (m.msTotal / 1000).toFixed(1) + 's' : '');
+    status.textContent = (ddRows.length + ' record(s)') + (m.linkedinMode ? ' from ' + m.linkedinChecked + ' LinkedIn profiles checked' : '') + (m.poolTotal ? ' · pool of ' + Number(m.poolTotal).toLocaleString('en-GB') + ' matching people' : '') + (m.cached ? ' · cached (no charge)' : (m.costGbp != null ? ' · est. £' + m.costGbp.toFixed(2) : '')) + (m.msTotal ? ' · ' + (m.msTotal / 1000).toFixed(1) + 's' : '') + (m.apolloError ? ' · Apollo said: ' + m.apolloError : '');
+    if (!ddRows.length && !m.mock) status.textContent += ' · Nothing matched: try broader keywords, a bigger size band or fewer job titles.';
+    if (m.phoneRun && m.phoneRun.runId && !m.cached) ddPollPhones(m.phoneRun.runId, 0);
   } catch (e) {
     status.textContent = 'Network error, please retry.';
   } finally {
     btn.disabled = false; btn.textContent = 'Run DeepDossier';
   }
+}
+// Mobiles and direct lines arrive from Apollo a minute or two after the search: check every 12 s for up to 6 minutes,
+// fill them into the table, then save the finished rows to Our Leads.
+var ddPhoneTimer = null;
+function ddStopPhones() { if (ddPhoneTimer) { clearTimeout(ddPhoneTimer); ddPhoneTimer = null; } }
+async function ddPollPhones(runId, n) {
+  ddStopPhones();
+  var st = $('dd-phone-status'); if (!st) { st = document.createElement('div'); st.id = 'dd-phone-status'; st.className = 'muted dd-small'; var s0 = $('dd-status'); if (s0 && s0.parentNode) s0.parentNode.appendChild(st); }
+  var d = null; try { d = await (await fetch('/api/deepdossier/phones?run=' + encodeURIComponent(runId))).json(); } catch (e) { d = null; }
+  var people = (d && d.people) || {}; var got = 0;
+  ddRows.forEach(function (r) {
+    var p = r.apolloId && people[r.apolloId]; if (!p) return;
+    r._phonesPending = false; got++;
+    var mobiles = (p.mobiles || []).filter(function (x) { return /^\+?(44)?0?7/.test(String(x).replace(/\s/g, '')); });
+    var lines = (p.mobiles || []).filter(function (x) { return mobiles.indexOf(x) < 0; }).concat(p.directs || []);
+    if (!r.mobile && mobiles[0]) r.mobile = mobiles[0];
+    if (!r.directDial && lines[0]) r.directDial = lines[0];
+    var others = mobiles.slice(1).concat(lines.slice(1)).concat(p.others || []).filter(function (x) { return x !== r.mobile && x !== r.directDial && x !== r.landline; });
+    r.otherPhones = others.filter(function (x, i) { return others.indexOf(x) === i; });
+    var emails = (p.emails || []).filter(function (e) { return e && e !== r.email; });
+    if (!r.email && emails[0]) { r.email = emails.shift(); r.emailVerified = 'Yes'; r.emailCheck = 'Apollo waterfall'; }
+    if (!r.altEmail && emails[0]) r.altEmail = emails[0];
+    if ((p.dnc || []).length) r.dnc = 'Yes: ' + p.dnc.map(ddPhone).join(', ');
+  });
+  ddRenderRows();
+  var want = ddRows.filter(function (r) { return r.apolloId; }).length;
+  var done = (d && d.ready) || n >= 30;
+  if (done) ddRows.forEach(function (r) { r._phonesPending = false; });
+  st.textContent = done ? ('Mobiles and direct lines: found for ' + ddRows.filter(function (r) { return r.mobile || r.directDial; }).length + ' of ' + ddRows.length + '.') : ('Finding mobiles and direct lines… ' + got + ' of ' + want + ' back so far.');
+  if (done) { ddRenderRows(); try { await fetch('/api/deepdossier/leads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ rows: ddRows }) }); } catch (e) {} return; }
+  ddPhoneTimer = setTimeout(function () { ddPollPhones(runId, n + 1); }, 12000);
+}
+// Who was checked and left out, and why (so the filter can be trusted)
+function ddShowFiltered(m) {
+  var box = $('dd-filtered'); if (!box) return;
+  var list = (m && m.filteredOut) || [];
+  if (!m || !m.linkedinMode || !list.length) { box.classList.add('hidden'); return; }
+  box.querySelector('summary').textContent = 'Checked and left out: ' + list.length + ' (click to see why)';
+  box.querySelector('.dd-filtered-body').innerHTML = '<table class="dd-table"><thead><tr><th>Name</th><th>Company</th><th>Why left out</th></tr></thead><tbody>' + list.map(function (x) { return '<tr><td>' + ddEsc(x.name) + '</td><td>' + ddEsc(x.company) + '</td><td>' + ddEsc(x.why) + '</td></tr>'; }).join('') + '</tbody></table>';
+  box.classList.remove('hidden');
 }
 if ($('dd-run')) $('dd-run').addEventListener('click', ddRun);
 
@@ -2418,6 +2483,8 @@ function ddExportCsv() {
   ddRows.forEach(function (r) {
     lines.push(DD_COLS.map(function (c) {
       if (c === 'match') return esc(r.match ? (r.match.band.toUpperCase() + ' (' + r.match.label + ')') : '');
+      if (c === 'linkedinActivity') return esc(ddActivity(r));
+      if (c === 'mobile' || c === 'directDial' || c === 'landline') return esc(ddPhone(r[c]) + (c === 'mobile' && r.otherPhones && r.otherPhones.length ? ' (also ' + r.otherPhones.map(ddPhone).join(', ') + ')' : ''));
       return esc(r[c]);
     }).join(','));
   });
@@ -2494,10 +2561,10 @@ function ddSheet(r, idx) {
     ddCriteriaBlock() +
     ddConfBlock(r) +
     '<div class="ddp-section"><h3>Direct contact</h3><div class="ddp-grid">' +
-      ddField('Mobile', r.mobile) + ddField('Direct dial', r.directDial) +
-      ddField('Landline', r.landline) + ddField('Work email', r.email) +
+      ddField('Mobile', ddPhone(r.mobile)) + ddField('Direct dial', ddPhone(r.directDial)) +
+      ddField('Office phone', ddPhone(r.landline)) + ddField('Other phones', (r.otherPhones || []).map(ddPhone).join(', ')) + ddField('Do not call', r.dnc) + ddField('Work email', r.email) +
       ddField('Email verified', r.emailVerified + (r.emailCheck ? ' (' + r.emailCheck + ')' : '')) + ddField('Alt email', r.altEmail) +
-      ddField('LinkedIn', r.linkedin) + ddField('Location', r.location) +
+      ddField('LinkedIn', r.linkedin) + ddField('Last LinkedIn activity', ddActivity(r)) + ddField('LinkedIn connections', r.connections != null ? String(r.connections) : '') + ddField('Location', r.location) +
     '</div></div>' +
     (r.summary ? '<div class="ddp-section"><h3>Summary</h3><p>' + ddEsc(r.summary) + '</p></div>' : '') +
     '<div class="ddp-section"><h3>Company (Companies House)</h3>' + chHtml + '</div>' +
@@ -2544,7 +2611,7 @@ function olRender() {
       '<td>' + ddEsc(r.name) + '</td>' +
       '<td>' + ddEsc(r.title) + '</td>' +
       '<td>' + ddEsc(r.company) + '</td>' +
-      '<td class="dd-tel">' + (r.mobile ? ddEsc(r.mobile) : '<span class="muted">-</span>') + '</td>' +
+      '<td class="dd-tel">' + (r.mobile || r.directDial ? ddEsc(ddPhone(r.mobile || r.directDial)) + (r.dnc ? ' <span class="dd-dnc">⚠ do not call</span>' : '') : (r.landline ? ddEsc(ddPhone(r.landline)) + ' <span class="muted">(office)</span>' : '<span class="muted">-</span>')) + (ddActivity(r) ? '<div class="muted dd-small">LinkedIn: ' + ddEsc(ddActivity(r)) + '</div>' : '') + '</td>' +
       '<td>' + (r.email ? ddEsc(r.email) : '<span class="muted">-</span>') + '</td>' +
       '<td title="' + ddEsc(r.emailCheck || '') + '">' + ddEsc(r.emailVerified || '') + (r.emailCheck ? '<span class="dd-vcheck">' + ddEsc(r.emailCheck.indexOf('Hunter') === 0 ? 'MX/SMTP' : 'Apollo') + '</span>' : '') + '</td>' +
       '<td>' + ddEsc(r.location || '') + '</td>' +

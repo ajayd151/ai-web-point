@@ -27,6 +27,10 @@ module.exports = async (req, res) => {
     seniority: Array.isArray(body.seniority) ? body.seniority.map((s) => String(s).trim()).filter(Boolean) : [],
     max: clampMax(body.max),
     deep: body.deep !== false, // paid add-on: Companies House + news + fit score
+    linkedin: String(body.linkedin || ''), // '' | quiet6 | quiet12 | active
+    onePerCompany: body.onePerCompany !== false,
+    phones: body.phones !== false,
+    baseUrl: 'https://' + String(req.headers['x-forwarded-host'] || req.headers.host || 'www.sitepounce.com').split(',')[0].trim(),
   };
   if (!input.keywords && !input.titles.length && !input.company && !input.name) {
     res.status(400).json({ error: 'Enter industry keywords, a company, a name, or at least one job title.' });
@@ -36,9 +40,9 @@ module.exports = async (req, res) => {
   try {
     const { rows, meta } = await runDeepDossier(input);
     // Bank every pulled lead into "Our Leads" (best-effort, upserts by email/name).
-    saveDeepDossierLeads(acct.email, rows, input);
+    await saveDeepDossierLeads(acct.email, rows, input); // awaited: Vercel freezes the function after the response
     // Log every run (best-effort). Cached re-runs are logged too, flagged cached (no re-bill).
-    recordDeepDossierRun({
+    await recordDeepDossierRun({
       email: acct.email,
       inputs: input,
       records: meta.count != null ? meta.count : rows.length,

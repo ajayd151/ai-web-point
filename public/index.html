@@ -1093,11 +1093,29 @@
         </div>
         <div class="dd-seniority">
           <span class="muted">Seniority</span>
+          <label class="dd-check"><input type="checkbox" class="dd-sen" value="Owner / Founder" checked /> Owner / Founder</label>
           <label class="dd-check"><input type="checkbox" class="dd-sen" value="C-suite" /> C-suite</label>
           <label class="dd-check"><input type="checkbox" class="dd-sen" value="Director" checked /> Director</label>
           <label class="dd-check"><input type="checkbox" class="dd-sen" value="Head of" checked /> Head of</label>
           <label class="dd-check"><input type="checkbox" class="dd-sen" value="Manager" /> Manager</label>
         </div>
+        <div class="row">
+          <label>
+            <span>LinkedIn activity <span class="muted">(checked live on each profile)</span></span>
+            <select id="dd-linkedin">
+              <option value="" selected>Any (no check)</option>
+              <option value="quiet6">Quiet: no posts or comments for 6+ months</option>
+              <option value="quiet12">Quiet: no posts or comments for 12+ months</option>
+              <option value="active">Active in the last 6 months</option>
+            </select>
+          </label>
+          <label class="dd-check dd-check-tall"><input type="checkbox" id="dd-onepercompany" checked /> One person per company</label>
+        </div>
+        <label class="dd-addon">
+          <input type="checkbox" id="dd-phones" checked />
+          <span><strong>Mobiles and direct lines</strong><br>
+          <span class="muted">Asks Apollo for each person's mobile and direct line (and any missing email). They fill into the table on their own, usually within 1 to 3 minutes. Uses Apollo phone credits.</span></span>
+        </label>
         <label class="dd-addon">
           <input type="checkbox" id="dd-deep" checked />
           <span><strong>Deep enrichment</strong> <span class="dd-paid">Paid add-on</span><br>
@@ -1121,11 +1139,13 @@
                 <th data-sort="company">Company</th>
                 <th data-sort="mobile">📱 Mobile</th>
                 <th data-sort="directDial">☎ Direct dial</th>
-                <th data-sort="landline">Landline</th>
+                <th data-sort="landline">Office phone</th>
                 <th data-sort="email">Work Email</th>
                 <th data-sort="emailVerified">Verified?</th>
                 <th data-sort="altEmail">Alt Email</th>
                 <th data-sort="linkedin">LinkedIn</th>
+                <th data-sort="linkedinDays">Last LinkedIn activity</th>
+                <th data-sort="connections">Connections</th>
                 <th data-sort="buyingSignal">🎯 Buying signal</th>
                 <th data-sort="confidence">Confidence</th>
                 <th data-sort="location">Location</th>
@@ -1135,6 +1155,7 @@
             <tbody id="dd-tbody"></tbody>
           </table>
         </div>
+        <details id="dd-filtered" class="dd-filtered hidden"><summary></summary><div class="dd-filtered-body"></div></details>
       </section>
         </div><!-- /ddpane-search -->
 

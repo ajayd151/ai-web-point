@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.5.72",
+    "date": "2026-10-07",
+    "notes": [
+      "Deep Dossier now finds real people from Apollo, with verified work emails and office numbers.",
+      "New LinkedIn activity filter: keep only people who have been quiet on LinkedIn for 6 or 12 months (or only active ones). Each profile is checked live, and you can see who was left out and why.",
+      "Mobiles and direct lines are fetched from Apollo and fill into the table on their own within a few minutes. Numbers on the do-not-call register are flagged. Everything is saved to Our Leads and the CSV and PDF exports."
+    ]
+  },
+  {
     "version": "1.5.71",
     "date": "2026-10-07",
     "notes": [

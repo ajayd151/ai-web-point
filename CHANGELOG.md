@@ -2,6 +2,11 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.72 (7 Oct 2026)
+- Deep Dossier returns real people: Apollo mixed_people/api_search (keyword tags, titles or seniority incl. Owner / Founder, country, size) then people/bulk_match (name, LinkedIn, verified email, office line); qualifications read as surnames (MCIPP) are fixed from the LinkedIn slug.
+- LinkedIn activity filter (Any, Quiet 6+ months, Quiet 12+ months, Active): each profile checked live through Unipile, empty profiles (under 50 connections) left out, a Checked and left out list says why; One person per company.
+- Mobiles and direct lines: Apollo waterfall phone + email with a signed webhook (api/deepdossier/apollo-hook.js), read back by api/deepdossier/phones.js (also polls Apollo's result endpoint); the table fills in by itself, do-not-call numbers flagged, then saved to Our Leads. New columns: Office phone, Last LinkedIn activity, Connections; CSV and PDF include them.
+
 ## 1.5.71 (7 Oct 2026)
 - Ready to send: a Not relevant button on every card (and on no-product cards in place of Not a fit) opens an inline reason picker; the lead goes to Dead (no messages, follow-ups cancelled) and the reason is kept in vo_prospects.not_relevant_reason. Analytics shows Marked not relevant, reasons counted with the brands.
 

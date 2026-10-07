@@ -22,6 +22,9 @@
     "api/deepdossier/search.js": {
       "maxDuration": 120
     },
+    "api/deepdossier/phones.js": {
+      "maxDuration": 30
+    },
     "api/cron-digest.js": {
       "maxDuration": 300
     },
