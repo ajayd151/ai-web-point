@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.84",
+    "date": "2026-10-07",
+    "notes": [
+      "Every number in Reports is clickable: it opens the prospect list showing just those leads, with what we sent them and what they replied.",
+      "Each Reports column has a ? bubble explaining what it counts."
+    ]
+  },
+  {
     "version": "1.5.83",
     "date": "2026-10-07",
     "notes": [

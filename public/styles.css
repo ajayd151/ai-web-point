@@ -1991,3 +1991,8 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-score-l { font-size: 12.5px; font-weight: 700; margin-top: 2px; }
 .vo-score-h { font-size: 11.5px; color: #8a94a3; }
 @media (max-width: 700px) { .vo-scores { grid-template-columns: repeat(2, 1fr); } }
+.vo-rep-go { color: inherit; text-decoration: underline dotted; text-underline-offset: 3px; }
+.vo-rep-go:hover { color: #0b6e66; }
+.vo-msgs { min-width: 280px; max-width: 420px; line-height: 1.45; }
+.vo-msgs > div { margin-bottom: 4px; }
+.vo-msg-reply { background: #f2fbf6; border-left: 3px solid #2fb36d; padding: 3px 6px; border-radius: 4px; }

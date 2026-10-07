@@ -113,7 +113,7 @@ module.exports = async (req, res) => {
     // ---- prospects ----
     if (action === 'prospects') {
       const f = body.filters || {};
-      const rows = await db.listProspects(owner, { campaignId: body.campaignId || f.campaignId, runId: f.run, priority: f.priority, connection: f.connection, creativeStyle: f.creativeStyle, stage: f.stage, q: f.q, includeDisqualified: !!f.includeDisqualified });
+      const rows = await db.listProspects(owner, { campaignId: body.campaignId || f.campaignId, runId: f.run, priority: f.priority, connection: f.connection, creativeStyle: f.creativeStyle, stage: f.stage, q: f.q, includeDisqualified: !!f.includeDisqualified, ids: Array.isArray(f.ids) ? f.ids : undefined });
       res.status(200).json({ prospects: rows, enums: db.ENUM });
       return;
     }

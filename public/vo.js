@@ -59,6 +59,18 @@ var VO_IMG_FALLBACK = ' onerror="this.onerror=null;this.src=VO_NOIMG"';
 
 // ---- Help bubbles: a "?" next to each field, hover or tap for a plain-English explanation ----
 var VO_HELP = {
+  'Rep Brands found': 'New brands that passed the checks and were added to a campaign that day (from the Meta ad searches). These feed the connection queue. Red on a weekday when none were found. Click the number to see them.',
+  'Rep Requests': 'LinkedIn connection requests sent that day, from every sender. Target: 20 a day per active sender. Green at 90% of the target, red under half.',
+  'Rep Accepted': 'People who accepted a connection request that day (whenever the request was sent). They then appear in Ready to send, waiting for their video. Target: about 1 in 5 of a day\'s requests.',
+  'Rep Videos': 'Video messages (Message A) sent that day to people who accepted. Red when people were waiting for a video and none went out.',
+  'Rep Follow-ups': 'Follow-up messages sent that day to people who got a video but have not replied (day 4, day 12, then one last one about 30 days later).',
+  'Rep Replies': 'People who replied that day on LinkedIn or email, whatever they said.',
+  'Rep Positive': 'Replies read as positive that day (interested, wants to talk, asked for more). These are the ones to follow up by hand straight away.',
+  'Rep Withdrawn': 'Connection requests taken back that day: either nobody answered within 21 days, or LinkedIn showed the request as ignored. That person is never invited again.',
+  'Rep C Accepted': 'Of the requests sent THAT day, how many have been accepted so far (on any later day). Compare days fairly with this.',
+  'Rep C Waiting': 'Of the requests sent that day, how many are still waiting for an answer. Requests are withdrawn after 21 days.',
+  'Rep C Withdrawn': 'Of the requests sent that day, how many were withdrawn without being accepted.',
+  'Rep C Rate': 'Accepted so far divided by the requests sent that day. Green at 20% or more, red under 10% (only once 5 or more requests went out that day).',
   'Name': 'Any name you like, for example "US Face Creams Sep 26". Only you see it.',
   'Status': 'Draft = saved, not running. Active = runs (and scheduled runs fire). Paused = stops future runs and automation, keeps the data. Finished = done.',
   'Owner': 'Who owns this campaign in your team. Optional.',
@@ -540,14 +552,30 @@ async function voImport(campaignId, csvText) {
 }
 
 // ---- Prospects (5.3) ----
+// From a Reports number: exactly those leads, with what we sent and what they replied, and a way back
+async function voOpenProspectIds(ids, label) {
+  VO.filters = Object.assign({}, VO.filters, { ids: ids, idsLabel: label, campaignId: '', run: '', priority: '', connection: '', creativeStyle: '', stage: '', q: '' });
+  await voLoadProspects();
+  voPane('prospects');
+}
 async function voOpenProspects(campaignId) {
-  VO.filters.campaignId = campaignId || '';
+  VO.filters.campaignId = campaignId || ''; delete VO.filters.ids; delete VO.filters.idsLabel;
   await voLoadProspects();
   voPane('prospects');
 }
 async function voLoadProspects() {
   try { const d = await voApi('prospects', { campaignId: VO.filters.campaignId || undefined, filters: VO.filters }); VO.prospects = d.prospects || []; VO.enums = d.enums || VO.enums; } catch (e) { VO.prospects = []; voStatus(e.message, 'err'); }
   voRenderProspects();
+}
+// What we sent and what they said, for the Reports drill-down
+function voMsgsCell(p) {
+  const clip = (t, n) => { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n) + '…' : t; };
+  const out = [];
+  if (p.request_note) out.push('<div><b>Request note:</b> ' + esc(clip(String(p.request_note).replace(/^Connection request sent automatically (with note [^:]*: |with no note \(C\))/, ''), 160)) + '</div>');
+  if (['Msg 1', 'Follow-up 1', 'Follow-up 2', 'Replied', 'Call booked', 'Pilot', 'Client'].includes(p.outreach_stage) && p.message_a) out.push('<div><b>Video message:</b> ' + esc(clip(p.message_a, 200)) + '</div>');
+  if (p.last_followup) out.push('<div><b>' + esc(String(p.last_followup).replace(/ sent$/, '')) + ':</b> ' + esc(clip(String(p.last_followup_text || '').replace(/^Follow-up \d sent$/, 'sent'), 160)) + ' <span class="muted">' + esc(voStamp(p.last_followup_at)) + '</span></div>');
+  if (p.last_reply_text || p.last_reply_at) out.push('<div class="vo-msg-reply"><b>Their reply</b> ' + voReplyChip(p) + ': ' + esc(clip(p.last_reply_text || p.reply_summary || '', 260)) + ' <span class="muted">' + esc(voStamp(p.last_reply_at)) + '</span></div>');
+  return out.join('') || '<span class="muted">No messages yet</span>';
 }
 function voRenderProspects() {
   const el = $('vo-pane-prospects'); if (!el) return;
@@ -572,12 +600,15 @@ function voRenderProspects() {
     '<td class="vo-small">' + voLink(p.suggested_product_url, p.suggested_product_name || 'product') + '<div>' + esc(p.product_photo_check || '–') + '</div></td>' +
     '<td>' + esc(p.dm_name || '–') + '<div class="muted vo-small">' + esc(p.dm_title || '') + '</div></td>' +
     '<td>' + esc(p.outreach_stage || 'Not contacted') + (p.last_reply_at ? '<div class="vo-small">' + voReplyChip(p) + ' ' + esc(voStamp(p.last_reply_at)) + '</div>' : '') + '</td>' +
-    '<td class="vo-small">' + (p.last_event ? esc(p.last_event) + '<div class="muted">' + esc(voStamp(p.last_event_at)) + '</div>' : '<span class="muted">–</span>') + '</td></tr>').join('');
-  el.innerHTML = '<div class="vo-bar"><div><h3 style="margin:0">' + (camp ? esc(camp.name) + ' · prospects' : 'All prospects') + '</h3><p class="muted view-sub" style="margin:2px 0 0">Sorted by Priority Number, then score. ' + VO.prospects.length + ' shown' + (f.includeDisqualified ? '' : ', disqualified hidden') + '. Click a row to open it.</p></div>' +
+    '<td class="vo-small">' + (p.last_event ? esc(p.last_event) + '<div class="muted">' + esc(voStamp(p.last_event_at)) + '</div>' : '<span class="muted">–</span>') + '</td>' +
+    (f.ids ? '<td class="vo-small vo-msgs">' + voMsgsCell(p) + '</td>' : '') + '</tr>').join('');
+  el.innerHTML = (f.ids ? '<div class="vo-banner note" style="margin:0 0 10px">📅 From Reports: <b>' + esc(f.idsLabel || '') + '</b> · ' + VO.prospects.length + ' shown. <a href="#" id="vo-ids-back">Back to Reports</a> · <a href="#" id="vo-ids-clear">Show all prospects</a></div>' : '') + '<div class="vo-bar"><div><h3 style="margin:0">' + (camp ? esc(camp.name) + ' · prospects' : 'All prospects') + '</h3><p class="muted view-sub" style="margin:2px 0 0">Sorted by Priority Number, then score. ' + VO.prospects.length + ' shown' + (f.includeDisqualified ? '' : ', disqualified hidden') + '. Click a row to open it.</p></div>' +
     '<div><button class="primary" id="vo-p-quick" title="Fill the four hand-checked signals for every brand in one table">✍️ Quick check</button> ' + (camp ? '<button class="ghost" id="vo-p-edit">Edit campaign</button> ' : '') + '<button class="ghost" id="vo-p-back">← Campaigns</button></div></div>' + filters +
-    '<div class="vo-fit"><table class="cust-table vo-table vo-prospects"><thead><tr><th>Brand</th><th>Priority, number, score, tier</th><th>Links and connection</th><th>Creative style</th><th>Suggested product and photo check</th><th>Decision maker</th><th>Outreach stage</th><th>Last event</th></tr></thead><tbody>' +
+    '<div class="vo-fit"><table class="cust-table vo-table vo-prospects"><thead><tr><th>Brand</th><th>Priority, number, score, tier</th><th>Links and connection</th><th>Creative style</th><th>Suggested product and photo check</th><th>Decision maker</th><th>Outreach stage</th><th>Last event</th>' + (f.ids ? '<th>Messages</th>' : '') + '</tr></thead><tbody>' +
     (rows || '<tr><td colspan="8" class="muted" style="padding:16px">Nobody here yet. Run the campaign, import the v12 tracker, or clear the filters.</td></tr>') + '</tbody></table></div>';
   voOn('vo-p-back', 'click', () => voPane('campaigns'));
+  voOn('vo-ids-back', 'click', (e) => { e.preventDefault(); delete VO.filters.ids; delete VO.filters.idsLabel; voOpenReports(); });
+  voOn('vo-ids-clear', 'click', (e) => { e.preventDefault(); delete VO.filters.ids; delete VO.filters.idsLabel; voLoadProspects(); });
   voOn('vo-p-edit', 'click', () => voEditCampaign(camp.id));
   voOn('vo-p-quick', 'click', () => voRenderQuickCheck(camp));
   const rebind = (id, key) => { const x = $(id); if (x) x.addEventListener('change', () => { VO.filters[key] = x.type === 'checkbox' ? x.checked : x.value; voLoadProspects(); }); };
@@ -735,7 +766,7 @@ function voRenderReports() {
   // traffic lights against the daily targets (weekdays only; weekends stay neutral): bold red = a problem, bold green = on target
   const T = VO_REP.targets || { requests: 20, accepted: 4, found: 20, rate: 20 };
   const back = {}; { let b = 0; days.slice().reverse().forEach((d) => { b = Math.max(0, b + d.accepted - d.videos); back[d.day] = b; }); }
-  const cell = (v, cls) => '<td class="' + (cls || '') + '">' + n(v) + '</td>';
+  const cell = (v, cls, k, i) => '<td class="' + (cls || '') + '">' + (v && k ? '<a href="#" class="vo-rep-go" data-k="' + k + '" data-i="' + i + '">' + n(v) + '</a>' : n(v)) + '</td>';
   const tone = (d, k) => {
     if (wk(d.day)) return '';
     const v = Number(d[k]) || 0;
@@ -747,8 +778,8 @@ function voRenderReports() {
     return '';
   };
   const rateTone = (d) => (d.c_sent >= 5 ? (100 * d.c_accepted / d.c_sent >= T.rate ? 'vo-good' : (100 * d.c_accepted / d.c_sent < 10 ? 'vo-bad' : '')) : '');
-  const row = (d, i) => '<tr class="vo-rep-row' + (wk(d.day) ? ' vo-rep-wk' : '') + '" data-i="' + i + '"><td class="nowrap"><span class="vo-rep-caret">▸</span> ' + esc(label(d.day)) + '</td>' + cell(d.found, tone(d, 'found')) + cell(d.requests, tone(d, 'requests')) + cell(d.accepted, tone(d, 'accepted')) + cell(d.videos, tone(d, 'videos')) + cell(d.followups) + cell(d.replies) + cell(d.positive, tone(d, 'positive')) + cell(d.withdrawn) +
-    '<td class="vo-rep-c">' + (d.c_sent ? n(d.c_accepted) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c">' + (d.c_sent ? n(d.c_awaiting) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c">' + (d.c_sent ? n(d.c_withdrawn) : '<span class="muted">-</span>') + '</td><td class="vo-rep-c ' + rateTone(d) + '">' + (d.c_sent ? pct(d.c_accepted, d.c_sent) : '<span class="muted">-</span>') + '</td></tr>' +
+  const row = (d, i) => '<tr class="vo-rep-row' + (wk(d.day) ? ' vo-rep-wk' : '') + '" data-i="' + i + '"><td class="nowrap"><span class="vo-rep-caret">▸</span> ' + esc(label(d.day)) + '</td>' + cell(d.found, tone(d, 'found'), 'found', i) + cell(d.requests, tone(d, 'requests'), 'requests', i) + cell(d.accepted, tone(d, 'accepted'), 'accepted', i) + cell(d.videos, tone(d, 'videos'), 'videos', i) + cell(d.followups, '', 'followups', i) + cell(d.replies, '', 'replies', i) + cell(d.positive, tone(d, 'positive'), 'positive', i) + cell(d.withdrawn, '', 'withdrawn', i) +
+    (d.c_sent ? cell(d.c_accepted, 'vo-rep-c', 'c_accepted', i) + cell(d.c_awaiting, 'vo-rep-c', 'c_awaiting', i) + cell(d.c_withdrawn, 'vo-rep-c', 'c_withdrawn', i) : '<td class="vo-rep-c"><span class="muted">-</span></td><td class="vo-rep-c"><span class="muted">-</span></td><td class="vo-rep-c"><span class="muted">-</span></td>') + '<td class="vo-rep-c ' + rateTone(d) + '">' + (d.c_sent ? pct(d.c_accepted, d.c_sent) : '<span class="muted">-</span>') + '</td></tr>' +
     '<tr class="vo-rep-detail hidden" data-for="' + i + '"><td colspan="13">' + (['requests', 'accepted', 'videos', 'followups', 'replies'].map((k) => d.brands && d.brands[k] ? '<div><b>' + ({ requests: 'Requests sent to', accepted: 'Accepted', videos: 'Videos sent to', followups: 'Follow-ups sent to', replies: 'Replies from' })[k] + ':</b> ' + esc(d.brands[k]) + '</div>' : '').join('') || '<span class="muted">Nothing happened this day.</span>') + '</td></tr>';
   el.innerHTML = '<div class="vo-bar"><div><h3 style="margin:0">Reports' + voHelp('Daily report table') + '</h3><p class="muted view-sub" style="margin:2px 0 0">Day by day, newest first (UK dates). Click a day to see the brand names. Weekends are shaded.</p></div><div><button class="ghost sm" id="vo-rep-csv">⬇ Download CSV</button> <button class="ghost sm" id="vo-rep-refresh">Refresh</button></div></div>' +
     (function () {
@@ -763,10 +794,19 @@ function voRenderReports() {
     })() +
     '<div class="vo-fit"><table class="cust-table vo-table vo-rep"><thead>' +
     '<tr class="vo-rep-group"><th></th><th colspan="8">What happened that day</th><th colspan="4" class="vo-rep-c">That day\'s requests, now</th></tr>' +
-    '<tr><th>Day</th><th>Brands found</th><th>Requests</th><th>Accepted</th><th>Videos</th><th>Follow-ups</th><th>Replies</th><th>Positive</th><th>Withdrawn</th><th class="vo-rep-c">Accepted</th><th class="vo-rep-c">Waiting</th><th class="vo-rep-c">Withdrawn</th><th class="vo-rep-c">Rate</th></tr>' +
-    '<tr class="vo-rep-total"><td><b>Total, ' + days.length + ' days</b></td><td>' + sum('found') + '</td><td>' + sum('requests') + '</td><td>' + sum('accepted') + '</td><td>' + sum('videos') + '</td><td>' + sum('followups') + '</td><td>' + sum('replies') + '</td><td>' + sum('positive') + '</td><td>' + sum('withdrawn') + '</td><td class="vo-rep-c">' + sum('c_accepted') + '</td><td class="vo-rep-c">' + sum('c_awaiting') + '</td><td class="vo-rep-c">' + sum('c_withdrawn') + '</td><td class="vo-rep-c">' + pct(sum('c_accepted'), sum('c_sent')) + '</td></tr>' +
+    '<tr><th>Day</th>' + [['Brands found', 'Rep Brands found'], ['Requests', 'Rep Requests'], ['Accepted', 'Rep Accepted'], ['Videos', 'Rep Videos'], ['Follow-ups', 'Rep Follow-ups'], ['Replies', 'Rep Replies'], ['Positive', 'Rep Positive'], ['Withdrawn', 'Rep Withdrawn']].map((h) => '<th>' + h[0] + voHelp(h[1]) + '</th>').join('') +
+      [['Accepted', 'Rep C Accepted'], ['Waiting', 'Rep C Waiting'], ['Withdrawn', 'Rep C Withdrawn'], ['Rate', 'Rep C Rate']].map((h) => '<th class="vo-rep-c">' + h[0] + voHelp(h[1]) + '</th>').join('') + '</tr>' +
+    '<tr class="vo-rep-total"><td><b>Total, ' + days.length + ' days</b></td>' + ['found', 'requests', 'accepted', 'videos', 'followups', 'replies', 'positive', 'withdrawn'].map((k) => cell(sum(k), '', k, 'all')).join('') + ['c_accepted', 'c_awaiting', 'c_withdrawn'].map((k) => cell(sum(k), 'vo-rep-c', k, 'all')).join('') + '<td class="vo-rep-c">' + pct(sum('c_accepted'), sum('c_sent')) + '</td></tr>' +
     '</thead><tbody>' + days.map(row).join('') + '</tbody></table></div>' +
     '<div style="margin-top:10px">' + (more ? '<button class="ghost sm" id="vo-rep-more">Show the 31 days before ' + esc(label(oldest)) + '</button>' : '<span class="muted vo-small">' + (VO_REP.first ? 'That is everything: outreach started on ' + esc(label(VO_REP.first)) + '.' : '') + '</span>') + '</div>';
+  const NAMES = { found: 'Brands found', requests: 'Connection requests sent', accepted: 'Accepted', videos: 'Videos sent', followups: 'Follow-ups sent', replies: 'Replies', positive: 'Positive replies', withdrawn: 'Requests withdrawn', c_accepted: 'Requests that day, accepted so far', c_awaiting: 'Requests that day, still waiting', c_withdrawn: 'Requests that day, withdrawn' };
+  el.querySelectorAll('.vo-rep-go').forEach((a) => a.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    const k = a.dataset.k; const list = a.dataset.i === 'all' ? days : [days[Number(a.dataset.i)]];
+    const ids = Array.from(new Set([].concat(...list.map((d) => (d.ids && d.ids[k]) || []))));
+    const when = a.dataset.i === 'all' ? 'the last ' + days.length + ' days' : label(list[0].day);
+    voOpenProspectIds(ids, NAMES[k] + ', ' + when);
+  }));
   el.querySelectorAll('.vo-rep-row').forEach((tr) => tr.addEventListener('click', () => { const det = el.querySelector('.vo-rep-detail[data-for="' + tr.dataset.i + '"]'); if (det) { det.classList.toggle('hidden'); tr.classList.toggle('open'); } }));
   voOn('vo-rep-more', 'click', voReportsMore);
   voOn('vo-rep-refresh', 'click', voOpenReports);
