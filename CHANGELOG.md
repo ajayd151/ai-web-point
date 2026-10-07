@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.79 (7 Oct 2026)
+- Contact guards: a headline naming the brand through a board seat, investment, advisory role or a former job no longer counts as the decision maker, and anyone with more than 25,000 LinkedIn followers is parked with the reason before a request goes out (a fake 'Starbucks' Meta ad page led to a request to Marissa Mayer on 7 Oct; it was withdrawn automatically 7 minutes later).
+
 ## 1.5.78 (7 Oct 2026)
 - Video Outreach Reports tab: one row per UK day, newest first, last 31 days with Show more back to the first day of outreach. What happened (found, requests, accepted, videos, follow-ups, replies, positive, withdrawn) and what became of that day's requests (accepted so far, awaiting, withdrawn, rate); click a day for the brand names; totals row; CSV download. `db.dailyLedger`, action dailyLedger.
 

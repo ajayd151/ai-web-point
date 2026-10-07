@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.79",
+    "date": "2026-10-07",
+    "notes": [
+      "Safer targeting: board members, investors, advisers and former staff are no longer picked as a brand's contact, and very high-profile people (over 25,000 LinkedIn followers) are skipped before any request goes out."
+    ]
+  },
+  {
     "version": "1.5.78",
     "date": "2026-10-07",
     "notes": [
