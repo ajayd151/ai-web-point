@@ -1,6 +1,6 @@
 [
   {
-    "version": "1.5.74",
+    "version": "1.5.77",
     "date": "2026-10-07",
     "notes": [
       "Fixed: connection requests had stopped since 1 October because LinkedIn refused a repeat invitation to someone whose old request had been withdrawn, and the queue waited on that one person. Now nobody is invited twice, and if LinkedIn refuses one person the next one is sent instead."
