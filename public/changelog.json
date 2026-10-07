@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.74",
+    "date": "2026-10-07",
+    "notes": [
+      "Ready to send cards are tidier: a clear 'Your video' section and 'The message' section, more spacing, and a bigger Send on LinkedIn button.",
+      "The Help and guide 'The whole loop' is now a simple flowchart, with each step numbered, green for what runs on its own and amber for where you step in, and small Meta, Instagram, LinkedIn and ScrollyVid tiles on the right steps."
+    ]
+  },
+  {
     "version": "1.5.73",
     "date": "2026-10-07",
     "notes": [

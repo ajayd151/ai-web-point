@@ -48,6 +48,26 @@
     main { padding: 20px 18px 60px; }
   }
   @media print { nav { display: none; } .wrap { grid-template-columns: 1fr; } }
+  /* The whole loop, as a simple flowchart */
+  .vloop { position: relative; margin: 14px 0 22px; padding-left: 2px; }
+  .vloop:before { content: ""; position: absolute; left: 18px; top: 44px; bottom: 26px; width: 3px; background: var(--teal); border-radius: 3px; opacity: .45; }
+  .vloop .leg { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12.5px; color: #475569; margin: 0 0 14px; }
+  .vloop .leg i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: middle; font-style: normal; }
+  .vloop .st { position: relative; display: grid; grid-template-columns: 40px 1fr; gap: 13px; margin-bottom: 11px; }
+  .vloop .nd { width: 38px; height: 38px; border-radius: 50%; background: var(--teal); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 15px; z-index: 2; border: 3px solid var(--bg); }
+  .vloop .st.you .nd { background: #d97706; }
+  .vloop .cc { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px; box-shadow: 0 4px 12px rgba(15,23,42,.05); }
+  .vloop .cc .h { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .vloop .cc .h b { font-size: 15.5px; color: var(--ink); }
+  .vloop .tg { font-size: 9.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+  .vloop .tg.you { background: #fef3c7; color: #92600a; }
+  .vloop .tg.au { background: #ecfdf5; color: var(--teal); }
+  .vloop .ti { display: flex; gap: 5px; margin-left: auto; }
+  .vloop .tl { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 11px; }
+  .vloop .fb { background: #1877f2; } .vloop .ig { background: linear-gradient(45deg,#f58529,#dd2a7b 55%,#8134af); }
+  .vloop .li { background: #0a66c2; } .vloop .sv { background: #0f172a; color: #4ade80; }
+  .vloop .cc p { margin: 5px 0 0; color: #334155; font-size: 13.5px; line-height: 1.45; }
+  @media (max-width: 860px) { .vloop .st { grid-template-columns: 34px 1fr; gap: 10px; } .vloop .nd { width: 32px; height: 32px; font-size: 13px; } .vloop:before { left: 15px; } }
 </style>
 </head>
 <body>
@@ -74,15 +94,16 @@
 <p>Video Outreach finds ecommerce brands that advertise on Meta (Facebook and Instagram), scores them out of 100, picks the product a sample video should be made for, writes the LinkedIn and email messages, and tracks the outreach. You make the video outside SitePounce and paste the link in. It lives under the 🎬 Video Outreach button in the left sidebar.</p>
 
 <h3 id="overview-loop">The whole loop</h3>
-<div class="flow">
-  <div><b>1. Campaign</b>You say what to look for: keywords, country, size, caps.</div>
-  <div><b>2. Run</b>Pulls live ads, adds company and contact data, reads the store, scores, drafts messages. 3 to 10 minutes.</div>
-  <div><b>3. Prospects</b>A list sorted by Priority Number. Open one to see why, what to film, and the messages.</div>
-  <div><b>4. Connect</b>Send the LinkedIn request, by hand with Copy or automatically once a provider is connected.</div>
-  <div><b>5. Accepted</b>The brand appears on Ready to send with the draft of Message A.</div>
-  <div><b>6. Send</b>Paste the video link, check the words, click Send. Never without that click.</div>
-  <div><b>7. Follow-ups</b>Drafts at 3 and 7 days. You send them, or switch on auto follow-ups.</div>
-  <div><b>8. Reply</b>Stage moves to Replied, follow-ups cancel, you get an email. Then Call booked, Pilot, Client.</div>
+<div class="vloop">
+  <div class="leg"><span><i style="background:#0f766e"></i>Runs on its own</span> <span><i style="background:#d97706"></i>You step in</span> <span style="color:#94a3b8">Simple view of the loop</span></div>
+  <div class="st you"><div class="nd">1</div><div class="cc"><div class="h"><b>Campaign</b><span class="tg you">You</span></div><p>You say what to look for: keywords, country, size, caps.</p></div></div>
+  <div class="st"><div class="nd">2</div><div class="cc"><div class="h"><b>Run</b><span class="tg au">Automatic</span><span class="ti"><span class="tl fb">f</span><span class="tl ig">&#9673;</span></span></div><p>Pulls brands advertising on Meta, scores them, reads the store, picks the product and drafts the messages. 3 to 10 minutes.</p></div></div>
+  <div class="st"><div class="nd">3</div><div class="cc"><div class="h"><b>Prospects</b><span class="tg au">Automatic</span></div><p>A list sorted by Priority Number. Open one to see why, what to film and the messages.</p></div></div>
+  <div class="st"><div class="nd">4</div><div class="cc"><div class="h"><b>Connect</b><span class="tg au">Automatic</span><span class="ti"><span class="tl li">in</span></span></div><p>Sends the LinkedIn request, one at a time on weekdays, or by hand with Copy.</p></div></div>
+  <div class="st"><div class="nd">5</div><div class="cc"><div class="h"><b>Accepted</b><span class="tg au">Text + email</span></div><p>The brand moves to Ready to send with Message A drafted. You get a text and an email.</p></div></div>
+  <div class="st you"><div class="nd">6</div><div class="cc"><div class="h"><b>Make the video</b><span class="tg you">You</span><span class="ti"><span class="tl sv">&#9654;</span></span></div><p>Film the AI video for the product shown on the card.</p></div></div>
+  <div class="st you"><div class="nd">7</div><div class="cc"><div class="h"><b>Send Message A</b><span class="tg you">You</span><span class="ti"><span class="tl li">in</span></span></div><p>Paste the video link, read the words, click Send. The only send that needs you.</p></div></div>
+  <div class="st"><div class="nd">8</div><div class="cc"><div class="h"><b>Follow-ups &amp; reply</b><span class="tg au">Automatic or you</span></div><p>Drafts at day 4, 12 and +30. A reply cancels them and emails you. Then Call booked, Pilot, Client.</p></div></div>
 </div>
 
 <h3 id="overview-never">What it never does</h3>

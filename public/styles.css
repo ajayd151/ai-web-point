@@ -1780,6 +1780,17 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-ready-modes label { display: inline-flex; align-items: center; gap: 4px; margin: 0; font-weight: 400; }
 .vo-ready-modes input[type=radio] { margin: 0; width: auto; }
 .vo-card textarea { width: 100%; box-sizing: border-box; border: 1px solid #e2e8f0; border-radius: 8px; padding: 9px 11px; font: inherit; font-size: 13.5px; line-height: 1.45; }
+/* Ready-to-send card tidy (v1.5.74): clear Your video / The message sections, breathing room, louder Send */
+.vo-card.vo-lead { padding: 0 16px 18px; }
+.vo-lead .vo-bar { margin: 12px 0 14px; }
+.vo-lead .vo-shortlist { margin: 10px 0 16px; padding: 12px 14px; }
+.vo-lead .sec-h { font-size: 11px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: #64748b; margin: 16px 0 8px; }
+.vo-lead > .vo-small { margin: 11px 0; line-height: 1.5; }
+.vo-lead .vo-vids { margin: 12px 0; }
+.vo-lead .vo-ready-modes { margin: 11px 0 2px; padding-bottom: 18px; border-bottom: 1px solid #eef2f7; }
+.vo-lead .vo-prodline { margin: 10px 0 8px; }
+.vo-lead textarea.vo-ready-text { margin-top: 8px; min-height: 150px; }
+.vo-lead .vo-ready-send.primary { padding: 11px 20px; font-size: 14px; font-weight: 700; border-radius: 10px; }
 .vo-weights input[type=text] { max-width: 420px; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
 .vo-q { display: inline-flex; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 50%; background: #e2e8f0; color: #475569; font-size: 10px; font-weight: 800; cursor: help; position: relative; vertical-align: 1px; margin-left: 2px; }
 .vo-q:hover, .vo-q:focus { background: #0f766e; color: #fff; outline: none; }
