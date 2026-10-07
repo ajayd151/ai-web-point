@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.5.88",
+    "date": "2026-10-07",
+    "notes": [
+      "New: about an hour after someone accepts, they automatically get a short \"video on its way\" message, so the conversation starts while the video is being made. Switch it off in Settings, LinkedIn.",
+      "Every video is now due 48 hours after they accept. Ready to send cards count down, turn red when late, and the 9am text lists late ones first.",
+      "Anyone who replies before their video stays on Ready to send, with their reply shown on the card."
+    ]
+  },
+  {
     "version": "1.5.87",
     "date": "2026-10-07",
     "notes": [

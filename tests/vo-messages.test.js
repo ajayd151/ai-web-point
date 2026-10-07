@@ -186,3 +186,15 @@ test('product names are tidied to what a person would say, not an SEO page title
   };
   for (const [inp, out] of Object.entries(cases)) assert.equal(M.shortProduct(inp), out, inp);
 });
+
+test('video on its way: names the product, never a placeholder, and the video message then skips its thank you', () => {
+  const M = require('../lib/vo-messages');
+  const p = { dm_name: 'Daniel Ross', suggested_product_name: 'Organic Sea Moss Gel | 16oz Jar', sender_first: 'Aryan' };
+  const b = M.bridgeMessage(p, {});
+  assert.match(b, /^Hey Daniel\n\nThanks for connecting\. My team is making you a short sample video for the Organic Sea Moss Gel\. I'll send it over in the next day or two\.\n\nAryan$/);
+  assert.ok(!/—/.test(b));
+  assert.match(M.bridgeMessage({ dm_name: '' }, {}), /^Hey\n\n.*one of your products/);
+  const g = M.generate(Object.assign({ bridge_sent_at: '2026-10-07T10:00:00Z', brand: 'X', observation: 'your Meta ads for the sea moss gel' }, p), {}, 'https://example.com/v.mp4');
+  assert.ok(!/Thanks for connecting/.test(g.message_a), g.message_a);
+  assert.match(g.message_a, /\n\nI saw /);
+});
