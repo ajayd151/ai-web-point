@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.92",
+    "date": "2026-10-08",
+    "notes": [
+      "Fewer wrong people: the LinkedIn person finder now only picks someone whose headline names the brand right next to their founder or marketing title, so a person who just mentions a word like Azure, or runs a firm with a similar name, is no longer chosen."
+    ]
+  },
+  {
     "version": "1.5.91",
     "date": "2026-10-08",
     "notes": [

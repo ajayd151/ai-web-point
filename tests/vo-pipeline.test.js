@@ -213,6 +213,17 @@ test('LinkedIn search fallback: cleans the brand and picks a founder who works t
   assert.equal(L.pickFromSearch([{ name: 'X', headline: 'Head of Growth, omnicreatine.com', url: 'https://linkedin.com/in/x' }], 'Omni', 'omnicreatine.com').name, 'X', 'the domain counts as the brand');
 });
 
+test('LinkedIn search: the brand must sit beside the title as a whole word, not inside another firm', () => {
+  const pick = (h, b, d) => L.pickFromSearch([{ name: 'P', headline: h, url: 'https://www.linkedin.com/in/p' }], b, d);
+  assert.equal(pick('Founder & CEO, RevConnecta | Cloud architect on Microsoft Azure', 'Azure Boutique', 'azureboutique.co'), null, 'brand word in another part of the headline');
+  assert.equal(pick('Founder & CEO, RevConnecta | Azure', 'Azure', 'azureboutique.co'), null, 'title and brand in different parts');
+  assert.equal(pick('CEO & Managing Partner of Beyond Alpha Ventures', 'Beyond Alpha', 'beyondalpha.co'), null, 'a venture firm with the same name');
+  assert.equal(pick('Founder of St Neots Pet Care and furniture', 'Fur', 'furyou.com'), null, 'brand inside a longer word');
+  assert.equal(pick('Founder at Fur | Body care', 'Fur', 'furyou.com').name, 'P');
+  assert.equal(pick('Founder, IceShaker', 'Ice Shaker', 'iceshaker.com').name, 'P', 'brand written as one word');
+  assert.equal(pick('The Mineral Geek | Author, Speaker, and CEO & Co-Founder of BEAM Minerals', 'BEAM Minerals', 'beamminerals.com').name, 'P');
+});
+
 test('LinkedIn search fallback: a current job at the brand counts even when the headline does not name it', () => {
   assert.equal(L.companyMatches('Omni Creatine', 'Omni Creatine', 'omnicreatine.com'), true);
   assert.equal(L.companyMatches('OMNI Creatine LLC', 'Omni Creatine', 'omnicreatine.com'), true);
