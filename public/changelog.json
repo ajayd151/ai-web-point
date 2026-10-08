@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.90",
+    "date": "2026-10-08",
+    "notes": [
+      "Reports: the first column now counts brands you can actually send a request to (Ready to contact), not every brand the search looked at. Hover a number to see how many were checked and what the search cost. A dash means no search was needed because enough brands were queued."
+    ]
+  },
+  {
     "version": "1.5.89",
     "date": "2026-10-08",
     "notes": [

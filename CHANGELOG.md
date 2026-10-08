@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.90 (8 Oct 2026)
+- Reports: 'Brands found' became 'Ready to contact', the brands added that day that can actually get a request (priority cut-off, a LinkedIn profile, not quiet on LinkedIn). Hover shows the searches, brands checked and their cost; a dash means no search was needed. Red only when searches ran and found nothing usable. The tile shows the queue against the 2 days the top-ups keep. CSV adds brands checked, searches and search cost. dailyLedger returns usable, searches, search_cost and queue.
+
 ## 1.5.89 (8 Oct 2026)
 - Reports: today's Requests and Accepted are judged against how much of the US send window (8am to 6pm New York, 1pm to 11pm UK) has passed, so a 0 before 1pm UK is no longer red. The Requests today tile says when sending runs.
 
