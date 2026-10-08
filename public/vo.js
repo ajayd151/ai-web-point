@@ -892,13 +892,15 @@ async function voOpenReady() {
     const nrPanel = card.querySelector('.vo-nr-panel');
     const openNr = (preset) => {
       if (!nrPanel) return; const reasons = VO.nrReasons || ['Wrong kind of business', 'Too big (has an agency or in-house team)', 'Too small', 'Wrong person', 'Nothing good to film', 'Already a contact or client', 'Other'];
-      nrPanel.innerHTML = '<b>Why is this lead not relevant?</b> <select class="vo-nr-reason">' + reasons.map((r) => '<option' + (r === preset ? ' selected' : '') + '>' + esc(r) + '</option>').join('') + '</select> <input type="text" class="vo-nr-note" placeholder="optional note, e.g. they sell trips, not products" /> <button class="primary sm vo-nr-go">Remove from the list</button> <button class="ghost sm vo-nr-cancel">Cancel</button><div class="vo-small muted" style="margin-top:4px">They get no messages or follow-ups. The reason is saved and counted on Analytics, so SitePounce learns what to skip.</div>';
+      // one click on the reason removes the lead (until 8 Oct 2026 a separate "Remove from the list" button was needed, and nothing was ever saved)
+      nrPanel.innerHTML = '<b>Why is it not relevant?</b> <span class="muted vo-small">Click the reason and the lead is removed.</span><div class="vo-nr-picks">' + reasons.map((r) => '<button class="' + (r === preset ? 'primary' : 'ghost') + ' sm vo-nr-pick" data-r="' + esc(r) + '">' + esc(r) + '</button>').join('') + '</div><input type="text" class="vo-nr-note" placeholder="optional note first, e.g. they sell trips, not products" /> <button class="ghost sm vo-nr-cancel">Cancel, keep the lead</button><div class="vo-small muted" style="margin-top:4px">They get no messages or follow-ups. The reason is counted on Analytics, so SitePounce learns what to skip.</div>';
       nrPanel.classList.remove('hidden'); nrPanel.scrollIntoView({ block: 'nearest' });
       nrPanel.querySelector('.vo-nr-cancel').addEventListener('click', () => { nrPanel.classList.add('hidden'); nrPanel.innerHTML = ''; });
-      nrPanel.querySelector('.vo-nr-go').addEventListener('click', async () => {
-        const reason = nrPanel.querySelector('.vo-nr-reason').value, note = nrPanel.querySelector('.vo-nr-note').value.trim();
-        try { await voApi('notRelevant', { id: id, reason: reason, note: note }); voStatus((card.querySelector('.vo-lead-strip b') || {}).textContent + ' marked not relevant: ' + reason); voOpenReady(); } catch (e) { voStatus(e.message, 'err'); }
-      });
+      nrPanel.querySelectorAll('.vo-nr-pick').forEach((b) => b.addEventListener('click', async () => {
+        const reason = b.dataset.r, note = nrPanel.querySelector('.vo-nr-note').value.trim();
+        nrPanel.querySelectorAll('button').forEach((x) => { x.disabled = true; }); b.textContent = 'Removing…';
+        try { await voApi('notRelevant', { id: id, reason: reason, note: note }); voStatus((card.querySelector('.vo-lead-strip b') || {}).textContent + ' removed as not relevant: ' + reason, 'ok'); voOpenReady(); } catch (e) { nrPanel.querySelectorAll('button').forEach((x) => { x.disabled = false; }); b.textContent = reason; voStatus('Not removed: ' + e.message, 'err'); }
+      }));
     };
     const nrBtn = card.querySelector('.vo-nr'); if (nrBtn) nrBtn.addEventListener('click', () => openNr(''));
     const nf = card.querySelector('.vo-notfit'); if (nf) nf.addEventListener('click', () => openNr('Nothing good to film'));

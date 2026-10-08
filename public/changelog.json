@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.91",
+    "date": "2026-10-08",
+    "notes": [
+      "Not relevant now works in one click: press Not relevant, then click the reason, and the lead is gone for good. A lead you remove never comes back to Ready to send, even if they reply later."
+    ]
+  },
+  {
     "version": "1.5.90",
     "date": "2026-10-08",
     "notes": [

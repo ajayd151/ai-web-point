@@ -1974,6 +1974,7 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-rep-caret { display: inline-block; transition: transform .15s; color: #9aa5b1; }
 .vo-rep-row.open .vo-rep-caret { transform: rotate(90deg); }
 .vo-rep-detail td { text-align: left !important; font-size: 12.5px; background: #fcfcfd; line-height: 1.6; }
+.vo-nr-picks { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .vo-due { background: #e8f5ee; color: #065f46; border-radius: 999px; padding: 1px 8px; font-weight: 700; white-space: nowrap; }
 .vo-due.soon { background: #fff4e0; color: #8a5a00; } .vo-due.late { background: #fde8e8; color: #b91c1c; }
 .vo-sender-chip { background: #fff4e0; color: #8a5a00; border-radius: 999px; padding: 1px 8px; font-weight: 700; }
