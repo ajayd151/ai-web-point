@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.89 (8 Oct 2026)
+- Reports: today's Requests and Accepted are judged against how much of the US send window (8am to 6pm New York, 1pm to 11pm UK) has passed, so a 0 before 1pm UK is no longer red. The Requests today tile says when sending runs.
+
 ## 1.5.88 (7 Oct 2026)
 - Video on its way: about an hour after someone accepts (in the send window, last 3 days only), an automatic short message from the inviting account says the sample video is coming in a day or two. Message A then skips its own thank you. Settings, LinkedIn: Video on its way message (on by default). Shown on the Sent tab.
 - 48 hour video deadline: Ready to send cards show 'video due in X h' or a red 'video overdue by X days'; the Reports tile and the 9am text count and list the overdue ones first.

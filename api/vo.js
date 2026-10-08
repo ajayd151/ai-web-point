@@ -210,6 +210,14 @@ module.exports = async (req, res) => {
       // daily targets for the colours: requests = every active sender's cap; acceptances at the 20% the offer note earns; a day of brands per day of sending
       const snds = (await J.senders()).filter((x) => x.active !== false); const capacity = snds.reduce((a, x) => a + (Number(x.daily_requests) || 20), 0);
       led.targets = { requests: capacity, accepted: Math.max(1, Math.round(capacity * 0.2)), found: capacity, rate: 20, senders: snds.length };
+      // how far through today's US send window we are (8am to 6pm in its time zone), so today is not red before sending has started
+      try {
+        const tz = (await db.linkedinSettings()).timezone || 'America/New_York';
+        const hm = (zone) => { const pt = new Intl.DateTimeFormat('en-GB', { timeZone: zone, hour: 'numeric', minute: 'numeric', hour12: false }).formatToParts(new Date()); return Number(pt.find((x) => x.type === 'hour').value) % 24 + Number(pt.find((x) => x.type === 'minute').value) / 60; };
+        const here = hm(tz); const uk = hm('Europe/London'); const diff = Math.round(uk - here + (uk - here < -12 ? 24 : 0));
+        const h12 = (h) => { const x = ((h % 24) + 24) % 24; return (x % 12 || 12) + (x < 12 ? 'am' : 'pm'); };
+        led.targets.window = Math.max(0, Math.min(1, (uk - (8 + diff)) / 10)); // measured on the UK clock, because the rows are UK days led.targets.window_uk = h12(8 + diff) + ' to ' + h12(18 + diff) + ' UK';
+      } catch (e) {}
       const wt = (await db.readyToSend(owner)).filter((p) => p.source !== 'demo'); led.waiting = wt.length; led.overdue = wt.filter((p) => p.linkedin_connected_at && Date.now() - new Date(p.linkedin_connected_at) > 48 * 3600000).length;
       res.status(200).json(led); return;
     }

@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.89",
+    "date": "2026-10-08",
+    "notes": [
+      "Reports no longer shows today's requests in red before sending starts. Requests go out from 1pm to 11pm UK (US business hours), and the Requests today tile now says so."
+    ]
+  },
+  {
     "version": "1.5.88",
     "date": "2026-10-07",
     "notes": [
