@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.93",
+    "date": "2026-10-09",
+    "notes": [
+      "Fewer wasted requests: a contact who is a junior specialist, coordinator or assistant, or a board member or investor, is now set aside automatically with the reason, so requests only go to founders and marketing leads."
+    ]
+  },
+  {
     "version": "1.5.92",
     "date": "2026-10-08",
     "notes": [

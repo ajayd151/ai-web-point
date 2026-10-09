@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.93 (9 Oct 2026)
+- LinkedIn send step: before any LinkedIn call, a contact whose title is a junior role (specialist, coordinator, associate, analyst, representative, executive assistant) or a non-buyer headline (board, investor, adviser, former) is parked with the reason, unless the title also says founder, owner, chief, head, director, VP, partner or general manager. 'Board chair' joins the non-buyer words used by the person finder. The daily review found a Gruns paid social specialist in the queue, plus Beyond Meat and a BruMate distributor contact in the Philippines; all three were taken out with Not relevant.
+
 ## 1.5.92 (8 Oct 2026)
 - LinkedIn person finder: a search result only counts when the brand sits in the same part of the headline as the founder or marketing title, as a whole word, and not as the start of another firm's name (Ventures, Capital, Consulting, Agency and similar). The daily review found 4 wrong contacts in the send queue from the old loose match (Azure Boutique matched a RevConnecta founder who mentions Microsoft Azure, Beyond Alpha matched a private equity firm, Fur matched a UK pet-care operator, Elev8 foods matched a leadership consultant). Those and 4 more (a software engineer, an HR officer, Ritual, Once Upon a Farm) were taken out with Not relevant.
 

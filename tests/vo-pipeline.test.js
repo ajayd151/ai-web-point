@@ -263,3 +263,11 @@ test('a product their ads link to is ranked first even when the feed did not nam
   assert.equal(S.pickProduct(list, 'Ekkolyte', [], { source: 'shopify' }).url, 'b');
   assert.equal(S.pickProduct(list, '', [], { source: 'shopify' }).url, 'b', 'linked from 2 ads');
 });
+
+test('notDecisionMaker parks junior and non-buyer titles, never founders', () => {
+  const L = require('../lib/vo-linkedin.js');
+  assert.ok(L.notDecisionMaker('Senior Specialist, Paid Social'));
+  assert.ok(L.notDecisionMaker('Marketing Coordinator at Brand'));
+  assert.ok(L.notDecisionMaker('Investor and adviser'));
+  for (const t of ['Founder, CEO', 'Head of Growth', 'Performance Marketing Manager', 'Founder & CEO, ex-Unilever', 'Founder and Brand Associate', '', null]) assert.strictEqual(L.notDecisionMaker(t), '', String(t));
+});
