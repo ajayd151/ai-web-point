@@ -1025,7 +1025,7 @@ async function voOpenReady() {
       try { const r = await voApi('scheduleSend', { id: id, url: v.url, mode: v.mode, text: card.querySelector('.vo-ready-text').value, at: new Date(at).toISOString() }); voStatus('Scheduled: the video message to ' + (pp.dm_name || pp.brand) + ' goes ' + voWhen(r.at) + ' UK (' + voWhen(r.at, tz) + ' in ' + voTzCity(tz) + ').', 'ok'); voOpenReady(); } catch (e) { voStatus(e.message, 'err'); }
     };
     const schedPicker = () => {
-      const sug = voSuggestSend(pp.linkedin_connected_at);
+      const sug = card.__sug || (card.__sug = voSuggestSend(pp.linkedin_connected_at)); // one suggestion per card, the random minutes stay put
       schedBox.innerHTML = '<div class="vo-banner ok"><b>⏰ When should it go?</b> <input type="datetime-local" class="vo-sched-at" value="' + voLocalInput(pp.scheduled_send_at || sug) + '" /> <span class="vo-sched-their vo-small"></span> <button class="primary sm vo-sched-go">Schedule it</button> <button class="ghost sm vo-sched-close">Cancel</button><div class="vo-small" style="margin-top:4px">Suggested: ' + esc(voWhen(sug)) + ' UK, ' + esc(voWhen(sug, tz)) + ' in ' + esc(voTzCity(tz)) + ' (6+ hours after they accepted, in their working day). It goes from ' + esc(who) + ' LinkedIn within 10 minutes of that time, with the video and the words as they are now. Follow-ups are booked when it goes.</div></div>';
       const inp = schedBox.querySelector('.vo-sched-at'), their = schedBox.querySelector('.vo-sched-their');
       const show = () => { const t = new Date(inp.value); if (isNaN(t)) { their.textContent = ''; return; } const early = pp.linkedin_connected_at && t - Date.parse(pp.linkedin_connected_at) < VO_MIN_GAP_H * 3600000; their.innerHTML = '= ' + esc(voWhen(t, tz)) + ' in ' + esc(voTzCity(tz)) + (early ? ' <b class="vo-no">under 6 hours after they accepted</b>' : ''); };
@@ -1034,7 +1034,7 @@ async function voOpenReady() {
       schedBox.querySelector('.vo-sched-go').addEventListener('click', () => { const t = new Date(inp.value); if (isNaN(t)) { voStatus('Pick a date and time.', 'err'); return; } doSchedule(t); });
     };
     const schedTooSoon = () => {
-      const sug = voSuggestSend(pp.linkedin_connected_at);
+      const sug = card.__sug || (card.__sug = voSuggestSend(pp.linkedin_connected_at)); // one suggestion per card, the random minutes stay put
       schedBox.innerHTML = '<div class="vo-banner">⚠️ <b>' + esc(pp.dm_name ? voFirst(pp.dm_name) : 'They') + ' accepted ' + esc(voAgo(Date.now() - Date.parse(pp.linkedin_connected_at))) + '.</b> A video this soon can look automated. Best: at least 6 hours after they accept, in their working day.<div style="margin-top:8px"><button class="primary sm vo-sched-sug">⏰ Schedule for ' + esc(voWhen(sug)) + ' UK (' + esc(voWhen(sug, tz)) + ' their time)</button> <button class="ghost sm vo-sched-other">Pick another time</button> <button class="ghost sm vo-sched-anyway">Send now anyway</button></div></div>';
       schedBox.querySelector('.vo-sched-sug').addEventListener('click', () => doSchedule(sug));
       schedBox.querySelector('.vo-sched-other').addEventListener('click', schedPicker);
