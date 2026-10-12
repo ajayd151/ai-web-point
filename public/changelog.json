@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.95",
+    "date": "2026-10-12",
+    "notes": [
+      "New: Schedule on Ready to send. Pick when the video message goes, with their local time shown. If you press Send less than 6 hours after they accepted, it suggests a better time in their working day instead (you can still send now)."
+    ]
+  },
+  {
     "version": "1.5.94",
     "date": "2026-10-12",
     "notes": [

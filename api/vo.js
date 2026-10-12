@@ -29,7 +29,7 @@ module.exports = async (req, res) => {
   // Team members reach only what the owner ticked: Ready to send actions, the whole module, or Settings.
   const lvl = voLevel(acct);
   const SETTINGS_ACTIONS = ['reclassifyReplies', 'senders', 'senderLink', 'senderAdd', 'senderSave', 'activityCheck', 'saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
-  const READY_ACTIONS = ['funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'notRelevant', 'notRelevantStats', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config', 'getContact'];
+  const READY_ACTIONS = ['scheduleSend', 'cancelScheduledSend', 'funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'notRelevant', 'notRelevantStats', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config', 'getContact'];
   const actionName = String((req.body && req.body.action) || (typeof req.body === 'string' ? (JSON.parse(req.body || '{}').action || '') : ''));
   if (SETTINGS_ACTIONS.includes(actionName) && !lvl.settings) { res.status(403).json({ error: 'Not allowed: Video Outreach settings are for the owner, or a member with the Settings permission.' }); return; }
   if (!lvl.all && !SETTINGS_ACTIONS.includes(actionName) && !READY_ACTIONS.includes(actionName)) { res.status(403).json({ error: 'Not allowed: your permission covers Ready to send only.' }); return; }
@@ -221,7 +221,7 @@ module.exports = async (req, res) => {
         // measured on the UK clock, because the rows are UK days
         led.targets.window = Math.max(0, Math.min(1, (uk - (8 + diff)) / 10)); led.targets.window_uk = h12(8 + diff) + ' to ' + h12(18 + diff) + ' UK';
       } catch (e) {}
-      const wt = (await db.readyToSend(owner)).filter((p) => p.source !== 'demo'); led.waiting = wt.length; led.overdue = wt.filter((p) => p.linkedin_connected_at && Date.now() - new Date(p.linkedin_connected_at) > 48 * 3600000).length;
+      const wt = (await db.readyToSend(owner)).filter((p) => p.source !== 'demo'); led.waiting = wt.length; led.scheduled = wt.filter((p) => p.scheduled_send_at).length; led.overdue = wt.filter((p) => !p.scheduled_send_at && p.linkedin_connected_at && Date.now() - new Date(p.linkedin_connected_at) > 48 * 3600000).length;
       res.status(200).json(led); return;
     }
     // ---- LinkedIn senders (7 Oct 2026) ----
@@ -281,6 +281,29 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, checked: rows.length, changed: changed }); return;
     }
     if (action === 'readyToSend') { const rows = (await db.readyToSend(owner)).map((p) => Object.assign(p, { product_label: p.suggested_product_name ? M.shortProduct(p.suggested_product_name) : '' })); res.status(200).json({ prospects: rows, providers: providers(), linkedin: await db.linkedinSettings() }); return; }
+    // Schedule Message A: the person has pasted the video and checked the words, and picks when it goes (at least 6 hours after
+    // they accepted is suggested, so the video does not arrive suspiciously fast). The worker sends it then through linkedinSend.
+    if (action === 'scheduleSend') {
+      const p = await db.getProspect(owner, id); if (!p) { res.status(404).json({ error: 'Prospect not found.' }); return; }
+      if (p.source === 'demo') { res.status(400).json({ error: 'This is the example record, nothing can be sent from it.' }); return; }
+      if (p.linkedin_connection_state !== 'Connected') { res.status(400).json({ error: 'Not connected yet.' }); return; }
+      const at = new Date(body.at); if (isNaN(at)) { res.status(400).json({ error: 'Pick a date and time.' }); return; }
+      if (at < Date.now() - 60000) { res.status(400).json({ error: 'That time has passed, pick a later one.' }); return; }
+      if (at > Date.now() + 14 * 86400000) { res.status(400).json({ error: 'Pick a time within the next 14 days.' }); return; }
+      const url = String(body.url || p.video_url || '').trim(); if (!/^https:\/\/\S+$/i.test(url)) { res.status(400).json({ error: 'Add the video first (upload it or paste an https:// link).' }); return; }
+      const text = String(body.text || '').trim(); if (!text) { res.status(400).json({ error: 'The message is empty.' }); return; }
+      await db.setVideoUrl(owner, actor, id, url);
+      await db.updateProspect(owner, actor, id, { message_a: text });
+      await db.setScheduledSend(id, at.toISOString(), { mode: body.mode === 'link' ? 'link' : 'attachment', by: actor, booked_at: new Date().toISOString(), tries: 0 });
+      await db.addEvent(owner, actor, p, { channel: 'LinkedIn', step: 'Video scheduled', detail: 'Message A booked for ' + at.toISOString() });
+      res.status(200).json({ ok: true, at: at.toISOString() }); return;
+    }
+    if (action === 'cancelScheduledSend') {
+      const p = await db.getProspect(owner, id); if (!p) { res.status(404).json({ error: 'Prospect not found.' }); return; }
+      await db.setScheduledSend(id, null, null);
+      await db.addEvent(owner, actor, p, { channel: 'LinkedIn', step: 'Video schedule cancelled', detail: 'was booked for ' + (p.scheduled_send_at ? new Date(p.scheduled_send_at).toISOString() : 'unknown') });
+      res.status(200).json({ ok: true }); return;
+    }
     if (action === 'linkedinSend') { res.status(200).json(await J.linkedinSend(owner, actor, id, body.url, body.text, { mode: body.mode })); return; }
     if (action === 'checkVideo') { res.status(200).json(await require('../lib/vo-video').resolveVideo(body.url)); return; }
     if (action === 'linkedinTick') { res.status(200).json({ ok: true, tick: await J.linkedinTick(owner, actor) }); return; }

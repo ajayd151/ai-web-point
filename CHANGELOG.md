@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.95 (12 Oct 2026)
+- Schedule Message A: Ready to send cards have ⏰ Schedule (pick a date and time, their local time shown, a suggestion at least 6 hours after they accepted inside their 9 to 5 weekday). Send under 6 hours after acceptance stops and offers Schedule for the suggested time, Pick another time or Send now anyway. The worker sends at the booked time (within 10 minutes) through the normal send with every check; 3 failed tries are emailed. The card shows the booked time with Change time and Cancel; a booked video is not counted overdue in Reports or the 9am text.
+- A video message after 'video on its way' never thanks them twice, even if the text was written before it went.
+
 ## 1.5.94 (12 Oct 2026)
 - LinkedIn person finder: a clinic, hospital, veterinary, dental, pharmacy or medical practice that shares the brand's name now counts as another firm. The daily review found "Founder & CEO of Dr. Healo Veterinary Clinic" matched to the Healo heating pad shop. That contact, a "Jessica Thomas" ad page for drynimo.com with an unrelated namesake, and a StriVectin contact who now runs another company were taken out with Not relevant.
 
