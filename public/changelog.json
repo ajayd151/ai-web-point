@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.94",
+    "date": "2026-10-12",
+    "notes": [
+      "Fewer wrong contacts: the LinkedIn person finder no longer picks the founder of a clinic or practice that happens to share a brand's name."
+    ]
+  },
+  {
     "version": "1.5.93",
     "date": "2026-10-09",
     "notes": [

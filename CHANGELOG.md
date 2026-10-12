@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.94 (12 Oct 2026)
+- LinkedIn person finder: a clinic, hospital, veterinary, dental, pharmacy or medical practice that shares the brand's name now counts as another firm. The daily review found "Founder & CEO of Dr. Healo Veterinary Clinic" matched to the Healo heating pad shop. That contact, a "Jessica Thomas" ad page for drynimo.com with an unrelated namesake, and a StriVectin contact who now runs another company were taken out with Not relevant.
+
 ## 1.5.93 (9 Oct 2026)
 - LinkedIn send step: before any LinkedIn call, a contact whose title is a junior role (specialist, coordinator, associate, analyst, representative, executive assistant) or a non-buyer headline (board, investor, adviser, former) is parked with the reason, unless the title also says founder, owner, chief, head, director, VP, partner or general manager. 'Board chair' joins the non-buyer words used by the person finder. The daily review found a Gruns paid social specialist in the queue, plus Beyond Meat and a BruMate distributor contact in the Philippines; all three were taken out with Not relevant.
 

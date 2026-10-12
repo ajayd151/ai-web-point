@@ -218,6 +218,7 @@ test('LinkedIn search: the brand must sit beside the title as a whole word, not 
   assert.equal(pick('Founder & CEO, RevConnecta | Cloud architect on Microsoft Azure', 'Azure Boutique', 'azureboutique.co'), null, 'brand word in another part of the headline');
   assert.equal(pick('Founder & CEO, RevConnecta | Azure', 'Azure', 'azureboutique.co'), null, 'title and brand in different parts');
   assert.equal(pick('CEO & Managing Partner of Beyond Alpha Ventures', 'Beyond Alpha', 'beyondalpha.co'), null, 'a venture firm with the same name');
+  assert.equal(pick('Founder & CEO of Dr. Healo Veterinary Clinic', 'Healo', 'healo.store'), null, 'a vet clinic with the same name');
   assert.equal(pick('Founder of St Neots Pet Care and furniture', 'Fur', 'furyou.com'), null, 'brand inside a longer word');
   assert.equal(pick('Founder at Fur | Body care', 'Fur', 'furyou.com').name, 'P');
   assert.equal(pick('Founder, IceShaker', 'Ice Shaker', 'iceshaker.com').name, 'P', 'brand written as one word');
