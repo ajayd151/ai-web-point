@@ -3,6 +3,13 @@
     "version": "1.5.99",
     "date": "2026-10-13",
     "notes": [
+      "Prospects now has quick buttons for Requests sent (waiting), Accepted and Replied, and the search box finds people by name. Handy when someone's request note appears in your LinkedIn messages."
+    ]
+  },
+  {
+    "version": "1.5.99",
+    "date": "2026-10-13",
+    "notes": [
       "Video Outreach no longer sends a connection request to someone whose LinkedIn title says they used to run the brand (for example 'Former CEO') or only sit on its board."
     ]
   },

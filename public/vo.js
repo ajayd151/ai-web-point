@@ -592,7 +592,7 @@ async function voOpenProspects(campaignId) {
   voPane('prospects');
 }
 async function voLoadProspects() {
-  try { const d = await voApi('prospects', { campaignId: VO.filters.campaignId || undefined, filters: VO.filters }); VO.prospects = d.prospects || []; VO.enums = d.enums || VO.enums; } catch (e) { VO.prospects = []; voStatus(e.message, 'err'); }
+  try { const d = await voApi('prospects', { campaignId: VO.filters.campaignId || undefined, filters: VO.filters }); VO.prospects = d.prospects || []; VO.enums = d.enums || VO.enums; VO.connCounts = d.counts || null; } catch (e) { VO.prospects = []; voStatus(e.message, 'err'); }
   voRenderProspects();
 }
 // What we sent and what they said, for the Reports drill-down
@@ -605,6 +605,12 @@ function voMsgsCell(p) {
   if (p.last_reply_text || p.last_reply_at) out.push('<div class="vo-msg-reply"><b>Their reply</b> ' + voReplyChip(p) + ': ' + esc(clip(p.last_reply_text || p.reply_summary || '', 260)) + ' <span class="muted">' + esc(voStamp(p.last_reply_at)) + '</span></div>');
   return out.join('') || '<span class="muted">No messages yet</span>';
 }
+// Quick chips: find someone who got a connection request (their note shows in LinkedIn messages before they accept), who accepted, who replied
+function voConnChips(f) {
+  const c = VO.connCounts || {}; const on = (k, v) => (k === 'stage' ? f.stage === v && !f.connection : f.connection === v && !f.stage);
+  const chip = (label, n, key, val, tip) => '<button class="vo-chip' + (on(key, val) ? ' on' : '') + '" data-ck="' + key + '" data-cv="' + val + '" title="' + esc(tip) + '">' + label + (n != null ? ' <b>' + n + '</b>' : '') + '</button>';
+  return '<div class="vo-chips">' + chip('📨 Requests sent, waiting', c.waiting, 'connection', 'waiting', 'Connection requests not answered yet, newest first. Their request note shows in your LinkedIn messages before they accept.') + chip('✅ Accepted', c.connected, 'connection', 'Connected', 'Everyone who accepted, newest first') + chip('💬 Replied', c.replied, 'stage', 'Replied', 'Everyone who replied') + (f.connection || f.stage ? chip('Show all', null, 'all', '', 'Clear these filters') : '') + '</div>';
+}
 function voRenderProspects() {
   const el = $('vo-pane-prospects'); if (!el) return;
   const f = VO.filters; const E = VO.enums || {};
@@ -615,15 +621,15 @@ function voRenderProspects() {
     '<select id="vo-f-camp"><option value="">All campaigns</option>' + VO.campaigns.map((c) => '<option value="' + c.id + '"' + (String(c.id) === String(f.campaignId) ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('') + '</select>' +
     '<select id="vo-f-run"><option value="">All runs</option>' + runs.map((r) => '<option value="' + r + '"' + (String(r) === String(f.run) ? ' selected' : '') + '>Run ' + r + '</option>').join('') + '</select>' +
     '<select id="vo-f-prio">' + opt(E.priority || [], f.priority, 'Any priority') + '</select>' +
-    '<select id="vo-f-conn"><option value="">Any connection</option><option value="none"' + (f.connection === 'none' ? ' selected' : '') + '>Not requested</option>' + ['Applied', 'Pending', 'Connected'].map((o) => '<option' + (f.connection === o ? ' selected' : '') + '>' + o + '</option>').join('') + '</select>' +
+    '<select id="vo-f-conn"><option value="">Any connection</option><option value="none"' + (f.connection === 'none' ? ' selected' : '') + '>Not requested</option>' + [['waiting', 'Request sent, waiting'], ['Applied', 'Request sent, under 7 days'], ['Pending', 'Request sent, 7+ days'], ['Connected', 'Accepted']].map((o) => '<option value="' + o[0] + '"' + (f.connection === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>' +
     '<select id="vo-f-style">' + opt(E.creative_style || [], f.creativeStyle, 'Any creative style') + '</select>' +
     '<select id="vo-f-stage">' + opt(E.outreach_stage || [], f.stage, 'Any stage') + '</select>' +
-    '<input id="vo-f-q" type="search" placeholder="Search brand or domain" value="' + esc(f.q) + '" />' +
+    '<input id="vo-f-q" type="search" placeholder="Search brand, website or person" value="' + esc(f.q) + '" />' +
     '<label class="vo-chk"><input type="checkbox" id="vo-f-disq"' + (f.includeDisqualified ? ' checked' : '') + '/> Show disqualified</label></div>';
   const rows = VO.prospects.map((p) => '<tr data-id="' + p.id + '" class="vo-row">' +
     '<td><b>' + esc(p.brand) + '</b><div class="muted vo-small">' + esc(p.domain || '') + (p.source && p.source !== 'import' ? ' · ' + esc(p.source) : '') + '</div></td>' +
     '<td>' + voPrio(p) + '<div class="vo-small">No. <b>' + (p.priority_number == null ? '–' : p.priority_number) + '</b> · score <b>' + (p.score_total == null ? '–' : p.score_total) + '</b> · tier ' + esc(p.tier || '–') + '</div></td>' +
-    '<td class="vo-small">' + voLink(p.dm_linkedin, 'LinkedIn') + '<br>' + voLink(p.brand_instagram, 'Instagram') + '<br>' + (p.linkedin_connection_state === 'Connected' ? '<span class="vo-yes">✓ Connected</span>' : (p.linkedin_connection_state ? esc(p.linkedin_connection_state) : (p.linkedin_skip_reason ? '<span class="vo-disq" title="' + esc(p.linkedin_skip_reason) + '">⚠ skipped, fix the LinkedIn link</span>' : '<span class="muted">not requested</span>'))) + '</td>' +
+    '<td class="vo-small">' + voLink(p.dm_linkedin, 'LinkedIn') + '<br>' + voLink(p.brand_instagram, 'Instagram') + '<br>' + (p.linkedin_connection_state === 'Connected' ? '<span class="vo-yes">✓ Connected</span>' : (p.linkedin_connection_state ? '📨 Request sent' + (p.linkedin_request_sent_at ? ' ' + esc(voStamp(p.linkedin_request_sent_at)) : '') : (p.linkedin_skip_reason ? '<span class="vo-disq" title="' + esc(p.linkedin_skip_reason) + '">⚠ skipped, fix the LinkedIn link</span>' : '<span class="muted">not requested</span>'))) + '</td>' +
     '<td>' + esc(p.creative_style || '–') + '</td>' +
     '<td class="vo-small">' + voLink(p.suggested_product_url, p.suggested_product_name || 'product') + '<div>' + esc(p.product_photo_check || '–') + '</div></td>' +
     '<td>' + esc(p.dm_name || '–') + '<div class="muted vo-small">' + esc(p.dm_title || '') + '</div></td>' +
@@ -631,7 +637,7 @@ function voRenderProspects() {
     '<td class="vo-small">' + (p.last_event ? esc(p.last_event) + '<div class="muted">' + esc(voStamp(p.last_event_at)) + '</div>' : '<span class="muted">–</span>') + '</td>' +
     (f.ids ? '<td class="vo-small vo-msgs">' + voMsgsCell(p) + '</td>' : '') + '</tr>').join('');
   el.innerHTML = (f.ids ? '<div class="vo-banner note" style="margin:0 0 10px">📅 From Reports: <b>' + esc(f.idsLabel || '') + '</b> · ' + VO.prospects.length + ' shown. <a href="#" id="vo-ids-back">Back to Reports</a> · <a href="#" id="vo-ids-clear">Show all prospects</a></div>' : '') + '<div class="vo-bar"><div><h3 style="margin:0">' + (camp ? esc(camp.name) + ' · prospects' : 'All prospects') + '</h3><p class="muted view-sub" style="margin:2px 0 0">Sorted by Priority Number, then score. ' + VO.prospects.length + ' shown' + (f.includeDisqualified ? '' : ', disqualified hidden') + '. Click a row to open it.</p></div>' +
-    '<div><button class="primary" id="vo-p-quick" title="Fill the four hand-checked signals for every brand in one table">✍️ Quick check</button> ' + (camp ? '<button class="ghost" id="vo-p-edit">Edit campaign</button> ' : '') + '<button class="ghost" id="vo-p-back">← Campaigns</button></div></div>' + filters +
+    '<div><button class="primary" id="vo-p-quick" title="Fill the four hand-checked signals for every brand in one table">✍️ Quick check</button> ' + (camp ? '<button class="ghost" id="vo-p-edit">Edit campaign</button> ' : '') + '<button class="ghost" id="vo-p-back">← Campaigns</button></div></div>' + voConnChips(f) + filters +
     '<div class="vo-fit"><table class="cust-table vo-table vo-prospects"><thead><tr><th>Brand</th><th>Priority, number, score, tier</th><th>Links and connection</th><th>Creative style</th><th>Suggested product and photo check</th><th>Decision maker</th><th>Outreach stage</th><th>Last event</th>' + (f.ids ? '<th>Messages</th>' : '') + '</tr></thead><tbody>' +
     (rows || '<tr><td colspan="8" class="muted" style="padding:16px">Nobody here yet. Run the campaign, import the v12 tracker, or clear the filters.</td></tr>') + '</tbody></table></div>';
   voOn('vo-p-back', 'click', () => voPane('campaigns'));
@@ -641,6 +647,7 @@ function voRenderProspects() {
   voOn('vo-p-quick', 'click', () => voRenderQuickCheck(camp));
   const rebind = (id, key) => { const x = $(id); if (x) x.addEventListener('change', () => { VO.filters[key] = x.type === 'checkbox' ? x.checked : x.value; voLoadProspects(); }); };
   rebind('vo-f-camp', 'campaignId'); rebind('vo-f-run', 'run'); rebind('vo-f-prio', 'priority'); rebind('vo-f-conn', 'connection'); rebind('vo-f-style', 'creativeStyle'); rebind('vo-f-stage', 'stage'); rebind('vo-f-disq', 'includeDisqualified');
+  el.querySelectorAll('.vo-chip').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.ck, v = b.dataset.cv; VO.filters.connection = ''; VO.filters.stage = ''; VO.filters.campaignId = ''; if (k === 'connection') VO.filters.connection = v; else if (k === 'stage') VO.filters.stage = v; voLoadProspects(); }));
   { const qEl = $('vo-f-q'); let t = null; if (qEl) qEl.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => { VO.filters.q = qEl.value; voLoadProspects(); }, 350); }); }
   el.querySelectorAll('tr.vo-row').forEach((tr) => tr.addEventListener('click', (e) => { if (e.target.closest('a')) return; voOpenProspect(Number(tr.dataset.id)); }));
 }
