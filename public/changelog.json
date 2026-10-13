@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.99",
+    "date": "2026-10-13",
+    "notes": [
+      "Video Outreach no longer sends a connection request to someone whose LinkedIn title says they used to run the brand (for example 'Former CEO') or only sit on its board."
+    ]
+  },
+  {
     "version": "1.5.98",
     "date": "2026-10-13",
     "notes": [

@@ -270,5 +270,6 @@ test('notDecisionMaker parks junior and non-buyer titles, never founders', () =>
   assert.ok(L.notDecisionMaker('Senior Specialist, Paid Social'));
   assert.ok(L.notDecisionMaker('Marketing Coordinator at Brand'));
   assert.ok(L.notDecisionMaker('Investor and adviser'));
+  for (const t of ['Former CEO & CFO', 'Ex-CMO, now advising brands', 'Board Director', 'Retired founder']) assert.ok(L.notDecisionMaker(t), t);
   for (const t of ['Founder, CEO', 'Head of Growth', 'Performance Marketing Manager', 'Founder & CEO, ex-Unilever', 'Founder and Brand Associate', '', null]) assert.strictEqual(L.notDecisionMaker(t), '', String(t));
 });

@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.99 (13 Oct 2026)
+- The send step now parks a contact whose title LEADS with a past or board role (former, ex-, retired, board member, board director, non-executive) before checking for founder or CEO words. 'Former CEO & CFO' at Onnit had passed because 'CEO' was matched first. 'Founder & CEO, ex-Unilever' still passes.
+
 ## 1.5.98 (13 Oct 2026)
 - Three new campaigns from the category analysis (our acceptance by product type plus live US video-ad counts in the Meta Ad Library): US Superfood Powders (26% acceptance, the only positive reply, 20 of 27 top ads from different brands), US Dog Supplements (23 of 28 top ads from different brands) and US Hair Growth (about 34,000 active video ads, 14% acceptance). Skincare Serums stops searching (1 acceptance from 40 requests; its queued brands still go out); Creatine Gummies searches at most every 3 days (4 in 5 results are repeats).
 - Top-ups take turns: the campaign searched longest ago goes first, so the paced Apify budget reaches every campaign; automation.topup_min_gap_h sets a slower cadence per campaign; a new campaign's first search uses its own keywords; searchNow takes a list of campaigns.
