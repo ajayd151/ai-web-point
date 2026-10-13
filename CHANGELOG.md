@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.101 (13 Oct 2026)
+- Someone who answers the connection request note before accepting (Elina at Dood Woof: "Yep let's see!" 11 minutes after the request) now appears on Ready to send, first in the list, with their reply shown. Message A opens with 'Here it is!' instead of 'Thanks for connecting' and goes into that same LinkedIn conversation.
+
 ## 1.5.100 (13 Oct 2026)
 - Prospects: quick chips 📨 Requests sent, waiting / ✅ Accepted / 💬 Replied with counts (waiting and accepted sort newest first), the search box also finds the person's name and LinkedIn link, the connection column reads 'Request sent <date>', and the connection filter has plain labels plus 'Request sent, waiting'. Ajay saw Elina Panteleyeva's request note in LinkedIn messages and could not find her (Dood Woof, Dog Supplements).
 

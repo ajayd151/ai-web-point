@@ -291,7 +291,7 @@ module.exports = async (req, res) => {
       }
       res.status(200).json({ ok: true, checked: rows.length, changed: changed }); return;
     }
-    if (action === 'readyToSend') { const rows = (await db.readyToSend(owner)).map((p) => Object.assign(p, { product_label: p.suggested_product_name ? M.shortProduct(p.suggested_product_name) : '' })); res.status(200).json({ prospects: rows, providers: providers(), linkedin: await db.linkedinSettings() }); return; }
+    if (action === 'readyToSend') { const rows = (await db.readyToSend(owner)).map((p) => Object.assign(p, { product_label: p.suggested_product_name ? M.shortProduct(p.suggested_product_name) : '' }, p.linkedin_connection_state !== 'Connected' && p.message_a ? { message_a: String(p.message_a).replace(/Thanks for connecting\.\s+/, 'Here it is! ') } : {})); /* they asked to see it before accepting */ res.status(200).json({ prospects: rows, providers: providers(), linkedin: await db.linkedinSettings() }); return; }
     // Schedule Message A: the person has pasted the video and checked the words, and picks when it goes (at least 6 hours after
     // they accepted is suggested, so the video does not arrive suspiciously fast). The worker sends it then through linkedinSend.
     if (action === 'scheduleSend') {

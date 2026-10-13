@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.101",
+    "date": "2026-10-13",
+    "notes": [
+      "People who reply to your connection request note before accepting now show on Ready to send, at the top, so you can send their video straight back in that conversation."
+    ]
+  },
+  {
     "version": "1.5.100",
     "date": "2026-10-13",
     "notes": [
