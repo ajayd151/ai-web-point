@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.96 (13 Oct 2026)
+- Brand searches had failed since Sat 10 Oct 04:10: Apify returned 'Monthly usage hard limit exceeded' to all 14 tries, so Ready to contact showed red 0s and the queue fell to 6. Reports now shows a red box when searches keep failing (since when, the reason, brands left and days of requests, and the fix with a link to Apify's limits), and a day whose searches all failed reads 'failed' with the reason on hover. The failed-search text names the Apify limit, the brands left and the fix.
+- Top-ups no longer burn keywords on a search provider that is down: after a failure before the search started they wait 12 hours and then retry the keywords that never ran, and only completed searches count as low yield. The failures had archived 56 unsearched keywords per campaign and pushed them into neighbouring categories (fitness trackers, meal prep containers, conditioner); both campaigns were reset to their own industry.
+
 ## 1.5.95 (12 Oct 2026)
 - Schedule Message A: Ready to send cards have ⏰ Schedule (pick a date and time, their local time shown, a suggestion at least 6 hours after they accepted inside their 9 to 5 weekday). Send under 6 hours after acceptance stops and offers Schedule for the suggested time, Pick another time or Send now anyway. The worker sends at the booked time (within 10 minutes) through the normal send with every check; 3 failed tries are emailed. The card shows the booked time with Change time and Cancel; a booked video is not counted overdue in Reports or the 9am text.
 - A video message after 'video on its way' never thanks them twice, even if the text was written before it went.

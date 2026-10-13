@@ -211,7 +211,16 @@ module.exports = async (req, res) => {
       const snds = (await J.senders()).filter((x) => x.active !== false); const capacity = snds.reduce((a, x) => a + (Number(x.daily_requests) || 20), 0);
       led.targets = { requests: capacity, accepted: Math.max(1, Math.round(capacity * 0.2)), found: capacity, rate: 20, senders: snds.length };
       // the sendable queue against the two days of sending the top-ups keep ready (the same numbers topUp uses)
-      led.queue = (await db.linkedinQueue(owner, L.limits(liS).max_priority, 200)).length; led.targets.queue_want = Math.min(80, Math.max(12, capacity * 2));
+      led.queue = (await db.linkedinQueue(owner, L.limits(liS).max_priority, 200)).length;
+      // searches failing in a row right now (the Apify limit, a key): when it started and why, for the red box on Reports
+      try {
+        let since = null, err = '';
+        for (const c of (await db.listCampaigns(owner)).filter((x) => x.status === 'Active')) {
+          const rs = await db.listRuns(owner, c.id); let i = 0;
+          while (i < rs.length && rs[i].status === 'Failed') { since = !since || new Date(rs[i].started_at) < since ? new Date(rs[i].started_at) : since; err = err || String((rs[i].errors || [])[0] || ''); i++; }
+        }
+        if (since) led.search_problem = { since: since.toISOString(), error: err, limit: /hard limit|usage limit/i.test(err) };
+      } catch (e) {} led.targets.queue_want = Math.min(80, Math.max(12, capacity * 2));
       // how far through today's US send window we are (8am to 6pm in its time zone), so today is not red before sending has started
       try {
         const tz = (await db.linkedinSettings()).timezone || 'America/New_York';

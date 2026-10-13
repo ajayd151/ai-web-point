@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.96",
+    "date": "2026-10-13",
+    "notes": [
+      "Reports now shows a red warning when new brands cannot be found (for example the Apify monthly limit), with how many brands are left and how to fix it. Failed searches no longer use up search keywords or drift into unrelated products."
+    ]
+  },
+  {
     "version": "1.5.95",
     "date": "2026-10-12",
     "notes": [
