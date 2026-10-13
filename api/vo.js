@@ -314,7 +314,7 @@ module.exports = async (req, res) => {
       await db.addEvent(owner, actor, p, { channel: 'LinkedIn', step: 'Video schedule cancelled', detail: 'was booked for ' + (p.scheduled_send_at ? new Date(p.scheduled_send_at).toISOString() : 'unknown') });
       res.status(200).json({ ok: true }); return;
     }
-    if (action === 'searchNow') { res.status(200).json({ ok: true, started: await J.topUp(owner, actor, new Date(), { force: true }) }); return; }
+    if (action === 'searchNow') { res.status(200).json({ ok: true, started: await J.topUp(owner, actor, new Date(), { force: true, only: Array.isArray(body.campaigns) ? body.campaigns : null }) }); return; }
     if (action === 'repairQueue') { res.status(200).json(await db.repairQueue(owner)); return; }
     if (action === 'activityRecency') { res.status(200).json({ rows: await db.activityRecency(owner) }); return; }
     if (action === 'apifyUsage') { res.status(200).json(await S.apifyUsage()); return; }

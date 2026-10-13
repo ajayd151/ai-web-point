@@ -2,6 +2,10 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.98 (13 Oct 2026)
+- Three new campaigns from the category analysis (our acceptance by product type plus live US video-ad counts in the Meta Ad Library): US Superfood Powders (26% acceptance, the only positive reply, 20 of 27 top ads from different brands), US Dog Supplements (23 of 28 top ads from different brands) and US Hair Growth (about 34,000 active video ads, 14% acceptance). Skincare Serums stops searching (1 acceptance from 40 requests; its queued brands still go out); Creatine Gummies searches at most every 3 days (4 in 5 results are repeats).
+- Top-ups take turns: the campaign searched longest ago goes first, so the paced Apify budget reaches every campaign; automation.topup_min_gap_h sets a slower cadence per campaign; a new campaign's first search uses its own keywords; searchNow takes a list of campaigns.
+
 ## 1.5.97 (13 Oct 2026)
 - LinkedIn 'Cannot resend yet' is now treated as LinkedIn holding back invitations for the whole account: the sender stops until tomorrow and nobody is parked (a third refusal in one round does the same). On Fri 9 Oct it came back for every request from 17:50 to 22:10 and parked 46 brands that were never invited (29 Possible); repairQueue put them back.
 - Queue order: people who posted or commented on LinkedIn in the last 30 days go first (they accepted 31% against 20% for 31 to 90 days). New column dm_last_active_at, filled by the activity check and backfilled from the activity notes.

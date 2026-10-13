@@ -1,5 +1,13 @@
 [
   {
+    "version": "1.5.98",
+    "date": "2026-10-13",
+    "notes": [
+      "Three new campaigns: Superfood Powders, Dog Supplements and Hair Growth. Skincare no longer searches for new brands (people there rarely accepted) and Creatine searches only every few days.",
+      "New brand searches now take turns between campaigns, so every campaign gets its share of the monthly budget."
+    ]
+  },
+  {
     "version": "1.5.97",
     "date": "2026-10-13",
     "notes": [
