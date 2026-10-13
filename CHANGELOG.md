@@ -2,6 +2,11 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.97 (13 Oct 2026)
+- LinkedIn 'Cannot resend yet' is now treated as LinkedIn holding back invitations for the whole account: the sender stops until tomorrow and nobody is parked (a third refusal in one round does the same). On Fri 9 Oct it came back for every request from 17:50 to 22:10 and parked 46 brands that were never invited (29 Possible); repairQueue put them back.
+- Queue order: people who posted or commented on LinkedIn in the last 30 days go first (they accepted 31% against 20% for 31 to 90 days). New column dm_last_active_at, filled by the activity check and backfilled from the activity notes.
+- Apify budget pacing: top-ups read Apify's own spend and limit and spread what is left over the weekdays left in Apify's billing month (about $3 a search), so searching never stops mid-month; the Reports tile shows the Apify money left. Read-only actions apifyUsage and activityRecency; searchNow starts a search for every active campaign at once.
+
 ## 1.5.96 (13 Oct 2026)
 - Brand searches had failed since Sat 10 Oct 04:10: Apify returned 'Monthly usage hard limit exceeded' to all 14 tries, so Ready to contact showed red 0s and the queue fell to 6. Reports now shows a red box when searches keep failing (since when, the reason, brands left and days of requests, and the fix with a link to Apify's limits), and a day whose searches all failed reads 'failed' with the reason on hover. The failed-search text names the Apify limit, the brands left and the fix.
 - Top-ups no longer burn keywords on a search provider that is down: after a failure before the search started they wait 12 hours and then retry the keywords that never ran, and only completed searches count as low yield. The failures had archived 56 unsearched keywords per campaign and pushed them into neighbouring categories (fitness trackers, meal prep containers, conditioner); both campaigns were reset to their own industry.

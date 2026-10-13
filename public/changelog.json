@@ -1,5 +1,14 @@
 [
   {
+    "version": "1.5.97",
+    "date": "2026-10-13",
+    "notes": [
+      "46 good brands that LinkedIn briefly refused on Friday evening are back in the queue, and a LinkedIn slowdown now pauses sending until the next day instead of throwing brands away.",
+      "People active on LinkedIn in the last 30 days are contacted first (they accept more often).",
+      "Brand searches are paced so the Apify budget lasts the whole month. Reports shows how much is left."
+    ]
+  },
+  {
     "version": "1.5.96",
     "date": "2026-10-13",
     "notes": [
