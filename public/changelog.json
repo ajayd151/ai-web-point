@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.102",
+    "date": "2026-10-14",
+    "notes": [
+      "Contacts whose LinkedIn headline shows their current job at another company (with this brand only listed among past roles) are now skipped before a connection request goes out."
+    ]
+  },
+  {
     "version": "1.5.101",
     "date": "2026-10-13",
     "notes": [

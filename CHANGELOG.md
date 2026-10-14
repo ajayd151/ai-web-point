@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.102 (14 Oct 2026)
+- The send step now parks a serial founder whose headline LEADS with a role at another firm and names this brand only further along (WelleCo's contact read 'CEO & Founder ETTO Australia l Director of KURK l ... l WelleCo'). Needs 3 or more headline parts, so 'Founder & CEO | runner | dad' is never touched. A lower-case l used as a bar now counts as a separator.
+
 ## 1.5.101 (13 Oct 2026)
 - Someone who answers the connection request note before accepting (Elina at Dood Woof: "Yep let's see!" 11 minutes after the request) now appears on Ready to send, first in the list, with their reply shown. Message A opens with 'Here it is!' instead of 'Thanks for connecting' and goes into that same LinkedIn conversation.
 

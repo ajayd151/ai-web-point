@@ -273,3 +273,11 @@ test('notDecisionMaker parks junior and non-buyer titles, never founders', () =>
   for (const t of ['Former CEO & CFO', 'Ex-CMO, now advising brands', 'Board Director', 'Retired founder']) assert.ok(L.notDecisionMaker(t), t);
   for (const t of ['Founder, CEO', 'Head of Growth', 'Performance Marketing Manager', 'Founder & CEO, ex-Unilever', 'Founder and Brand Associate', '', null]) assert.strictEqual(L.notDecisionMaker(t), '', String(t));
 });
+
+test('roleElsewhere parks serial founders whose first role is at another firm', () => {
+  const L = require('../lib/vo-linkedin');
+  assert.ok(L.roleElsewhere('CEO & Founder ETTO Australia l Director of KURK l Founder of INVISIBLE ZINC l WelleCo l COO BECCA Cosmetics', 'WelleCo', 'welleco.com'));
+  assert.strictEqual(L.roleElsewhere('Founder & CEO | runner | dad', 'Oh Norman!', 'ohnorman.com'), '');
+  assert.strictEqual(L.roleElsewhere('Founder & CEO, WelleCo | ex-BECCA | speaker', 'WelleCo', 'welleco.com'), '');
+  assert.strictEqual(L.roleElsewhere('Co-Founder & CEO', 'Evie\'s Snacks', 'eviessnacks.com'), '');
+});
