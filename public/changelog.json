@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.103",
+    "date": "2026-10-20",
+    "notes": [
+      "The LinkedIn person search no longer picks someone from a different company whose name merely ends with the brand's words."
+    ]
+  },
+  {
     "version": "1.5.102",
     "date": "2026-10-14",
     "notes": [

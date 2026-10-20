@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.103 (20 Oct 2026)
+- LinkedIn person search: a brand matched with its spaces dropped now counts only when the word before it is a title or a joining word. 'Founder, Flow Health Science Inc' had been taken as the contact for the 'Health & Science' shop (artuvate.co).
+
 ## 1.5.102 (14 Oct 2026)
 - The send step now parks a serial founder whose headline LEADS with a role at another firm and names this brand only further along (WelleCo's contact read 'CEO & Founder ETTO Australia l Director of KURK l ... l WelleCo'). Needs 3 or more headline parts, so 'Founder & CEO | runner | dad' is never touched. A lower-case l used as a bar now counts as a separator.
 

@@ -223,6 +223,8 @@ test('LinkedIn search: the brand must sit beside the title as a whole word, not 
   assert.equal(pick('Founder at Fur | Body care', 'Fur', 'furyou.com').name, 'P');
   assert.equal(pick('Founder, IceShaker', 'Ice Shaker', 'iceshaker.com').name, 'P', 'brand written as one word');
   assert.equal(pick('The Mineral Geek | Author, Speaker, and CEO & Co-Founder of BEAM Minerals', 'BEAM Minerals', 'beamminerals.com').name, 'P');
+  assert.equal(pick('Founder, Flow Health Science Inc', 'Health & Science', 'artuvate.co'), null, 'a longer firm name that ends with the brand words');
+  assert.equal(pick('Founder & CEO of HealthScience', 'Health & Science', 'artuvate.co').name, 'P', 'the brand itself still counts');
 });
 
 test('LinkedIn search fallback: a current job at the brand counts even when the headline does not name it', () => {
