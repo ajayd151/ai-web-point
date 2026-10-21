@@ -225,6 +225,12 @@ test('LinkedIn search: the brand must sit beside the title as a whole word, not 
   assert.equal(pick('The Mineral Geek | Author, Speaker, and CEO & Co-Founder of BEAM Minerals', 'BEAM Minerals', 'beamminerals.com').name, 'P');
   assert.equal(pick('Founder, Flow Health Science Inc', 'Health & Science', 'artuvate.co'), null, 'a longer firm name that ends with the brand words');
   assert.equal(pick('Founder & CEO of HealthScience', 'Health & Science', 'artuvate.co').name, 'P', 'the brand itself still counts');
+  assert.equal(pick('Founder, Cloudy Day Digital', 'Cloudy', 'trycloudy.com'), null, 'an agency whose name starts with the brand');
+  assert.equal(pick('Founder of Daily Dose Productions', 'Daily Dose', 'dailydose.com'), null, 'a production firm with the brand name');
+  assert.equal(pick('Rorra Digital Marketing Manager', 'Rorra', 'rorra.com').name, 'P', 'an agency word that is part of the title still counts');
+  assert.equal(pick('Founder, Cloudy', 'Cloudy', 'trycloudy.com').name, 'P');
+  assert.equal(L.companyMatches('Cloudy Day Digital', 'Cloudy', 'trycloudy.com'), false);
+  assert.equal(L.companyMatches('Cloudy Inc', 'Cloudy', 'trycloudy.com'), true);
 });
 
 test('LinkedIn search fallback: a current job at the brand counts even when the headline does not name it', () => {

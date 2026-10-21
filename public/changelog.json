@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.104",
+    "date": "2026-10-21",
+    "notes": [
+      "The LinkedIn person search no longer picks the founder of an agency or production firm that shares the brand's name (for example Cloudy Day Digital for the Cloudy shop)."
+    ]
+  },
+  {
     "version": "1.5.103",
     "date": "2026-10-20",
     "notes": [

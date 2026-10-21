@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.104 (21 Oct 2026)
+- LinkedIn person search: a longer firm name that starts with the brand and ends in an agency word (Digital, Media, Productions, Studios, Films) no longer counts as the brand. 'Founder, Cloudy Day Digital' had been queued as the contact for the Cloudy shop (trycloudy.com). The current-job fallback applies the same rule. 'Rorra Digital Marketing Manager' still counts.
+
 ## 1.5.103 (20 Oct 2026)
 - LinkedIn person search: a brand matched with its spaces dropped now counts only when the word before it is a title or a joining word. 'Founder, Flow Health Science Inc' had been taken as the contact for the 'Health & Science' shop (artuvate.co).
 
