@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.105 (23 Oct 2026)
+- Video Outreach: a new once-a-day text (weekdays from 9am UK) when the Apify budget is used up and under 2 days of brands are queued. On 22 Oct the budget ran out ($101.75 of $100), pacing quietly skipped every search, and the queue fell to 2 with no warning. The Reports 'Ready to contact' tile now says no searches will run instead of 'a search will run', and the budget note reads '$X of $100 spent' instead of a negative amount left.
+
 ## 1.5.104 (21 Oct 2026)
 - LinkedIn person search: a longer firm name that starts with the brand and ends in an agency word (Digital, Media, Productions, Studios, Films) no longer counts as the brand. 'Founder, Cloudy Day Digital' had been queued as the contact for the Cloudy shop (trycloudy.com). The current-job fallback applies the same rule. 'Rorra Digital Marketing Manager' still counts.
 
