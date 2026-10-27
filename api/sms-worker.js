@@ -171,6 +171,7 @@ async function validatePhones(base) {
       } catch (e) { /* the check itself is recorded regardless */ }
     }
   }
+  console.log('[phone-check] numbers on record ' + byPhone.size + ', new to check ' + todo.length + ', looked up ' + done + (rows.length === byPhone.size - done ? '' : ' (seeded from the old blob)'));
   // the verdict blob is rebuilt whole from the table, so a lost blob write can no longer lose a result
   const out = {};
   for (const c of Object.values(calls)) {
