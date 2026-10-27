@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.107 (27 Oct 2026)
+- Video Outreach > Analytics: Running costs, week by week. A line graph of the last 12 weeks (Monday weeks, pounds) with one line per bill: Twilio texts, Twilio number checks, Twilio numbers and calls (real, from Twilio's Usage Records), Apify (real, from Apify's daily usage), Apollo and AI for searches (estimate, run cost minus its Apify rows) and SitePounce tools (estimate, the cost ledger), plus the total. Legend shows this week and last week, click to hide a line, hover a point for the amount; cached 6 hours with a Refresh button (lib/costs.js, action costTrend, settings level).
+
 ## 1.5.106 (27 Oct 2026)
 - Call List phone checks (Twilio Lookup) can no longer pay twice for a number. In October 17,143 lookups were billed for about 8,572 numbers (about 26 pounds wasted): the cron runs every 5 minutes, a run can take 5 minutes, so overlapping runs checked the same numbers and the last blob save dropped the other's results. Each number is now claimed in the phone_checks table (one INSERT only one run can win), a number shared by two records is checked once, the existing verdicts were carried over so nothing is re-checked, and calls/_phonecheck.json is rebuilt from the table for its readers.
 

@@ -125,6 +125,7 @@ var VO_HELP = {
   'Product photo': 'A photo of the product for whoever makes the video. Upload one when the website blocked us, or when the store photo is poor. It is resized in your browser and kept on the prospect.',
   'Funnel': 'Every stage from the ads we scanned to calls booked, for the dates you pick (last 30 days by default), with the number, the percentage of the stage before it, and the percentage of everything scanned. Each stage counts what happened inside the dates. Copy gives the same lines as plain text to paste into WhatsApp or an email.',
   'Automation health': 'What the worker did on its last run, every 10 minutes: whether it sent a request and if not, why (outside the sending hours, cap reached, queue empty, or an error). If the last run is more than 25 minutes old the worker itself has stopped.',
+  'Running costs': 'One line per bill, one point per week (Monday to Sunday, UK). Twilio and Apify are their real bills, read from their own accounts (Twilio is the whole account, so it includes YourCarGarage, YourHouseFix and Dhucha texts too). Apollo and AI for searches, and SitePounce tools, are our own estimates from what was used. Hover a point for the exact amount; click a name to hide or show its line. The figures refresh every 6 hours, or press Refresh. Fixed monthly plans (Unipile, Vercel, Neon, the Apollo plan) are not included.',
   'Daily activity': 'One column per day, last 14 days. Bars: brands found, requests sent, accepted, videos sent, replies. Weekends are shaded; nothing is sent on weekends.',
   'Video on its way message': 'About an hour after someone accepts (inside the send window), they get a short automatic message from the LinkedIn account that invited them: thanks for connecting, my team is making you a short sample video for the product, I will send it over in the next day or two. People answer most right after accepting, and the video can take days. Only for people who accepted in the last 3 days. Your video message then skips its own thank you. If they answer, the card stays on Ready to send with their reply shown.',
   'Warm-up like test': 'Half the people get a like on their newest LinkedIn post from your account, and the connection request a day later, so your name is familiar when it arrives. The other half get the request straight away. At most 25 likes a day. Analytics compares the acceptance of the two halves.',
@@ -1102,6 +1103,43 @@ async function voRenderFunnel(from, to) {
     '<div class="vo-small muted">' + (note ? '<span class="vo-no">' + esc(note) + '</span>' : '') + nice(f.from) + ' to ' + nice(f.to) + '. Each stage counts what happened in these dates (found, requested, accepted, sent), so a period can show more acceptances than requests when they came from requests sent earlier.</div>';
 }
 // ---- Results (5.5) ----
+// Running costs, week by week (27 Oct 2026): one line per bill, so a jump like October's Twilio texts shows at a glance.
+const VO_COST_LINES = [
+  ['total', 'All costs', '#0f172a', 'Everything below added up'],
+  ['twilio_sms', 'Twilio texts', '#dc2626', 'Real Twilio bill for texts, all apps on the account (YourCarGarage sends most of them)'],
+  ['twilio_lookup', 'Twilio number checks', '#f59e0b', 'Real Twilio bill for Lookup, the Call List checks that a number is real'],
+  ['twilio_other', 'Twilio numbers and calls', '#a855f7', 'Real Twilio bill for phone number rental and calls'],
+  ['apify', 'Apify (Meta ad searches)', '#0ea5e9', 'Real Apify bill for the Meta Ad Library searches'],
+  ['vo_est', 'Apollo and AI for searches (estimate)', '#059669', 'Our estimate of Apollo credits and AI per Video Outreach search'],
+  ['tools_est', 'SitePounce tools (estimate)', '#64748b', 'Our estimate for Google searches, AI mockups, Prowl and Pounce'],
+];
+async function voLoadCosts(refresh) {
+  const box = $('vo-costs'); if (!box) return;
+  let d; try { d = await voApi('costTrend', { refresh: !!refresh }); } catch (e) { box.innerHTML = '<h4 style="margin:0">Running costs, week by week</h4><p class="vo-no vo-small">' + esc(e.message) + '</p>'; return; }
+  const W = d.weeks || []; if (!W.length) { box.innerHTML = '<p class="muted">No cost data yet.</p>'; return; }
+  const hidden = VO.costHidden || (VO.costHidden = {});
+  const lines = VO_COST_LINES.filter((l) => W.some((w) => w[l[0]] > 0));
+  const shown = lines.filter((l) => !hidden[l[0]]);
+  const max = Math.max(1, ...W.map((w) => Math.max(...shown.map((l) => w[l[0]] || 0))));
+  const step = max > 200 ? 100 : (max > 80 ? 50 : (max > 20 ? 10 : 5)); const top = Math.ceil(max / step) * step;
+  const Wd = 720, H = 240, L = 46, R = 12, T = 12, B = 30; const x = (i) => L + i * (Wd - L - R) / Math.max(1, W.length - 1); const y = (v) => T + (H - T - B) * (1 - v / top);
+  let svg = '<svg viewBox="0 0 ' + Wd + ' ' + H + '" class="vo-cost-svg" role="img" aria-label="Weekly costs">';
+  for (let v = 0; v <= top; v += step) svg += '<line x1="' + L + '" x2="' + (Wd - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="#e2e8f0"/><text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="11" fill="#64748b">£' + v + '</text>';
+  W.forEach((w, i) => { if (i % 2 === W.length % 2 || i === W.length - 1) svg += '<text x="' + x(i) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11" fill="#64748b">' + esc(new Date(w.week + 'T12:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })) + '</text>'; });
+  shown.forEach((l) => {
+    const pts = W.map((w, i) => x(i).toFixed(1) + ',' + y(w[l[0]] || 0).toFixed(1)).join(' ');
+    svg += '<polyline points="' + pts + '" fill="none" stroke="' + l[2] + '" stroke-width="' + (l[0] === 'total' ? 3 : 2) + '" stroke-linejoin="round"' + (l[0] === 'total' ? '' : ' opacity="0.9"') + '/>';
+    W.forEach((w, i) => { svg += '<circle cx="' + x(i).toFixed(1) + '" cy="' + y(w[l[0]] || 0).toFixed(1) + '" r="3" fill="' + l[2] + '"><title>' + esc(l[1]) + ', week of ' + esc(w.week) + ': £' + (w[l[0]] || 0).toFixed(2) + '</title></circle>'; });
+  });
+  svg += '</svg>';
+  const last = W[W.length - 1], prev = W[W.length - 2] || {};
+  const legend = '<div class="vo-cost-legend">' + lines.map((l) => '<button class="vo-cost-key' + (hidden[l[0]] ? ' off' : '') + '" data-k="' + l[0] + '" title="' + esc(l[3]) + '. Click to hide or show."><i style="background:' + l[2] + '"></i>' + esc(l[1]) + ' <b>£' + (last[l[0]] || 0).toFixed(2) + '</b> <span class="muted">(last week £' + (prev[l[0]] || 0).toFixed(2) + ')</span></button>').join('') + '</div>';
+  box.innerHTML = '<div class="vo-bar" style="margin:0 0 6px"><h4 style="margin:0">Running costs, week by week' + voHelp('Running costs') + '</h4><button class="ghost sm" id="vo-costs-refresh">Refresh</button></div>' +
+    '<p class="muted vo-small" style="margin:0 0 6px">Weeks start on Monday; this week so far is the last point. In pounds (dollars at ' + esc(String(d.usd_gbp)) + '). Bills read ' + esc(voStamp(d.at)) + '.</p>' +
+    svg + legend + (d.notes && d.notes.length ? '<div class="vo-no vo-small">' + d.notes.map(esc).join('<br>') + '</div>' : '');
+  box.querySelectorAll('.vo-cost-key').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.k; hidden[k] = !hidden[k]; voLoadCosts(false); }));
+  voOn('vo-costs-refresh', 'click', () => { box.querySelector('p').textContent = 'Reading the bills again…'; voLoadCosts(true); });
+}
 async function voOpenResults(campaignId) {
   const el = $('vo-pane-results'); voPane('results'); el.innerHTML = '<p class="muted">Loading…</p>';
   let d; try { d = await voApi('results', { campaignId: campaignId || null }); } catch (e) { el.innerHTML = '<p class="vo-no">' + esc(e.message) + '</p>'; return; }
@@ -1147,7 +1185,7 @@ async function voOpenResults(campaignId) {
     return '<div class="vo-card"><div class="vo-bar" style="margin:0 0 6px"><h4 style="margin:0">Funnel since ' + esc(since) + voHelp('Funnel') + '</h4><button class="ghost sm" id="vo-funnel-copy" title="Copy as plain text for WhatsApp or email">📋 Copy</button></div><div class="vo-fit"><table class="cust-table vo-table"><thead><tr><th>Stage</th><th class="num">Number</th><th>Of the stage before</th><th class="num">Of all scanned</th></tr></thead><tbody>' +
       rows.map((r, i) => '<tr><td>' + esc(r[0]) + '</td><td class="num"><b>' + r[1] + '</b></td><td class="muted">' + esc(r[2]) + '</td><td class="num">' + (i ? '<b>' + ov(r[1]) + '</b>' : '100%') + '</td></tr>').join('') + '</tbody></table></div></div>';
   })() : '';
-  const repHtml = rep ? healthHtml + funnelHtml + dailyHtml + '<div class="vo-card"><div class="vo-bar" style="margin:0 0 8px"><h4 style="margin:0">Daily report <span class="muted vo-small">(emailed every morning at 8am UK)</span></h4><button class="ghost sm" id="vo-report-send">Email it to me now</button></div>' +
+  const repHtml = rep ? healthHtml + '<div id="vo-costs" class="vo-card"><h4 style="margin:0">Running costs, week by week</h4><p class="muted vo-small">Loading the bills…</p></div>' + funnelHtml + dailyHtml + '<div class="vo-card"><div class="vo-bar" style="margin:0 0 8px"><h4 style="margin:0">Daily report <span class="muted vo-small">(emailed every morning at 8am UK)</span></h4><button class="ghost sm" id="vo-report-send">Email it to me now</button></div>' +
     '<div class="vo-tiles"><div class="vo-tile vo-go" data-go="prospects" title="Open the prospects list"><b>' + rep.day.found + '</b><span>brands found, 24h</span></div><div class="vo-tile vo-go" data-go="prospects" title="Open the prospects list"><b>' + rep.day.requests + '</b><span>requests sent, 24h</span></div><div class="vo-tile q vo-go" data-go="ready" title="Open Ready to send"><b>' + rep.day.accepted + '</b><span>accepted, 24h</span></div><div class="vo-tile"><b>' + rep.day.videos + '</b><span>videos sent, 24h</span></div><div class="vo-tile c vo-go" data-go="prospects" title="Open the prospects list"><b>' + rep.day.replies + '</b><span>replies, 24h (' + rep.day.positive + ' positive)</span></div><div class="vo-tile d vo-go" data-go="ready" title="Open Ready to send"><b>' + rep.waiting.length + '</b><span>waiting for a video, click to send</span></div></div>' +
     (rep.waiting.length ? '<p><b>Accepted, video not yet sent:</b> ' + rep.waiting.map((p) => '<a href="#vo-ready-' + Number(p.id) + '" class="vo-go" data-go="ready" data-id="' + Number(p.id) + '" title="Open this brand\'s card on Ready to send">' + esc(p.brand) + '</a> (' + esc(p.dm_name || 'contact') + ', accepted ' + stamp(p.linkedin_connected_at) + ')').join('; ') + '</p>' : '') +
     (rep.replied_open.length ? '<p><b>Replies to answer:</b> ' + rep.replied_open.map((p) => esc(p.brand) + ' (' + esc(p.reply_sentiment || 'reply') + ')').join('; ') + '</p>' : '') +
@@ -1163,6 +1201,7 @@ async function voOpenResults(campaignId) {
     '<p class="vo-help">Reading it: if Possible replies as often as Strong, the 65 boundary is too strict; if variant B out-replies A, lead with permission. Change weights in Settings, they re-score every prospect.</p>';
   el.querySelectorAll('.vo-go').forEach((t) => t.addEventListener('click', (e) => { e.preventDefault(); if (t.dataset.go === 'ready') { VO.readyFocus = t.dataset.id ? Number(t.dataset.id) : null; voOpenReady(); } else voOpenProspects(); }));
   voOn('vo-funnel-copy', 'click', (e) => voCopy(e.target, window.__voFunnelText || ''));
+  voLoadCosts(false);
   if ($('vo-fn-from')) {
     const iso = (d) => d.toISOString().slice(0, 10);
     const setRange = (from, to) => { $('vo-fn-from').value = from; $('vo-fn-to').value = to; voRenderFunnel(from, to); };

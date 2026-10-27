@@ -1708,6 +1708,11 @@ ol.say-list li::marker { font-weight: 700; color: var(--blue); }
 .vo-form input[type=number] { width: 120px; }
 .vo-form tr.vo-sec th { background: #f8fafc; color: #0f766e; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; padding: 12px 10px 6px; border-bottom: none; }
 .vo-chk { display: inline-flex; align-items: center; gap: 5px; margin-right: 12px; font-size: 13px; }
+.vo-cost-svg { width: 100%; height: auto; display: block; margin: 4px 0 8px; }
+.vo-cost-legend { display: flex; flex-wrap: wrap; gap: 6px; }
+.vo-cost-key { border: 1px solid #e2e8f0; background: #fff; border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12.5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.vo-cost-key i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.vo-cost-key.off { opacity: 0.45; text-decoration: line-through; }
 .vo-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 10px; }
 .vo-chip { border: 1px solid #cbd5e1; background: #fff; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; }
 .vo-chip b { margin-left: 4px; } .vo-chip.on { background: #0f766e; border-color: #0f766e; color: #fff; }

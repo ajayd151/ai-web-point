@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
   const actor = emailOf(req) || acct.email;
   // Team members reach only what the owner ticked: Ready to send actions, the whole module, or Settings.
   const lvl = voLevel(acct);
-  const SETTINGS_ACTIONS = ['repairQueue', 'activityRecency', 'searchNow', 'apifyUsage', 'reclassifyReplies', 'senders', 'senderLink', 'senderAdd', 'senderSave', 'activityCheck', 'saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
+  const SETTINGS_ACTIONS = ['costTrend', 'repairQueue', 'activityRecency', 'searchNow', 'apifyUsage', 'reclassifyReplies', 'senders', 'senderLink', 'senderAdd', 'senderSave', 'activityCheck', 'saveProfile', 'saveExclusions', 'saveLinkedinSettings', 'saveAlerts', 'testAlerts', 'saveScoring', 'resetScoring', 'scoringImpact', 'linkedinResume', 'linkedinTest', 'simulate', 'regenerateMessages', 'faqAdd', 'faqRemove', 'workerTick'];
   const READY_ACTIONS = ['scheduleSend', 'cancelScheduledSend', 'funnel', 'readyToSend', 'readyCount', 'dueFollowups', 'upcomingFollowups', 'notRelevant', 'notRelevantStats', 'sendFollowup', 'skipFollowup', 'linkedinSend', 'setVideoUrl', 'checkVideo', 'sentMessages', 'prospect', 'updateProspect', 'refreshProducts', 'linkedinTick', 'campaigns', 'demoReady', 'removeDemo', 'ask', 'askHistory', 'markQuestion', 'faqExtra', 'recordReply', 'setStage', 'addNote', 'config', 'getContact'];
   const actionName = String((req.body && req.body.action) || (typeof req.body === 'string' ? (JSON.parse(req.body || '{}').action || '') : ''));
   if (SETTINGS_ACTIONS.includes(actionName) && !lvl.settings) { res.status(403).json({ error: 'Not allowed: Video Outreach settings are for the owner, or a member with the Settings permission.' }); return; }
@@ -316,6 +316,14 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true }); return;
     }
     if (action === 'searchNow') { res.status(200).json({ ok: true, started: await J.topUp(owner, actor, new Date(), { force: true, only: Array.isArray(body.campaigns) ? body.campaigns : null }) }); return; }
+    if (action === 'costTrend') {
+      // week-by-week running costs (lib/costs.js); the providers are only asked every 6 hours unless Refresh is pressed
+      const cached = await db.getConfig('cost_trend', null);
+      if (!body.refresh && cached && cached.at && Date.now() - new Date(cached.at) < 6 * 3600000) { res.status(200).json(cached); return; }
+      const out = await require('../lib/costs').costTrend(owner, owner);
+      await db.setConfig('cost_trend', out);
+      res.status(200).json(out); return;
+    }
     if (action === 'repairQueue') { res.status(200).json(await db.repairQueue(owner)); return; }
     if (action === 'activityRecency') { res.status(200).json({ rows: await db.activityRecency(owner) }); return; }
     if (action === 'apifyUsage') { res.status(200).json(await S.apifyUsage()); return; }

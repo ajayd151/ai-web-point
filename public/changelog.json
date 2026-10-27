@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.107",
+    "date": "2026-10-27",
+    "notes": [
+      "New on Video Outreach > Analytics: a week-by-week line graph of running costs (Twilio texts, number checks, Apify, Apollo and AI, SitePounce tools and the total), so a cost jump shows straight away."
+    ]
+  },
+  {
     "version": "1.5.106",
     "date": "2026-10-27",
     "notes": [
