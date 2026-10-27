@@ -6,6 +6,7 @@
 // can be prepared before the account exists.
 const { dueCampaigns, itemsInState, setItem, setCampaignStatus, dueLinkSends, markLinkSent, dueNudges, markNudged, dueFunnelAck, dueFunnelSite, markFunnelAck, markFunnelSite, dueFunnelFollowup, markFunnelFollowup, optoutSet, campaignKeys, addItemsToCampaign, stampToppedUp, stopWindow, ensureBaseVersions, currentMsg } = require('../lib/smsdb');
 const { buildAudience } = require('../lib/smsaudience');
+const { phoneChecks, claimPhoneCheck, savePhoneCheck, seedPhoneChecks } = require('../lib/smsdb');
 const { sendSms, smsConfigured, lookupPhone, optOutUrl } = require('../lib/sms');
 const { list, put } = require('@vercel/blob');
 const { sign } = require('../lib/auth');
@@ -107,27 +108,55 @@ async function todayCapExtra(day) {
   const b = (await readJson('sms/_capboost.json')) || {};
   return (b.day === day && Number(b.extra) > 0) ? Number(b.extra) : 0;
 }
-// Rolling phone validation: every call-list number gets ONE Twilio Lookup, results cached in
-// their own blob (calls/_phonecheck.json) so this never contends with the list itself (blob
-// writes race). Dead numbers get the CRM status 'invalid-phone' when they had no status yet, so
-// they drop straight into the existing Invalid-phone bucket nobody wastes dialling time on.
+// Rolling phone validation: every call-list PHONE NUMBER gets ONE Twilio Lookup, ever. The record of
+// what has been checked is the phone_checks table (lib/smsdb.js): each number is claimed with an
+// INSERT only one run can win, so overlapping cron runs cannot pay twice, and a number shared by two
+// call-list records is checked once. The verdicts are then written out to calls/_phonecheck.json
+// for the readers (lib/smsaudience.js) exactly as before. Dead numbers get the CRM status
+// 'invalid-phone' when they had no status yet, so they drop into the Invalid-phone bucket.
+function toE164Any(phone) {
+  // works for landlines too, the whole list gets checked, not just mobiles
+  const digits = String(phone || '').replace(/[^0-9+]/g, '');
+  if (!digits) return '';
+  return digits.startsWith('+') ? digits
+    : (digits.startsWith('00') ? ('+' + digits.slice(2))
+    : (digits.startsWith('0') ? ('+44' + digits.slice(1)) : ('+44' + digits)));
+}
 async function validatePhones(base) {
   const calls = (await readJson('calls/_list.json')) || {};
   const chk = (await readJson('calls/_phonecheck.json')) || {};
-  const todo = Object.values(calls).filter((c) => c && c.phone && !chk[c.key]).slice(0, LOOKUPS_PER_TICK);
-  if (!todo.length) return 0;
+  let rows;
+  try { rows = await phoneChecks(); } catch (e) { return 0; } // no database, no lookups: never risk paying twice
+  if (!rows.length && Object.keys(chk).length) {
+    const seed = []; const seenSeed = new Set();
+    for (const c of Object.values(calls)) {
+      const v = c && c.phone && chk[c.key]; const e = v && toE164Any(c.phone);
+      if (!e || seenSeed.has(e)) continue; seenSeed.add(e);
+      seed.push({ e164: e, key: c.key, valid: v.error ? null : !!v.valid, type: v.type || '', error: !!v.error, at: v.at || null });
+    }
+    try { await seedPhoneChecks(seed); rows = await phoneChecks(); } catch (e) { return 0; }
+  }
+  const byPhone = new Map(rows.map((r) => [r.e164, r]));
+  const todo = []; const queued = new Set();
+  for (const c of Object.values(calls)) {
+    if (!c || !c.phone) continue;
+    const e = toE164Any(c.phone);
+    if (!e || byPhone.has(e) || queued.has(e)) continue;
+    queued.add(e); todo.push({ c: c, e164: e });
+    if (todo.length >= LOOKUPS_PER_TICK) break;
+  }
   let idx = null; // notes index, loaded only if something is actually invalid
-  for (const c of todo) {
-    // to E.164: works for landlines too, the whole list gets checked, not just mobiles
-    const digits = String(c.phone).replace(/[^0-9+]/g, '');
-    const e164 = digits.startsWith('+') ? digits
-      : (digits.startsWith('00') ? ('+' + digits.slice(2))
-      : (digits.startsWith('0') ? ('+44' + digits.slice(1)) : ('+44' + digits)));
+  let done = 0;
+  for (const t of todo) {
+    const c = t.c, e164 = t.e164;
+    if (!(await claimPhoneCheck(e164, c.key))) continue; // another run already took this number
     const r = await lookupPhone(e164);
     if (r.checked) { try { await bumpDailyUsage(ownerEmail(), 'cost:lookup', 1, todayKey(new Date())); } catch (e) { /* soft */ } }
-    if (!r.checked) { chk[c.key] = { at: new Date().toISOString(), error: 1 }; continue; }
-    chk[c.key] = { valid: !!r.valid, type: r.type || '', at: new Date().toISOString() };
-    if (!r.valid) {
+    const v = r.checked ? { valid: !!r.valid, type: r.type || '', error: false } : { valid: null, type: '', error: true };
+    try { await savePhoneCheck(e164, v); } catch (e) { /* the claim stands, so it is never looked up again */ }
+    byPhone.set(e164, Object.assign({ e164: e164, key: c.key, checked_at: new Date().toISOString() }, v));
+    done++;
+    if (r.checked && !r.valid) {
       try {
         if (!idx) idx = (await readJson('notes/_index.json')) || {};
         if (!idx[c.key] || !idx[c.key].status) {
@@ -142,11 +171,21 @@ async function validatePhones(base) {
       } catch (e) { /* the check itself is recorded regardless */ }
     }
   }
-  try {
-    if (idx) await put('notes/_index.json', JSON.stringify(idx), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
-    await put('calls/_phonecheck.json', JSON.stringify(chk), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
-  } catch (e) { /* next tick retries the same batch */ }
-  return todo.length;
+  // the verdict blob is rebuilt whole from the table, so a lost blob write can no longer lose a result
+  const out = {};
+  for (const c of Object.values(calls)) {
+    const r = c && c.phone && byPhone.get(toE164Any(c.phone));
+    if (!r) continue;
+    const at = r.checked_at ? new Date(r.checked_at).toISOString() : new Date().toISOString();
+    out[c.key] = r.error ? { at: at, error: 1 } : { valid: r.valid !== false, type: r.type || '', at: at };
+  }
+  if (done || Object.keys(out).length !== Object.keys(chk).length) {
+    try {
+      if (idx) await put('notes/_index.json', JSON.stringify(idx), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+      await put('calls/_phonecheck.json', JSON.stringify(out), { access: 'public', contentType: 'application/json', addRandomSuffix: false });
+    } catch (e) { /* rebuilt from the table on the next tick */ }
+  }
+  return done;
 }
 
 const ENRICH_PER_TICK = 150; // Google Place Details lookups per tick (free tier); ~150 x 5min finishes a few thousand in a couple of hours

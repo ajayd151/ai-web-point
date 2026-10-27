@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.106 (27 Oct 2026)
+- Call List phone checks (Twilio Lookup) can no longer pay twice for a number. In October 17,143 lookups were billed for about 8,572 numbers (about 26 pounds wasted): the cron runs every 5 minutes, a run can take 5 minutes, so overlapping runs checked the same numbers and the last blob save dropped the other's results. Each number is now claimed in the phone_checks table (one INSERT only one run can win), a number shared by two records is checked once, the existing verdicts were carried over so nothing is re-checked, and calls/_phonecheck.json is rebuilt from the table for its readers.
+
 ## 1.5.105 (23 Oct 2026)
 - Video Outreach: a new once-a-day text (weekdays from 9am UK) when the Apify budget is used up and under 2 days of brands are queued. On 22 Oct the budget ran out ($101.75 of $100), pacing quietly skipped every search, and the queue fell to 2 with no warning. The Reports 'Ready to contact' tile now says no searches will run instead of 'a search will run', and the budget note reads '$X of $100 spent' instead of a negative amount left.
 
