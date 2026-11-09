@@ -2,6 +2,9 @@
 
 The live version shows bottom-left in the app sidebar and is clickable there. `public/changelog.json` is the same list, rendered in-app. Bump `lib/version.js` and add an entry here and in the JSON on every deploy that changes behaviour.
 
+## 1.5.108 (9 Nov 2026)
+- Video Outreach: when every campaign is Paused, the automation now says so. All 5 campaigns were paused on 4 Nov and the top-up step skipped them with no note, so Automation health only said "no send: queue empty" for days. Now the worker line reads "no send: queue empty, and no campaign is Active ...", Automation health shows a red "Finding brands" line, the quiet-day text carries the reason, and the once-a-day 9am text (weekdays, under 2 days queued) says "every campaign is paused" with the click path to Resume. The "started N sourcing runs" count no longer counts skipped searches.
+
 ## 1.5.107 (27 Oct 2026)
 - Video Outreach > Analytics: Running costs, week by week. A line graph of the last 12 weeks (Monday weeks, pounds) with one line per bill: Twilio texts, Twilio number checks, Twilio numbers and calls (real, from Twilio's Usage Records), Apify (real, from Apify's daily usage), Apollo and AI for searches (estimate, run cost minus its Apify rows) and SitePounce tools (estimate, the cost ledger), plus the total. Legend shows this week and last week, click to hide a line, hover a point for the amount; cached 6 hours with a Refresh button (lib/costs.js, action costTrend, settings level).
 

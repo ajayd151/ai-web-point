@@ -1,5 +1,12 @@
 [
   {
+    "version": "1.5.108",
+    "date": "2026-11-09",
+    "notes": [
+      "Video Outreach now tells you, on Analytics and by text, when every campaign is paused and no new brands are being found."
+    ]
+  },
+  {
     "version": "1.5.107",
     "date": "2026-10-27",
     "notes": [

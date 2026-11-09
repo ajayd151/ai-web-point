@@ -1149,11 +1149,12 @@ async function voOpenResults(campaignId) {
   let rep = null; try { rep = (await voApi('report')).report; } catch (e) { rep = null; }
   const stamp = (x) => x ? esc(voStamp(x)) : '';
   const lt = rep && rep.last_tick; const ago = lt ? Math.round((Date.now() - new Date(lt.at)) / 60000) : null;
-  const healthBad = !lt || ago > 25 || /FAILED|crashed|paused|not set up/i.test(lt.send || '');
+  const healthBad = !lt || ago > 25 || /FAILED|crashed|paused|not set up/i.test(lt.send || '') || /no campaign is Active/.test(lt.topup_note || '');
   const healthHtml = rep ? '<div class="vo-card" style="border-left:4px solid ' + (healthBad ? '#dc2626' : '#059669') + '"><h4 style="margin:0 0 6px">Automation health' + voHelp('Automation health') + '</h4>' +
     (lt ? '<div><b>Last worker run:</b> ' + esc(voStamp(lt.at)) + ' (' + ago + ' min ago)' + (ago > 25 ? ' <span class="vo-no">the worker should run every 10 minutes</span>' : '') + '</div>' +
       '<div><b>Sending:</b> <span class="' + (/FAILED|crashed|paused/i.test(lt.send || '') ? 'vo-no' : '') + '">' + esc(lt.send || '') + '</span></div>' +
       '<div class="vo-small muted">That run also found ' + (lt.accepted || 0) + ' acceptance(s), ' + (lt.replies || 0) + ' repl(ies), checked ' + (lt.checked || 0) + ' open request(s), closed ' + (lt.closed || 0) + (lt.activity && lt.activity.checked ? ', checked ' + lt.activity.checked + ' people for LinkedIn activity' : '') + (lt.person && lt.person.checked ? ', searched LinkedIn for ' + lt.person.checked + ' missing person(s), found ' + lt.person.found : '') + (lt.person && lt.person.switch_checked ? ', looked for a more active contact at ' + lt.person.switch_checked + ' brand(s), switched ' + lt.person.switched : '') + (lt.topup ? ', started ' + lt.topup + ' sourcing run(s)' : '') + '</div>' +
+      (lt.topup_note ? '<div class="vo-small' + (/no campaign is Active/.test(lt.topup_note) ? ' vo-no' : ' muted') + '"><b>Finding brands:</b> ' + esc(lt.topup_note) + '</div>' : '') +
       ((lt.errors || []).length ? '<div class="vo-no vo-small">Errors: ' + esc(lt.errors.join(' · ')) + '</div>' : '') : '<div class="vo-no">No worker run recorded yet.</div>') +
     '<div class="vo-small" style="margin-top:4px">LinkedIn automation ' + (rep.linkedin.paused ? '<span class="vo-no">paused: ' + esc(rep.linkedin.paused_reason || '') + '</span>' : '<span class="vo-yes">running</span>') + ' · requests today ' + rep.today_requests + ' of ' + rep.linkedin.daily_requests + ' · ready to request now <b>' + rep.queue + '</b></div></div>' : '';
   const dailyHtml = rep && rep.daily ? (function () {
